@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dyslexia Instruction Engine</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <p class="eyebrow">Teacher command center</p>
+          <h1>Dyslexia Instruction Engine</h1>
+        </div>
+
+        <section class="quick-create" aria-label="Create group">
+          <label for="groupName">New group</label>
+          <div class="inline-form">
+            <input id="groupName" type="text" placeholder="Ex: Tuesday 9:15">
+            <button id="addGroupBtn" type="button">Add</button>
+          </div>
+        </section>
+
+        <nav class="group-list" id="groupList" aria-label="Groups"></nav>
+
+        <div class="sidebar-actions">
+          <button id="resetDemoBtn" type="button" class="ghost-button">Restore demo data</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Walk in > click > teach</p>
+            <h2 id="activeGroupTitle">Ready-to-teach weekly plan</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="printBtn" type="button" class="ghost-button">Print</button>
+            <button id="exportRecordsBtn" type="button" class="ghost-button">Export records</button>
+            <button id="generateBtn" type="button" class="primary-button">Generate week</button>
+          </div>
+        </header>
+
+        <section class="metrics-row" aria-label="Dashboard summary">
+          <article>
+            <span id="metricGroups">0</span>
+            <p>Active groups</p>
+          </article>
+          <article>
+            <span id="metricSubstep">--</span>
+            <p>Current substep</p>
+          </article>
+          <article>
+            <span id="metricStudents">0</span>
+            <p>Students</p>
+          </article>
+          <article>
+            <span id="metricLessons">0</span>
+            <p>Plans saved</p>
+          </article>
+        </section>
+
+        <section class="grid-layout">
+          <section class="panel group-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Group setup</p>
+                <h3>Level, learners, and notes</h3>
+              </div>
+              <button id="advanceBtn" type="button" class="small-button">Advance substep</button>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Group name
+                <input id="selectedGroupName" type="text">
+              </label>
+              <label>
+                Current substep
+                <select id="substepSelect"></select>
+              </label>
+              <label>
+                Lessons this week
+                <select id="meetingDays">
+                  <option value="1">1 lesson</option>
+                  <option value="2">2 lessons</option>
+                  <option value="3">3 lessons</option>
+                  <option value="4">4 lessons</option>
+                  <option value="5">5 lessons</option>
+                </select>
+              </label>
+              <label>
+                Reader level
+                <select id="readerLevel">
+                  <option value="AB">AB</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="skill-strip" id="skillStrip"></div>
+
+            <section class="section-two-preview" aria-label="Section 2 preview">
+              <div class="section-heading compact">
+                <h4>Section 2 - Teach & Review Concepts</h4>
+              </div>
+              <div class="section-two-grid">
+                <article>
+                  <p class="mini-label">Review words</p>
+                  <span>4 real + 2 nonsense from prior concepts/substeps</span>
+                  <div id="section2ReviewWords" class="word-chip-row"></div>
+                </article>
+                <article>
+                  <p class="mini-label">Current words</p>
+                  <span>8 words from today's charting page</span>
+                  <div id="section2CurrentWords" class="word-chip-row"></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="page-tracker" aria-label="Reader page tracker">
+              <div class="section-heading compact">
+                <h4>Section #4 page tracker</h4>
+              </div>
+              <div class="tracker-grid">
+                <article>
+                  <p class="mini-label">Wordlist charting</p>
+                  <strong id="wordlistPage">--</strong>
+                  <span id="wordlistMeta"></span>
+                </article>
+                <article>
+                  <p class="mini-label">Sentences</p>
+                  <strong id="sentencePage">--</strong>
+                  <span id="sentenceMeta"></span>
+                </article>
+                <article>
+                  <p class="mini-label">Passage</p>
+                  <strong id="passagePage">--</strong>
+                  <span id="passageMeta"></span>
+                </article>
+              </div>
+              <div class="result-row">
+                <label>
+                  Correct / 15
+                  <input id="wordsCorrect" type="number" min="0" max="15" placeholder="12">
+                </label>
+                <label>
+                  Seconds
+                  <input id="secondsElapsed" type="number" min="0" max="300" placeholder="35">
+                </label>
+                <button id="recordResultBtn" type="button" class="small-button">Record result</button>
+              </div>
+              <div id="resultBadge" class="result-badge"></div>
+            </section>
+
+            <div class="split-panel">
+              <div>
+                <div class="section-heading compact">
+                  <h4>Students</h4>
+                </div>
+                <div class="inline-form">
+                  <input id="studentName" type="text" placeholder="Add student">
+                  <button id="addStudentBtn" type="button">Add</button>
+                </div>
+                <ul class="student-list" id="studentList"></ul>
+                <div id="studentStatusKey" class="student-status-key"></div>
+              </div>
+
+              <div>
+                <div class="section-heading compact">
+                  <h4>Trouble spots</h4>
+                </div>
+                <div class="tag-grid" id="troubleTags"></div>
+                <label class="notes-label">
+                  Teacher note
+                  <textarea id="teacherNote" rows="4" placeholder="Ex: needs more welded sound review before dictation"></textarea>
+                </label>
+              </div>
+            </div>
+            <section class="student-snapshot" aria-label="Student performance snapshot">
+              <div class="section-heading compact">
+                <h4>Student snapshot</h4>
+                <button id="viewAllRecordsBtn" type="button" class="small-button">View records</button>
+              </div>
+              <div id="studentSnapshot" class="snapshot-grid"></div>
+            </section>
+          </section>
+
+          <section class="panel lesson-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">One-button output</p>
+                <h3>This week's lessons</h3>
+              </div>
+              <button id="copyBtn" type="button" class="small-button">Copy week</button>
+            </div>
+            <div id="lessonOutput" class="lesson-output empty-state">
+              <h4>No plan generated yet</h4>
+              <p>Select a group and press Generate week. The engine will build the lessons from the group's substep and notes.</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel history-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Past lessons</p>
+              <h3>Saved weekly plans</h3>
+            </div>
+            <button id="clearHistoryBtn" type="button" class="small-button">Clear history</button>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="lessonTemplate">
+      <article class="lesson-card">
+        <div class="lesson-card-header">
+          <div>
+            <p class="eyebrow lesson-day"></p>
+            <h4 class="lesson-title"></h4>
+          </div>
+          <div class="lesson-header-actions">
+            <span class="lesson-focus"></span>
+            <button type="button" class="copy-lesson small-button">Copy lesson</button>
+          </div>
+        </div>
+        <div class="page-flow"></div>
+        <div class="reader-materials">
+          <section class="reader-panel charting-panel">
+            <div class="reader-panel-header">
+              <div>
+                <p class="mini-label">Section #4</p>
+                <h5>Wordlist Charting</h5>
+              </div>
+              <span class="wordlist-meta"></span>
+            </div>
+            <div class="live-controls">
+              <div>
+                <p class="mini-label">Active student</p>
+                <div class="live-student-pills"></div>
+              </div>
+              <div class="timer-box">
+                <p class="mini-label">Timer / microphone</p>
+                <div class="timer-actions">
+                  <strong class="live-timer">0 sec</strong>
+                  <span class="recording-status">Ready</span>
+                  <button type="button" class="small-button start-timer">Start</button>
+                  <button type="button" class="small-button stop-timer">Stop</button>
+                  <button type="button" class="small-button mic-toggle">Mic</button>
+                </div>
+              </div>
+              <div class="chart-half-picker">
+                <p class="mini-label">Charting half</p>
+                <div class="half-toggle-row" role="group" aria-label="Charting half">
+                  <button type="button" class="half-toggle" data-half="top">Top</button>
+                  <button type="button" class="half-toggle active" data-half="bottom">Bottom</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-stack">
+              <div class="chart-section" data-half-section="top">
+                <p class="mini-label">Top half</p>
+                <div class="chart-board chart-top"></div>
+              </div>
+              <div class="chart-section active-chart-section" data-half-section="bottom">
+                <p class="mini-label">Bottom half</p>
+                <div class="chart-board chart-bottom"></div>
+              </div>
+            </div>
+            <label class="notes-label live-notes-label">
+              Anecdotal notes / error patterns
+              <textarea class="live-notes" rows="3" placeholder="Quick notes from today"></textarea>
+            </label>
+            <div class="live-save-row">
+              <div class="live-score">All words currently marked OK.</div>
+              <button type="button" class="primary-button save-live-record">Save student record</button>
+            </div>
+          </section>
+
+          <section class="reader-panel sentence-panel">
+            <div class="reader-panel-header">
+              <div>
+                <p class="mini-label">Sentence Page</p>
+                <h5>Sentence Reading</h5>
+              </div>
+              <span class="sentence-meta"></span>
+            </div>
+            <p class="mini-label">High-frequency words</p>
+            <div class="hfw-strip"></div>
+            <ol class="reader-sentences"></ol>
+          </section>
+        </div>
+        <div class="dictation-summary">
+          <h5>Dictation</h5>
+          <ul class="lesson-list dictation-list"></ul>
+        </div>
+        <div class="passage-box">
+          <h5>Passage reading</h5>
+          <p class="passage-text"></p>
+        </div>
+        <div class="copy-ready-block">
+          <h5>Copy-ready lesson plan</h5>
+          <pre class="lesson-script"></pre>
+        </div>
+        <div class="teacher-move"></div>
+      </article>
+    </template>
+
+    <template id="recordsTemplate">
+      <section class="records-view">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Master record book</p>
+            <h3>Student records</h3>
+          </div>
+          <button type="button" class="small-button close-records">Back to lesson</button>
+        </div>
+        <div class="records-table-wrap">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Group</th>
+                <th>Substep</th>
+                <th>Page</th>
+                <th>Half</th>
+                <th>Correct</th>
+                <th>Wrong</th>
+                <th>Seconds</th>
+                <th>WCPM</th>
+                <th>Flags</th>
+                <th>Wrong words</th>
+                <th>Recommendation</th>
+              </tr>
+            </thead>
+            <tbody class="records-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </template>
+
+    <script src="reader-wordlists.js"></script>
+    <script src="reader-sentences.js"></script>
+    <script src="dictation-content.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "Teach Today",
+  "short_name": "Teach Today",
+  "description": "Offline Wilson lesson teaching and student data app.",
+  "start_url": "./TeachToday.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef7fb",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "./assets/morrocoy-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Teach Today",
+      "short_name": "Teach",
+      "url": "./TeachToday.html"
+    },
+    {
+      "name": "Student Profiles",
+      "short_name": "Profiles",
+      "url": "./StudentProfile.html"
+    }
+  ]
+}

@@ -1,0 +1,695 @@
+const storageKey = "dyslexiaInstructionEngine.v2";
+let comparisonScope = "group";
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function state() {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function params() {
+  return new URLSearchParams(location.search);
+}
+
+function selectedContext() {
+  const data = state();
+  const query = params();
+  const group = (data.groups || []).find((item) => item.id === query.get("group"))
+    || (data.groups || []).find((item) => item.id === data.selectedGroupId)
+    || (data.groups || [])[0]
+    || { name: "No group", students: [] };
+  const student = query.get("student") || group.activeStudent || group.students[0] || "";
+  const profileGroup = student && !(group.students || []).includes(student)
+    ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
+    : group;
+  const records = (data.masterRecords || []).filter((record) => record.student === student && (!profileGroup.id || record.groupId === profileGroup.id || record.group === profileGroup.name));
+  const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
+  const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
+  return { data, group: profileGroup, student, records, dictationMisses, encodingObservations };
+}
+
+function render() {
+  const { data, group, student, records, dictationMisses, encodingObservations } = selectedContext();
+  const recent = records.slice(-5);
+  const status = performanceStatus(records);
+  const last = records.at(-1);
+  const marked = (group.markedReviewWords || []).filter((item) => !item.student || item.student === student);
+  const recentDictation = dictationMisses.slice(-5);
+  const topDictationCategory = topCount(dictationMisses.map((miss) => miss.category));
+  const lastDictation = dictationMisses.at(-1);
+
+  byId("studentName").textContent = student || "No student selected";
+  byId("studentMeta").textContent = `${group.name || "No group"} - ${records.length} charting record${records.length === 1 ? "" : "s"} - ${dictationMisses.length} dictation miss${dictationMisses.length === 1 ? "" : "es"}`;
+  byId("statusDot").className = `status-dot ${status.color}`;
+  byId("statusLabel").textContent = status.label;
+  byId("nextRecommendation").textContent = last?.recommendation || "Save charting records to generate next-step recommendations.";
+
+  byId("totalLessons").textContent = records.length;
+  byId("avgCorrect").textContent = average(recent, (record) => Number(record.correct || 0)) || "--";
+  byId("avgWcpm").textContent = average(recent, wcpmForRecord) || "--";
+  byId("avgSeconds").textContent = average(recent, (record) => Number(record.seconds || 0)) || "--";
+  byId("automaticityRate").textContent = recent.length ? `${Math.round((recent.filter((record) => record.automaticity).length / recent.length) * 100)}%` : "0%";
+  byId("lastSubstep").textContent = last?.substep || "--";
+  byId("dictationMissTotal").textContent = dictationMisses.length;
+  byId("dictationRecent").textContent = recentDictation.length;
+  byId("dictationHotspot").textContent = topDictationCategory || "--";
+  byId("dictationLast").textContent = lastDictation?.item || "--";
+  shadeMetricCards({
+    records,
+    recent,
+    dictationMisses,
+    recentDictation,
+    avgCorrect: average(recent, (record) => Number(record.correct || 0)),
+    avgWcpm: average(recent, wcpmForRecord),
+    avgSeconds: average(recent, (record) => Number(record.seconds || 0)),
+    automaticityRate: recent.length ? Math.round((recent.filter((record) => record.automaticity).length / recent.length) * 100) : 0
+  });
+
+  renderTrend(records);
+  renderProfileStudentButtons(data, group, student);
+  renderComparisonTables(data, group);
+  renderChips(byId("missedWords"), commonWrongWords(records).slice(0, 20), "No missed words saved yet.");
+  renderChips(byId("markedWords"), marked.map((item) => item.word), "No words marked for review yet.");
+  renderChips(byId("dictationMisses"), commonDictationMisses(dictationMisses).slice(0, 20), "No dictation misses saved yet.");
+  renderPatternInsights(records, marked, dictationMisses.concat(encodingObservations));
+  renderDiagnosticBubbles({ records, recent, marked, dictationMisses: dictationMisses.concat(encodingObservations) });
+  renderCategoryBars(dictationMisses.concat(encodingObservations));
+  renderChartingSheet(records);
+  renderRows(records);
+  renderDictationRows(dictationMisses);
+}
+
+function rosterStudents(data, group, scope = comparisonScope) {
+  if (scope === "all") {
+    return [...new Set((data.groups || []).flatMap((item) => item.students || []))].sort((a, b) => a.localeCompare(b));
+  }
+  return [...new Set(group.students || [])];
+}
+
+function renderProfileStudentButtons(data, group, activeStudent) {
+  const container = byId("profileStudentButtons");
+  if (!container) return;
+  container.innerHTML = "";
+  rosterStudents(data, group, comparisonScope).forEach((student) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = student === activeStudent ? "active" : "";
+    button.textContent = student;
+    button.addEventListener("click", () => {
+      const studentGroup = comparisonScope === "all"
+        ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
+        : group;
+      location.href = `StudentProfile.html?group=${encodeURIComponent(studentGroup.id || "")}&student=${encodeURIComponent(student)}`;
+    });
+    container.appendChild(button);
+  });
+}
+
+function recordsForStudent(data, student, group, scope = comparisonScope) {
+  return (data.masterRecords || []).filter((record) => record.student === student && (scope === "all" || record.groupId === group.id || record.group === group.name));
+}
+
+function encodingForStudent(data, student, group, scope = comparisonScope) {
+  const groups = scope === "all" ? (data.groups || []) : [group];
+  return groups.flatMap((item) => [
+    ...(item.dictationMisses || []).filter((miss) => miss.student === student),
+    ...(item.encodingObservations || []).filter((miss) => miss.student === student)
+  ]);
+}
+
+function comparisonStatusScore(summary) {
+  return (summary.avgCorrect * 10) + (summary.autoRate * 0.4) + (summary.avgWcpm || 0) - Math.max(0, (summary.avgSeconds || 0) - 35) - summary.recentMisses * 6;
+}
+
+function studentDecodeSummary(data, student, group) {
+  const records = recordsForStudent(data, student, group);
+  const recent = records.slice(-5);
+  const avgCorrect = average(recent, (record) => Number(record.correct || 0));
+  const avgSeconds = average(recent, (record) => Number(record.seconds || 0));
+  const avgWcpm = average(recent, wcpmForRecord);
+  const autoRate = recent.length ? Math.round((recent.filter((record) => record.automaticity).length / recent.length) * 100) : 0;
+  const recentMisses = recent.reduce((sum, record) => sum + Number(record.wrongCount || 0), 0);
+  return {
+    student,
+    records,
+    recent,
+    avgCorrect,
+    avgSeconds,
+    avgWcpm,
+    autoRate,
+    recentMisses,
+    status: performanceStatus(records)
+  };
+}
+
+function studentEncodeSummary(data, student, group) {
+  const misses = encodingForStudent(data, student, group);
+  const recent = misses.slice(-5);
+  return {
+    student,
+    misses,
+    recent,
+    topArea: topCount(misses.map((miss) => miss.category || miss.note || "Dictation")),
+    lastItem: misses.at(-1)?.item || misses.at(-1)?.note || "--"
+  };
+}
+
+function renderComparisonTables(data, group) {
+  const students = rosterStudents(data, group, comparisonScope);
+  const label = byId("comparisonScopeLabel");
+  if (label) label.textContent = comparisonScope === "all" ? "All roster, ranked best to support-needed" : "Current group, ranked best to support-needed";
+  document.querySelectorAll(".compare-controls button").forEach((button) => {
+    button.classList.toggle("active", (button.id === "compareRoster") === (comparisonScope === "all"));
+  });
+
+  const decoding = students
+    .map((student) => studentDecodeSummary(data, student, group))
+    .sort((a, b) => comparisonStatusScore(b) - comparisonStatusScore(a));
+  const decodeBody = byId("decodeCompareRows");
+  decodeBody.innerHTML = decoding.map((summary, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td><strong>${escapeHtml(summary.student)}</strong></td>
+      <td class="${shadeClass(shadeForCorrect(summary.avgCorrect))}">${summary.avgCorrect || "--"}/15</td>
+      <td class="${shadeClass(shadeForSeconds(summary.avgSeconds))}">${summary.avgSeconds || "--"}</td>
+      <td class="${shadeClass(shadeForWcpm(summary.avgWcpm))}">${summary.avgWcpm || "--"}</td>
+      <td class="${shadeClass(shadeForPercent(summary.autoRate))}">${summary.autoRate}%</td>
+      <td><span class="compare-status ${summary.status.color}">${escapeHtml(summary.status.label)}</span></td>
+    </tr>
+  `).join("") || "<tr><td colspan=\"7\">No students to compare yet.</td></tr>";
+
+  const encoding = students
+    .map((student) => studentEncodeSummary(data, student, group))
+    .sort((a, b) => a.misses.length - b.misses.length || a.student.localeCompare(b.student));
+  const encodeBody = byId("encodeCompareRows");
+  encodeBody.innerHTML = encoding.map((summary, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td><strong>${escapeHtml(summary.student)}</strong></td>
+      <td class="${shadeClass(shadeForMissCount(summary.misses.length))}">${summary.misses.length}</td>
+      <td class="${shadeClass(shadeForMissCount(summary.recent.length))}">${summary.recent.length}</td>
+      <td>${escapeHtml(summary.topArea || "--")}</td>
+      <td>${escapeHtml(summary.lastItem || "--")}</td>
+    </tr>
+  `).join("") || "<tr><td colspan=\"6\">No encoding data yet.</td></tr>";
+}
+
+function shadeClass(shade) {
+  return `compare-${shade}`;
+}
+
+function shadeMetricCards(summary) {
+  setCardShade("metricLessonsCard", summary.records.length ? "blue" : "gray");
+  setCardShade("metricCorrectCard", shadeForCorrect(summary.avgCorrect));
+  setCardShade("metricWcpmCard", shadeForWcpm(summary.avgWcpm));
+  setCardShade("metricSecondsCard", shadeForSeconds(summary.avgSeconds));
+  setCardShade("metricAutoCard", shadeForPercent(summary.automaticityRate));
+  setCardShade("metricSubstepCard", summary.records.length ? "blue" : "gray");
+  setCardShade("dictationMissTotalCard", shadeForMissCount(summary.dictationMisses.length));
+  setCardShade("dictationRecentCard", shadeForMissCount(summary.recentDictation.length));
+  setCardShade("dictationHotspotCard", summary.dictationMisses.length ? "orange" : "gray");
+  setCardShade("dictationLastCard", summary.dictationMisses.length ? "orange" : "gray");
+}
+
+function setCardShade(id, shade) {
+  const card = byId(id);
+  if (!card) return;
+  card.classList.remove("shade-blue", "shade-green", "shade-yellow", "shade-orange", "shade-red", "shade-gray");
+  card.classList.add(`shade-${shade}`);
+}
+
+function shadeForCorrect(value) {
+  if (!value) return "gray";
+  if (value >= 14.5) return "blue";
+  if (value >= 12) return "green";
+  if (value >= 10) return "orange";
+  return "red";
+}
+
+function shadeForSeconds(value) {
+  if (!value) return "gray";
+  if (value <= 35) return "green";
+  if (value <= 54) return "yellow";
+  return "red";
+}
+
+function shadeForWcpm(value) {
+  if (!value) return "gray";
+  if (value >= 26) return "blue";
+  if (value >= 21) return "green";
+  if (value >= 17) return "yellow";
+  if (value >= 12) return "orange";
+  return "red";
+}
+
+function shadeForPercent(value) {
+  if (!value) return "gray";
+  if (value >= 80) return "blue";
+  if (value >= 60) return "green";
+  if (value >= 40) return "yellow";
+  if (value >= 20) return "orange";
+  return "red";
+}
+
+function shadeForMissCount(value) {
+  if (!value) return "green";
+  if (value <= 2) return "yellow";
+  if (value <= 5) return "orange";
+  return "red";
+}
+
+function renderDiagnosticBubbles({ records, recent, marked, dictationMisses }) {
+  const container = byId("diagnosticBubbles");
+  const avgCorrect = average(recent, (record) => Number(record.correct || 0));
+  const avgSeconds = average(recent, (record) => Number(record.seconds || 0));
+  const avgWcpm = average(recent, wcpmForRecord);
+  const autoRate = recent.length ? Math.round((recent.filter((record) => record.automaticity).length / recent.length) * 100) : 0;
+  const wrongTotal = recent.reduce((sum, record) => sum + Number(record.wrongCount || 0), 0);
+  const patternCount = detectPatterns(insightWords(records, marked, dictationMisses)).length;
+  const bubbles = [
+    { label: "Accuracy", value: avgCorrect ? `${avgCorrect}/15` : "--", shade: shadeForCorrect(avgCorrect), note: avgCorrect >= 12 ? "meets accuracy" : "reteach page" },
+    { label: "Automaticity", value: `${autoRate}%`, shade: shadeForPercent(autoRate), note: avgSeconds && avgSeconds <= 35 ? "fast enough" : "needs speed" },
+    { label: "sec/15w", value: avgSeconds || "--", shade: shadeForSeconds(avgSeconds), note: avgSeconds && avgSeconds <= 35 ? "automatic" : "slow read" },
+    { label: "WCPM", value: avgWcpm || "--", shade: shadeForWcpm(avgWcpm), note: avgWcpm >= 21 ? "solid fluency" : "build fluency" },
+    { label: "Recent errors", value: wrongTotal, shade: shadeForMissCount(wrongTotal), note: "last 5 lessons" },
+    { label: "Dictation", value: dictationMisses.length, shade: shadeForMissCount(dictationMisses.length), note: "saved misses" },
+    { label: "Patterns", value: patternCount, shade: patternCount >= 5 ? "red" : patternCount >= 3 ? "orange" : patternCount >= 1 ? "yellow" : "green", note: "skill flags" },
+    { label: "Data depth", value: records.length, shade: records.length >= 5 ? "green" : records.length >= 2 ? "yellow" : "gray", note: "chart records" }
+  ];
+  container.innerHTML = "";
+  bubbles.forEach((bubble) => {
+    const item = document.createElement("article");
+    item.className = `diagnostic-bubble shade-${bubble.shade}`;
+    item.innerHTML = `<strong>${escapeHtml(bubble.value)}</strong><span>${escapeHtml(bubble.label)}</span><small>${escapeHtml(bubble.note)}</small>`;
+    container.appendChild(item);
+  });
+}
+
+function average(records, valueFor) {
+  const values = records.map(valueFor).filter((value) => Number.isFinite(value) && value > 0);
+  return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+}
+
+function wcpmForRecord(record) {
+  const seconds = Number(record.seconds || 0);
+  return seconds ? Math.round((Number(record.correct || 0) / seconds) * 60) : 0;
+}
+
+function formatWcpm(value) {
+  const wcpm = Number(value || 0);
+  return wcpm ? `${escapeHtml(wcpm)} wcpm` : "--";
+}
+
+function performanceStatus(records) {
+  const recent = records.slice(-5);
+  if (!recent.length) return { color: "gray", label: "No data yet" };
+  const avgCorrect = average(recent, (record) => Number(record.correct || 0));
+  const avgSeconds = average(recent, (record) => Number(record.seconds || 0));
+  const autoRate = recent.filter((record) => record.automaticity).length / recent.length;
+  if (avgCorrect >= 14.5 && avgSeconds && avgSeconds <= 35 && autoRate >= 0.8) return { color: "blue", label: "Strong automaticity" };
+  if (avgCorrect >= 12 && avgSeconds && avgSeconds <= 35) return { color: "green", label: "Accurate and automatic" };
+  if (avgCorrect >= 12) return { color: "yellow", label: "Accurate, building speed" };
+  if (avgCorrect < 10 || avgSeconds > 55) return { color: "red", label: "Needs support now" };
+  return { color: "orange", label: "Not accurate yet" };
+}
+
+function commonWrongWords(records) {
+  const counts = new Map();
+  records.forEach((record) => (record.wrongWords || []).forEach((word) => counts.set(word, (counts.get(word) || 0) + 1)));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([word, count]) => `${word} (${count})`);
+}
+
+function commonDictationMisses(misses) {
+  const counts = new Map();
+  misses.forEach((miss) => counts.set(miss.item, (counts.get(miss.item) || 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([word, count]) => `${word} (${count})`);
+}
+
+function topCount(items) {
+  const counts = new Map();
+  items.filter(Boolean).forEach((item) => counts.set(item, (counts.get(item) || 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+}
+
+function renderChips(container, words, emptyText) {
+  container.innerHTML = "";
+  const source = words.length ? words : [emptyText];
+  source.forEach((word) => {
+    const item = document.createElement("span");
+    item.textContent = word;
+    container.appendChild(item);
+  });
+}
+
+function renderCategoryBars(misses) {
+  const container = byId("dictationCategories");
+  container.innerHTML = "";
+  if (!misses.length) {
+    container.innerHTML = "<p>No dictation categories yet.</p>";
+    return;
+  }
+  const counts = new Map();
+  misses.forEach((miss) => counts.set(miss.category || "Dictation", (counts.get(miss.category || "Dictation") || 0) + 1));
+  const max = Math.max(...counts.values(), 1);
+  [...counts.entries()].sort((a, b) => b[1] - a[1]).forEach(([category, count]) => {
+    const row = document.createElement("div");
+    row.className = "category-row";
+    row.innerHTML = `
+      <span>${escapeHtml(category)}</span>
+      <div><i style="width:${Math.max(8, (count / max) * 100)}%"></i></div>
+      <strong>${count}</strong>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function renderPatternInsights(records, marked, dictationMisses) {
+  const container = byId("patternInsights");
+  const words = insightWords(records, marked, dictationMisses);
+  const patterns = detectPatterns(words);
+  container.innerHTML = "";
+  if (!patterns.length) {
+    container.innerHTML = "<p class=\"empty-insight\">Save more misses or marked review words to generate pattern insights.</p>";
+    return;
+  }
+  patterns.slice(0, 8).forEach((pattern) => {
+    const card = document.createElement("article");
+    card.className = `insight-tile ${pattern.level}`;
+    card.innerHTML = `
+      <div><strong>${escapeHtml(pattern.title)}</strong><span>${pattern.count} hit${pattern.count === 1 ? "" : "s"}</span></div>
+      <p>${escapeHtml(pattern.note)}</p>
+      <small>${escapeHtml(pattern.examples.slice(0, 8).join(", "))}</small>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function insightWords(records, marked, dictationMisses) {
+  const words = [];
+  records.forEach((record) => words.push(...(record.wrongWords || [])));
+  marked.forEach((item) => words.push(item.word));
+  dictationMisses.forEach((miss) => words.push(miss.item));
+  return words.map((word) => String(word || "").toLowerCase().replace(/[^a-z-]/g, "")).filter((word) => word.length >= 2);
+}
+
+function detectPatterns(words) {
+  const definitions = [
+    { id: "triple", title: "Triple consonant blends", level: "risk", tests: ["spr", "str", "scr", "spl", "shr", "thr"], note: "Practice slow sound-by-sound blending before full-word reading." },
+    { id: "blend", title: "Common blends", level: "watch", tests: ["sp", "st", "sk", "sl", "sm", "sn", "br", "bl", "cr", "cl", "dr", "fl", "fr", "gl", "gr", "pl", "pr", "tr"], note: "Blend work is showing up in misses; add quick drill and sound tapping." },
+    { id: "welded-ng", title: "Welded /ng/ family", level: "risk", tests: ["ang", "ing", "ong", "ung"], note: "Check if student is substituting one welded sound for another, especially /ing/ vs /ang/." },
+    { id: "welded-nk", title: "Welded /nk/ family", level: "watch", tests: ["ank", "ink", "onk", "unk"], note: "Keep welded sounds boxed and read as one unit." },
+    { id: "closed-exception", title: "Closed exceptions", level: "watch", tests: ["ild", "ind", "old", "olt", "ost"], note: "Review exception sound before reading the whole word." },
+    { id: "suffix-es", title: "Suffix -es", level: "risk", tests: ["es"], note: "Suffix -es may need base-word plus suffix practice." },
+    { id: "suffix-ed-ing", title: "Suffix -ed / -ing", level: "watch", tests: ["ed", "ing"], note: "Have student read the base first, then add the suffix." },
+    { id: "ve", title: "Vowel-consonant-e", level: "watch", tests: ["a-e", "e-e", "i-e", "o-e", "u-e"], custom: hasVePattern, note: "Book 4 v-e pattern may need contrast with closed syllables." },
+    { id: "fss", title: "Final stable syllables", level: "watch", tests: ["ble", "cle", "dle", "fle", "gle", "kle", "ple", "stle", "tle", "zle"], note: "Mark final stable syllable before reading/spelling." },
+    { id: "latin", title: "Latin bases", level: "info", tests: ["dict", "duct", "fect", "flect", "ject", "lect", "press", "rupt", "spect", "struct", "tract", "vict"], note: "Review base meaning/reading and keep base together." }
+  ];
+  return definitions
+    .map((definition) => patternSummary(definition, words))
+    .filter((pattern) => pattern.count > 0)
+    .sort((a, b) => b.count - a.count || severityRank(a.level) - severityRank(b.level));
+}
+
+function patternSummary(definition, words) {
+  const examples = [];
+  words.forEach((word) => {
+    const hit = definition.custom
+      ? definition.custom(word)
+      : definition.tests.some((test) => word.includes(test));
+    if (hit && !examples.includes(word)) examples.push(word);
+  });
+  const count = words.filter((word) => definition.custom
+    ? definition.custom(word)
+    : definition.tests.some((test) => word.includes(test))).length;
+  return { ...definition, count, examples };
+}
+
+function hasVePattern(word) {
+  return /[aeiou][bcdfghjklmnpqrstvwxyz]e$/.test(word)
+    || /[aeiou][bcdfghjklmnpqrstvwxyz]e(s|d|ing|ful|less|ly)?$/.test(word);
+}
+
+function severityRank(level) {
+  return { risk: 0, watch: 1, info: 2 }[level] ?? 3;
+}
+
+function renderTrend(records) {
+  const recent = records.slice(-12);
+  const chart = byId("trendChart");
+  if (recent.length < 2) {
+    chart.innerHTML = "<p>Save two records to show trends.</p>";
+    return;
+  }
+  const width = 720;
+  const height = 260;
+  const pad = 34;
+  const plotWidth = width - pad * 2;
+  const plotHeight = height - pad * 2;
+  const maxWcpm = Math.max(30, ...recent.map(wcpmForRecord));
+  const maxSeconds = Math.max(60, ...recent.map((record) => Number(record.seconds || 0)));
+  const coordsFor = (valueFor, maxValue, invert = false) => recent.map((record, index) => {
+    const raw = Math.min(valueFor(record), maxValue);
+    const x = pad + (index * plotWidth) / Math.max(recent.length - 1, 1);
+    const y = invert
+      ? pad + (raw / maxValue) * plotHeight
+      : height - pad - (raw / maxValue) * plotHeight;
+    return { x, y, value: valueFor(record) };
+  });
+  const accuracy = coordsFor((record) => Number(record.correct || 0), 15);
+  const wcpm = coordsFor(wcpmForRecord, maxWcpm);
+  const seconds = coordsFor((record) => Number(record.seconds || 0), maxSeconds, true);
+  const points = (coords) => coords.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+  const labels = (coords, className, offset) => coords.map((point) => (
+    `<text x="${point.x.toFixed(1)}" y="${Math.max(12, point.y + offset).toFixed(1)}" class="${className}">${point.value}</text>`
+  )).join("");
+  chart.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Student performance trend">
+      <text x="${pad}" y="16" class="axis-label">15 correct</text>
+      <text x="${width - pad - 70}" y="16" class="axis-label">${maxWcpm} WCPM</text>
+      <text x="${width - pad - 86}" y="32" class="axis-label">${maxSeconds} sec/15w</text>
+      <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" class="axis"></line>
+      <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" class="axis"></line>
+      <polyline points="${points(accuracy)}" class="trend-line accuracy-line"></polyline>
+      <polyline points="${points(wcpm)}" class="trend-line wcpm-line"></polyline>
+      <polyline points="${points(seconds)}" class="trend-line seconds-line"></polyline>
+      ${labels(accuracy, "point-label accuracy-label", -10)}
+      ${labels(wcpm, "point-label wcpm-label", 16)}
+      ${labels(seconds, "point-label seconds-label", 30)}
+    </svg>
+    <div class="legend"><span><i style="background:#0f766e"></i>Accuracy</span><span><i style="background:#2563eb"></i>WCPM</span><span><i style="background:#f59e0b"></i>sec/15w</span></div>
+  `;
+}
+
+function renderChartingSheet(records) {
+  const table = byId("chartingSheet");
+  if (!table) return;
+  const chartRecords = records.slice(-12);
+  if (!chartRecords.length) {
+    table.innerHTML = "<tbody><tr><td class=\"sheet-empty\">No Section 4 charting records saved yet.</td></tr></tbody>";
+    return;
+  }
+
+  const headerRows = [
+    { label: "Date", value: (record) => shortDate(record.date || record.displayDate) },
+    { label: "Substep", value: (record) => record.substep || "" },
+    { label: "Concept", value: (record) => record.concept || record.title || record.focus || "" },
+    { label: "Page #", value: (record) => record.wordlistPage || "" },
+    { label: "R or N", value: () => chartingWordTypeSelect(), html: true }
+  ];
+  const scoreRows = Array.from({ length: 16 }, (_, index) => 15 - index);
+
+  const rows = headerRows.map((row) => `
+    <tr class="sheet-head-row">
+      <th>${escapeHtml(row.label)}:</th>
+      ${chartRecords.map((record) => `<td>${row.html ? row.value(record) : escapeHtml(row.value(record) || "--")}</td>`).join("")}
+    </tr>
+  `).join("");
+
+  const scoreMarkup = scoreRows.map((score) => `
+    <tr class="score-row">
+      <th>${score}</th>
+      ${chartRecords.map((record) => chartingScoreCell(record, score)).join("")}
+    </tr>
+  `).join("");
+
+  const statusRow = `
+    <tr class="sheet-status-row">
+      <th>Status</th>
+      ${chartRecords.map((record) => {
+        const status = chartingStatus(record);
+        return `<td class="status-${status.toLowerCase()}">${status}</td>`;
+      }).join("")}
+    </tr>
+  `;
+  const secondsRow = `
+    <tr class="sheet-data-row">
+      <th>Seconds</th>
+      ${chartRecords.map((record) => `<td>${record.seconds ? `${escapeHtml(record.seconds)} sec` : "--"}</td>`).join("")}
+    </tr>
+  `;
+  const wcpmRow = `
+    <tr class="sheet-data-row">
+      <th>WCPM</th>
+      ${chartRecords.map((record) => {
+        const wcpm = record.wcpm || wcpmForRecord(record);
+        return `<td>${formatWcpm(wcpm)}</td>`;
+      }).join("")}
+    </tr>
+  `;
+
+  table.innerHTML = `<tbody>${rows}${scoreMarkup}${statusRow}${secondsRow}${wcpmRow}</tbody>`;
+}
+
+function chartingScoreCell(record, score) {
+  const correct = Number(record.correct || 0);
+  const misses = chartingMissNotes(record);
+  const missIndex = 15 - score;
+  const note = score > correct ? misses[missIndex] || "" : "";
+  const classes = ["chart-score-cell"];
+  if (score <= correct) classes.push("filled");
+  if (note) classes.push("has-miss");
+  return `<td class="${classes.join(" ")}">${escapeHtml(note)}</td>`;
+}
+
+function chartingMissNotes(record) {
+  const half = record.chartHalf || "";
+  const wordRecords = (record.wordRecords || []).filter((item) => !half || item.section === half);
+  const missed = wordRecords.filter((item) => item && item.correct === false);
+  if (missed.length) {
+    return missed.map((item) => {
+      const word = item.word || "";
+      const said = item.said || "";
+      return said ? `${word} -> ${said}` : word;
+    }).filter(Boolean);
+  }
+  return (record.wrongWords || []).map((word) => String(word || "")).filter(Boolean);
+}
+
+function chartingStatus(record) {
+  const correct = Number(record.correct || 0);
+  const seconds = Number(record.seconds || 0);
+  if (correct >= 12 && seconds > 0 && seconds <= 35) return "Auto";
+  if (correct >= 12) return "Acc";
+  return "Strug";
+}
+
+function chartingWordType(record) {
+  const half = String(record.chartHalf || "").toLowerCase();
+  if (half === "top") return "Real";
+  if (half === "bottom") return "Nonsense";
+  return titleCase(record.chartHalf || "");
+}
+
+function chartingWordTypeSelect() {
+  return `<select class="charting-type-select" aria-label="Real or nonsense charting type">
+    <option selected>Real</option>
+    <option>Nonsense</option>
+  </select>`;
+}
+
+function renderRows(records) {
+  const body = byId("recordRows");
+  body.innerHTML = "";
+  records.slice().reverse().forEach((record) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${escapeHtml(record.displayDate || record.date || "")}</td>
+      <td>${escapeHtml(record.substep || "")}</td>
+      <td>Reader ${escapeHtml(record.reader || "")}, p. ${escapeHtml(record.wordlistPage || "")}</td>
+      <td>${escapeHtml(titleCase(record.chartHalf || ""))}</td>
+      <td class="${metricClass(record, "correct")}">${escapeHtml(record.correct ?? "")}/${escapeHtml(record.total || 15)}</td>
+      <td class="${metricClass(record, "wrong")}">${escapeHtml(record.wrongCount ?? Math.max((record.total || 15) - (record.correct || 0), 0))}</td>
+      <td class="${metricClass(record, "seconds")}">${escapeHtml(record.seconds || "--")}</td>
+      <td class="${metricClass(record, "wcpm")}">${formatWcpm(record.wcpm || wcpmForRecord(record))}</td>
+      <td>${record.accuracy ? "accuracy " : ""}${record.fluency ? "fluency " : ""}${record.automaticity ? "automaticity" : ""}</td>
+      <td>${escapeHtml((record.wrongWords || []).join(", ") || "none")}</td>
+      <td>${escapeHtml(record.notes || "")}</td>
+    `;
+    body.appendChild(row);
+  });
+  if (!records.length) {
+    body.innerHTML = "<tr><td colspan=\"11\">No records saved for this student yet.</td></tr>";
+  }
+}
+
+function renderDictationRows(misses) {
+  const body = byId("dictationRows");
+  body.innerHTML = "";
+  misses.slice().reverse().forEach((miss) => {
+    const row = document.createElement("tr");
+    row.className = "dictation-row";
+    row.innerHTML = `
+      <td>${escapeHtml(formatDateTime(miss.date))}</td>
+      <td>${escapeHtml(miss.substep || "")}</td>
+      <td><span class="type-pill">${escapeHtml(miss.category || "Dictation")}</span></td>
+      <td><strong>${escapeHtml(miss.item || "")}</strong></td>
+    `;
+    body.appendChild(row);
+  });
+  if (!misses.length) {
+    body.innerHTML = "<tr><td colspan=\"4\">No dictation misses saved for this student yet.</td></tr>";
+  }
+}
+
+function metricClass(record, type) {
+  const correct = Number(record.correct || 0);
+  const wrong = record.wrongCount ?? Math.max((record.total || 15) - correct, 0);
+  const seconds = Number(record.seconds || 0);
+  const wcpm = record.wcpm || wcpmForRecord(record);
+  if (type === "correct") return correct >= 14 ? "metric-good" : correct >= 12 ? "metric-watch" : "metric-risk";
+  if (type === "wrong") return wrong <= 1 ? "metric-good" : wrong <= 3 ? "metric-watch" : "metric-risk";
+  if (type === "seconds") return seconds && seconds <= 35 ? "metric-good" : seconds && seconds <= 54 ? "metric-watch" : "metric-risk";
+  if (type === "wcpm") return wcpm >= 26 ? "metric-good" : wcpm >= 17 ? "metric-watch" : "metric-risk";
+  return "";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;"
+  })[char]);
+}
+
+function titleCase(text) {
+  return String(text || "").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function shortDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString([], { month: "numeric", day: "numeric" });
+}
+
+byId("printProfile").addEventListener("click", () => window.print());
+byId("backTeach").addEventListener("click", () => {
+  const { group } = selectedContext();
+  location.href = `TeachToday.html?group=${encodeURIComponent(group.id || "")}`;
+});
+byId("compareGroup").addEventListener("click", () => {
+  comparisonScope = "group";
+  render();
+});
+byId("compareRoster").addEventListener("click", () => {
+  comparisonScope = "all";
+  render();
+});
+
+render();

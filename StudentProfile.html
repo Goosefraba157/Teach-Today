@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Teach Today">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Student Profile</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="student-profile.css">
+  </head>
+  <body>
+    <header class="profile-header">
+      <div>
+        <p>Student profile</p>
+        <h1 id="studentName">Student</h1>
+        <span id="studentMeta"></span>
+      </div>
+      <div class="header-actions">
+        <button id="printProfile" type="button">Print</button>
+        <button id="backTeach" type="button">Back to Teach Today</button>
+      </div>
+    </header>
+
+    <main class="profile-shell">
+      <section class="profile-card profile-roster-card">
+        <div class="profile-roster-head">
+          <div>
+            <h2>Students</h2>
+            <p>Switch profiles or compare data</p>
+          </div>
+          <div class="compare-controls">
+            <button id="compareGroup" class="active" type="button">Group</button>
+            <button id="compareRoster" type="button">All roster</button>
+          </div>
+        </div>
+        <div id="profileStudentButtons" class="profile-student-buttons"></div>
+      </section>
+
+      <section class="profile-card comparison-card">
+        <div class="section-title">
+          <h2>Student Comparison</h2>
+          <p id="comparisonScopeLabel">Current group, ranked best to support-needed</p>
+        </div>
+        <div class="comparison-tables">
+          <article>
+            <h3>Decoding / Charting</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Student</th>
+                    <th>Correct</th>
+                    <th>sec/15w</th>
+                    <th>WCPM</th>
+                    <th>Auto</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="decodeCompareRows"></tbody>
+              </table>
+            </div>
+          </article>
+          <article>
+            <h3>Encoding / Spelling</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Student</th>
+                    <th>Misses</th>
+                    <th>Recent</th>
+                    <th>Top area</th>
+                    <th>Last item</th>
+                  </tr>
+                </thead>
+                <tbody id="encodeCompareRows"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="status-card" id="statusCard">
+        <div>
+          <span id="statusDot" class="status-dot gray"></span>
+          <strong id="statusLabel">No data yet</strong>
+        </div>
+        <p id="nextRecommendation">Save records to generate recommendations.</p>
+      </section>
+
+      <section class="metric-grid">
+        <article id="metricLessonsCard"><strong id="totalLessons">0</strong><span>Saved lessons</span></article>
+        <article id="metricCorrectCard"><strong id="avgCorrect">--</strong><span>Avg correct / 15</span></article>
+        <article id="metricWcpmCard"><strong id="avgWcpm">--</strong><span>Avg WCPM</span></article>
+        <article id="metricSecondsCard"><strong id="avgSeconds">--</strong><span>Avg sec/15w</span></article>
+        <article id="metricAutoCard"><strong id="automaticityRate">0%</strong><span>Automaticity</span></article>
+        <article id="metricSubstepCard"><strong id="lastSubstep">--</strong><span>Last substep</span></article>
+      </section>
+
+      <section class="metric-grid dictation-metric-grid">
+        <article id="dictationMissTotalCard" class="dictation-metric"><strong id="dictationMissTotal">0</strong><span>Dictation misses</span></article>
+        <article id="dictationRecentCard" class="dictation-metric"><strong id="dictationRecent">0</strong><span>Recent misses</span></article>
+        <article id="dictationHotspotCard" class="dictation-metric"><strong id="dictationHotspot">--</strong><span>Top dictation area</span></article>
+        <article id="dictationLastCard" class="dictation-metric"><strong id="dictationLast">--</strong><span>Last dictation item</span></article>
+      </section>
+
+      <section class="profile-card observation-card">
+        <div class="section-title">
+          <h2>Diagnostic Observations</h2>
+          <p>Fast-glance instructional signals</p>
+        </div>
+        <div id="diagnosticBubbles" class="diagnostic-bubbles"></div>
+      </section>
+
+      <section class="profile-card">
+        <div class="section-title">
+          <h2>Performance Trends</h2>
+          <p>Accuracy, WCPM, and sec/15w over time</p>
+        </div>
+        <div id="trendChart" class="chart-wrap"></div>
+      </section>
+
+      <section class="two-column">
+        <article class="profile-card">
+          <div class="section-title">
+            <h2>Frequent Misses</h2>
+            <p>Words marked incorrect during charting</p>
+          </div>
+          <div id="missedWords" class="chip-list"></div>
+        </article>
+        <article class="profile-card">
+          <div class="section-title">
+            <h2>Marked For Review</h2>
+            <p>Words tapped during Teach Today</p>
+          </div>
+          <div id="markedWords" class="chip-list"></div>
+        </article>
+      </section>
+
+      <section class="profile-card insight-card">
+        <div class="section-title">
+          <h2>Pattern Insights</h2>
+          <p>Likely teaching targets from missed and review words</p>
+        </div>
+        <div id="patternInsights" class="insight-grid"></div>
+      </section>
+
+      <section class="profile-card charting-sheet-card">
+        <div class="section-title">
+          <h2>Charting Sheet</h2>
+          <p>Section 4 charting, filled from saved live records</p>
+        </div>
+        <div class="charting-sheet-wrap">
+          <table id="chartingSheet" class="charting-sheet"></table>
+        </div>
+      </section>
+
+      <section class="profile-card dictation-card">
+        <div class="section-title">
+          <h2>Dictation Profile</h2>
+          <p>Spelling misses saved during Section 8</p>
+        </div>
+        <div class="dictation-layout">
+          <article>
+            <h3>Frequent Dictation Misses</h3>
+            <div id="dictationMisses" class="chip-list danger-chips"></div>
+          </article>
+          <article>
+            <h3>Miss Type Pattern</h3>
+            <div id="dictationCategories" class="category-bars"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="profile-card">
+        <div class="section-title">
+          <h2>Lesson Records</h2>
+          <p>All saved charting data for this student</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Substep</th>
+                <th>Page</th>
+                <th>Half</th>
+                <th>Correct</th>
+                <th>Wrong</th>
+                <th>sec/15w</th>
+                <th>WCPM</th>
+                <th>Flags</th>
+                <th>Wrong words</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="recordRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="profile-card">
+        <div class="section-title">
+          <h2>Dictation Records</h2>
+          <p>One-tap spelling misses from live dictation</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Substep</th>
+                <th>Area</th>
+                <th>Item missed</th>
+              </tr>
+            </thead>
+            <tbody id="dictationRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="student-profile.js"></script>
+    <script src="pwa-register.js"></script>
+  </body>
+</html>
