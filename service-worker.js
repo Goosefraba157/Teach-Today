@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-05-05-wilson-lp-expanded-1";
+const CACHE_NAME = "teach-today-offline-v2026-05-05-thin-toolbar-4";
 
 const APP_SHELL = [
   "./",

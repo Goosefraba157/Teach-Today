@@ -53,10 +53,10 @@ button {
   top: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1.2fr);
-  gap: 8px 12px;
+  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+  gap: 3px 8px;
   border-bottom: 1px solid #d7dee8;
-  padding: 12px;
+  padding: 5px 8px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
 }
@@ -74,69 +74,112 @@ button {
 
 .teach-bar h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 13px;
   line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lesson-file-name {
   display: block;
-  margin-top: 4px;
+  max-width: 100%;
+  margin-top: 1px;
   color: #075985;
-  font-size: 13px;
+  font-size: 8px;
   font-weight: 950;
-  line-height: 1.2;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.brand-block > div {
   min-width: 0;
 }
 
 .app-logo {
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
   border: 1px solid #d7dee8;
-  border-radius: 14px;
+  border-radius: 7px;
   object-fit: cover;
   background: #fff;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
 }
 
 .save-status {
-  margin: 6px 0 0;
+  margin: 1px 0 0;
   color: var(--teal);
-  font-size: 12px;
+  font-size: 8px;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bar-actions {
-  display: grid;
-  grid-template-columns: minmax(190px, 1fr) repeat(7, auto);
-  gap: 8px;
+  display: flex;
+  gap: 1px;
   align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 1px;
+}
+
+.teach-bar button,
+.teach-bar select {
+  min-height: 20px;
+  border-radius: 5px;
+  padding: 1px 3px;
+  font-size: 7px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bar-actions select {
+  width: 86px;
+  flex: 0 0 86px;
+}
+
+.bar-actions button {
+  flex: 0 0 auto;
 }
 
 .lesson-tabs {
+  grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 3px;
   align-content: start;
-  justify-content: flex-end;
-  min-height: 36px;
+  justify-content: flex-start;
+  min-height: 24px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 1px 0;
 }
 
 .lesson-tab {
-  min-height: 34px;
-  max-width: 170px;
+  min-height: 22px;
+  max-width: 130px;
+  flex: 0 0 auto;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 2px 7px;
   overflow: hidden;
   background: #eef6ff;
   color: #075985;
-  font-size: 12px;
+  font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -152,34 +195,34 @@ button {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: start;
+  gap: 6px;
+  align-items: center;
   border: 1px solid #d7dee8;
-  border-radius: 14px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 3px 6px;
   background: #f8fafc;
 }
 
 .student-roster-bar p {
-  margin-bottom: 6px;
+  display: none;
 }
 
 .student-roster-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .student-roster-actions button {
-  min-height: 38px;
+  min-height: 24px;
   border-radius: 999px;
 }
 
 #ttAddRosterStudent {
-  min-width: 42px;
+  min-width: 26px;
   border-color: var(--teal);
   background: var(--teal);
   color: #fff;
-  font-size: 22px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -187,10 +230,10 @@ button {
   grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 4px;
   border: 1px solid #fed7aa;
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 4px;
   background: #fff7ed;
 }
 
@@ -217,58 +260,62 @@ button {
 .group-snapshot {
   grid-column: 1 / -1;
   border: 1px solid #bae6fd;
-  border-left: 7px solid #0ea5e9;
-  border-radius: 12px;
-  padding: 10px;
+  border-left: 3px solid #0ea5e9;
+  border-radius: 8px;
+  max-height: 70px;
+  overflow-y: auto;
+  padding: 4px 6px;
   background: #f0f9ff;
 }
 
 .snapshot-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   align-items: start;
-  margin-bottom: 8px;
+  margin-bottom: 3px;
 }
 
 .snapshot-head strong {
   display: block;
   color: #075985;
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 950;
 }
 
 .snapshot-head span,
 .snapshot-head small {
   color: #0369a1;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 850;
 }
 
 .snapshot-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-  gap: 8px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .snapshot-student {
+  flex: 0 0 245px;
   border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 4px;
   background: #fff;
 }
 
 .snapshot-student h3 {
-  margin: 0 0 5px;
+  margin: 0 0 2px;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 10px;
 }
 
 .snapshot-student p {
-  margin: 0 0 5px;
+  margin: 0 0 2px;
   color: #334155;
-  font-size: 12px;
-  line-height: 1.25;
+  font-size: 9px;
+  line-height: 1.12;
 }
 
 .snapshot-student p strong {
@@ -291,9 +338,9 @@ button {
 
 .snapshot-dictation {
   border-top: 1px solid #e0f2fe;
-  padding-top: 5px;
-  font-size: 12px;
-  line-height: 1.25;
+  padding-top: 2px;
+  font-size: 9px;
+  line-height: 1.12;
 }
 
 .snapshot-dictation b {
@@ -348,12 +395,12 @@ button {
 }
 
 .attendance-chip {
-  min-height: 36px;
+  min-height: 24px;
   border-radius: 999px;
   border-color: #fed7aa;
   background: #fff;
   color: #9a3412;
-  font-size: 13px;
+  font-size: 10px;
 }
 
 .attendance-chip.present {
@@ -364,16 +411,22 @@ button {
 
 .front-students {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .front-student {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: #f8fafc;
+  font-size: 10px;
+  flex: 0 0 auto;
 }
 
 .front-student.active {
@@ -925,7 +978,7 @@ body.presentation-mode #ttEditSection2Cards {
 
 .quick-jump {
   position: sticky;
-  top: 118px;
+  top: 68px;
   z-index: 9;
   display: grid;
   grid-template-columns: repeat(10, 1fr);
@@ -950,7 +1003,7 @@ body.presentation-mode #ttEditSection2Cards {
 
 .teach-card {
   position: relative;
-  scroll-margin-top: 175px;
+  scroll-margin-top: 112px;
   margin-bottom: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1018,7 +1071,7 @@ body.presentation-mode #ttEditSection2Cards {
 
 .data-status-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
@@ -2997,7 +3050,7 @@ body.presentation-mode #ttEditSection2Cards {
   }
 
   .bar-actions {
-    grid-template-columns: 1fr;
+    justify-content: flex-start;
   }
 
   .lesson-tabs {
@@ -3013,7 +3066,7 @@ body.presentation-mode #ttEditSection2Cards {
   }
 
   .quick-jump {
-    top: 190px;
+    top: 130px;
     grid-template-columns: repeat(5, 1fr);
   }
 

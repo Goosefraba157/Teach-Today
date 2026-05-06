@@ -110,16 +110,29 @@ function ttFillSectionRefs(lesson) {
 function ttRenderDataCenter() {
   const lastSave = appState.lastSavedAt ? new Date(appState.lastSavedAt) : null;
   const lastBackup = localStorage.getItem("teachToday.lastBackupAt");
+  const lastCloudSync = localStorage.getItem("teachToday.lastCloudSyncAt");
+  const cloudStatus = localStorage.getItem("teachToday.cloudSyncStatus") || "Choose a local backup folder to save a file on this Mac.";
+  const cloudFolder = localStorage.getItem("teachToday.cloudSyncFolderName");
+  const lastFirebaseSync = localStorage.getItem("teachToday.lastFirebaseSyncAt");
+  const firebaseStatus = localStorage.getItem("teachToday.firebaseSyncStatus") || "Firebase internet sync is ready.";
   const records = appState.masterRecords?.length || 0;
   const lessons = (appState.groups || []).reduce((sum, group) => sum + (group.history?.length || 0), 0);
   const dictation = (appState.groups || []).reduce((sum, group) => sum + (group.dictationMisses?.length || 0), 0);
   const encoding = (appState.groups || []).reduce((sum, group) => sum + (group.encodingObservations?.length || 0), 0);
   const lastSaveEl = ttById("ttLastInternalSave");
   const lastBackupEl = ttById("ttLastBackup");
+  const lastCloudSyncEl = ttById("ttLastCloudSync");
+  const lastFirebaseSyncEl = ttById("ttLastFirebaseSync");
   const countsEl = ttById("ttDataCounts");
+  const cloudStatusEl = ttById("ttCloudSyncStatus");
+  const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
+  if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
+  if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced";
   if (countsEl) countsEl.textContent = `${records} / ${lessons}${dictation || encoding ? ` / ${dictation + encoding}` : ""}`;
+  if (cloudStatusEl) cloudStatusEl.textContent = `${cloudFolder ? `${cloudFolder}: ` : ""}${cloudStatus} Local browser storage is still saved first.`;
+  if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
 }
 
 function formatDateTime(date) {
@@ -2575,15 +2588,170 @@ function ttPlanNumberedWords(words = [], mode = "") {
   return `<ol class="word-grid ${mode}">${items.map((word, index) => `<li><span>${index + 1}.</span><strong>${escapeHtml(word)}</strong></li>`).join("")}</ol>`;
 }
 
-function ttBackupData() {
-  const now = new Date();
-  const payload = {
+const ttCloudSyncFileName = "teach-today-cloud-sync.json";
+const ttCloudSyncDbName = "teachTodayCloudSync.v1";
+const ttCloudSyncStore = "handles";
+const ttCloudSyncHandleKey = "syncDirectory";
+let ttCloudSyncTimer = null;
+let ttCloudSyncBusy = false;
+let ttCloudSyncPending = false;
+
+const ttFirebaseConfig = {
+  apiKey: "AIzaSyAQxODRvRAINGXfSxlqTxiyhkeisIPQLEs",
+  authDomain: "teach-today-35149.firebaseapp.com",
+  projectId: "teach-today-35149",
+  storageBucket: "teach-today-35149.firebasestorage.app",
+  messagingSenderId: "506415947825",
+  appId: "1:506415947825:web:9415befdc50d928eccb510"
+};
+const ttFirebaseDocPath = ["teachTodaySync", "main"];
+const ttFirebaseSdkVersion = "10.12.5";
+const ttFirebaseChunkSize = 350000;
+let ttFirebaseSdkPromise = null;
+let ttFirebaseTimer = null;
+let ttFirebaseBusy = false;
+let ttFirebasePending = false;
+
+function ttBackupPayload(now = new Date()) {
+  return {
     kind: "TeachTodayBackup",
     version: 1,
     exportedAt: now.toISOString(),
     appState,
     section2CardOverrides: section2CardOverrides()
   };
+}
+
+function ttBackupFileStamp(date = new Date()) {
+  const year = date.getFullYear();
+  const monthNumber = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const monthName = date.toLocaleString("en-US", { month: "short" });
+  const hour12 = date.getHours() % 12 || 12;
+  const hour = String(hour12).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const meridiem = date.getHours() >= 12 ? "pm" : "am";
+  return `${year}-${monthNumber}-${day}-${monthName}-${hour}-${minute}-${meridiem}`;
+}
+
+async function ttFirebaseSdk() {
+  if (ttFirebaseSdkPromise) return ttFirebaseSdkPromise;
+  ttFirebaseSdkPromise = Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-firestore.js`)
+  ]).then(([appModule, firestoreModule]) => {
+    const firebaseApp = appModule.initializeApp(ttFirebaseConfig);
+    const firestoreDb = firestoreModule.getFirestore(firebaseApp);
+    return { ...firestoreModule, firestoreDb };
+  });
+  return ttFirebaseSdkPromise;
+}
+
+async function ttFirebaseReadPayload() {
+  const { firestoreDb, doc, getDoc } = await ttFirebaseSdk();
+  const snapshot = await getDoc(doc(firestoreDb, ...ttFirebaseDocPath));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  if (data?.payload) return data.payload;
+  if (!data?.chunkCount) return null;
+  const chunks = [];
+  for (let index = 0; index < data.chunkCount; index += 1) {
+    const id = String(index).padStart(4, "0");
+    const chunkSnapshot = await getDoc(doc(firestoreDb, ...ttFirebaseDocPath, "chunks", id));
+    if (!chunkSnapshot.exists()) return null;
+    chunks.push(chunkSnapshot.data()?.text || "");
+  }
+  return JSON.parse(chunks.join(""));
+}
+
+async function ttFirebaseRestoreIfNewer() {
+  const payload = await ttFirebaseReadPayload();
+  const restoredState = payload?.appState || payload;
+  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
+  if (ttPayloadTime(payload) <= ttLocalSaveTime() + 1000) return false;
+  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
+  if (payload.section2CardOverrides) {
+    localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
+  }
+  localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
+  localStorage.setItem("teachToday.firebaseSyncStatus", "Loaded newer Firebase data.");
+  location.reload();
+  return true;
+}
+
+async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
+  if (ttFirebaseBusy) {
+    ttFirebasePending = true;
+    return;
+  }
+  ttFirebaseBusy = true;
+  try {
+    const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+    const now = new Date();
+    const payload = ttBackupPayload(now);
+    const serialized = JSON.stringify(payload);
+    const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
+    for (let index = 0; index < chunkCount; index += 1) {
+      const id = String(index).padStart(4, "0");
+      await setDoc(doc(firestoreDb, ...ttFirebaseDocPath, "chunks", id), {
+        index,
+        text: serialized.slice(index * ttFirebaseChunkSize, (index + 1) * ttFirebaseChunkSize)
+      });
+    }
+    await setDoc(doc(firestoreDb, ...ttFirebaseDocPath), {
+      kind: "TeachTodayFirebaseSync",
+      version: 2,
+      updatedAt: serverTimestamp(),
+      exportedAt: payload.exportedAt,
+      chunkCount,
+      chunkSize: ttFirebaseChunkSize,
+      byteLength: new Blob([serialized]).size
+    });
+    localStorage.setItem("teachToday.lastFirebaseSyncAt", now.toISOString());
+    localStorage.setItem("teachToday.firebaseSyncStatus", reason);
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    console.warn("Teach Today Firebase sync failed:", error);
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase could not save (${detail}).`);
+  } finally {
+    ttFirebaseBusy = false;
+    ttRenderDataCenter();
+    if (ttFirebasePending) {
+      ttFirebasePending = false;
+      ttQueueFirebaseSync();
+    }
+  }
+}
+
+function ttQueueFirebaseSync() {
+  clearTimeout(ttFirebaseTimer);
+  ttFirebaseTimer = setTimeout(() => ttFirebaseSyncWrite(), 1200);
+}
+
+async function ttSyncFirebaseAndLocalNow() {
+  await Promise.all([
+    ttFirebaseSyncWrite("Saved to Firebase now."),
+    ttCloudSyncWrite("Saved local backup file now.")
+  ]);
+}
+
+async function ttInitFirebaseSync() {
+  try {
+    await ttFirebaseRestoreIfNewer();
+    ttQueueFirebaseSync();
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase internet sync is on.");
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    console.warn("Teach Today Firebase startup failed:", error);
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase is not reachable yet (${detail}).`);
+  } finally {
+    ttRenderDataCenter();
+  }
+}
+
+function ttBackupData() {
+  const now = new Date();
+  const payload = ttBackupPayload(now);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -2595,6 +2763,182 @@ function ttBackupData() {
   localStorage.setItem("teachToday.lastBackupAt", now.toISOString());
   ttRenderDataCenter();
 }
+
+function ttCloudSyncSupported() {
+  return Boolean(window.showDirectoryPicker && window.indexedDB);
+}
+
+function ttOpenCloudSyncDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ttCloudSyncDbName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(ttCloudSyncStore);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function ttCloudSyncStoreValue(key, value) {
+  const db = await ttOpenCloudSyncDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ttCloudSyncStore, "readwrite");
+    transaction.objectStore(ttCloudSyncStore).put(value, key);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function ttCloudSyncGetValue(key) {
+  const db = await ttOpenCloudSyncDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ttCloudSyncStore, "readonly");
+    const request = transaction.objectStore(ttCloudSyncStore).get(key);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function ttCloudSyncPermission(handle, write = false, request = false) {
+  if (!handle) return false;
+  const options = { mode: write ? "readwrite" : "read" };
+  if ((await handle.queryPermission(options)) === "granted") return true;
+  if (!request) return false;
+  return (await handle.requestPermission(options)) === "granted";
+}
+
+async function ttCloudSyncReadPayload(handle) {
+  try {
+    const fileHandle = await handle.getFileHandle(ttCloudSyncFileName);
+    const file = await fileHandle.getFile();
+    return JSON.parse(await file.text());
+  } catch {
+    return null;
+  }
+}
+
+function ttPayloadTime(payload) {
+  return new Date(payload?.exportedAt || payload?.appState?.lastSavedAt || 0).getTime() || 0;
+}
+
+function ttLocalSaveTime() {
+  return new Date(appState?.lastSavedAt || 0).getTime() || 0;
+}
+
+async function ttCloudSyncRestoreIfNewer(handle) {
+  const payload = await ttCloudSyncReadPayload(handle);
+  const restoredState = payload?.appState || payload;
+  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
+  if (ttPayloadTime(payload) <= ttLocalSaveTime() + 1000) return false;
+  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
+  if (payload.section2CardOverrides) {
+    localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
+  }
+  localStorage.setItem("teachToday.lastCloudSyncAt", payload.exportedAt || new Date().toISOString());
+  localStorage.setItem("teachToday.cloudSyncStatus", "Loaded newer cloud data.");
+  location.reload();
+  return true;
+}
+
+async function ttCloudSyncWrite(reason = "Saved local backup file.") {
+  if (!ttCloudSyncSupported()) {
+    localStorage.setItem("teachToday.cloudSyncStatus", "Local folder backup is not supported in this browser.");
+    ttRenderDataCenter();
+    return;
+  }
+  if (ttCloudSyncBusy) {
+    ttCloudSyncPending = true;
+    return;
+  }
+  ttCloudSyncBusy = true;
+  try {
+    const handle = await ttCloudSyncGetValue(ttCloudSyncHandleKey);
+    if (!handle) {
+      localStorage.setItem("teachToday.cloudSyncStatus", "Choose a local backup folder to save a file on this Mac.");
+      return;
+    }
+    if (!(await ttCloudSyncPermission(handle, true, false))) {
+      localStorage.setItem("teachToday.cloudSyncStatus", "Open Data Center and choose the local folder again to reconnect.");
+      return;
+    }
+    const now = new Date();
+    const payload = ttBackupPayload(now);
+    const backupText = JSON.stringify(payload, null, 2);
+    const datedFileName = `teach-today-backup-${ttBackupFileStamp(now)}.json`;
+    const datedFileHandle = await handle.getFileHandle(datedFileName, { create: true });
+    const datedWritable = await datedFileHandle.createWritable();
+    await datedWritable.write(backupText);
+    await datedWritable.close();
+    const latestFileHandle = await handle.getFileHandle(ttCloudSyncFileName, { create: true });
+    const latestWritable = await latestFileHandle.createWritable();
+    await latestWritable.write(backupText);
+    await latestWritable.close();
+    localStorage.setItem("teachToday.lastCloudSyncAt", now.toISOString());
+    localStorage.setItem("teachToday.cloudSyncStatus", `${reason} File: ${datedFileName}.`);
+  } catch {
+    localStorage.setItem("teachToday.cloudSyncStatus", "Local backup file could not save. Browser storage is still saved.");
+  } finally {
+    ttCloudSyncBusy = false;
+    ttRenderDataCenter();
+    if (ttCloudSyncPending) {
+      ttCloudSyncPending = false;
+      ttQueueCloudSync();
+    }
+  }
+}
+
+function ttQueueCloudSync() {
+  clearTimeout(ttCloudSyncTimer);
+  ttCloudSyncTimer = setTimeout(() => ttCloudSyncWrite(), 900);
+  ttQueueFirebaseSync();
+}
+
+async function ttConnectCloudSync() {
+  if (!ttCloudSyncSupported()) {
+    alert("This browser cannot write to a local folder automatically. Use Chrome or Edge on your Mac, or keep using backup files.");
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+    if (!(await ttCloudSyncPermission(handle, true, true))) {
+      alert("Teach Today needs permission to write the sync file in that folder.");
+      return;
+    }
+    await ttCloudSyncStoreValue(ttCloudSyncHandleKey, handle);
+    localStorage.setItem("teachToday.cloudSyncFolderName", handle.name || "Local backup folder");
+    const restored = await ttCloudSyncRestoreIfNewer(handle);
+    if (!restored) await ttCloudSyncWrite("Connected and saved local backup file.");
+  } catch {
+    localStorage.setItem("teachToday.cloudSyncStatus", "Local backup folder was not connected.");
+    ttRenderDataCenter();
+  }
+}
+
+async function ttInitCloudSync() {
+  if (!ttCloudSyncSupported()) {
+    localStorage.setItem("teachToday.cloudSyncStatus", "Local folder backup is not supported in this browser.");
+    ttRenderDataCenter();
+    return;
+  }
+  try {
+    const handle = await ttCloudSyncGetValue(ttCloudSyncHandleKey);
+    if (!handle) {
+      localStorage.setItem("teachToday.cloudSyncStatus", "Choose a local backup folder to save a file on this Mac.");
+      ttRenderDataCenter();
+      return;
+    }
+    if (!(await ttCloudSyncPermission(handle, false, false))) {
+      localStorage.setItem("teachToday.cloudSyncStatus", "Open Data Center and choose the local folder again to reconnect.");
+      ttRenderDataCenter();
+      return;
+    }
+    await ttCloudSyncRestoreIfNewer(handle);
+    ttQueueCloudSync();
+  } catch {
+    localStorage.setItem("teachToday.cloudSyncStatus", "Local file backup is paused. Browser storage is still saved.");
+    ttRenderDataCenter();
+  }
+}
+
+window.teachTodayQueueCloudSync = ttQueueCloudSync;
 
 function ttRestoreDataFromFile(file) {
   if (!file) return;
@@ -4417,6 +4761,9 @@ function ttBind() {
   });
   ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
+  ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
+  ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
+  ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
@@ -4540,6 +4887,8 @@ function ttOpenStudentProfile() {
 }
 
 ttLoadPlanFromUrl() || ttBuildLesson();
+ttInitCloudSync();
+ttInitFirebaseSync();
 ttBind();
 ttRender();
 ttToggleLaser(true);

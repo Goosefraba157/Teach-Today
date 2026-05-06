@@ -381,6 +381,9 @@ function loadState() {
 function saveState() {
   appState.lastSavedAt = new Date().toISOString();
   localStorage.setItem(storageKey, JSON.stringify(appState));
+  if (typeof window.teachTodayQueueCloudSync === "function") {
+    window.teachTodayQueueCloudSync();
+  }
 }
 
 localStorage.setItem(storageKey, JSON.stringify(appState));

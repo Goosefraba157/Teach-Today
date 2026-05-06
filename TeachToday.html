@@ -72,18 +72,18 @@
           <p id="ttSaveStatus" class="save-status">Lesson not saved yet</p>
         </div>
       </div>
-      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs"></div>
       <div class="bar-actions">
         <select id="ttGroup"></select>
-        <button id="ttPresent" type="button">Present</button>
-        <button id="ttSaveLesson" type="button">Save Lesson</button>
-        <button id="ttPdfPlan" type="button">PDF Plan</button>
-        <button id="ttWilsonPlan" type="button">Wilson LP</button>
-        <button id="ttRefresh" type="button">New lesson</button>
-        <button id="ttSavedToggle" type="button">Saved lessons</button>
-        <button id="ttDataToggle" type="button">Data Center</button>
-        <button id="ttProfile" type="button">Student profile</button>
+        <button id="ttPresent" type="button" title="Present">Present</button>
+        <button id="ttSaveLesson" type="button" title="Save Lesson">Save</button>
+        <button id="ttPdfPlan" type="button" title="PDF Plan">PDF</button>
+        <button id="ttWilsonPlan" type="button" title="Wilson LP">Wilson</button>
+        <button id="ttRefresh" type="button" title="New lesson">New</button>
+        <button id="ttSavedToggle" type="button" title="Saved lessons">Saved</button>
+        <button id="ttDataToggle" type="button" title="Data Center">Data</button>
+        <button id="ttProfile" type="button" title="Student profile">Profile</button>
       </div>
+      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs"></div>
       <section class="student-roster-bar" aria-label="Lesson students">
         <div>
           <p>Students</p>
@@ -218,15 +218,21 @@
         <div class="data-status-grid">
           <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
           <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
+          <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
+          <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
           <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
         </div>
         <div class="data-actions">
           <button id="ttBackupData" type="button">Save backup file</button>
+          <button id="ttConnectCloudSync" type="button">Choose local folder</button>
+          <button id="ttSyncCloudNow" type="button">Save local file now</button>
+          <button id="ttFirebaseSyncNow" type="button">Firebase + local sync now</button>
           <button id="ttRestoreData" type="button">Restore backup</button>
           <button id="ttExportCsv" type="button">Export spreadsheet</button>
         </div>
         <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
-        <p class="data-note">This app can run from the iPad Home Screen after it is opened once. Save the backup file to iCloud Drive or Google Drive when you want to protect records or move the same data to another device.</p>
+        <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
+        <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
       </section>
 
       <section id="section1" class="teach-card">
