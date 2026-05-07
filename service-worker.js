@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-05-05-thin-toolbar-4";
+const CACHE_NAME = "teach-today-offline-v2026-05-06-student-lesson-calendar-1";
 
 const APP_SHELL = [
   "./",
@@ -19,6 +19,7 @@ const APP_SHELL = [
   "./dictation-index.js",
   "./sample-blue-group-data.js",
   "./wilson-lp-template.js",
+  "./wilson-hfw-data.js",
   "./vendor/pdf-lib.min.js",
   "./pwa-register.js",
   "./manifest.webmanifest",

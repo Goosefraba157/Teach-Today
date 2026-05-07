@@ -2019,6 +2019,9 @@ function saveLiveRecord(card, options = {}) {
   const skill = scopeMap.find((item) => item.id === lesson.substep);
   const student = group.activeStudent || group.students[0] || "";
   if (!student) return;
+  if (typeof window.ttEnsureCurrentLessonSavedForData === "function") {
+    window.ttEnsureCurrentLessonSavedForData();
+  }
   stopLiveTimer(card);
 
   const chartHalf = activeChartHalf(card);
@@ -2041,6 +2044,9 @@ function saveLiveRecord(card, options = {}) {
   const wrongWords = wordRecords.filter((item) => item.section === chartHalf && !item.correct).map((item) => item.word);
   const recommendation = recommendationFromScore(correct, seconds);
   const notes = card.querySelector(".live-notes").value.trim();
+  const lessonMeta = typeof window.ttCurrentLessonRecordMeta === "function"
+    ? window.ttCurrentLessonRecordMeta(lesson)
+    : { lessonId: lesson.id || "" };
 
   const record = {
     id: `record-${Date.now()}`,
@@ -2066,7 +2072,8 @@ function saveLiveRecord(card, options = {}) {
     wrongWords,
     wordRecords,
     notes,
-    recommendation
+    recommendation,
+    ...lessonMeta
   };
 
   appState.masterRecords ||= [];

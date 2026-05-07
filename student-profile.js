@@ -43,14 +43,18 @@ function render() {
   const recentDictation = dictationMisses.slice(-5);
   const topDictationCategory = topCount(dictationMisses.map((miss) => miss.category));
   const lastDictation = dictationMisses.at(-1);
+  const studentLessons = lessonsForStudent(data, group, student, records, dictationMisses.concat(encodingObservations));
 
   byId("studentName").textContent = student || "No student selected";
   byId("studentMeta").textContent = `${group.name || "No group"} - ${records.length} charting record${records.length === 1 ? "" : "s"} - ${dictationMisses.length} dictation miss${dictationMisses.length === 1 ? "" : "es"}`;
   byId("statusDot").className = `status-dot ${status.color}`;
   byId("statusLabel").textContent = status.label;
   byId("nextRecommendation").textContent = last?.recommendation || "Save charting records to generate next-step recommendations.";
+  const sourceRecord = last?.planId ? last : lastDictation?.planId ? lastDictation : null;
+  const source = sourceRecord?.lessonTitle || last?.lessonTitle || lastDictation?.lessonTitle || "No linked lesson yet";
+  byId("lessonSource").textContent = `Latest source lesson: ${source}`;
 
-  byId("totalLessons").textContent = records.length;
+  byId("totalLessons").textContent = studentLessons.length;
   byId("avgCorrect").textContent = average(recent, (record) => Number(record.correct || 0)) || "--";
   byId("avgWcpm").textContent = average(recent, wcpmForRecord) || "--";
   byId("avgSeconds").textContent = average(recent, (record) => Number(record.seconds || 0)) || "--";
@@ -80,9 +84,173 @@ function render() {
   renderPatternInsights(records, marked, dictationMisses.concat(encodingObservations));
   renderDiagnosticBubbles({ records, recent, marked, dictationMisses: dictationMisses.concat(encodingObservations) });
   renderCategoryBars(dictationMisses.concat(encodingObservations));
+  renderStudentLessons(studentLessons, group);
+  renderAttendanceCalendar(studentLessons, group);
   renderChartingSheet(records);
   renderRows(records);
   renderDictationRows(dictationMisses);
+}
+
+function dateKeyLocal(value) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function lessonDateKey(plan) {
+  if (plan?.dailyKey) return plan.dailyKey;
+  const lesson = plan?.lessons?.[0] || {};
+  if (lesson.lessonDate) return dateKeyLocal(lesson.lessonDate);
+  const match = String(plan?.title || "").match(/\b([A-Z][a-z]+ \d{1,2}, \d{4})\b/);
+  if (match) return dateKeyLocal(match[1]);
+  return dateKeyLocal(plan?.savedAt || plan?.created);
+}
+
+function lessonDateLabel(dayKey, plan) {
+  const fromPlan = plan?.savedAt || plan?.created || dayKey;
+  const date = dayKey ? new Date(`${dayKey}T12:00:00`) : new Date(fromPlan);
+  if (Number.isNaN(date.getTime())) return dayKey || "";
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
+function latestPlanForDay(plans, dayKey) {
+  return plans
+    .filter((plan) => lessonDateKey(plan) === dayKey)
+    .sort((a, b) => new Date(b.savedAt || b.created || 0) - new Date(a.savedAt || a.created || 0))[0] || null;
+}
+
+function planIdsFromRecords(records) {
+  return new Set(records.map((record) => record.planId).filter(Boolean));
+}
+
+function linkedPlanForDay(plans, dayKey, records) {
+  const linkedIds = records
+    .filter((record) => dateKeyLocal(record.date || record.displayDate) === dayKey)
+    .map((record) => record.planId)
+    .filter(Boolean);
+  for (const planId of linkedIds) {
+    const plan = plans.find((item) => item.id === planId);
+    if (plan) return plan;
+  }
+  return null;
+}
+
+function lessonsForStudent(data, group, student, records, encodingRecords) {
+  if (!student) return [];
+  const plans = (group.history || []).filter((plan) => plan?.lessons?.[0]);
+  const attendanceByDay = data.attendanceRecords?.[group.id] || {};
+  const evidenceDays = new Set();
+  records.forEach((record) => {
+    const key = dateKeyLocal(record.date || record.displayDate);
+    if (key) evidenceDays.add(key);
+  });
+  encodingRecords.forEach((record) => {
+    const key = dateKeyLocal(record.date || record.displayDate);
+    if (key) evidenceDays.add(key);
+  });
+  Object.keys(attendanceByDay).forEach((dayKey) => {
+    if (latestPlanForDay(plans, dayKey)) evidenceDays.add(dayKey);
+  });
+
+  const explicitPlanIds = new Set([...planIdsFromRecords(records), ...planIdsFromRecords(encodingRecords)]);
+  explicitPlanIds.forEach((planId) => {
+    const plan = plans.find((item) => item.id === planId);
+    const key = lessonDateKey(plan);
+    if (key) evidenceDays.add(key);
+  });
+
+  return [...evidenceDays].sort((a, b) => b.localeCompare(a)).map((dayKey) => {
+    const dayRecords = records.concat(encodingRecords);
+    const plan = linkedPlanForDay(plans, dayKey, dayRecords)
+      || latestPlanForDay(plans, dayKey)
+      || plans.find((item) => explicitPlanIds.has(item.id))
+      || null;
+    const attendance = attendanceByDay[dayKey] || {};
+    const present = attendance[student] !== false;
+    const charting = records.filter((record) => dateKeyLocal(record.date || record.displayDate) === dayKey);
+    const encoding = encodingRecords.filter((record) => dateKeyLocal(record.date || record.displayDate) === dayKey);
+    const lesson = plan?.lessons?.[0] || {};
+    return {
+      dayKey,
+      dateLabel: lessonDateLabel(dayKey, plan),
+      planId: plan?.id || "",
+      title: plan?.title || lesson.title || "Saved lesson",
+      substep: lesson.substep || String(plan?.substep || "").split(" - ")[0] || "--",
+      wordlist: lesson.wordlistMeta || (lesson.wordlistPageNumber ? `Reader ${lesson.reader || ""}, p. ${lesson.wordlistPageNumber}` : ""),
+      present,
+      chartingCount: charting.length,
+      encodingCount: encoding.length
+    };
+  }).filter((item) => item.planId);
+}
+
+function renderStudentLessons(lessons, group) {
+  const container = byId("studentLessons");
+  if (!container) return;
+  if (!lessons.length) {
+    container.innerHTML = "<p class=\"empty-lessons\">No lessons are linked to this student yet.</p>";
+    return;
+  }
+  container.innerHTML = lessons.map((lesson) => `
+    <article class="student-lesson-card">
+      <div>
+        <strong>${escapeHtml(lesson.dateLabel)}</strong>
+        <span class="${lesson.present ? "present" : "absent"}">${escapeHtml(lesson.present ? "Present" : "Absent")}</span>
+      </div>
+      <div>
+        <h3>${escapeHtml(lesson.title)}</h3>
+        <p>${escapeHtml([lesson.substep, lesson.wordlist].filter(Boolean).join(" - "))}</p>
+        <small>${lesson.chartingCount} charting record${lesson.chartingCount === 1 ? "" : "s"} / ${lesson.encodingCount} spelling mark${lesson.encodingCount === 1 ? "" : "s"}</small>
+      </div>
+      <a href="TeachToday.html?group=${encodeURIComponent(group.id || "")}&plan=${encodeURIComponent(lesson.planId)}">Open lesson</a>
+    </article>
+  `).join("");
+}
+
+function monthKeyFromDay(dayKey) {
+  return String(dayKey || "").slice(0, 7);
+}
+
+function monthLabel(monthKey) {
+  const date = new Date(`${monthKey}-01T12:00:00`);
+  if (Number.isNaN(date.getTime())) return monthKey;
+  return date.toLocaleDateString([], { month: "long", year: "numeric" });
+}
+
+function renderAttendanceCalendar(lessons, group) {
+  const container = byId("attendanceCalendar");
+  if (!container) return;
+  if (!lessons.length) {
+    container.innerHTML = "<p class=\"empty-lessons\">No attendance is linked to lessons yet.</p>";
+    return;
+  }
+  const lessonsByDay = new Map(lessons.map((lesson) => [lesson.dayKey, lesson]));
+  const monthKeys = [...new Set(lessons.map((lesson) => monthKeyFromDay(lesson.dayKey)))].sort().reverse();
+  container.innerHTML = monthKeys.map((monthKey) => {
+    const [year, month] = monthKey.split("-").map(Number);
+    const first = new Date(year, month - 1, 1);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const blanks = Array.from({ length: first.getDay() }, () => "<span class=\"calendar-blank\"></span>").join("");
+    const days = Array.from({ length: daysInMonth }, (_, index) => {
+      const day = index + 1;
+      const dayKey = `${monthKey}-${String(day).padStart(2, "0")}`;
+      const lesson = lessonsByDay.get(dayKey);
+      if (!lesson) return `<span class="calendar-day"><b>${day}</b></span>`;
+      const className = lesson.present ? "present" : "absent";
+      return `<a class="calendar-day ${className}" href="TeachToday.html?group=${encodeURIComponent(group.id || "")}&plan=${encodeURIComponent(lesson.planId)}" title="${escapeHtml(lesson.title)}"><b>${day}</b><small>${lesson.present ? "P" : "A"}</small></a>`;
+    }).join("");
+    return `
+      <article class="attendance-month">
+        <h3>${escapeHtml(monthLabel(monthKey))}</h3>
+        <div class="calendar-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+        <div class="calendar-grid">${blanks}${days}</div>
+      </article>
+    `;
+  }).join("");
 }
 
 function rosterStudents(data, group, scope = comparisonScope) {

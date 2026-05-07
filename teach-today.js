@@ -34,7 +34,50 @@ function ttBuildLesson() {
   const group = ttActiveGroup();
   const skill = activeStep(group);
   ttLesson = createLesson(group, skill, 0, 1);
-  ttSaveGeneratedLesson(ttLesson, group, skill);
+  return ttLesson;
+}
+
+function ttClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function ttDraftKey(group = ttActiveGroup()) {
+  return group?.id || "default";
+}
+
+function ttLoadDraftLesson() {
+  ttNormalizeTeachTodayState();
+  const draft = appState.lessonDrafts?.[ttDraftKey()];
+  if (!draft) return null;
+  ttLesson = ttClone(draft);
+  delete ttLesson.savedPlanId;
+  return ttLesson;
+}
+
+function ttSaveDraftLesson(options = {}) {
+  if (!ttLesson) return null;
+  ttNormalizeTeachTodayState();
+  const group = ttActiveGroup();
+  if (ttLesson.savedPlanId) ttForkSavedLessonDraft();
+  ttLesson.draftId ||= `teach-draft-${Date.now()}`;
+  ttLesson.draftSavedAt = new Date().toISOString();
+  appState.lessonDrafts[ttDraftKey(group)] = ttClone(ttLesson);
+  saveState();
+  if (options.status !== false) ttSetDraftSaveStatus(group, ttLesson);
+  return ttLesson;
+}
+
+function ttForkSavedLessonDraft() {
+  if (!ttLesson?.savedPlanId) return ttLesson;
+  const sourcePlan = ttCurrentPlan();
+  ttLesson = ttClone(ttLesson);
+  ttLesson.forkedFromPlanId = ttLesson.savedPlanId;
+  ttLesson.forkedFromLessonTitle = sourcePlan?.title || "";
+  ttLesson.id = `teach-draft-lesson-${Date.now()}`;
+  ttLesson.draftId = `teach-draft-${Date.now()}`;
+  ttLesson.draftCreatedAt = new Date().toISOString();
+  delete ttLesson.savedPlanId;
+  delete ttLesson.lessonSequence;
   return ttLesson;
 }
 
@@ -48,6 +91,7 @@ function ttRender() {
 
   ttById("ttTitle").textContent = `${group.name} - ${lesson.substep}`;
   ttById("ttLessonFile").textContent = plan?.title || ttLessonFileName(group, lesson);
+  if (!plan) ttSetDraftSaveStatus(group, lesson);
   ttById("ttSkill").textContent = `${skill.id} - ${skill.title}`;
   ttFillGroups(group.id);
   ttFillLessonControls(group);
@@ -142,6 +186,7 @@ function formatDateTime(date) {
 function ttNormalizeTeachTodayState() {
   appState.openLessonTabs ||= [];
   appState.lessonScrollPositions ||= {};
+  appState.lessonDrafts ||= {};
   appState.attendanceRecords ||= {};
   appState.rosterStudents ||= [];
   const existingRosterNames = new Set(appState.rosterStudents.map((student) => String(student.name || student).toLowerCase()));
@@ -157,6 +202,87 @@ function ttNormalizeTeachTodayState() {
     group.lessonSerial ||= 0;
     group.history ||= [];
   });
+  ttBackfillLessonLinks();
+}
+
+function ttRecordTime(record) {
+  return new Date(record?.date || record?.displayDate || 0).getTime() || 0;
+}
+
+function ttPlanTime(plan) {
+  return new Date(plan?.savedAt || plan?.created || 0).getTime() || 0;
+}
+
+function ttFindBestPlanForRecord(group, record) {
+  const plans = (group.history || []).filter((plan) => plan.source === "TeachToday" && plan.lessons?.[0]);
+  if (!plans.length) return null;
+  const recordDay = dateKey(record.date || record.displayDate);
+  const recordTime = ttRecordTime(record);
+  const scored = plans.map((plan) => {
+    const lesson = plan.lessons[0];
+    let score = 0;
+    if (record.lessonId && lesson.id === record.lessonId) score += 1000;
+    if (record.planId && plan.id === record.planId) score += 1000;
+    if (recordDay && (plan.dailyKey === recordDay || dateKey(plan.savedAt || plan.created) === recordDay)) score += 120;
+    if (record.substep && lesson.substep === record.substep) score += 80;
+    if (record.wordlistPage && String(lesson.wordlistPageNumber || "") === String(record.wordlistPage)) score += 60;
+    if (record.reader && String(lesson.reader || "") === String(record.reader)) score += 25;
+    const distance = Math.abs(ttPlanTime(plan) - recordTime);
+    score -= Math.min(distance / 60000, 240);
+    return { plan, score, distance };
+  }).sort((a, b) => b.score - a.score || a.distance - b.distance);
+  return scored[0]?.score > 0 ? scored[0].plan : null;
+}
+
+function ttApplyPlanLinkToRecord(record, plan) {
+  if (!record || !plan?.lessons?.[0]) return false;
+  const lesson = plan.lessons[0];
+  let changed = false;
+  const values = {
+    lessonId: lesson.id || "",
+    planId: plan.id || "",
+    lessonTitle: plan.title || "",
+    lessonSavedAt: plan.savedAt || ""
+  };
+  Object.entries(values).forEach(([key, value]) => {
+    if (value && record[key] !== value) {
+      record[key] = value;
+      changed = true;
+    }
+  });
+  if (!plan.hasStudentData || plan.status !== "Taught") {
+    plan.hasStudentData = true;
+    plan.status = "Taught";
+    plan.lastStudentDataAt ||= record.date || new Date().toISOString();
+    changed = true;
+  }
+  return changed;
+}
+
+function ttBackfillLessonLinks() {
+  if (appState.lessonLinkBackfillVersion >= 1) return;
+  let changed = false;
+  (appState.masterRecords || []).forEach((record) => {
+    if (record.planId && record.lessonTitle) return;
+    const group = (appState.groups || []).find((item) => item.id === record.groupId || item.name === record.group);
+    const plan = group ? ttFindBestPlanForRecord(group, record) : null;
+    if (plan) changed = ttApplyPlanLinkToRecord(record, plan) || changed;
+  });
+  (appState.groups || []).forEach((group) => {
+    ["dictationMisses", "encodingObservations"].forEach((key) => {
+      (group[key] || []).forEach((record) => {
+        if (record.planId && record.lessonTitle) return;
+        const plan = ttFindBestPlanForRecord(group, record);
+        if (plan) changed = ttApplyPlanLinkToRecord(record, plan) || changed;
+      });
+    });
+  });
+  appState.lessonLinkBackfillVersion = 1;
+  if (changed) {
+    appState.lastSavedAt = new Date().toISOString();
+    localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(appState));
+    if (typeof window.teachTodayQueueCloudSync === "function") window.teachTodayQueueCloudSync();
+  }
 }
 
 function ttActivePlanId() {
@@ -203,21 +329,31 @@ function ttWordlistShortLabel(lesson) {
 }
 
 function ttLessonFileName(group, lesson, date = new Date()) {
-  const sequence = lesson?.lessonSequence ? ` #${lesson.lessonSequence}` : "";
-  return `${lesson.substep}${sequence} - charting page ${ttWordlistShortLabel(lesson)} - ${ttLessonDate(date)} ${ttLessonTime(date)} - ${group.name}`;
+  return `${lesson.substep} - charting page ${ttWordlistShortLabel(lesson)} - ${ttLessonDate(date)} ${ttLessonTime(date)} - ${group.name}`;
 }
 
 function ttLessonTabLabel(plan, group = ttActiveGroup()) {
   const lesson = plan?.lessons?.[0] || ttLesson;
   const date = plan?.savedAt ? new Date(plan.savedAt) : new Date();
   const shortGroup = (group.name || "Group").replace(/\s+Group$/i, "");
-  const sequence = lesson?.lessonSequence ? `#${lesson.lessonSequence} ` : "";
-  return `${sequence}${shortGroup} ${lesson?.substep || group.substep} ${ttCompactDate(date)}`;
+  return `${shortGroup} ${lesson?.substep || group.substep} ${ttCompactDate(date)}`;
 }
 
 function ttCurrentPlan() {
   const group = ttActiveGroup();
   return (group.history || []).find((plan) => plan.id === ttLesson?.savedPlanId);
+}
+
+function ttPlanDayKey(date = new Date()) {
+  return dateKey(date);
+}
+
+function ttDailyPlanFor(group, date = new Date()) {
+  const key = ttPlanDayKey(date);
+  return (group.history || []).slice().reverse().find((plan) =>
+    plan.source === "TeachToday"
+    && (plan.dailyKey === key || dateKey(plan.savedAt || plan.created) === key)
+  );
 }
 
 function ttAddLessonTab(planId) {
@@ -248,9 +384,18 @@ function ttRenderLessonTabs() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `lesson-tab${plan.id === ttLesson?.savedPlanId ? " active" : ""}`;
-    button.textContent = plan.tabLabel || ttLessonTabLabel(plan, group);
+    button.innerHTML = `<span>${escapeHtml(plan.tabLabel || ttLessonTabLabel(plan, group))}</span><span class="lesson-tab-close" aria-hidden="true">×</span>`;
     button.title = plan.title || button.textContent;
-    button.addEventListener("click", () => ttOpenPlanInApp(plan.id));
+    button.addEventListener("click", (event) => {
+      if (event.target.closest(".lesson-tab-close")) {
+        event.stopPropagation();
+        appState.openLessonTabs = (appState.openLessonTabs || []).filter((id) => id !== plan.id);
+        saveState();
+        ttRenderLessonTabs();
+        return;
+      }
+      ttOpenPlanInApp(plan.id);
+    });
     container.appendChild(button);
   });
 }
@@ -1110,7 +1255,9 @@ function ttSaveEncodingSelected(container, student) {
 
 function ttSaveEncodingObservation(student, section, category, note, item = "") {
   if (!student) return;
+  ttEnsureCurrentLessonSavedForData();
   const group = ttActiveGroup();
+  const lessonMeta = ttCurrentLessonRecordMeta(ttLesson);
   group.encodingObservations ||= [];
   group.encodingObservations.push({
     id: `encoding-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -1121,7 +1268,7 @@ function ttSaveEncodingObservation(student, section, category, note, item = "") 
     category,
     item,
     note,
-    lessonId: ttLesson?.id || ""
+    ...lessonMeta
   });
   if (item || note.includes("difficult") || note.includes("strategies")) {
     group.markedReviewWords ||= [];
@@ -1288,6 +1435,8 @@ function ttFillSection3Cards(lesson) {
   document.querySelectorAll(".card-mode").forEach((button) => {
     button.classList.toggle("active", button.dataset.mode === ttCardMode);
   });
+  ttFillHfwStepChoicesForSelect(ttById("ttSection3HfwStep"), lesson.substep);
+  ttById("ttSection3HfwStep")?.classList.toggle("active", ttCardMode === "hfw");
   const deckData = section3DeckForMode(lesson, ttCardMode);
   ttCardDeck = deckData.deck;
   ttById("ttReviewCardsTitle").textContent = deckData.reviewTitle;
@@ -1310,6 +1459,7 @@ function ttFillSection3Cards(lesson) {
 
 function ttReplaceSection3Word(kind, oldWord) {
   if (!ttLesson || ttCardMode !== "words") return;
+  ttForkSavedLessonDraft();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(ttActiveGroup());
   const key = kind === "review" ? "sectionThreeReviewWords" : "sectionThreeCurrentWords";
   const current = ttLesson[key] || (kind === "review" ? section3ReviewCards(ttLesson) : section3CurrentCards(ttLesson));
@@ -1317,11 +1467,24 @@ function ttReplaceSection3Word(kind, oldWord) {
     ? readerWordsFromSubstep(priorSubstep(skill.id), ttLesson.readerLevel || "AB")
     : (ttLesson.realWords || []).concat(ttLesson.nonsenseWords || []);
   ttLesson[key] = current.map((word) => word === oldWord ? ttPickReplacement(pool, current, oldWord) : word);
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttFillSection3Cards(ttLesson);
 }
 
 function section3DeckForMode(lesson, mode) {
+  if (mode === "hfw") {
+    const hfwSubstep = ttById("ttSection3HfwStep")?.value || lesson.substep;
+    const current = hfwWordsForSubstep(hfwSubstep, lesson);
+    const review = hfwReviewWordsForSubstep(hfwSubstep);
+    return {
+      reviewTitle: "Review HFW",
+      currentTitle: `${hfwSubstep} HFW`,
+      review,
+      current,
+      deck: review.map((word) => ({ word, type: "Review HFW", label: "HFW review" }))
+        .concat(current.map((word) => ({ word, type: "Current HFW", label: `${hfwSubstep} HFW` })))
+    };
+  }
   if (mode === "words") {
     const review = section3ReviewCards(lesson);
     const current = section3CurrentCards(lesson);
@@ -1379,6 +1542,7 @@ function displayWordPart(word, mode) {
 
 function modeTitle(mode) {
   return {
+    hfw: "High-frequency words",
     welded: "Welded/Glued sounds",
     latin: "Latin bases",
     prefixes: "Prefixes",
@@ -1481,6 +1645,7 @@ function ttPickReplacement(pool = [], current = [], oldWord = "") {
 
 function ttReplaceSection2Word(kind, oldWord) {
   if (!ttLesson) return;
+  ttForkSavedLessonDraft();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(ttActiveGroup());
   if (kind === "current") {
     const pool = (ttLesson.realWords || []).concat(ttLesson.nonsenseWords || []);
@@ -1494,14 +1659,15 @@ function ttReplaceSection2Word(kind, oldWord) {
       word === oldWord ? ttPickReplacement(pool, ttLesson.sectionTwoReviewWords || [], oldWord) : word
     );
   }
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttRender();
 }
 
 function ttReplaceSimpleListWord(key, oldWord, pool = []) {
   if (!ttLesson || !Array.isArray(ttLesson[key])) return;
+  ttForkSavedLessonDraft();
   ttLesson[key] = ttLesson[key].map((word) => word === oldWord ? ttPickReplacement(pool, ttLesson[key], oldWord) : word);
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttRender();
 }
 
@@ -1514,6 +1680,7 @@ function ttSentenceHfwPool() {
 
 function ttRefreshSection(sectionNumber) {
   if (!ttLesson) return;
+  ttForkSavedLessonDraft();
   const group = ttActiveGroup();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
   const level = ttLesson.readerLevel || group.readerLevel || "AB";
@@ -1564,7 +1731,7 @@ function ttRefreshSection(sectionNumber) {
     ttLesson.passageLevel = fresh.passageLevel;
     ttLesson.passage = fresh.passage;
   }
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttRender();
   ttById(`section${sectionNumber}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -1649,6 +1816,7 @@ function ttShowCard(index) {
   if (!ttCardDeck.length) {
     ttById("ttCardDisplay").querySelector("strong").textContent = "No cards";
     ttById("ttCardLabel").textContent = "";
+    ttById("ttCardDisplay").dataset.type = "";
     ttById("ttCardCount").textContent = "0 of 0";
     return;
   }
@@ -1656,7 +1824,7 @@ function ttShowCard(index) {
   const card = ttCardDeck[ttCardIndex];
   ttById("ttCardDisplay").querySelector("strong").textContent = card.word;
   ttById("ttCardLabel").textContent = card.label;
-  ttById("ttCardDisplay").dataset.type = card.type.toLowerCase();
+  ttById("ttCardDisplay").dataset.type = /hfw/i.test(card.type) ? "hfw" : card.type.toLowerCase();
   ttById("ttCardCount").textContent = `${ttCardIndex + 1} of ${ttCardDeck.length}`;
 }
 
@@ -1842,11 +2010,28 @@ function cleanCardWord(word) {
   return String(word || "").toLowerCase().replace(/[^a-z-]/g, "");
 }
 
-function ttSaveGeneratedLesson(lesson, group, skill) {
-  if (!lesson || lesson.savedPlanId) return;
+function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
+  if (!lesson) return null;
   const now = new Date();
   const createdDate = now.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const createdTime = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const dailyKey = ttPlanDayKey(now);
+  const existing = options.upsertDaily === false ? null : ttDailyPlanFor(group, now);
+  if (existing) {
+    lesson.lessonSequence = existing.lessons?.[0]?.lessonSequence || lesson.lessonSequence || group.lessonSerial || 1;
+    lesson.savedPlanId = existing.id;
+    existing.lessons = [lesson];
+    existing.savedAt = now.toISOString();
+    existing.dailyKey = dailyKey;
+    existing.title = ttLessonFileName(group, lesson, now);
+    existing.tabLabel = ttLessonTabLabel(existing, group);
+    existing.status = existing.hasStudentData ? "Taught" : "Saved";
+    ttAddLessonTab(existing.id);
+    delete appState.lessonDrafts[ttDraftKey(group)];
+    saveState();
+    ttUpdateSaveStatus(existing);
+    return existing;
+  }
   group.lessonSerial = (group.lessonSerial || 0) + 1;
   lesson.lessonSequence = group.lessonSerial;
   const plan = {
@@ -1855,6 +2040,8 @@ function ttSaveGeneratedLesson(lesson, group, skill) {
     tabLabel: ttLessonTabLabel({ lessons: [lesson], savedAt: now.toISOString() }, group),
     created: `${createdDate} at ${createdTime}`,
     savedAt: now.toISOString(),
+    dailyKey,
+    status: "Saved",
     substep: `${skill.id} - ${skill.title}`,
     source: "TeachToday",
     lessons: [lesson]
@@ -1864,32 +2051,39 @@ function ttSaveGeneratedLesson(lesson, group, skill) {
   group.history.push(plan);
   group.history = group.history.slice(-50);
   ttAddLessonTab(plan.id);
+  delete appState.lessonDrafts[ttDraftKey(group)];
   saveState();
   ttUpdateSaveStatus(plan);
+  return plan;
 }
 
-function ttSaveCurrentLesson() {
+function ttSaveCurrentLesson(options = {}) {
   const group = ttActiveGroup();
   const skill = scopeMap.find((item) => item.id === ttLesson?.substep) || activeStep(group);
   if (!ttLesson) ttLesson = createLesson(group, skill, 0, 1);
+  delete ttLesson.draftId;
+  delete ttLesson.draftSavedAt;
   if (!ttLesson.savedPlanId) {
-    ttSaveGeneratedLesson(ttLesson, group, skill);
-    ttRender();
+    ttSaveGeneratedLesson(ttLesson, group, skill, { upsertDaily: !ttLesson.forkedFromPlanId });
+    if (options.render !== false) ttRender();
     return;
   }
   const plan = ttCurrentPlan();
   if (!plan) {
     ttLesson.savedPlanId = "";
     ttSaveGeneratedLesson(ttLesson, group, skill);
-    ttRender();
+    if (options.render !== false) ttRender();
     return;
   }
   const now = new Date();
   plan.lessons = [ttLesson];
   plan.savedAt = now.toISOString();
+  plan.dailyKey ||= ttPlanDayKey(now);
   plan.title = ttLessonFileName(group, ttLesson, now);
   plan.tabLabel = ttLessonTabLabel(plan, group);
+  plan.status = plan.hasStudentData ? "Taught" : "Saved";
   ttAddLessonTab(plan.id);
+  delete appState.lessonDrafts[ttDraftKey(group)];
   saveState();
   ttUpdateSaveStatus(plan);
   ttRenderLessonTabs();
@@ -1897,9 +2091,10 @@ function ttSaveCurrentLesson() {
 }
 
 function ttNewLesson() {
-  ttSaveCurrentLesson();
   ttSection2Word = "";
   ttLesson = ttBuildLesson();
+  ttSaveDraftLesson({ status: false });
+  history.replaceState(null, "", location.pathname);
   ttRender();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1920,6 +2115,44 @@ function ttUpdateSaveStatus(plan) {
   const group = ttActiveGroup();
   const file = ttById("ttLessonFile");
   if (file && plan.lessons?.[0]) file.textContent = plan.title || ttLessonFileName(group, plan.lessons[0], savedDate);
+}
+
+function ttSetDraftSaveStatus(group = ttActiveGroup(), lesson = ttLesson) {
+  const status = ttById("ttSaveStatus");
+  if (status) {
+    status.textContent = lesson?.forkedFromLessonTitle
+      ? "Draft copy - original saved lesson is protected"
+      : "Draft - click Save when this is the lesson you will use today";
+  }
+  const file = ttById("ttLessonFile");
+  if (file && lesson) file.textContent = `Draft: ${ttLessonFileName(group, lesson)}`;
+}
+
+function ttMarkCurrentPlanHasData(lesson = ttLesson) {
+  if (!lesson?.savedPlanId) return null;
+  const group = ttActiveGroup();
+  const plan = (group.history || []).find((item) => item.id === lesson.savedPlanId);
+  if (!plan) return null;
+  plan.hasStudentData = true;
+  plan.status = "Taught";
+  plan.lastStudentDataAt = new Date().toISOString();
+  return plan;
+}
+
+function ttCurrentLessonRecordMeta(lesson = ttLesson) {
+  const group = ttActiveGroup();
+  const plan = (group.history || []).find((item) => item.id === lesson?.savedPlanId);
+  return {
+    lessonId: lesson?.id || "",
+    planId: plan?.id || lesson?.savedPlanId || "",
+    lessonTitle: plan?.title || (lesson ? ttLessonFileName(group, lesson, plan?.savedAt ? new Date(plan.savedAt) : new Date()) : ""),
+    lessonSavedAt: plan?.savedAt || ""
+  };
+}
+
+function ttEnsureCurrentLessonSavedForData() {
+  ttSaveCurrentLesson({ render: false });
+  return ttMarkCurrentPlanHasData(ttLesson);
 }
 
 function ttOpenPdfLessonPlan() {
@@ -1951,7 +2184,7 @@ async function ttOpenWilsonLessonPlan() {
     const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate);
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
-    const filename = `${ttSafeFileName(plan?.title || ttLessonFileName(group, ttLesson, savedDate))} - Wilson LP.pdf`;
+    const filename = `${ttLessonExportBaseName(group, ttLesson, plan, savedDate)} - WRS.pdf`;
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
@@ -2186,8 +2419,12 @@ function ttSafeFileName(value) {
   return String(value || "Teach Today Lesson").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
 }
 
+function ttLessonExportBaseName(group, lesson, plan, savedDate) {
+  return ttSafeFileName(plan?.title || ttLessonFileName(group, lesson, savedDate));
+}
+
 function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
-  const title = plan?.title || ttLessonFileName(group, lesson, savedDate);
+  const title = `${ttLessonExportBaseName(group, lesson, plan, savedDate)} - TT`;
   const date = savedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const time = savedDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   const sounds = soundsForSubstep(skill.id);
@@ -2668,7 +2905,7 @@ async function ttFirebaseRestoreIfNewer() {
   const payload = await ttFirebaseReadPayload();
   const restoredState = payload?.appState || payload;
   if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  if (ttPayloadTime(payload) <= ttLocalSaveTime() + 1000) return false;
+  if (!ttShouldRestorePayload(payload)) return false;
   localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
   if (payload.section2CardOverrides) {
     localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
@@ -2686,6 +2923,11 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
   }
   ttFirebaseBusy = true;
   try {
+    const remotePayload = await ttFirebaseReadPayload();
+    if (ttShouldRestorePayload(remotePayload)) {
+      await ttFirebaseRestoreIfNewer();
+      return;
+    }
     const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
     const now = new Date();
     const payload = ttBackupPayload(now);
@@ -2816,18 +3058,38 @@ async function ttCloudSyncReadPayload(handle) {
 }
 
 function ttPayloadTime(payload) {
-  return new Date(payload?.exportedAt || payload?.appState?.lastSavedAt || 0).getTime() || 0;
+  const state = payload?.appState || payload;
+  return new Date(state?.lastSavedAt || payload?.exportedAt || 0).getTime() || 0;
 }
 
 function ttLocalSaveTime() {
   return new Date(appState?.lastSavedAt || 0).getTime() || 0;
 }
 
+function ttStateDataScore(state = appState) {
+  const groups = state?.groups || [];
+  return (state?.masterRecords || []).length
+    + groups.reduce((sum, group) =>
+      sum
+      + (group.history || []).length
+      + (group.dictationMisses || []).length
+      + (group.encodingObservations || []).length,
+    0);
+}
+
+function ttShouldRestorePayload(payload) {
+  const restoredState = payload?.appState || payload;
+  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
+  const remoteScore = ttStateDataScore(restoredState);
+  const localScore = ttStateDataScore(appState);
+  return remoteScore > localScore || ttPayloadTime(payload) > ttLocalSaveTime() + 1000;
+}
+
 async function ttCloudSyncRestoreIfNewer(handle) {
   const payload = await ttCloudSyncReadPayload(handle);
   const restoredState = payload?.appState || payload;
   if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  if (ttPayloadTime(payload) <= ttLocalSaveTime() + 1000) return false;
+  if (!ttShouldRestorePayload(payload)) return false;
   localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
   if (payload.section2CardOverrides) {
     localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
@@ -2859,6 +3121,7 @@ async function ttCloudSyncWrite(reason = "Saved local backup file.") {
       localStorage.setItem("teachToday.cloudSyncStatus", "Open Data Center and choose the local folder again to reconnect.");
       return;
     }
+    if (await ttCloudSyncRestoreIfNewer(handle)) return;
     const now = new Date();
     const payload = ttBackupPayload(now);
     const backupText = JSON.stringify(payload, null, 2);
@@ -2968,23 +3231,31 @@ function ttRestoreDataFromFile(file) {
 function ttRenderSavedLessons(group) {
   const list = ttById("ttSavedLessons");
   if (!list) return;
-  const plans = (group.history || []).slice().reverse();
+  const seenDays = new Set();
+  const plans = (group.history || []).slice().reverse().filter((plan) => {
+    const key = plan.dailyKey || dateKey(plan.savedAt || plan.created);
+    if (!key) return true;
+    if (seenDays.has(key)) return false;
+    seenDays.add(key);
+    return true;
+  });
   if (!plans.length) {
     list.innerHTML = "<p>No saved lessons for this group yet.</p>";
     return;
   }
-  list.innerHTML = "";
+  list.innerHTML = `<p class="saved-lesson-note">Showing the latest official saved lesson for each day.</p>`;
   plans.forEach((plan) => {
     const lesson = plan.lessons?.[0];
     const saved = plan.savedAt ? new Date(plan.savedAt) : null;
     const when = saved
       ? `${saved.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} at ${saved.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
       : plan.created;
+    const badge = plan.hasStudentData ? "Taught" : (plan.status || "Saved");
     const item = document.createElement("article");
     item.className = "saved-lesson-item";
     item.innerHTML = `
       <div>
-        <strong>${escapeHtml(plan.title || "Saved lesson")}</strong>
+        <strong>${escapeHtml(plan.title || "Saved lesson")} <span class="lesson-status-badge">${escapeHtml(badge)}</span></strong>
         <p>${escapeHtml(when)} - ${escapeHtml(plan.substep || "")}</p>
         <p>${escapeHtml(lesson?.wordlistMeta || "")}</p>
       </div>
@@ -3009,7 +3280,8 @@ function ttOpenPlanInApp(planId) {
   });
   if (!found?.plan?.lessons?.[0]) return;
   appState.selectedGroupId = found.group.id;
-  ttLesson = found.plan.lessons[0];
+  ttLesson = ttClone(found.plan.lessons[0]);
+  ttLesson.savedPlanId = found.plan.id;
   ttAddLessonTab(found.plan.id);
   saveState();
   ttUpdateSaveStatus(found.plan);
@@ -3361,6 +3633,7 @@ function ttFillPart7WordCards(groups, substep) {
 
 function ttReplaceSection7Word(groupTitle, wordIndex) {
   if (!ttLesson) return;
+  ttForkSavedLessonDraft();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(ttActiveGroup());
   const level = ttLesson.readerLevel || "AB";
   const key = groupTitle === "Current" ? "sectionSevenCurrentWords" : groupTitle === "Nonsense" ? "sectionSevenNonsenseWords" : "sectionSevenReviewWords";
@@ -3375,7 +3648,7 @@ function ttReplaceSection7Word(groupTitle, wordIndex) {
       ? readerNonsenseWordsForReview(priorSubstep(skill.id), skill.id).concat(ttLesson.nonsenseWords || [])
       : priorDictationWords(skill.id, level).concat(readerWordsFromSubstep(priorSubstep(skill.id), level));
   ttLesson[key] = current.map((word, index) => index === wordIndex ? ttPickReplacement(pool, current, word) : word);
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttFillPart7(ttLesson, skill);
 }
 
@@ -3436,8 +3709,12 @@ function ttRenderBuildCards(container, word, substep) {
 }
 
 function ttFillHfwStepChoices(currentSubstep) {
-  const select = ttById("ttHfwStep");
+  ttFillHfwStepChoicesForSelect(ttById("ttHfwStep"), currentSubstep);
+}
+
+function ttFillHfwStepChoicesForSelect(select, currentSubstep) {
   if (!select) return;
+  const firstFill = !select.options.length;
   if (!select.options.length) {
     scopeMap.forEach((skill) => {
       const option = document.createElement("option");
@@ -3449,18 +3726,26 @@ function ttFillHfwStepChoices(currentSubstep) {
   [...select.options].forEach((option) => {
     option.hidden = !isAtLeastSubstep(currentSubstep, option.value);
   });
-  if (!select.value || select.selectedOptions[0]?.hidden) select.value = currentSubstep;
+  if (firstFill || !select.value || !isAtLeastSubstep(currentSubstep, select.value)) select.value = currentSubstep;
+}
+
+function isUsableHfwWord(word) {
+  const text = String(word || "").trim();
+  return /^[A-Za-z](?:[A-Za-z'.-]*[A-Za-z.])?$/.test(text);
 }
 
 function hfwWordsForSubstep(substep, lesson) {
-  const dictationHfw = dictationValues("highFrequency", substep, lesson.readerLevel || "AB");
-  if (substep === lesson.substep) {
-    return [...new Set([...(lesson.highFrequencyWords || []), ...dictationHfw])].filter(isUsableReaderWord);
+  const hfw = window.wilsonHighFrequencyWords?.[substep] || [];
+  return [...new Set(hfw)].filter(isUsableHfwWord);
+}
+
+function hfwReviewWordsForSubstep(substep) {
+  const currentIndex = scopeMap.findIndex((item) => item.id === substep);
+  const review = [];
+  for (let index = currentIndex - 1; index >= 0 && review.length < 12; index -= 1) {
+    review.push(...hfwWordsForSubstep(scopeMap[index].id, ttLesson));
   }
-  const all = [];
-  const pagesByLevel = window.readerSentenceIndex?.[substep]?.AB || window.readerSentences?.[substep]?.AB || {};
-  Object.values(pagesByLevel).forEach((page) => all.push(...(page.h || page.highFrequency || [])));
-  return [...new Set(all.concat(dictationHfw))].filter(isUsableReaderWord);
+  return [...new Set(review)].slice(0, 12);
 }
 
 function dictationReviewWords(substep, level = "AB") {
@@ -3486,7 +3771,7 @@ function dictationCurrentWords(substep, level = "AB", pageWords = []) {
 
 function ttFillHfwDisplayWords(words, substep) {
   const container = ttById("ttPart7Hfw");
-  const hfwWords = words.filter(isUsableReaderWord);
+  const hfwWords = words.filter(isUsableHfwWord);
   container.innerHTML = "";
   if (!hfwWords.length) {
     const item = document.createElement("span");
@@ -3591,6 +3876,7 @@ function ttActiveDictationPlan(lesson, skill) {
 
 function ttReplaceDictationItem(blockIndex, itemIndex) {
   if (!ttLesson) return;
+  ttForkSavedLessonDraft();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(ttActiveGroup());
   const plan = ttActiveDictationPlan(ttLesson, skill).map((item) => ({ ...item, values: (item.values || []).slice() }));
   const block = plan[blockIndex];
@@ -3599,7 +3885,7 @@ function ttReplaceDictationItem(blockIndex, itemIndex) {
   const pool = ttDictationReplacementPool(block.label, ttLesson, skill);
   block.values[itemIndex] = ttPickReplacement(pool, block.values, oldValue);
   ttLesson.dictationPlanOverride = plan;
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttFillDictation(plan);
 }
 
@@ -3676,7 +3962,9 @@ function ttSaveDictationMissForStudent(student) {
     container.querySelector(".dictation-selected").textContent = "Tap an item first";
     return;
   }
+  ttEnsureCurrentLessonSavedForData();
   const group = ttActiveGroup();
+  const lessonMeta = ttCurrentLessonRecordMeta(ttLesson);
   group.dictationMisses ||= [];
   group.dictationMisses.push({
     id: `dictation-miss-${Date.now()}`,
@@ -3685,7 +3973,7 @@ function ttSaveDictationMissForStudent(student) {
     substep: ttLesson?.substep || group.substep,
     category,
     item: value,
-    lessonId: ttLesson?.id || ""
+    ...lessonMeta
   });
   ttSaveEncodingObservation(student, "section8", category, "encoding miss", value);
   group.markedReviewWords ||= [];
@@ -4009,10 +4297,11 @@ function ttRenderChartIntegrity(lesson) {
 
 function ttRecheckSection4Words() {
   if (!ttLesson) return;
+  ttForkSavedLessonDraft();
   const group = ttActiveGroup();
   const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
   ttEnsureSection4PageIntegrity(ttLesson, skill, true);
-  ttSaveCurrentLesson();
+  ttSaveDraftLesson();
   ttRender();
   ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -4674,6 +4963,8 @@ function ttBind() {
     group.pageProgress = { wordlist: 0, sentences: 0, passage: 0 };
     saveState();
     ttLesson = ttBuildLesson();
+    ttSaveDraftLesson({ status: false });
+    history.replaceState(null, "", location.pathname);
     ttSection2Word = "";
     ttRender();
   });
@@ -4683,6 +4974,8 @@ function ttBind() {
     group.pageProgress = { wordlist: 0, sentences: 0, passage: 0 };
     saveState();
     ttLesson = ttBuildLesson();
+    ttSaveDraftLesson({ status: false });
+    history.replaceState(null, "", location.pathname);
     ttSection2Word = "";
     ttRender();
   });
@@ -4811,6 +5104,10 @@ function ttBind() {
     if (!ttLesson) return;
     ttFillHfwDisplayWords(hfwWordsForSubstep(event.target.value, ttLesson), event.target.value);
   });
+  ttById("ttSection3HfwStep")?.addEventListener("change", () => {
+    ttCardMode = "hfw";
+    ttFillSection3Cards(ttLesson);
+  });
   ttById("ttBackTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.querySelectorAll(".card-mode").forEach((button) => {
     button.addEventListener("click", () => {
@@ -4872,7 +5169,8 @@ function ttLoadPlanFromUrl() {
   const group = ttActiveGroup();
   const plan = (group.history || []).find((item) => item.id === planId);
   if (!plan?.lessons?.[0]) return null;
-  ttLesson = plan.lessons[0];
+  ttLesson = ttClone(plan.lessons[0]);
+  ttLesson.savedPlanId = plan.id;
   ttUpdateSaveStatus(plan);
   return plan;
 }
@@ -4886,7 +5184,7 @@ function ttOpenStudentProfile() {
   window.open(url, "_blank");
 }
 
-ttLoadPlanFromUrl() || ttBuildLesson();
+ttLoadPlanFromUrl() || ttLoadDraftLesson() || ttBuildLesson();
 ttInitCloudSync();
 ttInitFirebaseSync();
 ttBind();
