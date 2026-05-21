@@ -3749,6 +3749,7 @@ function hfwReviewWordsForSubstep(substep) {
 }
 
 function dictationReviewWords(substep, level = "AB") {
+  const group = ttActiveGroup();
   const currentIndex = scopeMap.findIndex((item) => item.id === substep);
   const candidates = [];
   for (let index = currentIndex - 1; index >= 0 && candidates.length < 30; index -= 1) {
@@ -3759,14 +3760,48 @@ function dictationReviewWords(substep, level = "AB") {
       candidates.push(...readerWordsFromSubstep(prior.id, level));
     }
   }
-  return chooseWords(candidates, 5, true);
+  return chooseEasyReviewWords(candidates, 3, group?.trouble || []);
 }
 
 function dictationCurrentWords(substep, level = "AB", pageWords = []) {
   const bank = dictationValues("words", substep, level);
   const compatible = pageWords.filter((word) => bank.includes(word));
-  const source = compatible.length >= 5 ? compatible : pageWords.concat(bank);
-  return chooseWords(source.filter(isUsableReaderWord), 5, true);
+  const source = compatible.length >= 2 ? compatible : pageWords.concat(bank);
+  return chooseEasyCurrentWords(source.filter(isUsableReaderWord), 2);
+}
+
+function chooseEasyReviewWords(words, count, trouble = []) {
+  const usable = uniqueWords(words).filter(isValidDictationWord);
+  const troubleSet = new Set(trouble);
+  return usable
+    .map((word, index) => ({ word, index, score: reviewWordScore(word, troubleSet) }))
+    .sort((a, b) => a.score - b.score || a.index - b.index)
+    .map((item) => item.word)
+    .slice(0, count);
+}
+
+function chooseEasyCurrentWords(words, count) {
+  return uniqueWords(words)
+    .filter(isValidDictationWord)
+    .map((word, index) => ({ word, index, score: easyWordScore(word) }))
+    .sort((a, b) => a.score - b.score || a.index - b.index)
+    .map((item) => item.word)
+    .slice(0, count);
+}
+
+function reviewWordScore(word, troubleSet) {
+  let score = easyWordScore(word);
+  if (troubleSet.has("suffix confusion") && hasVisibleSuffix(word)) score -= 3;
+  if (troubleSet.has("vowel sounds") && /[aeiou]/i.test(word)) score -= 1;
+  if ((troubleSet.has("blending") || troubleSet.has("slow decoding")) && estimatedSyllables(word) <= 1 && word.length <= 5) score -= 2;
+  if (troubleSet.has("multisyllable division") && estimatedSyllables(word) >= 2) score -= 2;
+  if (!troubleSet.size && hasVisibleSuffix(word)) score += 4;
+  return score;
+}
+
+function easyWordScore(word) {
+  const clean = String(word || "").toLowerCase().replace(/[^a-z-]/g, "");
+  return (estimatedSyllables(clean) * 6) + clean.length + (hasVisibleSuffix(clean) ? 3 : 0);
 }
 
 function ttFillHfwDisplayWords(words, substep) {
@@ -3891,12 +3926,18 @@ function ttReplaceDictationItem(blockIndex, itemIndex) {
 
 function ttDictationReplacementPool(label, lesson, skill) {
   const level = lesson.readerLevel || "AB";
+  const substep = lesson.substep || skill.id;
   if (/sounds/i.test(label)) return soundsFromWords((lesson.realWords || []).concat(lesson.nonsenseWords || []), skill.id).concat(fiveDictationSounds(skill.id));
   if (/word elements/i.test(label)) return elementsFromWords((lesson.realWords || []).concat(lesson.readerSentences || []), skill.id).concat(fiveWordElements(skill.id, lesson.realWords || []));
   if (/real words/i.test(label)) return (lesson.realWords || []).concat(dictationWordsFor(skill.id, level), priorDictationWords(skill.id, level)).filter(isValidDictationWord);
   if (/nonsense/i.test(label)) return readerNonsenseWordsForReview(priorSubstep(skill.id), skill.id).concat(lesson.nonsenseWords || []);
-  if (/phrases/i.test(label)) return dictationItems("phrases", skill.id, level, 80).concat(dictationItems("phrases", priorSubstep(skill.id), level, 12));
-  if (/sentences/i.test(label)) return dictationItems("sentences", skill.id, level, 80).concat(dictationItems("sentences", priorSubstep(skill.id), level, 12));
+  if (/phrases/i.test(label)) return rankedCurrentDictationPhraseRows(currentDictationPhraseRows(substep), lesson, skill)
+    .concat(currentDictationPhraseBank(substep));
+  if (/sentences/i.test(label)) {
+    const sentenceBank = currentDictationSentencesForLesson(lesson, skill, ttActiveGroup());
+    return rankedCurrentDictationSentences(sentenceBank, lesson, skill, ttActiveGroup())
+      .concat(currentReaderSentencesForDictation(lesson, skill), sentenceBank);
+  }
   return [];
 }
 
@@ -3996,23 +4037,24 @@ function ttSaveDictationMissForStudent(student) {
 }
 
 function ttDictationPlan(lesson, skill) {
+  const group = ttActiveGroup();
+  const substep = lesson.substep || skill.id;
   const level = lesson.readerLevel || "AB";
-  const phraseBank = dictationItems("phrases", skill.id, level, 80);
-  const sentenceBank = dictationItems("sentences", skill.id, level, 40);
-  const sentences = fillToCount(rankedDictationSentences(sentenceBank, phraseBank), sentenceBank.concat(dictationItems("sentences", priorSubstep(skill.id), level, 6)), 2);
+  const sentenceLevel = dictationSentenceLevel(level);
+  const phraseRows = currentDictationPhraseRows(substep);
+  const phraseBank = phraseRowsToPhrases(phraseRows);
+  const sentenceBank = currentDictationSentencesForLesson(lesson, skill, group);
+  const rankedSentences = rankedCurrentDictationSentences(sentenceBank, lesson, skill, group);
+  const sentences = fillToCount(rankedSentences, sentenceBank.concat(currentReaderSentencesForDictation(lesson, skill)), 2);
   const sentenceTokens = tokenSet(sentences.join(" "));
   const sentenceHfw = highFrequencyWordsFromTexts(sentences, lesson);
   const currentWords = validDictationWords(dictationCurrentWords(skill.id, level, lesson.realWords || []), lesson.realWords || []).slice(0, 2);
-  const reviewNoSuffix = []
-    .concat(dictationWordsFor("2.2", level), dictationWordsFor("2.4", level), dictationWordsFor("2.5", level))
-    .find((word) => isValidDictationWord(word) && !hasVisibleSuffix(word)) || "";
-  const veReview = dictationWordsFor("4.1", level).find((word) => isValidDictationWord(word) && !hasVisibleSuffix(word)) || "";
-  const suffixReview = priorDictationWords(skill.id, level).find((word) => isValidDictationWord(word) && hasVisibleSuffix(word) && estimatedSyllables(word.replace(/s$|es$|ed$|ing$/, "")) <= 2) || "";
-  const fallbackWords = validDictationWords([].concat(lesson.realWords || [], dictationWordsFor(skill.id, level), priorDictationWords(skill.id, level)));
-  const sentenceRelatedWords = validDictationWords(dictationWordsFor(skill.id, level).filter((word) => sentenceTokens.has(word.toLowerCase())), lesson.realWords || []);
-  const words = fillToCount(sentenceRelatedWords.concat([reviewNoSuffix, veReview, suffixReview].filter(Boolean), currentWords), fallbackWords, 5);
-  const phraseMatches = rankedDictationPhrases(phraseBank, sentenceTokens, sentenceHfw);
-  const phrases = fillToCount(phraseMatches, phraseBank.concat(dictationItems("phrases", priorSubstep(skill.id), level, 6)), 3);
+  const reviewWords = dictationReviewWords(skill.id, level);
+  const words = fillToCount(reviewWords, priorDictationWords(skill.id, level).filter(isValidDictationWord), 3)
+    .concat(fillToCount(currentWords, dictationWordsFor(skill.id, level).filter(isValidDictationWord), 2))
+    .slice(0, 5);
+  const phraseMatches = rankedCurrentDictationPhraseRows(phraseRows, lesson, skill, sentenceTokens, sentenceHfw);
+  const phrases = fillToCount(phraseMatches, phraseBank, 3);
   const soundTargets = soundsFromWords(words.concat(threeNonsenseWords(skill.id, level)), skill.id);
   const elementTargets = elementsFromWords(words.concat(lesson.realWords || [], sentences), skill.id);
   return [
@@ -4023,6 +4065,47 @@ function ttDictationPlan(lesson, skill) {
     { label: "3 phrases", values: phrases },
     { label: "2 sentences", values: sentences }
   ];
+}
+
+function dictationSentenceLevel(level) {
+  return level === "B" ? "B" : "AB";
+}
+
+function currentDictationSentencesForLesson(lesson, skill, group) {
+  const substep = lesson.substep || skill.id;
+  const groups = structuredDictationSentenceGroups(substep, lesson.readerLevel || "AB");
+  const currentGroups = groups.filter((item) => item.kind === "current");
+  const sourceGroups = currentGroups.length ? currentGroups : groups;
+  const chunks = sourceGroups.flatMap((item) => item.chunks || []);
+  if (!chunks.length) return dictationItems("sentences", substep, dictationSentenceLevel(lesson.readerLevel || "AB"), 80);
+  const preferredIndex = preferredSentenceChunkIndex(lesson, skill, chunks.length);
+  const preferred = chunks[preferredIndex]?.sentences || [];
+  const fallback = chunks.flatMap((chunk) => chunk.sentences || []);
+  const pool = preferred.length >= 2 ? preferred.concat(fallback) : fallback;
+  return isStrugglingGroup(group) ? pool.filter((sentence) => sentenceWordCount(sentence) <= 10).concat(pool) : pool;
+}
+
+function preferredSentenceChunkIndex(lesson, skill, chunkCount) {
+  if (chunkCount <= 1) return 0;
+  const level = lesson.readerLevel || "AB";
+  const pages = pageList(skill, "wordlist", level);
+  const pageIndex = Math.max(pages.indexOf(lesson.wordlistPageNumber), 0);
+  if (!pages.length) return 0;
+  return Math.min(Math.floor((pageIndex / Math.max(pages.length, 1)) * chunkCount), chunkCount - 1);
+}
+
+function currentDictationPhraseBank(substep) {
+  const rows = currentDictationPhraseRows(substep);
+  if (rows.length) return phraseRowsToPhrases(rows);
+  return dictationItems("phrases", substep, "AB", 80);
+}
+
+function currentDictationPhraseRows(substep) {
+  return window.dictationPhraseIndex?.[substep] || [];
+}
+
+function phraseRowsToPhrases(rows) {
+  return rows.flatMap((row) => row.phrases || []);
 }
 
 function tokenSet(text) {
@@ -4041,44 +4124,98 @@ function highFrequencyWordsFromTexts(texts, lesson) {
   return [...tokenSet(texts.join(" "))].filter((word) => known.has(word));
 }
 
-function rankedDictationSentences(sentences, phrases) {
-  const common = new Set(["a", "an", "the", "in", "into", "on", "at", "to", "of", "and", "is", "was", "were", "did", "do"]);
-  const phraseTokenSets = phrases.map((phrase) => tokenSet(phrase));
-  return sentences
+function rankedCurrentDictationSentences(sentences, lesson, skill, group) {
+  const currentHfw = new Set(currentHfwForDictation(lesson, skill));
+  const pageWords = new Set((lesson.realWords || []).map((word) => String(word).toLowerCase()));
+  const struggling = isStrugglingGroup(group);
+  const scored = sentences
     .map((sentence, index) => {
       const tokens = tokenSet(sentence);
-      let score = 0;
-      phraseTokenSets.forEach((phraseTokens) => {
-        tokens.forEach((token) => {
-          if (!common.has(token) && phraseTokens.has(token)) score += 2;
-        });
+      let currentHfwHits = 0;
+      let pageWordHits = 0;
+      tokens.forEach((token) => {
+        if (currentHfw.has(token)) currentHfwHits += 1;
+        if (pageWords.has(token)) pageWordHits += 1;
       });
-      return { sentence, score, index };
+      const wordCount = sentenceWordCount(sentence);
+      const difficulty = wordCount + estimatedSentenceSyllables(sentence) + (struggling && wordCount > 8 ? 20 : 0);
+      const score = (index * 2) + difficulty - (currentHfwHits * 18) - (pageWordHits * 5);
+      return { sentence, score, index, currentHfwHits, wordCount };
     })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .filter((item) => !currentHfw.size || item.currentHfwHits > 0);
+  const source = scored.length >= 2 ? scored : sentences.map((sentence, index) => ({
+    sentence,
+    index,
+    currentHfwHits: 0,
+    wordCount: sentenceWordCount(sentence),
+    score: (index * 2) + sentenceWordCount(sentence) + estimatedSentenceSyllables(sentence)
+  }));
+  const shortSource = struggling ? source.filter((item) => item.wordCount <= 8) : [];
+  return (shortSource.length >= 2 ? shortSource : source)
+    .sort((a, b) => a.score - b.score || a.index - b.index)
     .map((item) => item.sentence);
 }
 
-function rankedDictationPhrases(phrases, sentenceTokens, sentenceHfw) {
+function currentHfwForDictation(lesson, skill) {
+  return uniqueWords([]
+    .concat(dictationValues("highFrequency", skill.id, dictationSentenceLevel(lesson.readerLevel || "AB")))
+    .concat(hfwWordsForSubstep(skill.id, lesson))
+    .concat(lesson.highFrequencyWords || []))
+    .map((word) => String(word).toLowerCase());
+}
+
+function currentReaderSentencesForDictation(lesson, skill) {
+  const currentHfw = new Set(currentHfwForDictation(lesson, skill));
+  const sentences = (lesson.readerSentences || []).filter(Boolean);
+  const hfwMatches = sentences.filter((sentence) => [...tokenSet(sentence)].some((token) => currentHfw.has(token)));
+  return hfwMatches.length ? hfwMatches : sentences;
+}
+
+function sentenceWordCount(sentence) {
+  return String(sentence || "").match(/[A-Za-z]+(?:'[A-Za-z]+)?/g)?.length || 0;
+}
+
+function estimatedSentenceSyllables(sentence) {
+  return (String(sentence || "").match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || [])
+    .reduce((sum, word) => sum + estimatedSyllables(word), 0);
+}
+
+function isStrugglingGroup(group) {
+  const trouble = new Set(group?.trouble || []);
+  return ["blending", "slow decoding", "dictation", "vowel sounds", "fluency"].some((item) => trouble.has(item));
+}
+
+function rankedCurrentDictationPhraseRows(rows, lesson, skill, sentenceTokens = new Set(), sentenceHfw = []) {
   const common = new Set(["a", "an", "the", "in", "into", "on", "at", "to", "of", "and", "is", "was", "were"]);
+  const currentHfw = new Set(currentHfwForDictation(lesson, skill).filter((word) => !common.has(word)));
+  const pageWords = new Set((lesson.realWords || []).map((word) => String(word).toLowerCase()));
   const hfwSet = new Set(sentenceHfw.filter((word) => !common.has(word)));
   const contentTokens = [...sentenceTokens].filter((word) => word.length > 3 && !common.has(word));
-  return phrases
-    .map((phrase, index) => {
-      const tokens = tokenSet(phrase);
+  const scored = rows
+    .map((row, index) => {
+      const rowPhrases = row.phrases || [];
+      const tokens = tokenSet(rowPhrases.join(" "));
+      const hfw = String(row.hfw || "").toLowerCase();
       let score = 0;
+      if (currentHfw.has(hfw)) score += 30;
+      currentHfw.forEach((word) => {
+        if (tokens.has(word)) score += 10;
+      });
       hfwSet.forEach((word) => {
         if (tokens.has(word)) score += 6;
       });
       contentTokens.forEach((word) => {
         if (tokens.has(word)) score += 3;
       });
-      return { phrase, score, index };
+      pageWords.forEach((word) => {
+        if (tokens.has(word)) score += 2;
+      });
+      return { row, score, index, length: tokens.size };
     })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .map((item) => item.phrase);
+    .sort((a, b) => b.score - a.score || a.index - b.index || a.length - b.length);
+  const matches = scored.filter((item) => item.score > 0);
+  return (matches.length ? matches : scored)
+    .flatMap((item) => item.row.phrases || []);
 }
 
 function soundsFromWords(words, substep) {

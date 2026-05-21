@@ -1,0 +1,356 @@
+// Structured Dictation Book phrase index for Teach Today.
+// Source: Wilson WRS Dictation Book Steps 1-6 - Phrases ONLY.pdf.
+// Shape: substep -> rows of current HFW and its three phrases.
+window.dictationPhraseIndex = {
+  "1.3": [
+    { hfw: "the", phrases: ["the hot sun", "got the mug", "with the men"] },
+    { hfw: "a", phrases: ["a big job", "had a jog", "in a box"] },
+    { hfw: "and", phrases: ["pack and ship", "a cat and a dog", "with Ted and Nick"] },
+    { hfw: "was", phrases: ["was with him", "was not sick", "was on the path"] },
+    { hfw: "is", phrases: ["is with Tim", "is not red", "is on the map"] },
+    { hfw: "his", phrases: ["bit his lip", "on his cot", "his red pen"] },
+    { hfw: "I", phrases: ["Ed and I", "if I run", "Beth and I"] }
+  ],
+  "1.4": [
+    { hfw: "to", phrases: ["to the back", "got to the top", "a chip to dip"] },
+    { hfw: "into", phrases: ["into his box", "into the tub", "into a dish"] },
+    { hfw: "do", phrases: ["do his job", "do with his dad", "to do his math"] },
+    { hfw: "does", phrases: ["does his job", "does not fit", "does not quit"] },
+    { hfw: "of", phrases: ["was on top of it", "a sum of cash", "a dish of dip"] },
+    { hfw: "you", phrases: ["you and I", "do you and Bob", "with you at the shop"] },
+    { hfw: "your", phrases: ["does your job", "was with your dad", "your dog and cat"] },
+    { hfw: "shall", phrases: ["shall not do it", "if Peg shall", "shall get a pet"] }
+  ],
+  "1.5": [
+    { hfw: "me", phrases: ["does not fit me", "in back of me", "Tim and me"] },
+    { hfw: "he", phrases: ["but he does", "he and Bob", "then he was"] },
+    { hfw: "she", phrases: ["but she was", "he and she", "and she did"] },
+    { hfw: "we", phrases: ["if we do", "and we shall", "and then we did"] },
+    { hfw: "be", phrases: ["shall be fun", "you will be", "be with you"] },
+    { hfw: "are", phrases: ["are at his shop", "are not hot", "are on the bus"] },
+    { hfw: "as", phrases: ["as your mom", "as big as Rick", "as I do"] },
+    { hfw: "has", phrases: ["has to rush", "has his dish", "has your bag"] },
+    { hfw: "or", phrases: ["you or I", "shall run or jog", "he or she"] },
+    { hfw: "for", phrases: ["was for you", "fun for Pat", "for his dad"] },
+    { hfw: "want", phrases: ["did not want it", "want the job", "want your gum"] }
+  ],
+  "1.6": [
+    { hfw: "they", phrases: ["did they want", "and they are", "as they dig"] },
+    { hfw: "have", phrases: ["if they have", "have your dish", "have a pack of gum"] },
+    { hfw: "one", phrases: ["the one we want", "want one box", "with that one"] },
+    { hfw: "from", phrases: ["from six to ten", "have one from me", "want one from you"] },
+    { hfw: "both", phrases: ["both you and me", "both of us", "both have one"] }
+  ],
+  "2.1": [
+    { hfw: "her", phrases: ["her six cats", "has her pup", "at her job"] },
+    { hfw: "were", phrases: ["were at the dock", "were not with her", "if we were"] },
+    { hfw: "how", phrases: ["how do you", "how they did", "how to call"] },
+    { hfw: "now", phrases: ["she now has", "from now on", "for her now"] },
+    { hfw: "could", phrases: ["could get her now", "could be for her", "she could do"] },
+    { hfw: "would", phrases: ["would not want", "both would have", "how would he"] },
+    { hfw: "should", phrases: ["you should have", "should be your job", "they should want"] },
+    { hfw: "asked", phrases: ["could have asked", "asked her for it", "asked for both"] }
+  ],
+  "2.2": [
+    { hfw: "who", phrases: ["who should be", "who would want", "and who has"] },
+    { hfw: "what", phrases: ["what does he", "what I want", "what is his"] },
+    { hfw: "where", phrases: ["where they could", "where she was", "where does his"] },
+    { hfw: "here", phrases: ["were now here", "both here now", "was here with me"] },
+    { hfw: "there", phrases: ["there should not be", "here or there", "are there for you"] },
+    { hfw: "when", phrases: ["when they were here", "when he does it", "when they have it"] },
+    { hfw: "which", phrases: ["on which one", "which he has", "which would you"] },
+    { hfw: "why", phrases: ["why should he", "why do you", "why is she"] },
+    { hfw: "by", phrases: ["could be by there", "was by the shed", "would have it by now"] },
+    { hfw: "my", phrases: ["have my job", "has my hat", "with my dad"] },
+    { hfw: "try", phrases: ["should try it on", "could try both", "as we try it"] }
+  ],
+  "2.3": [
+    { hfw: "some", phrases: ["could have some chips", "some of your dip", "with some of my pals"] },
+    { hfw: "come", phrases: ["could come now", "asked both to come", "come with his pal"] },
+    { hfw: "comes", phrases: ["comes to me", "comes from her boss", "when it comes"] },
+    { hfw: "coming", phrases: ["coming to you", "is coming here", "should be coming back"] },
+    { hfw: "become", phrases: ["can now become", "will become my pal", "did become mad"] },
+    { hfw: "becomes", phrases: ["how it becomes red", "and then becomes sad", "becomes one of them"] },
+    { hfw: "becoming", phrases: ["becoming the best", "is becoming mad", "by becoming one"] },
+    { hfw: "any", phrases: ["could be any", "comes by any", "any for me"] },
+    { hfw: "anywhere", phrases: ["would sit anywhere", "could be anywhere", "could not find anywhere"] },
+    { hfw: "anyone", phrases: ["anyone but me", "how could anyone", "does anyone have"] },
+    { hfw: "anything", phrases: ["anything from me", "anything for you", "could have anything"] },
+    { hfw: "many", phrases: ["asked how many", "should be many", "had many to try"] },
+    { hfw: "been", phrases: ["have been there", "has been at the shop", "should have been back"] },
+    { hfw: "put", phrases: ["was put there", "were put in the box", "did put them back"] },
+    { hfw: "putting", phrases: ["putting off the task", "could be putting", "have been putting"] }
+  ],
+  "2.4": [
+    { hfw: "out", phrases: ["out of there", "should be out", "want both out"] },
+    { hfw: "about", phrases: ["about to be", "about my job", "could be about"] },
+    { hfw: "their", phrases: ["into their shop", "at their job", "asked their dad"] },
+    { hfw: "front", phrases: ["in front of me", "at the front", "was in front"] },
+    { hfw: "said", phrases: ["said by me", "when she said", "said that to both"] },
+    { hfw: "only", phrases: ["asked only me", "only to me", "only when I run"] }
+  ],
+  "2.5": [
+    { hfw: "too", phrases: ["too many pets", "was too much", "too big for her"] },
+    { hfw: "two", phrases: ["one or two", "asked for two", "from the two pals"] },
+    { hfw: "no", phrases: ["have no cash", "said no to Jack", "with no job"] },
+    { hfw: "go", phrases: ["have to go", "as we go", "where to go"] },
+    { hfw: "so", phrases: ["want so many", "does so well", "with so many"] },
+    { hfw: "also", phrases: ["also does that job", "are also here", "have also been"] },
+    { hfw: "very", phrases: ["was very long", "could be very big", "a very big job"] },
+    { hfw: "every", phrases: ["in every box", "want every pen", "every pack of gum"] },
+    { hfw: "everywhere", phrases: ["not bad everywhere", "everywhere we go", "have fun everywhere"] },
+    { hfw: "everyone", phrases: ["with everyone here", "asked everyone to come", "everyone in the shop"] },
+    { hfw: "everything", phrases: ["get everything back", "did want everything", "asked for everything"] },
+    { hfw: "each", phrases: ["for each one", "asked each to go", "in each box"] },
+    { hfw: "work", phrases: ["about the work", "could work out", "my best work"] },
+    { hfw: "word", phrases: ["is the word", "a word or two", "about the word"] },
+    { hfw: "world", phrases: ["in my world", "where in the world", "in his world"] }
+  ],
+  "3.1": [
+    { hfw: "full", phrases: ["full of shells", "a full pack", "the full box"] },
+    { hfw: "pull", phrases: ["did pull back", "pull my leg", "pull in front"] },
+    { hfw: "pulled", phrases: ["pulled it off", "pulled into the lot", "pulled Pam out"] },
+    { hfw: "push", phrases: ["a big push", "push and pull", "should not push"] },
+    { hfw: "pushed", phrases: ["pushed my luck", "pushed back too", "pushed by me"] },
+    { hfw: "month", phrases: ["for one month", "in a month", "by the month"] },
+    { hfw: "first", phrases: ["should call first", "his first job", "the first one"] },
+    { hfw: "number", phrases: ["a big number", "is number one", "to number ten"] }
+  ],
+  "3.2": [
+    { hfw: "new", phrases: ["a new dish", "my new job", "his new boss"] },
+    { hfw: "other", phrases: ["in other words", "the other man", "the other one"] },
+    { hfw: "another", phrases: ["another word", "another one", "another path"] },
+    { hfw: "after", phrases: ["after the first", "after she comes", "after we go"] },
+    { hfw: "over", phrases: ["over the top", "pulled over too", "could come over"] },
+    { hfw: "under", phrases: ["under the rug", "under my bed", "under a rock"] },
+    { hfw: "down", phrases: ["down the path", "did fall down", "down and out"] }
+  ],
+  "3.3": [
+    { hfw: "Mr.", phrases: ["for Mr. Luck", "with Mr. Chen", "from Mr. Wall"] },
+    { hfw: "Mrs.", phrases: ["Mr. and Mrs. Bell", "with Mrs. Nash", "asked Mrs. Smith"] },
+    { hfw: "know", phrases: ["did know how", "when you know", "what they know"] },
+    { hfw: "knew", phrases: ["knew the way", "if I knew", "when he knew"] },
+    { hfw: "walk", phrases: ["on the walk", "after a walk", "could not walk"] },
+    { hfw: "talk", phrases: ["for his talk", "after I talk", "as we talk"] },
+    { hfw: "water", phrases: ["in the water", "on the water", "a cup of water"] },
+    { hfw: "right", phrases: ["the right one", "was not right", "on my right"] },
+    { hfw: "write", phrases: ["did write it down", "did write the word", "could not write"] }
+  ],
+  "3.4": [
+    { hfw: "day", phrases: ["his big day", "a long day", "all day"] },
+    { hfw: "today", phrases: ["will come today", "should know today", "want it today"] },
+    { hfw: "may", phrases: ["may not go", "may have one", "may come too"] },
+    { hfw: "way", phrases: ["on the way", "in the way", "by the way"] },
+    { hfw: "away", phrases: ["should walk away", "did go away", "will put away"] },
+    { hfw: "say", phrases: ["will say no", "could say yes", "did not say"] },
+    { hfw: "says", phrases: ["when he says", "says I could", "says we can"] },
+    { hfw: "always", phrases: ["is always right", "always does his work", "always comes in"] },
+    { hfw: "people", phrases: ["for tall people", "so many people", "some people"] },
+    { hfw: "our", phrases: ["did our work", "with our dad", "asked our mom"] },
+    { hfw: "hour", phrases: ["for one hour", "in an hour", "on the hour"] }
+  ],
+  "3.5": [
+    { hfw: "through", phrases: ["through the mud", "through the day", "not through yet"] },
+    { hfw: "throughout", phrases: ["throughout the month", "throughout the world", "throughout his talk"] },
+    { hfw: "friend", phrases: ["was his friend", "had a friend", "not my friend"] },
+    { hfw: "often", phrases: ["not very often", "will often call", "does often win"] },
+    { hfw: "called", phrases: ["called my dad", "called his boss", "called a friend"] },
+    { hfw: "great", phrases: ["a great job", "a great man", "was not great"] }
+  ],
+  "4.1": [
+    { hfw: "use", phrases: ["should use that", "could use it", "did use some"] },
+    { hfw: "uses", phrases: ["always uses it", "uses my pen", "uses that one"] },
+    { hfw: "using", phrases: ["was using it", "after using it", "using a list"] },
+    { hfw: "used", phrases: ["used all of it", "had used less", "used the van"] },
+    { hfw: "move", phrases: ["did move up", "could move out", "should move back"] },
+    { hfw: "moved", phrases: ["moved over there", "moved it up", "moved the box"] },
+    { hfw: "remove", phrases: ["could remove it", "will remove that", "had to remove some"] },
+    { hfw: "removed", phrases: ["removed the mess", "removed his hat", "removed the bag"] },
+    { hfw: "taste", phrases: ["did taste some", "will taste it", "when we taste"] },
+    { hfw: "waste", phrases: ["should not waste", "did waste it", "go to waste"] },
+    { hfw: "paste", phrases: ["had to paste", "used my paste", "cut and paste"] },
+    { hfw: "none", phrases: ["none at all", "none for him", "none of us"] },
+    { hfw: "done", phrases: ["is not done", "done by ten", "done after one"] },
+    { hfw: "sure", phrases: ["is not sure", "sure about that", "want to be sure"] }
+  ],
+  "4.2": [
+    { hfw: "never", phrases: ["will never do", "never be sure", "had never been"] },
+    { hfw: "ever", phrases: ["have you ever", "did you ever", "ever been to"] },
+    { hfw: "however", phrases: ["however you want", "however we run", "however you wish"] },
+    { hfw: "whenever", phrases: ["whenever you want", "now or whenever", "whenever I sit"] },
+    { hfw: "wherever", phrases: ["wherever they are", "wherever we go", "wherever I walk"] },
+    { hfw: "cause", phrases: ["no cause to run", "a great cause", "is not the cause"] },
+    { hfw: "because", phrases: ["because of him", "because of the sun", "because she fell"] },
+    { hfw: "goes", phrases: ["goes to bed", "goes by them", "goes with me"] },
+    { hfw: "going", phrases: ["going to work", "was going out", "is going back"] },
+    { hfw: "took", phrases: ["took a nap", "took it back", "took the bus"] },
+    { hfw: "look", phrases: ["a quick look", "had to look", "will look out"] },
+    { hfw: "good", phrases: ["is not good", "was so good", "could be good"] },
+    { hfw: "book", phrases: ["a new book", "by the book", "in the book"] },
+    { hfw: "food", phrases: ["had some food", "did want food", "food and drink"] }
+  ],
+  "4.3": [
+    { hfw: "nothing", phrases: ["nothing for him", "nothing at all", "got nothing done"] },
+    { hfw: "please", phrases: ["did please me", "will please him", "would you please"] },
+    { hfw: "pleases", phrases: ["pleases my dad", "pleases her mom", "pleases all of them"] },
+    { hfw: "pleased", phrases: ["was not pleased", "was very pleased", "will be pleased"] },
+    { hfw: "together", phrases: ["did work together", "will put together", "can get together"] },
+    { hfw: "altogether", phrases: ["altogether had six", "was altogether mad", "an altogether new way"] },
+    { hfw: "year", phrases: ["the first year", "in a year", "for one year"] },
+    { hfw: "once", phrases: ["once it is done", "once he fell", "had that once"] }
+  ],
+  "4.4": [
+    { hfw: "important", phrases: ["an important job", "an important call", "is not important"] },
+    { hfw: "again", phrases: ["will run again", "did try again", "should talk again"] },
+    { hfw: "against", phrases: ["against the wall", "against his wishes", "was against me"] },
+    { hfw: "place", phrases: ["in one place", "the right place", "put into place"] },
+    { hfw: "part", phrases: ["do my part", "want no part", "part with it"] },
+    { hfw: "found", phrases: ["found my name", "found a pen", "found his book"] },
+    { hfw: "sound", phrases: ["not a sound", "did sound bad", "a good sound"] },
+    { hfw: "around", phrases: ["will walk around", "could get around", "around my neck"] }
+  ],
+  "5.1": [
+    { hfw: "several", phrases: ["want several more", "had several books", "found several boxes"] },
+    { hfw: "thought", phrases: ["thought I could", "thought it was", "thought she did"] },
+    { hfw: "bought", phrases: ["bought some water", "bought more pens", "bought one for me"] },
+    { hfw: "brought", phrases: ["brought him home", "brought it back", "brought it out"] },
+    { hfw: "ought", phrases: ["ought to run", "ought to shop", "ought to go"] },
+    { hfw: "three", phrases: ["got three calls", "did want three", "had three dogs"] },
+    { hfw: "four", phrases: ["have four hats", "got four pens", "want four more"] },
+    { hfw: "fourth", phrases: ["fourth in line", "was the fourth", "in fourth place"] },
+    { hfw: "before", phrases: ["before or after", "before I go", "before we talk"] },
+    { hfw: "below", phrases: ["below the shelf", "below the deck", "below this one"] },
+    { hfw: "between", phrases: ["between you and me", "sat between us", "between the lines"] },
+    { hfw: "different", phrases: ["went a different way", "was very different", "had a different number"] }
+  ],
+  "5.2": [
+    { hfw: "own", phrases: ["on my own", "did own a dog", "will own up"] },
+    { hfw: "owner", phrases: ["was the owner", "is the owner", "asked the new owner"] },
+    { hfw: "owned", phrases: ["owned the truck", "owned a cat", "owned up to it"] },
+    { hfw: "house", phrases: ["in the house", "at my house", "in back of the house"] },
+    { hfw: "houses", phrases: ["two more houses", "look for houses", "all the houses"] },
+    { hfw: "toward", phrases: ["toward the back", "toward the front", "toward the right"] },
+    { hfw: "heart", phrases: ["with all my heart", "in his heart", "have a heart"] },
+    { hfw: "learn", phrases: ["did learn from it", "will learn to walk", "will learn the way"] },
+    { hfw: "learned", phrases: ["learned how to talk", "learned my part", "learned each one"] }
+  ],
+  "5.3": [
+    { hfw: "woman", phrases: ["is an old woman", "for that woman", "a different woman"] },
+    { hfw: "women", phrases: ["how many women", "two more women", "with both women"] },
+    { hfw: "beautiful", phrases: ["is so beautiful", "was very beautiful", "a beautiful woman"] },
+    { hfw: "pretty", phrases: ["is very pretty", "was not pretty", "a pretty shell"] },
+    { hfw: "don't", phrases: ["don't want any", "don't have it", "don't like that"] },
+    { hfw: "person", phrases: ["with that person", "called one more person", "was a good person"] }
+  ],
+  "5.4": [
+    { hfw: "father", phrases: ["with my father", "is his father", "asked his father"] },
+    { hfw: "mother", phrases: ["called my mother", "knew his mother", "father and mother"] },
+    { hfw: "brother", phrases: ["goes with her brother", "not my brother", "have one brother"] },
+    { hfw: "sister", phrases: ["my big sister", "had one sister", "her brother and sister"] },
+    { hfw: "daughter", phrases: ["is her daughter", "have a daughter", "took his daughter"] },
+    { hfw: "son", phrases: ["with my son", "brought her son", "have one son"] },
+    { hfw: "won", phrases: ["when they won", "if my daughter won", "won the game"] },
+    { hfw: "ton", phrases: ["over a ton", "under a ton", "more than a ton"] }
+  ],
+  "5.5": [
+    { hfw: "family", phrases: ["a big family", "with my family", "part of the family"] },
+    { hfw: "families", phrases: ["two more families", "with their families", "so many families"] },
+    { hfw: "soon", phrases: ["is too soon", "not so soon", "could be soon"] },
+    { hfw: "almost", phrases: ["almost one year", "is almost over", "is almost done"] },
+    { hfw: "early", phrases: ["was not early", "is too early", "should be early"] },
+    { hfw: "since", phrases: ["since went", "since he won", "since last month"] }
+  ],
+  "6.1": [
+    { hfw: "minute", phrases: ["in a minute", "for one minute", "just a minute"] },
+    { hfw: "minutes", phrases: ["in ten minutes", "with two minutes left", "minutes to spare"] },
+    { hfw: "answer", phrases: ["is the answer", "the right answer", "said the answer"] },
+    { hfw: "few", phrases: ["want a few", "just a few", "in a few minutes"] },
+    { hfw: "school", phrases: ["was in school", "at the school", "to the school"] },
+    { hfw: "love", phrases: ["was in love", "love the gift", "would love to come"] },
+    { hfw: "above", phrases: ["above the fan", "fell from above", "above the rest"] }
+  ],
+  "6.2": [
+    { hfw: "earth", phrases: ["into the earth", "where on earth", "best on earth"] },
+    { hfw: "Earth", phrases: ["on planet Earth", "land on Earth", "because the Earth"] },
+    { hfw: "America", phrases: ["way to America", "call to America", "trip around America"] },
+    { hfw: "American", phrases: ["with the American", "by the American flag", "at the American school"] },
+    { hfw: "island", phrases: ["on the island", "to the island", "past the island"] },
+    { hfw: "ocean", phrases: ["in the ocean", "within the ocean water", "by the ocean"] },
+    { hfw: "mountain", phrases: ["next to the mountain", "beside the mountain", "up the mountain path"] }
+  ],
+  "6.3": [
+    { hfw: "eight", phrases: ["with the number eight", "used eight dishes", "asked for eight"] },
+    { hfw: "eighth", phrases: ["in eighth place", "the eighth month", "by the eighth box"] },
+    { hfw: "lose", phrases: ["win or lose", "did not lose", "did lose her place"] },
+    { hfw: "loses", phrases: ["loses his cash", "loses the game", "loses the ball"] },
+    { hfw: "losing", phrases: ["losing the fan", "losing the game", "losing all the time"] },
+    { hfw: "large", phrases: ["a large number", "a large house", "used a large pan"] },
+    { hfw: "follow", phrases: ["and follow along", "could not follow", "will follow you"] },
+    { hfw: "laugh", phrases: ["a good laugh", "did not laugh", "will laugh again"] },
+    { hfw: "laughter", phrases: ["so much laughter", "cause of the laughter", "full of laughter"] }
+  ],
+  "6.4": [
+    { hfw: "double", phrases: ["double or nothing", "double the work", "double your cash"] },
+    { hfw: "trouble", phrases: ["not in trouble", "had some trouble", "a lot of trouble"] },
+    { hfw: "triple", phrases: ["double or triple", "triple the cost", "triple the fun"] },
+    { hfw: "though", phrases: ["even though I fell", "though he said to", "even though I asked"] },
+    { hfw: "although", phrases: ["although he is rich", "although I am late", "although she is close"] },
+    { hfw: "during", phrases: ["during the month", "during the day", "during my lunch"] },
+    { hfw: "ready", phrases: ["ready or not", "should get ready", "is not ready"] },
+    { hfw: "already", phrases: ["already at school", "already at my house", "already on the job"] }
+  ],
+  "7.1": [
+    { hfw: "necessary", phrases: ["was not necessary", "may be necessary", "is necessary for you"] },
+    { hfw: "excellent", phrases: ["will be excellent", "had an excellent time", "did an excellent job"] },
+    { hfw: "police", phrases: ["called the police", "used a police dog", "rode with the police"] },
+    { hfw: "special", phrases: ["is special to me", "was not special", "is so special"] },
+    { hfw: "especially", phrases: ["was especially fun", "is especially soft", "was not especially tall"] },
+    { hfw: "false", phrases: ["one false move", "took a false step", "under a false name"] }
+  ],
+  "7.2": [
+    { hfw: "guess", phrases: ["my best guess", "made a wild guess", "should not guess"] },
+    { hfw: "guest", phrases: ["was a guest", "will be my guest", "had a guest pass"] },
+    { hfw: "length", phrases: ["went to a great length", "had a length of string", "won by a length"] },
+    { hfw: "strength", phrases: ["had great strength", "strength in numbers", "with such strength"] },
+    { hfw: "change", phrases: ["will not change", "had to change", "if we change"] },
+    { hfw: "range", phrases: ["in the range", "at close range", "out of range"] },
+    { hfw: "arrange", phrases: ["must arrange for help", "did arrange to get home", "will arrange to go"] },
+    { hfw: "strange", phrases: ["is not strange", "does look strange", "was so strange"] },
+    { hfw: "stranger", phrases: ["since the stranger", "is a stranger to me", "was not a stranger"] },
+    { hfw: "danger", phrases: ["not in any danger", "was in great danger", "out of danger"] },
+    { hfw: "orange", phrases: ["ate an orange", "want an orange", "took an orange"] }
+  ],
+  "7.3": [
+    { hfw: "knowledge", phrases: ["had no knowledge", "had great knowledge", "has some knowledge"] },
+    { hfw: "watch", phrases: ["not on my watch", "should watch out", "got a new watch"] },
+    { hfw: "physical", phrases: ["got a physical", "was not physical", "was very physical"] },
+    { hfw: "science", phrases: ["in science class", "is not an exact science", "did learn about science"] },
+    { hfw: "scientist", phrases: ["wants to be a scientist", "works as a scientist", "a mad scientist"] },
+    { hfw: "scientific", phrases: ["in a scientific way", "did scientific work", "was not scientific"] },
+    { hfw: "college", phrases: ["went to college", "is in college", "at the college"] }
+  ],
+  "7.4": [
+    { hfw: "national", phrases: ["on national news", "was a British national", "is the national anthem"] },
+    { hfw: "themselves", phrases: ["all by themselves", "went by themselves", "kept to themselves"] },
+    { hfw: "ourselves", phrases: ["did it ourselves", "all by ourselves", "kept to ourselves"] },
+    { hfw: "half", phrases: ["could use half", "will take half", "did want half"] },
+    { hfw: "whole", phrases: ["the whole thing", "as a whole", "on the whole"] },
+    { hfw: "whom", phrases: ["asked with whom", "I met with whom", "sent to whom"] },
+    { hfw: "whose", phrases: ["whose book was", "whose work is", "whose it is"] },
+    { hfw: "question", phrases: ["had a question", "asked a question", "will question him"] },
+    { hfw: "suggestion", phrases: ["made a suggestion", "got another suggestion", "took my suggestion"] }
+  ],
+  "7.5": [
+    { hfw: "body", phrases: ["a body of work", "your body clock", "a body of water"] },
+    { hfw: "anybody", phrases: ["if anybody wants one", "if anybody goes", "would anybody mind"] },
+    { hfw: "everybody", phrases: ["told everybody to come", "want everybody there", "asked everybody to help"] },
+    { hfw: "nobody", phrases: ["is a nobody", "had nobody to ask", "sent nobody home"] },
+    { hfw: "somebody", phrases: ["if somebody knew", "when somebody went", "as somebody learned"] },
+    { hfw: "won't", phrases: ["won't do it", "won't ask him", "won't tell her"] },
+    { hfw: "usual", phrases: ["went on as usual", "do more than usual", "will have the usual"] },
+    { hfw: "usually", phrases: ["is usually done", "more than usually", "as they usually did"] },
+    { hfw: "probably", phrases: ["will probably not say", "will probably go", "would probably think"] },
+    { hfw: "either", phrases: ["want either one", "either first or last", "could use either one"] },
+    { hfw: "neither", phrases: ["neither one of them", "neither one should", "neither did they"] }
+  ]
+};

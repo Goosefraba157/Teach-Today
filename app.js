@@ -1156,6 +1156,14 @@ function sentencePageEntry(substep, level, page) {
 }
 
 function dictationValues(type, substep, level = "AB") {
+  if (type === "phrases") {
+    const phraseRows = structuredDictationPhraseRows(substep);
+    if (phraseRows.length) return phraseRows.flatMap((row) => row.phrases || []);
+  }
+  if (type === "sentences") {
+    const sentenceGroups = structuredDictationSentenceGroups(substep, level);
+    if (sentenceGroups.length) return flattenDictationSentenceGroups(sentenceGroups);
+  }
   const key = type === "highFrequency" ? "hfw" : type;
   const indexed = window.dictationIndex?.[substep]?.[level]?.[key]
     || window.dictationIndex?.[substep]?.AB?.[key]
@@ -1167,6 +1175,25 @@ function dictationValues(type, substep, level = "AB") {
   return window.dictationContent?.[type]?.[substep]?.[level]
     || window.dictationContent?.[type]?.[substep]?.AB
     || [];
+}
+
+function structuredDictationPhraseRows(substep) {
+  return window.dictationPhraseIndex?.[substep] || [];
+}
+
+function structuredDictationSentenceGroups(substep, level = "AB") {
+  const stepIndex = window.dictationSentenceIndex?.[substep] || {};
+  const resolved = level === "B" ? "B" : "AB";
+  const groups = stepIndex[resolved]?.groups || [];
+  if (groups.length) return groups;
+  return stepIndex.AB?.groups || [];
+}
+
+function flattenDictationSentenceGroups(groups, kind = null) {
+  return groups
+    .filter((group) => !kind || group.kind === kind)
+    .flatMap((group) => group.chunks || [])
+    .flatMap((chunk) => chunk.sentences || []);
 }
 
 function reviewWordsForLesson(group, skill, assignment) {

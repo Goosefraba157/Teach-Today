@@ -19,7 +19,7 @@ window.wilsonHighFrequencyWords = {
   "4.4": ["important", "again", "against", "place", "part", "found", "sound", "around"],
   "5.1": ["several", "thought", "bought", "brought", "ought", "three", "four", "fourth", "before", "below", "between", "different"],
   "5.2": ["own", "owner", "owned", "house", "houses", "toward", "heart", "learn", "learned"],
-  "5.3": ["woman", "women", "beautiful", "pretty", "person"],
+  "5.3": ["woman", "women", "beautiful", "pretty", "don't", "person"],
   "5.4": ["father", "mother", "brother", "sister", "daughter", "son", "won", "ton"],
   "5.5": ["family", "families", "soon", "almost", "early", "since"],
   "6.1": ["minute", "minutes", "answer", "few", "school", "love", "above"],
