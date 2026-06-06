@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Teach Today Game Quest</title>
+    <link rel="stylesheet" href="game-hub.css">
+  </head>
+  <body>
+    <main class="game-hub" aria-label="Student game hub">
+      <section class="student-gate" id="studentGate" aria-label="Choose student">
+        <div class="gate-copy">
+          <img src="../assets/morrocoy-logo.png" alt="Morrocoy logo" class="hub-logo">
+          <p class="eyebrow">Game Quest</p>
+          <h1>Pick your name and jump in.</h1>
+          <p class="gate-line">Every point you earn in a game lands here.</p>
+        </div>
+
+        <div class="student-picker">
+          <label for="studentSearch">Find your name</label>
+          <input id="studentSearch" type="search" autocomplete="off" placeholder="Type or tap a name">
+          <div class="student-grid" id="studentGrid" aria-label="Student names"></div>
+          <div class="add-student">
+            <input id="newStudentName" type="text" autocomplete="off" placeholder="New student name">
+            <button id="addStudentBtn" type="button">Add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="quest-screen hidden" id="questScreen" aria-label="Choose a game">
+        <header class="quest-top">
+          <div class="student-badge">
+            <span id="studentInitials">--</span>
+            <div>
+              <p class="eyebrow">Now playing</p>
+              <h2 id="activeStudentName">Student</h2>
+            </div>
+          </div>
+          <div class="top-actions">
+            <button id="switchStudentBtn" type="button">Switch</button>
+            <a class="teacher-link" href="../index.html">Teacher</a>
+          </div>
+        </header>
+
+        <section class="score-band" aria-label="Score summary">
+          <article>
+            <span id="totalPoints">0</span>
+            <p>Total points</p>
+          </article>
+          <article>
+            <span id="gamesPlayed">0</span>
+            <p>Games played</p>
+          </article>
+          <article>
+            <span id="cursivePoints">0</span>
+            <p>Syllable points</p>
+          </article>
+          <article>
+            <span id="rankLabel">Ready</span>
+            <p>Quest rank</p>
+          </article>
+        </section>
+
+        <section class="game-zone">
+          <div class="zone-heading">
+            <div>
+              <p class="eyebrow">Choose a game</p>
+              <h1>Today&apos;s quest board</h1>
+            </div>
+            <div class="spark-meter" aria-label="Progress toward next rank">
+              <span id="sparkFill"></span>
+            </div>
+          </div>
+
+          <div class="game-grid" id="gameGrid"></div>
+        </section>
+
+        <aside class="leader-panel" aria-label="Leaderboard">
+          <div class="panel-heading">
+            <h2>Top players</h2>
+            <button id="refreshBtn" type="button">Refresh</button>
+          </div>
+          <div id="leaderboard" class="leaderboard"></div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="game-hub.js"></script>
+  </body>
+</html>

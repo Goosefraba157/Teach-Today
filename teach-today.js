@@ -21,6 +21,8 @@ let ttSection1View = "photo";
 let ttSection1PhotoMode = "full";
 let ttSection1LastTap = { time: 0, x: 0, y: 0 };
 let ttSection1Pan = null;
+let ttPlannerGroupId = "";
+let ttPlannerDraft = {};
 
 function ttById(id) {
   return document.getElementById(id);
@@ -104,6 +106,7 @@ function ttRender() {
   ttRenderAttendancePanel(group);
   ttRenderSavedLessons(group);
   ttRenderDataCenter();
+  ttRenderWrapUpPanel(group, lesson);
   ttFillOverview(group, skill);
   ttFillSectionRefs(lesson);
   ttFillSounds(skill, lesson);
@@ -126,6 +129,7 @@ function ttRender() {
   ttById("ttPassage").textContent = lesson.passage || `Use Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} for Section #9.`;
   ttById("ttWrap").textContent = "Ask one comprehension question, note the hardest word, and decide whether the next lesson should repeat, warm up, or advance.";
   ttSetupChart(lesson);
+  ttRenderHomeScreen();
 }
 
 function ttFillSectionRefs(lesson) {
@@ -250,9 +254,9 @@ function ttApplyPlanLinkToRecord(record, plan) {
       changed = true;
     }
   });
-  if (!plan.hasStudentData || plan.status !== "Taught") {
+  if (!plan.hasStudentData || (plan.status !== "Taught" && plan.status !== "Complete")) {
     plan.hasStudentData = true;
-    plan.status = "Taught";
+    if (plan.status !== "Complete") plan.status = "Taught";
     plan.lastStudentDataAt ||= record.date || new Date().toISOString();
     changed = true;
   }
@@ -617,6 +621,619 @@ function ttRenderGroupSnapshot(group) {
     </div>
     <div class="snapshot-grid">${cards || "<p class=\"snapshot-empty\">No student details saved for the last class date.</p>"}</div>
   `;
+}
+
+function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
+  ttPlannerGroupId = groupId;
+  const home = ttById("ttHomeScreen");
+  const flow = document.querySelector(".teach-flow");
+  if (home) home.hidden = false;
+  if (flow) flow.hidden = true;
+  ttRenderHomeScreen();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function ttOpenTeachFlow() {
+  const home = ttById("ttHomeScreen");
+  const flow = document.querySelector(".teach-flow");
+  if (home) home.hidden = true;
+  if (flow) flow.hidden = false;
+  ttRender();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function ttRenderHomeScreen() {
+  const home = ttById("ttHomeScreen");
+  if (!home || home.hidden) return;
+  const groups = appState.groups || [];
+  if (!ttPlannerGroupId || !groups.some((group) => group.id === ttPlannerGroupId)) {
+    ttPlannerGroupId = appState.selectedGroupId || groups[0]?.id || "";
+  }
+  ttEnsurePlannerDraft(ttPlannerGroup());
+  const list = ttById("ttHomeGroups");
+  if (list) {
+    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("");
+    list.querySelectorAll("[data-home-group]").forEach((button) => {
+      button.addEventListener("click", () => {
+        ttPlannerGroupId = button.dataset.homeGroup;
+        ttPlannerDraft = {};
+        ttRenderHomeScreen();
+      });
+    });
+  }
+  ttRenderPlannerPanel();
+}
+
+function ttHomeGroupCardHtml(group) {
+  const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
+  const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
+  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]) || (group.history || []).at(-1);
+  const lastLesson = lastPlan?.lessons?.[0];
+  const records = (appState.masterRecords || [])
+    .filter((record) => record.groupId === group.id || record.group === group.name)
+    .sort((a, b) => new Date(b.date || b.displayDate || 0) - new Date(a.date || a.displayDate || 0));
+  const lastRecord = records[0];
+  const students = (group.students || []).slice(0, 5).join(", ");
+  const active = group.id === ttPlannerGroupId ? " active" : "";
+  const lastText = lastLesson
+    ? `${lastLesson.substep} / Reader ${lastLesson.reader}, p. ${lastLesson.wordlistPageNumber || "--"}`
+    : `${group.substep || "--"} / no saved lesson yet`;
+  const chartText = lastRecord
+    ? `${lastRecord.student}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
+    : "No charting saved";
+  return `<button type="button" class="home-group-card${active}" style="--group-color: ${color};" data-home-group="${escapeHtml(group.id)}">
+    <span>${escapeHtml(group.time || "Group")}</span>
+    <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
+    <em>${escapeHtml(students || "No students yet")}</em>
+    <small>Last lesson: ${escapeHtml(lastText)}</small>
+    <small>Last chart: ${escapeHtml(chartText)}</small>
+  </button>`;
+}
+
+function ttPlannerGroup() {
+  return (appState.groups || []).find((group) => group.id === ttPlannerGroupId) || ttActiveGroup();
+}
+
+function ttEnsurePlannerDraft(group) {
+  if (!group) return {};
+  if (ttPlannerDraft.groupId === group.id) return ttPlannerDraft;
+  const skill = scopeMap.find((item) => item.id === group.substep) || activeStep(group);
+  const level = group.readerLevel || "AB";
+  ttPlannerDraft = {
+    groupId: group.id,
+    substep: skill.id,
+    level,
+    wordlist: pageAssignment(group, skill, "wordlist", 0, level).page || "",
+    sentence: pageAssignment(group, skill, "sentences", 0, level).page || "",
+    reviewSubsteps: [priorSubstep(skill.id)]
+  };
+  return ttPlannerDraft;
+}
+
+function ttRenderPlannerPanel() {
+  const panel = ttById("ttQuickPlanner");
+  if (!panel) return;
+  const group = ttPlannerGroup();
+  panel.hidden = !group;
+  if (!group) return;
+  const draft = ttEnsurePlannerDraft(group);
+  const skill = scopeMap.find((item) => item.id === draft.substep) || activeStep(group);
+  const level = draft.level || group.readerLevel || "AB";
+  ttById("ttPlannerTitle").textContent = group.name || "Lesson builder";
+  ttById("ttPlannerLastLesson").textContent = ttPlannerLastLessonText(group);
+  ttFillPlannerCoreSelects(group, skill, level);
+  const lesson = ttPlannerPreviewLesson(group);
+  ttById("ttPlannerSections").innerHTML = ttPlannerSectionsHtml(group, skill, lesson);
+  ttBindPlannerChips();
+  ttRenderPlannerPreview(group, skill, lesson);
+}
+
+function ttPlannerLastLessonText(group) {
+  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]);
+  if (!lastPlan?.lessons?.[0]) return "No saved lesson yet. Smart defaults use this group’s current substep.";
+  const lesson = lastPlan.lessons[0];
+  const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
+  return `Last taught: ${lesson.substep}, Reader ${lesson.reader}, wordlist p. ${lesson.wordlistPageNumber || "--"}${saved ? ` · ${saved}` : ""}`;
+}
+
+function ttFillPlannerCoreSelects(group, skill, level) {
+  const draft = ttEnsurePlannerDraft(group);
+  const substep = ttById("ttPlannerSubstep");
+  const levelSelect = ttById("ttPlannerLevel");
+  const wordlist = ttById("ttPlannerWordlist");
+  const sentence = ttById("ttPlannerSentence");
+  if (substep) {
+    substep.innerHTML = scopeMap.map((item) => `<option value="${escapeHtml(item.id)}"${item.id === draft.substep ? " selected" : ""}>${escapeHtml(item.id)} - ${escapeHtml(item.title)}</option>`).join("");
+  }
+  if (levelSelect) {
+    levelSelect.innerHTML = ["AB", "A", "B", "N"].map((item) => `<option value="${item}"${item === draft.level ? " selected" : ""}>${item}</option>`).join("");
+  }
+  if (wordlist) {
+    const pages = pageList(skill, "wordlist", level);
+    wordlist.innerHTML = pages.map((page, index) => {
+      const count = chartingPageEntry(skill.id, resolvedLevel(skill, "wordlist", level), page).count;
+      return `<option value="${page}"${page === Number(draft.wordlist) ? " selected" : ""}>p. ${page} (${index + 1}/${pages.length}${count ? `, ${count}w` : ""})</option>`;
+    }).join("");
+  }
+  if (sentence) {
+    const pages = pageList(skill, "sentences", level);
+    sentence.innerHTML = pages.map((page, index) => `<option value="${page}"${page === Number(draft.sentence) ? " selected" : ""}>p. ${page} (${index + 1}/${pages.length})</option>`).join("");
+  }
+}
+
+function ttPlannerPreviewLesson(group) {
+  const draft = ttEnsurePlannerDraft(group);
+  const skillId = draft.substep || group.substep;
+  const skill = scopeMap.find((item) => item.id === skillId) || activeStep(group);
+  const level = draft.level || group.readerLevel || "AB";
+  const tempGroup = ttClone(group);
+  tempGroup.substep = skill.id;
+  tempGroup.readerLevel = level;
+  tempGroup.pageProgress ||= { wordlist: 0, sentences: 0, passage: 0 };
+  const wordPages = pageList(skill, "wordlist", level);
+  const sentencePages = pageList(skill, "sentences", level);
+  const selectedWordPage = Number(draft.wordlist || 0);
+  const selectedSentencePage = Number(draft.sentence || 0);
+  tempGroup.pageProgress.wordlist = Math.max(0, wordPages.indexOf(selectedWordPage));
+  tempGroup.pageProgress.sentences = Math.max(0, sentencePages.indexOf(selectedSentencePage));
+  const lesson = createLesson(tempGroup, skill, 0, 1);
+  if (selectedSentencePage) {
+    const sentenceAssignment = {
+      reader: skill.reader,
+      page: selectedSentencePage,
+      level: resolvedLevel(skill, "sentences", level),
+      index: Math.max(0, sentencePages.indexOf(selectedSentencePage)) + 1,
+      total: sentencePages.length
+    };
+    const sentenceData = sentenceDataForPage(skill, sentenceAssignment);
+    lesson.sentencePageNumber = selectedSentencePage;
+    lesson.sentenceLevel = sentenceAssignment.level;
+    lesson.sentenceMeta = `Reader ${skill.reader}, p. ${selectedSentencePage} - ${pagePositionLabel(sentenceAssignment, "sentence")}`;
+    lesson.highFrequencyWords = sentenceData.highFrequency;
+    lesson.readerSentences = sentenceData.sentences;
+  }
+  return lesson;
+}
+
+function ttPlannerSectionsHtml(group, skill, lesson) {
+  const originalSelectedGroupId = appState.selectedGroupId;
+  appState.selectedGroupId = group.id;
+  ttEnsurePlannerDraft(group);
+  const sectionSeven = ttBuildSectionSevenWordSets(lesson, skill);
+  const dictationPlan = ttDictationPlan(lesson, skill, { avoidWordKeys: new Set() });
+  const dictationBlock = (label) => dictationPlan.find((block) => block.label.toLowerCase().includes(label))?.values || [];
+  const chartWords = uniqueWords([].concat(lesson.realWords || [], lesson.nonsenseWords || []));
+  const reviewSubsteps = ttPlannerDraft.reviewSubsteps?.length ? ttPlannerDraft.reviewSubsteps : [priorSubstep(skill.id)];
+  const reviewPool = ttPlannerReviewWordPool(reviewSubsteps, lesson.readerLevel || "AB").slice(0, 64);
+  const currentPool = chartWords.slice(0, 30);
+  const section3Review = uniqueWords([].concat(section3ReviewCards(lesson), reviewPool)).slice(0, 36);
+  const section3Current = uniqueWords([].concat(section3CurrentCards(lesson), chartWords)).slice(0, 36);
+  const vowels = vowelSoundList(skill.id);
+  const consonants = consonantSoundList(skill.id);
+  const welded = ttKnownWeldedValues(skill.id);
+  const elements = wordElementList(skill.id);
+  const sounds = uniqueWords([].concat(vowels, consonants, welded)).slice(0, 80);
+  const realWords = uniqueWords([].concat(ttCurrentRealWordPool(lesson, skill), ttReviewRealWordPool(lesson, skill))).slice(0, 40);
+  const nonsense = ttTrueNonsensePool(skill.id).slice(0, 60);
+  const phraseRows = currentDictationPhraseRows(skill.id);
+  const dictationSentences = uniqueWords(currentDictationSentencesForLesson(lesson, skill, group)).slice(0, 30);
+  const readerSentences = uniqueWords(currentReaderSentencesForDictation(lesson, skill)).slice(0, 24);
+  const html = [
+    ttPlannerReviewSourceHtml(skill, reviewSubsteps),
+    ttPlannerPickerHtml("section2Current", "Section 2 current words", currentPool, lesson.sectionTwoCurrentWords || [], 6),
+    ttPlannerPickerHtml("section2Review", "Section 2 review words", reviewPool, lesson.sectionTwoReviewWords || [], 6),
+    ttPlannerPickerHtml("section3Current", "Section 3 current cards", section3Current, section3CurrentCards(lesson), 8),
+    ttPlannerPickerHtml("section3Review", "Section 3 review cards", section3Review, section3ReviewCards(lesson), 8),
+    ttPlannerPickerHtml("section7Review", "Section 7 review words", uniqueWords([].concat(sectionSeven.review, reviewPool)), sectionSeven.review, 5),
+    ttPlannerPickerHtml("section7Current", "Section 7 current words", uniqueWords([].concat(sectionSeven.current, currentPool)), sectionSeven.current, 5),
+    ttPlannerPickerHtml("section7Nonsense", "Section 7 nonsense words", uniqueWords([].concat(sectionSeven.nonsense, nonsense)), sectionSeven.nonsense, 3),
+    ttPlannerPickerHtml("section6Vowels", "Section 6 vowels", vowels, vowels.slice(0, 5), 5),
+    ttPlannerPickerHtml("section6Consonants", "Section 6 consonants", consonants, consonants.slice(0, 5), 5),
+    ttPlannerPickerHtml("section6Welded", "Section 6 welded / glued sounds", welded, welded.slice(0, 5), 5),
+    ttPlannerPickerHtml("section6Elements", "Section 6 word elements", elements, elements.slice(0, 5), 5),
+    ttPlannerPickerHtml("dictationSounds", "Dictation sounds", sounds, dictationBlock("sounds"), 5),
+    ttPlannerPickerHtml("dictationElements", "Word elements", elements, dictationBlock("word elements"), 5),
+    ttPlannerPickerHtml("dictationReal", "Dictation real words", realWords, dictationBlock("real words"), 5),
+    ttPlannerPickerHtml("dictationNonsense", "Dictation nonsense words", nonsense, dictationBlock("nonsense"), 3),
+    ttPlannerPhrasePickerHtml(phraseRows, dictationBlock("phrases"), 3),
+    ttPlannerPickerHtml("dictationSentences", "Dictation book sentences", dictationSentences, dictationBlock("sentences"), "max 3 combined"),
+    ttPlannerPickerHtml("readerSentences", "Reader sentences for dictation", readerSentences, [], "max 3 combined")
+  ].join("");
+  appState.selectedGroupId = originalSelectedGroupId;
+  return html;
+}
+
+function ttPlannerReviewWordPool(substeps, level) {
+  return uniqueWords((substeps || []).flatMap((substep) =>
+    readerWordsFromSubstep(substep, level).concat(dictationWordsFor(substep, level))
+  )).filter(isValidDictationWord);
+}
+
+function ttPlannerReviewSourceHtml(skill, selectedSubsteps) {
+  const currentIndex = scopeMap.findIndex((item) => item.id === skill.id);
+  const options = scopeMap.slice(Math.max(0, currentIndex - 8), currentIndex + 1).map((item) => item.id).reverse();
+  const selected = new Set(selectedSubsteps || []);
+  return `<article class="planner-picker planner-review-source" data-picker="reviewSources" data-target-count="multi">
+    <header><strong>Review source substeps</strong><span>multi-select</span></header>
+    <div class="planner-chip-row">
+      ${options.map((id) => `<button type="button" class="${selected.has(id) ? "selected" : ""}" data-value="${escapeHtml(id)}">${escapeHtml(id)}</button>`).join("")}
+    </div>
+  </article>`;
+}
+
+function ttPlannerPickerHtml(id, title, items, selected, targetCount) {
+  const selectedSet = new Set((selected || []).map(String));
+  const cleanItems = uniqueWords(items || []).filter(Boolean).slice(0, 48);
+  return `<article class="planner-picker" data-picker="${escapeHtml(id)}" data-target-count="${targetCount}">
+    <header><strong>${escapeHtml(title)}</strong><span>${targetCount} target</span></header>
+    <div class="planner-chip-row">
+      ${cleanItems.map((item) => `<button type="button" class="${selectedSet.has(String(item)) ? "selected" : ""}" data-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
+    </div>
+  </article>`;
+}
+
+function ttPlannerPhrasePickerHtml(rows, selected, targetCount) {
+  const selectedSet = new Set((selected || []).map(String));
+  const content = (rows || []).map((row) => {
+    const hfw = row.hfw || row.word || "HFW";
+    const phrases = row.phrases || [];
+    return `<section class="planner-phrase-group">
+      <h4>${escapeHtml(hfw)}</h4>
+      <div class="planner-chip-row">
+        ${phrases.map((phrase) => `<button type="button" class="${selectedSet.has(String(phrase)) ? "selected" : ""}" data-value="${escapeHtml(phrase)}">${escapeHtml(phrase)}</button>`).join("")}
+      </div>
+    </section>`;
+  }).join("");
+  return `<article class="planner-picker planner-phrases" data-picker="dictationPhrases" data-target-count="${targetCount}">
+    <header><strong>Dictation phrases</strong><span>${targetCount} target</span></header>
+    ${content || "<p class=\"planner-empty\">No phrase groups indexed for this substep.</p>"}
+  </article>`;
+}
+
+function ttBindPlannerChips() {
+  ttById("ttPlannerSections")?.querySelectorAll(".planner-chip-row button").forEach((button) => {
+    button.addEventListener("click", () => ttTogglePlannerChip(button));
+  });
+}
+
+function ttTogglePlannerChip(button) {
+  const picker = button.closest("[data-picker]");
+  const pickerId = picker?.dataset.picker || "";
+  const willSelect = !button.classList.contains("selected");
+  if (pickerId === "reviewSources") {
+    button.classList.toggle("selected");
+    ttPlannerDraft.reviewSubsteps = ttPlannerSelected("reviewSources");
+    if (!ttPlannerDraft.reviewSubsteps.length) ttPlannerDraft.reviewSubsteps = [priorSubstep(ttPlannerDraft.substep || ttPlannerGroup().substep)];
+    ttRenderPlannerPanel();
+    return;
+  }
+  if (willSelect && (pickerId === "dictationSentences" || pickerId === "readerSentences") && ttPlannerSelectedSentenceCount() >= 3) {
+    return;
+  }
+  button.classList.toggle("selected");
+  ttRenderPlannerPreview(ttPlannerGroup(), scopeMap.find((item) => item.id === (ttPlannerDraft.substep || ttPlannerGroup().substep)) || activeStep(ttPlannerGroup()), ttPlannerPreviewLesson(ttPlannerGroup()));
+}
+
+function ttPlannerSelectedSentenceCount() {
+  return ttPlannerSelected("dictationSentences").length + ttPlannerSelected("readerSentences").length;
+}
+
+function ttPlannerSelected(id) {
+  return [...ttById("ttPlannerSections")?.querySelectorAll(`[data-picker="${id}"] .planner-chip-row button.selected`) || []]
+    .map((button) => button.dataset.value)
+    .filter(Boolean);
+}
+
+function ttUsePlannerDefaults() {
+  ttRenderPlannerPanel();
+}
+
+function ttBuildPlannerLesson() {
+  const group = ttPlannerGroup();
+  if (!group) return;
+  const draft = ttEnsurePlannerDraft(group);
+  appState.selectedGroupId = group.id;
+  group.substep = draft.substep || group.substep;
+  group.readerLevel = draft.level || group.readerLevel || "AB";
+  const skill = scopeMap.find((item) => item.id === group.substep) || activeStep(group);
+  const level = group.readerLevel || "AB";
+  const wordPages = pageList(skill, "wordlist", level);
+  const sentencePages = pageList(skill, "sentences", level);
+  const selectedWordPage = Number(draft.wordlist || 0);
+  const selectedSentencePage = Number(draft.sentence || 0);
+  group.pageProgress ||= { wordlist: 0, sentences: 0, passage: 0 };
+  group.pageProgress.wordlist = Math.max(0, wordPages.indexOf(selectedWordPage));
+  group.pageProgress.sentences = Math.max(0, sentencePages.indexOf(selectedSentencePage));
+  ttLesson = createLesson(group, skill, 0, 1);
+  ttApplyPlannerSelectionsToLesson(group, skill);
+  ttSaveDraftLesson({ status: false });
+  saveState();
+  ttOpenTeachFlow();
+}
+
+function ttApplyPlannerSelectionsToLesson(group, skill) {
+  if (!ttLesson) return;
+  const draft = ttEnsurePlannerDraft(group);
+  const sentencePage = Number(draft.sentence || 0);
+  if (sentencePage) {
+    const pages = pageList(skill, "sentences", ttLesson.readerLevel || group.readerLevel || "AB");
+    const assignment = {
+      reader: skill.reader,
+      page: sentencePage,
+      level: resolvedLevel(skill, "sentences", ttLesson.readerLevel || group.readerLevel || "AB"),
+      index: Math.max(0, pages.indexOf(sentencePage)) + 1,
+      total: pages.length
+    };
+    const data = sentenceDataForPage(skill, assignment);
+    ttLesson.sentencePageNumber = sentencePage;
+    ttLesson.sentenceLevel = assignment.level;
+    ttLesson.sentenceMeta = `Reader ${skill.reader}, p. ${sentencePage} - ${pagePositionLabel(assignment, "sentence")}`;
+    ttLesson.highFrequencyWords = data.highFrequency;
+    ttLesson.readerSentences = data.sentences;
+  }
+  const selected = {
+    sectionTwoCurrentWords: ttPlannerSelected("section2Current"),
+    sectionTwoReviewWords: ttPlannerSelected("section2Review"),
+    sectionThreeCurrentWords: ttPlannerSelected("section3Current"),
+    sectionThreeReviewWords: ttPlannerSelected("section3Review"),
+    sectionSevenReviewWords: ttPlannerSelected("section7Review"),
+    sectionSevenCurrentWords: ttPlannerSelected("section7Current"),
+    sectionSevenNonsenseWords: ttPlannerSelected("section7Nonsense")
+  };
+  Object.entries(selected).forEach(([key, values]) => {
+    if (values.length) ttLesson[key] = values;
+  });
+  const readerDictationSentences = ttPlannerSelected("readerSentences");
+  const dictationSentences = ttPlannerSelected("dictationSentences").concat(readerDictationSentences).slice(0, 3);
+  ttLesson.dictationPlanOverride = [
+    { label: "5 sounds", values: ttPlannerSelected("dictationSounds") },
+    { label: "5 word elements", values: ttPlannerSelected("dictationElements") },
+    { label: "5 real words", values: ttPlannerSelected("dictationReal") },
+    { label: "3 nonsense words", values: ttPlannerSelected("dictationNonsense") },
+    { label: "3 phrases", values: ttPlannerSelected("dictationPhrases") },
+    { label: "2 sentences", values: dictationSentences }
+  ].map((block) => ({ ...block, values: block.values.filter(Boolean) }));
+  ttLesson.reverseDrillOverride = ttPlannerSelected("dictationSounds")
+    .concat(ttPlannerSelected("section6Vowels"))
+    .concat(ttPlannerSelected("section6Consonants"))
+    .concat(ttPlannerSelected("section6Welded"))
+    .concat(ttPlannerSelected("section6Elements"))
+    .concat(ttPlannerSelected("dictationElements"))
+    .slice(0, 20)
+    .map((value) => ({ value, category: "Planner", group: "Planned quick drill" }));
+}
+
+function ttKnownWeldedValues(substep) {
+  return knownWeldedAndExceptions
+    .filter(([introduced]) => isAtLeastSubstep(substep, introduced))
+    .map(([, value]) => value);
+}
+
+function ttTrueNonsensePool(substep) {
+  const currentIndex = scopeMap.findIndex((item) => item.id === substep);
+  const words = [];
+  for (let index = Math.max(0, currentIndex); index >= 0; index -= 1) {
+    words.push(...readerNonsenseWordsFromSubstep(scopeMap[index].id));
+  }
+  words.push(...readerNonsenseWordsForReview(priorSubstep(substep), substep));
+  return uniqueWords(words).filter(isValidDictationWord);
+}
+
+function ttPlannerDraftLessonWithSelections(group = ttPlannerGroup()) {
+  const skill = scopeMap.find((item) => item.id === (ttPlannerDraft.substep || group.substep)) || activeStep(group);
+  const lesson = ttPlannerPreviewLesson(group);
+  const originalLesson = ttLesson;
+  ttLesson = lesson;
+  ttApplyPlannerSelectionsToLesson(group, skill);
+  const planned = ttClone(ttLesson);
+  ttLesson = originalLesson;
+  return { lesson: planned, skill };
+}
+
+function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson = null) {
+  const preview = ttById("ttPlannerPreview");
+  if (!preview || !group) return;
+  const originalSelectedGroupId = appState.selectedGroupId;
+  appState.selectedGroupId = group.id;
+  const planned = ttPlannerDraftLessonWithSelections(group);
+  const activeSkill = skill || planned.skill;
+  const activeLesson = planned.lesson;
+  const dictation = ttActiveDictationPlan(activeLesson, activeSkill);
+  const block = (label) => dictation.find((item) => item.label.toLowerCase().includes(label))?.values || [];
+  const sectionSeven = ttSectionSevenSetsForLesson(activeLesson, activeSkill);
+  preview.innerHTML = `
+    <div class="planner-preview-paper">
+      <header>
+        <span>Lesson Preview</span>
+        <strong>${escapeHtml(group.name)} · ${escapeHtml(activeLesson.substep)}</strong>
+        <em>Reader ${escapeHtml(activeLesson.reader)}, wordlist p. ${escapeHtml(activeLesson.wordlistPageNumber || "--")} · sentences p. ${escapeHtml(activeLesson.sentencePageNumber || "--")}</em>
+      </header>
+      ${ttPlannerPreviewBlock("2", "Teach & Review", [
+        ["Review", activeLesson.sectionTwoReviewWords || []],
+        ["Current", activeLesson.sectionTwoCurrentWords || []]
+      ])}
+      ${ttPlannerPreviewBlock("3", "Word Cards", [
+        ["Review", activeLesson.sectionThreeReviewWords || section3ReviewCards(activeLesson)],
+        ["Current", activeLesson.sectionThreeCurrentWords || section3CurrentCards(activeLesson)]
+      ])}
+      ${ttPlannerPreviewBlock("6", "Quick Drill", [
+        ["Targets", (activeLesson.reverseDrillOverride || []).map((item) => item.value).slice(0, 20)]
+      ])}
+      ${ttPlannerPreviewBlock("7", "Spelling", [
+        ["Review", sectionSeven.review || []],
+        ["Nonsense", sectionSeven.nonsense || []],
+        ["Current", sectionSeven.current || []]
+      ])}
+      ${ttPlannerPreviewBlock("8", "Dictation", [
+        ["Sounds", block("sounds")],
+        ["Elements", block("word elements")],
+        ["Real", block("real words")],
+        ["Nonsense", block("nonsense")],
+        ["Phrases", block("phrases")],
+        ["Sentences", block("sentences")]
+      ])}
+    </div>`;
+  appState.selectedGroupId = originalSelectedGroupId;
+}
+
+function ttPlannerPreviewBlock(number, title, rows) {
+  return `<section>
+    <h3><span>${number}</span>${escapeHtml(title)}</h3>
+    ${rows.map(([label, values]) => `<p><b>${escapeHtml(label)}:</b> ${escapeHtml((values || []).join(", ") || "--")}</p>`).join("")}
+  </section>`;
+}
+
+function ttTodaysLessonData(group = ttActiveGroup(), lesson = ttLesson) {
+  const today = dateKey(new Date());
+  const planId = lesson?.savedPlanId || "";
+  const lessonId = lesson?.id || "";
+  const isToday = (value) => dateKey(value || new Date()) === today;
+  const groupChart = (appState.masterRecords || []).filter((record) => {
+    const sameGroup = record.groupId === group.id || record.group === group.name;
+    const sameLesson = planId ? record.planId === planId : lessonId ? record.lessonId === lessonId : false;
+    return sameGroup && (sameLesson || isToday(record.date || record.displayDate));
+  });
+  const groupDictation = (group.dictationMisses || []).filter((record) => {
+    const sameLesson = planId ? record.planId === planId : lessonId ? record.lessonId === lessonId : false;
+    return sameLesson || isToday(record.date);
+  });
+  const groupEncoding = (group.encodingObservations || []).filter((record) => {
+    const sameLesson = planId ? record.planId === planId : lessonId ? record.lessonId === lessonId : false;
+    return sameLesson || isToday(record.date);
+  });
+  return { chart: groupChart, dictation: groupDictation, encoding: groupEncoding };
+}
+
+function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
+  const summary = ttById("ttWrapUpSummary");
+  if (!summary) return;
+  const plan = ttCurrentPlan();
+  const data = ttTodaysLessonData(group, lesson);
+  const attendance = ttTodaysAttendance(group);
+  const presentStudents = (group.students || []).filter((student) => attendance[student] !== false);
+  const absentStudents = (group.students || []).filter((student) => attendance[student] === false);
+  const chartCount = data.chart.length;
+  const dictationCount = data.dictation.length;
+  const encodingCount = data.encoding.length;
+  const completeLabel = plan?.wrapUp?.completedAt ? `Completed ${formatDateTime(new Date(plan.wrapUp.completedAt))}` : "Ready to complete";
+
+  summary.innerHTML = `
+    <article><strong>${escapeHtml(group.name || "Group")}</strong><span>${escapeHtml(lesson?.substep || group.substep || "--")} / Reader ${escapeHtml(lesson?.reader || "")}</span></article>
+    <article><strong>${presentStudents.length}/${(group.students || []).length}</strong><span>Present</span></article>
+    <article><strong>${chartCount}</strong><span>Chart record${chartCount === 1 ? "" : "s"}</span></article>
+    <article><strong>${dictationCount + encodingCount}</strong><span>Miss / encoding mark${dictationCount + encodingCount === 1 ? "" : "s"}</span></article>
+    <article><strong>${escapeHtml(completeLabel)}</strong><span>Lesson status</span></article>
+  `;
+
+  const attendancePanel = ttById("ttWrapAttendance");
+  if (attendancePanel) {
+    attendancePanel.innerHTML = (group.students || []).map((student) => {
+      const present = attendance[student] !== false;
+      return `<button type="button" class="attendance-chip ${present ? "present" : ""}" data-student="${escapeHtml(student)}">${present ? "Present" : "Absent"} - ${escapeHtml(student)}</button>`;
+    }).join("");
+    attendancePanel.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const student = button.dataset.student;
+        attendance[student] = attendance[student] === false;
+        saveState();
+        ttRenderAttendancePanel(group);
+        ttRenderWrapUpPanel(group, lesson);
+      });
+    });
+  }
+
+  const studentData = ttById("ttWrapStudentData");
+  if (studentData) {
+    const rows = (group.students || []).map((student) => {
+      const chart = data.chart.filter((record) => record.student === student);
+      const dictation = data.dictation.filter((record) => record.student === student);
+      const encoding = data.encoding.filter((record) => record.student === student);
+      const lastChart = chart.at(-1);
+      const badge = lastChart
+        ? `${lastChart.correct ?? "--"}/${lastChart.total || 15}${lastChart.seconds ? `, ${lastChart.seconds}s` : ""}`
+        : "No chart";
+      return `<div class="wrap-student-row">
+        <strong>${escapeHtml(student)}</strong>
+        <span>${escapeHtml(badge)}</span>
+        <em>${dictation.length + encoding.length} mark${dictation.length + encoding.length === 1 ? "" : "s"}</em>
+      </div>`;
+    }).join("");
+    studentData.innerHTML = rows || "<p class=\"snapshot-empty\">No students in this group yet.</p>";
+  }
+
+  const note = ttById("ttWrapNote");
+  if (note && document.activeElement !== note) {
+    note.value = plan?.wrapUp?.note || group.note || "";
+  }
+  const recommendation = ttById("ttWrapRecommendation");
+  if (recommendation) {
+    recommendation.innerHTML = ttWrapRecommendationHtml(data, presentStudents, absentStudents);
+  }
+}
+
+function ttWrapRecommendationHtml(data, presentStudents, absentStudents) {
+  const chart = data.chart.slice().sort((a, b) => new Date(b.date || b.displayDate || 0) - new Date(a.date || a.displayDate || 0));
+  const latest = chart[0];
+  const misses = data.dictation.concat(data.encoding)
+    .map((record) => record.item || record.note || record.category)
+    .filter(Boolean);
+  const missSummary = uniqueWords(misses).slice(0, 6).join(", ");
+  let recommendation = "Save at least one charting record or miss mark to generate a stronger next step.";
+  if (latest) recommendation = latest.recommendation || ttChartNextStep(latest.correct || 0, latest.seconds || 0);
+  if (chart.length >= 2 && chart.some((record) => record.correct < 12)) {
+    recommendation = "Repeat or warm up the current charting page before advancing.";
+  }
+  const parts = [
+    `<strong>${escapeHtml(recommendation)}</strong>`,
+    missSummary ? `<span>Review next: ${escapeHtml(missSummary)}</span>` : "",
+    absentStudents.length ? `<span>Absent today: ${escapeHtml(absentStudents.join(", "))}</span>` : "",
+    presentStudents.length ? `<span>Ready to save for ${presentStudents.length} present student${presentStudents.length === 1 ? "" : "s"}.</span>` : "<span>No present students marked yet.</span>"
+  ].filter(Boolean);
+  return parts.join("");
+}
+
+function ttChartNextStep(correct, seconds) {
+  if (correct < 12) return "Repeat same page next lesson";
+  if (seconds && seconds <= 35 && correct >= 12) return "Advance page; automaticity met";
+  if (correct >= 14) return "Advance page; keep brief fluency warm-up";
+  return "Advance carefully; repeat as warm-up";
+}
+
+function ttCompleteLessonWrapUp(options = {}) {
+  const group = ttActiveGroup();
+  if (!ttLesson) ttBuildLesson();
+  ttSaveCurrentLesson({ render: false });
+  const plan = ttCurrentPlan();
+  if (!plan) return;
+  const data = ttTodaysLessonData(group, ttLesson);
+  const note = ttById("ttWrapNote")?.value.trim() || "";
+  group.note = note;
+  plan.wrapUp = {
+    completedAt: new Date().toISOString(),
+    note,
+    attendance: ttClone(ttTodaysAttendance(group)),
+    chartRecordCount: data.chart.length,
+    dictationMissCount: data.dictation.length,
+    encodingMarkCount: data.encoding.length,
+    recommendation: ttById("ttWrapRecommendation")?.textContent.trim() || ""
+  };
+  plan.status = "Complete";
+  plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
+  plan.lastStudentDataAt = new Date().toISOString();
+  saveState();
+  ttUpdateSaveStatus(plan);
+  ttRenderSavedLessons(group);
+  ttRenderWrapUpPanel(group, ttLesson);
+  if (options.scroll !== false) ttById("ttWrapUpPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ttSaveWrapUpNoteDraft() {
+  const group = ttActiveGroup();
+  const note = ttById("ttWrapNote")?.value.trim() || "";
+  group.note = note;
+  const plan = ttCurrentPlan();
+  if (plan?.wrapUp) plan.wrapUp.note = note;
+  saveState();
 }
 
 function ttSnapshotStudentCard(summary) {
@@ -2238,7 +2855,7 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
     existing.dailyKey = dailyKey;
     existing.title = ttLessonFileName(group, lesson, now);
     existing.tabLabel = ttLessonTabLabel(existing, group);
-    existing.status = existing.hasStudentData ? "Taught" : "Saved";
+    existing.status = existing.status === "Complete" ? "Complete" : existing.hasStudentData ? "Taught" : "Saved";
     ttAddLessonTab(existing.id);
     delete appState.lessonDrafts[ttDraftKey(group)];
     saveState();
@@ -2294,7 +2911,7 @@ function ttSaveCurrentLesson(options = {}) {
   plan.dailyKey ||= ttPlanDayKey(now);
   plan.title = ttLessonFileName(group, ttLesson, now);
   plan.tabLabel = ttLessonTabLabel(plan, group);
-  plan.status = plan.hasStudentData ? "Taught" : "Saved";
+  plan.status = plan.status === "Complete" ? "Complete" : plan.hasStudentData ? "Taught" : "Saved";
   ttAddLessonTab(plan.id);
   delete appState.lessonDrafts[ttDraftKey(group)];
   saveState();
@@ -2347,7 +2964,7 @@ function ttMarkCurrentPlanHasData(lesson = ttLesson) {
   const plan = (group.history || []).find((item) => item.id === lesson.savedPlanId);
   if (!plan) return null;
   plan.hasStudentData = true;
-  plan.status = "Taught";
+  if (plan.status !== "Complete") plan.status = "Taught";
   plan.lastStudentDataAt = new Date().toISOString();
   return plan;
 }
@@ -5345,6 +5962,39 @@ function ttBind() {
     if (appStateSwitchGroup(event.target.value)) return;
   });
 
+  ttById("ttHome")?.addEventListener("click", () => ttShowHomeScreen());
+  ttById("ttHomeOpenCurrent")?.addEventListener("click", () => ttOpenTeachFlow());
+  ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
+  ttById("ttPlannerBuild")?.addEventListener("click", () => ttBuildPlannerLesson());
+  ttById("ttPlannerOpen")?.addEventListener("click", () => {
+    appState.selectedGroupId = ttPlannerGroup().id;
+    saveState();
+    ttLesson = ttLoadDraftLesson() || ttBuildLesson();
+    ttOpenTeachFlow();
+  });
+  ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence"].forEach((id) => {
+    ttById(id)?.addEventListener("change", () => {
+      const group = ttPlannerGroup();
+      if (!group) return;
+      ttEnsurePlannerDraft(group);
+      if (id === "ttPlannerSubstep") {
+        ttPlannerDraft.substep = ttById(id).value;
+        const skill = scopeMap.find((item) => item.id === ttPlannerDraft.substep) || activeStep(group);
+        ttPlannerDraft.wordlist = pageAssignment(group, skill, "wordlist", 0, ttPlannerDraft.level || group.readerLevel || "AB").page || "";
+        ttPlannerDraft.sentence = pageAssignment(group, skill, "sentences", 0, ttPlannerDraft.level || group.readerLevel || "AB").page || "";
+      }
+      if (id === "ttPlannerLevel") {
+        ttPlannerDraft.level = ttById(id).value;
+        const skill = scopeMap.find((item) => item.id === ttPlannerDraft.substep) || activeStep(group);
+        ttPlannerDraft.wordlist = pageAssignment(group, skill, "wordlist", 0, ttPlannerDraft.level).page || "";
+        ttPlannerDraft.sentence = pageAssignment(group, skill, "sentences", 0, ttPlannerDraft.level).page || "";
+      }
+      if (id === "ttPlannerWordlist") ttPlannerDraft.wordlist = ttById(id).value;
+      if (id === "ttPlannerSentence") ttPlannerDraft.sentence = ttById(id).value;
+      ttRenderPlannerPanel();
+    });
+  });
+
   ttById("ttStudent").addEventListener("change", (event) => ttSelectStudent(event.target.value));
   ttById("ttSubstep").addEventListener("change", (event) => {
     const group = ttActiveGroup();
@@ -5376,6 +6026,10 @@ function ttBind() {
   ttById("ttPdfPlan").addEventListener("click", () => ttOpenPdfLessonPlan());
   ttById("ttWilsonPlan").addEventListener("click", () => ttOpenWilsonLessonPlan());
   ttById("ttWilsonFillablePlan")?.addEventListener("click", () => ttOpenFillableWilsonLessonPlan());
+  ttById("ttWrapJump")?.addEventListener("click", () => {
+    ttRenderWrapUpPanel(ttActiveGroup(), ttLesson);
+    ttById("ttWrapUpPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   ttById("ttRefresh").addEventListener("click", () => ttNewLesson());
   ttById("ttAddRosterStudent").addEventListener("click", () => ttAddStudentFromRoster());
   ttById("ttRosterAddSelected").addEventListener("click", () => ttAddSelectedRosterStudent());
@@ -5503,6 +6157,18 @@ function ttBind() {
     ttFillSection3Cards(ttLesson);
   });
   ttById("ttBackTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  ttById("ttWrapRefresh")?.addEventListener("click", () => ttRenderWrapUpPanel(ttActiveGroup(), ttLesson));
+  ttById("ttCompleteLesson")?.addEventListener("click", () => ttCompleteLessonWrapUp());
+  ttById("ttWrapSavePdf")?.addEventListener("click", () => {
+    ttCompleteLessonWrapUp({ scroll: false });
+    ttOpenPdfLessonPlan();
+  });
+  ttById("ttWrapProfile")?.addEventListener("click", () => ttOpenStudentProfile());
+  ttById("ttWrapNextLesson")?.addEventListener("click", () => {
+    ttCompleteLessonWrapUp({ scroll: false });
+    ttNewLesson();
+  });
+  ttById("ttWrapNote")?.addEventListener("blur", () => ttSaveWrapUpNoteDraft());
   document.querySelectorAll(".card-mode").forEach((button) => {
     button.addEventListener("click", () => {
       ttCardMode = button.dataset.mode;
@@ -5578,9 +6244,11 @@ function ttOpenStudentProfile() {
   window.open(url, "_blank");
 }
 
-ttLoadPlanFromUrl() || ttLoadDraftLesson() || ttBuildLesson();
+const ttLoadedPlan = ttLoadPlanFromUrl();
+ttLoadedPlan || ttLoadDraftLesson() || ttBuildLesson();
 ttInitCloudSync();
 ttInitFirebaseSync();
 ttBind();
 ttRender();
+if (!ttLoadedPlan) ttShowHomeScreen();
 ttToggleLaser(true);

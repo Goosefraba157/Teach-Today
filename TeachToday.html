@@ -74,11 +74,13 @@
       </div>
       <div class="bar-actions">
         <select id="ttGroup"></select>
+        <button id="ttHome" type="button" title="Home dashboard">Home</button>
         <button id="ttPresent" type="button" title="Present">Present</button>
         <button id="ttSaveLesson" type="button" title="Save Lesson">Save</button>
         <button id="ttPdfPlan" type="button" title="PDF Plan">PDF</button>
         <button id="ttWilsonPlan" type="button" title="Wilson LP">Wilson</button>
         <button id="ttWilsonFillablePlan" type="button" title="Fillable Wilson PDF">Fillable</button>
+        <button id="ttWrapJump" type="button" title="Wrap up lesson">Wrap</button>
         <button id="ttRefresh" type="button" title="New lesson">New</button>
         <button id="ttSavedToggle" type="button" title="Saved lessons">Saved</button>
         <button id="ttDataToggle" type="button" title="Data Center">Data</button>
@@ -127,6 +129,42 @@
 
     <canvas id="ttLaserCanvas" class="laser-canvas" aria-hidden="true"></canvas>
     <canvas id="ttNotesCanvas" class="notes-canvas" aria-hidden="true"></canvas>
+
+    <section id="ttHomeScreen" class="home-screen" hidden>
+      <header class="home-head">
+        <div>
+          <p class="eyebrow">Home</p>
+          <h2>Plan Today</h2>
+          <span>Pick a group, glance at the last lesson, then build today’s lesson fast.</span>
+        </div>
+        <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
+      </header>
+      <div id="ttHomeGroups" class="home-groups"></div>
+      <section id="ttQuickPlanner" class="quick-planner" hidden>
+        <div class="planner-head">
+          <div>
+            <p class="eyebrow">Lesson builder</p>
+            <h2 id="ttPlannerTitle">Select a group</h2>
+            <span id="ttPlannerLastLesson"></span>
+          </div>
+          <div class="planner-actions">
+            <button id="ttPlannerUseDefaults" type="button">Use smart defaults</button>
+            <button id="ttPlannerBuild" type="button">Build lesson</button>
+            <button id="ttPlannerOpen" type="button">Open full lesson</button>
+          </div>
+        </div>
+        <div class="planner-core">
+          <label>Substep<select id="ttPlannerSubstep"></select></label>
+          <label>Reader level<select id="ttPlannerLevel"></select></label>
+          <label>Wordlist page<select id="ttPlannerWordlist"></select></label>
+          <label>Sentence page<select id="ttPlannerSentence"></select></label>
+        </div>
+        <div class="planner-workspace">
+          <div id="ttPlannerSections" class="planner-sections"></div>
+          <aside id="ttPlannerPreview" class="planner-preview" aria-label="Lesson preview"></aside>
+        </div>
+      </section>
+    </section>
 
     <section id="ttWhiteboard" class="whiteboard-overlay" hidden aria-label="Section 2 whiteboard">
       <header class="whiteboard-topbar">
@@ -458,7 +496,37 @@
       <section id="section10" class="teach-card">
         <div class="section-head"><span>10</span><h2>Comprehension / Wrap-Up</h2></div>
         <p id="ttWrap"></p>
-        <button id="ttBackTop" type="button">Back to top</button>
+        <a class="next-link" href="#ttWrapUpPanel">Finish lesson</a>
+      </section>
+
+      <section id="ttWrapUpPanel" class="teach-card wrap-up-card">
+        <div class="section-head section-head-with-actions">
+          <div><span>✓</span><h2>Lesson Wrap-Up</h2></div>
+          <button id="ttWrapRefresh" class="section-refresh secondary" type="button">Refresh summary</button>
+        </div>
+        <div id="ttWrapUpSummary" class="wrap-up-summary"></div>
+        <div class="wrap-up-grid">
+          <article>
+            <p class="mini-label">Attendance</p>
+            <div id="ttWrapAttendance" class="wrap-attendance"></div>
+          </article>
+          <article>
+            <p class="mini-label">Student data saved today</p>
+            <div id="ttWrapStudentData" class="wrap-student-data"></div>
+          </article>
+        </div>
+        <label class="notes-label wrap-note-label">
+          Final teacher note
+          <textarea id="ttWrapNote" rows="4" placeholder="What should future-you remember before the next lesson?"></textarea>
+        </label>
+        <div id="ttWrapRecommendation" class="wrap-recommendation"></div>
+        <div class="wrap-actions">
+          <button id="ttCompleteLesson" type="button">Complete lesson</button>
+          <button id="ttWrapSavePdf" type="button">Save + PDF</button>
+          <button id="ttWrapProfile" type="button">Open student profile</button>
+          <button id="ttWrapNextLesson" type="button">Start next lesson</button>
+          <button id="ttBackTop" type="button">Back to top</button>
+        </div>
       </section>
     </main>
 

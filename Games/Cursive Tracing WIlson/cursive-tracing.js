@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "wilsonCursiveStrokeLab.v1";
+  const HUB_STORAGE_KEY = "teachTodayGameHub.v1";
   const DB_NAME = "wilsonCursiveStrokeLab";
   const DB_STORE = "progress";
   const DB_KEY = "latest";
@@ -251,18 +252,27 @@
           pathRef("b", "make a swinging bridge", [[118, 72], [124, 86], [137, 95], [154, 98], [170, 88], [182, 72]])
         ]
       },
-      c: twoClockOpen("c", [
-        tail(405, G)
-      ]),
+      c: {
+        name: "c",
+        family: "twoclock",
+        manualFit: true,
+        strokes: [
+          pointRef("c", 2, 60, "start on the grass line"),
+          pathRef("c", "glide to two o'clock", [[2, 60], [20, 58], [35, 50], [47, 35], [61, 22], [78, 16], [94, 17], [101, 26]]),
+          pathRef("c", "curve back to the grass line", [[101, 26], [95, 17], [82, 13], [64, 15], [48, 24], [37, 39], [38, 55], [51, 65], [70, 67]]),
+          pathRef("c", "make a tail", [[70, 67], [91, 67], [112, 59], [131, 48]])
+        ]
+      },
       d: {
         name: "d",
         family: "twoclock",
+        manualFit: true,
         strokes: [
-          point(start, G, "start on the grass line"),
-          path("glide to two o'clock", [[start, G], [280, 390], [370, P], [475, P + 20]]),
-          path("round back and reach sky", [[475, P + 20], [360, P - 36], [260, 355], [288, G - 18], [382, G + 12], [470, 410], [468, S]]),
-          path("loop back down", [[468, S], [565, 210], [510, 390], [468, G]]),
-          tail(468, G)
+          pointRef("d", 2, 120, "start on the grass line"),
+          pathRef("d", "glide to two o'clock", [[2, 120], [19, 119], [36, 111], [50, 96], [63, 82], [80, 73], [99, 72], [113, 77]]),
+          pathRef("d", "round back and reach sky", [[113, 77], [102, 71], [88, 70], [74, 74], [62, 84], [54, 98], [53, 112], [63, 122], [80, 124], [98, 116], [110, 102], [121, 90], [130, 73], [139, 52], [148, 29], [153, 13], [143, 10], [132, 13]]),
+          pathRef("d", "loop back down", [[132, 13], [131, 21], [128, 35], [126, 50], [123, 65], [119, 80], [115, 96], [112, 112], [113, 122], [121, 125], [128, 125]]),
+          pathRef("d", "make a tail", [[128, 125], [142, 125], [153, 116], [162, 101]])
         ]
       },
       e: {
@@ -607,6 +617,7 @@
     if (!state.players || typeof state.players !== "object") state.players = {};
     mergePlayers(seedNames);
     mergePlayers(readTeachingRoster());
+    applyHubStudentSelection();
     const ids = Object.keys(state.players);
     if (!state.activePlayerId || !state.players[state.activePlayerId]) {
       state.activePlayerId = ids[0] || createPlayer("Player 1").id;
@@ -661,6 +672,7 @@
     if (!name) return;
     const existing = findPlayerByName(name);
     state.activePlayerId = existing ? existing.id : createPlayer(name).id;
+    saveHubSelection(currentPlayer());
     dom.newPlayerName.value = "";
     saveState();
     renderAll();
@@ -692,6 +704,7 @@
     state.lastLetter = activeLetter;
     state.mode = activeMode;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    saveHubSelection(currentPlayer());
     saveToDatabase(state);
     if (dom.saveStatus) {
       dom.saveStatus.textContent = `Saved ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
@@ -1019,6 +1032,12 @@
     player.totalPoints = (player.totalPoints || 0) + points;
     player.allTimeStreak = (player.allTimeStreak || 0) + 1;
     player.updatedAt = new Date().toISOString();
+    addHubPoints(player, points, {
+      letter: activeLetter,
+      stroke: index + 1,
+      rating,
+      mode: activeMode
+    });
 
     const stats = letterStats(player, activeLetter);
     stats.points = (stats.points || 0) + points;
@@ -1434,6 +1453,100 @@
       });
     dom.reportText.textContent = lines.join("\n");
     dom.reportDialog.showModal();
+  }
+
+  function applyHubStudentSelection() {
+    const queryName = new URLSearchParams(window.location.search).get("student");
+    const hubName = readHubStudentName();
+    const selectedName = (queryName || hubName || "").trim();
+    if (!selectedName) return;
+    const existing = findPlayerByName(selectedName);
+    state.activePlayerId = existing ? existing.id : createPlayer(selectedName).id;
+  }
+
+  function readHubStudentName() {
+    try {
+      const hub = JSON.parse(localStorage.getItem(HUB_STORAGE_KEY) || "null");
+      if (!hub || !hub.activeStudentId || !hub.students) return "";
+      return hub.students[hub.activeStudentId]?.name || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function saveHubSelection(player) {
+    if (!player || !player.name) return;
+    const hub = readHubState();
+    const student = ensureHubStudent(hub, player.name);
+    hub.activeStudentId = student.id;
+    const game = ensureHubGame(hub, student.id, "cursive");
+    game.points = Math.max(game.points || 0, player.totalPoints || 0);
+    game.lastPlayedAt = player.updatedAt || new Date().toISOString();
+    saveHubState(hub);
+  }
+
+  function addHubPoints(player, points, detail) {
+    if (!player || !player.name || !points) return;
+    const hub = readHubState();
+    const student = ensureHubStudent(hub, player.name);
+    hub.activeStudentId = student.id;
+    student.lastPlayedAt = new Date().toISOString();
+    const game = ensureHubGame(hub, student.id, "cursive");
+    game.points = Math.max((game.points || 0) + points, player.totalPoints || 0);
+    game.sessions = (game.sessions || 0) + 1;
+    game.lastPlayedAt = student.lastPlayedAt;
+    hub.events.push({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      studentId: student.id,
+      studentName: student.name,
+      gameId: "cursive",
+      points,
+      detail,
+      createdAt: student.lastPlayedAt
+    });
+    hub.events = hub.events.slice(-3000);
+    saveHubState(hub);
+  }
+
+  function readHubState() {
+    const empty = { version: 1, activeStudentId: "", students: {}, games: {}, events: [] };
+    try {
+      const saved = JSON.parse(localStorage.getItem(HUB_STORAGE_KEY) || "null");
+      if (!saved || typeof saved !== "object") return empty;
+      return {
+        ...empty,
+        ...saved,
+        students: saved.students && typeof saved.students === "object" ? saved.students : {},
+        games: saved.games && typeof saved.games === "object" ? saved.games : {},
+        events: Array.isArray(saved.events) ? saved.events : []
+      };
+    } catch {
+      return empty;
+    }
+  }
+
+  function saveHubState(hub) {
+    hub.updatedAt = new Date().toISOString();
+    localStorage.setItem(HUB_STORAGE_KEY, JSON.stringify(hub));
+  }
+
+  function ensureHubStudent(hub, name) {
+    const id = slugify(name);
+    if (!hub.students[id]) {
+      hub.students[id] = {
+        id,
+        name: name.trim(),
+        createdAt: new Date().toISOString(),
+        lastPlayedAt: ""
+      };
+    }
+    return hub.students[id];
+  }
+
+  function ensureHubGame(hub, studentId, gameId) {
+    hub.games[studentId] ||= {};
+    hub.games[studentId][gameId] ||= { points: 0, sessions: 0, lastPlayedAt: "" };
+    return hub.games[studentId][gameId];
   }
 
   function slugify(text) {
