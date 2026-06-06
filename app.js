@@ -293,6 +293,9 @@ function upgradeTeachTodayState(data) {
     }
   }
   mergeSampleBlueGroup(upgraded);
+  if (typeof window.mergeSofiaCarbajalChartData === "function") {
+    window.mergeSofiaCarbajalChartData(upgraded);
+  }
   upgraded.rosterVersion = 3;
   return upgraded;
 }

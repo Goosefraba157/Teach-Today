@@ -480,7 +480,8 @@ button {
   color: #6d28d9;
 }
 
-#ttWilsonPlan {
+#ttWilsonPlan,
+#ttWilsonFillablePlan {
   border-color: #2563eb;
   background: #dbeafe;
   color: #1d4ed8;
@@ -1185,11 +1186,61 @@ body.presentation-mode #ttEditSection2Cards {
   vertical-align: middle;
 }
 
-.overview-grid div {
+.overview-grid > div {
   border: 1px solid #99f6e4;
   border-radius: 8px;
   padding: 10px;
   background: #fff;
+}
+
+.overview-page-card {
+  display: grid;
+  gap: 7px;
+}
+
+.overview-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.overview-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.overview-mini-action {
+  min-height: 30px;
+  border-color: #14b8a6;
+  border-radius: 7px;
+  padding: 5px 8px;
+  background: #ccfbf1;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.overview-page-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.overview-page-select select {
+  min-height: 32px;
+  max-width: 170px;
+  border-radius: 7px;
+  padding: 6px 28px 6px 9px;
+  font-size: 12px;
 }
 
 .overview-grid span {

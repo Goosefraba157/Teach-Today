@@ -7,7 +7,12 @@ function byId(id) {
 
 function state() {
   try {
-    return JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (typeof window.mergeSofiaCarbajalChartData === "function") {
+      window.mergeSofiaCarbajalChartData(data);
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+    return data;
   } catch {
     return {};
   }
@@ -658,7 +663,7 @@ function renderTrend(records) {
 function renderChartingSheet(records) {
   const table = byId("chartingSheet");
   if (!table) return;
-  const chartRecords = records.slice(-12);
+  const chartRecords = records;
   if (!chartRecords.length) {
     table.innerHTML = "<tbody><tr><td class=\"sheet-empty\">No Section 4 charting records saved yet.</td></tr></tbody>";
     return;
@@ -669,7 +674,7 @@ function renderChartingSheet(records) {
     { label: "Substep", value: (record) => record.substep || "" },
     { label: "Concept", value: (record) => record.concept || record.title || record.focus || "" },
     { label: "Page #", value: (record) => record.wordlistPage || "" },
-    { label: "R or N", value: () => chartingWordTypeSelect(), html: true }
+    { label: "R or N", value: (record) => chartingWordTypeSelect(record), html: true }
   ];
   const scoreRows = Array.from({ length: 16 }, (_, index) => 15 - index);
 
@@ -755,10 +760,11 @@ function chartingWordType(record) {
   return titleCase(record.chartHalf || "");
 }
 
-function chartingWordTypeSelect() {
+function chartingWordTypeSelect(record) {
+  const selected = chartingWordType(record);
   return `<select class="charting-type-select" aria-label="Real or nonsense charting type">
-    <option selected>Real</option>
-    <option>Nonsense</option>
+    <option ${selected === "Real" ? "selected" : ""}>Real</option>
+    <option ${selected === "Nonsense" ? "selected" : ""}>Nonsense</option>
   </select>`;
 }
 

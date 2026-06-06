@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wilson Cursive Stroke Lab</title>
+    <link rel="stylesheet" href="cursive-tracing.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">Section 3 and 4 practice</p>
+          <h1>Wilson Cursive Stroke Lab</h1>
+        </div>
+
+        <div class="player-bar" aria-label="Player controls">
+          <label>
+            Player
+            <select id="playerSelect"></select>
+          </label>
+          <label>
+            Add player
+            <input id="newPlayerName" type="text" autocomplete="off" placeholder="Student name">
+          </label>
+          <button id="addPlayerBtn" type="button">Add</button>
+          <div class="total-score">
+            <span>Total points</span>
+            <strong id="totalPoints">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="game-layout">
+        <section class="trace-workspace" aria-label="Tracing game">
+          <div class="letter-strip" id="letterStrip" aria-label="Lowercase letters"></div>
+
+          <div class="trace-toolbar">
+            <div class="letter-meta">
+              <span id="activeLetterBadge" class="active-letter">a</span>
+              <div>
+                <p class="eyebrow" id="letterGroup">Two o'clock letter</p>
+                <h2 id="strokePrompt">Stroke 1: start on the grass line</h2>
+              </div>
+            </div>
+
+            <div class="toolbar-actions">
+              <div class="mode-toggle" role="group" aria-label="Practice mode">
+                <button class="mode-button active" type="button" data-mode="focus">Focus</button>
+                <button class="mode-button" type="button" data-mode="review">Review</button>
+                <button class="mode-button" type="button" data-mode="arcade">Arcade</button>
+              </div>
+              <button id="retryBtn" type="button">Retry</button>
+              <button id="nextBtn" type="button">Next</button>
+            </div>
+          </div>
+
+          <div class="board-frame">
+            <canvas id="traceCanvas" aria-label="Cursive tracing board"></canvas>
+            <div class="feedback-pill" id="feedbackPill" aria-live="polite">Ready</div>
+          </div>
+
+          <div class="stroke-progress" id="strokeProgress" aria-label="Stroke progress"></div>
+        </section>
+
+        <aside class="side-panel" aria-label="Scores and records">
+          <section class="stat-panel">
+            <h2>Run</h2>
+            <div class="stat-grid">
+              <div>
+                <span id="letterPoints">0</span>
+                <p>letter points</p>
+              </div>
+              <div>
+                <span id="currentStreak">0</span>
+                <p>streak</p>
+              </div>
+              <div>
+                <span id="perfectStrokes">0</span>
+                <p>blue strokes</p>
+              </div>
+              <div>
+                <span id="masteredCount">0</span>
+                <p>mastered</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="strokes-panel">
+            <h2>Stroke Board</h2>
+            <ol id="strokeList" class="stroke-list"></ol>
+          </section>
+
+          <section class="records-panel">
+            <div class="panel-heading">
+              <h2>Progress</h2>
+              <button id="teacherReportBtn" type="button">Report</button>
+            </div>
+            <div id="playerSummary" class="player-summary"></div>
+            <div id="leaderboard" class="leaderboard"></div>
+          </section>
+
+          <section class="backup-panel">
+            <h2>Backup</h2>
+            <div class="backup-actions">
+              <button id="exportBtn" type="button">Export</button>
+              <button id="importBtn" type="button">Import</button>
+              <input id="importFile" type="file" accept="application/json,.json" hidden>
+            </div>
+            <p id="saveStatus" class="save-status">Saved on this device</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="reportDialog">
+      <div class="dialog-header">
+        <h2>Teacher Report</h2>
+        <button id="closeReportBtn" type="button" aria-label="Close report">x</button>
+      </div>
+      <pre id="reportText"></pre>
+    </dialog>
+
+    <script src="cursive-tracing.js"></script>
+  </body>
+</html>
