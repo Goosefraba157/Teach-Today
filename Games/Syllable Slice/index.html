@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Syllable Slice</title>
+    <title>Syllable Scoop</title>
     <link rel="stylesheet" href="syllable-slice.css">
   </head>
   <body>
@@ -13,7 +13,7 @@
         <div class="player-chip">
           <span id="playerInitials">--</span>
           <div>
-            <p>Now slicing</p>
+            <p>Now scooping</p>
             <strong id="playerName">Player</strong>
           </div>
         </div>
@@ -29,19 +29,25 @@
             <p class="mini-label" id="roundLevel">Reader 3.1</p>
             <h1 id="prompt">Separate the word.</h1>
           </div>
-          <div class="timer-shell" aria-label="Time left">
-            <span id="timerFill"></span>
+          <div class="hud-tools">
+            <div class="mode-toggle" aria-label="Choose play mode">
+              <button id="scoopModeBtn" type="button" aria-pressed="true">Scoop</button>
+              <button id="cutModeBtn" type="button" aria-pressed="false">Cut</button>
+            </div>
+            <div class="timer-shell" aria-label="Time left">
+              <span id="timerFill"></span>
+            </div>
           </div>
         </div>
 
         <div class="word-stage" id="wordStage">
-          <div class="word-track" id="wordTrack" aria-label="Word slicer"></div>
-          <div class="slice-bank" id="sliceBank" aria-label="Slice markers"></div>
+          <div class="word-track" id="wordTrack" aria-label="Word letters"></div>
+          <svg class="scoop-layer" id="scoopLayer" viewBox="0 0 1000 150" role="img" aria-label="Scoop syllables under the word"></svg>
         </div>
 
         <div class="action-row">
           <button class="ghost-btn" id="clearBtn" type="button">Clear</button>
-          <button class="primary-btn" id="checkBtn" type="button">Slice</button>
+          <button class="primary-btn" id="checkBtn" type="button">Scoop</button>
         </div>
       </section>
 

@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
-    <link rel="stylesheet" href="teach-today.css">
+    <link rel="stylesheet" href="teach-today.css?v=section7-hfw-arrows-1">
   </head>
   <body>
     <div class="compat-shell" aria-hidden="true">
@@ -76,6 +76,7 @@
         <select id="ttGroup"></select>
         <button id="ttHome" type="button" title="Home dashboard">Home</button>
         <button id="ttPresent" type="button" title="Present">Present</button>
+        <button id="ttDisplayToggle" type="button" title="Student display">Display</button>
         <button id="ttSaveLesson" type="button" title="Save Lesson">Save</button>
         <button id="ttPdfPlan" type="button" title="PDF Plan">PDF</button>
         <button id="ttWilsonPlan" type="button" title="Wilson LP">Wilson</button>
@@ -98,6 +99,21 @@
         </div>
       </section>
       <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
+      <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Student display controls">
+        <div>
+          <p>Student Display</p>
+          <strong id="ttDisplayStatus">Not opened yet</strong>
+        </div>
+        <div class="student-display-actions">
+          <button type="button" data-display-mode="private">Privacy</button>
+          <button type="button" data-display-mode="poster">Poster</button>
+          <button type="button" data-display-mode="hfw">HFW</button>
+          <button type="button" data-display-mode="passage">Passage</button>
+          <button type="button" data-display-mode="game">Game</button>
+          <button id="ttDisplayProjector" class="secondary" type="button">Projector</button>
+          <button id="ttDisplayOpen" class="secondary" type="button">Open window</button>
+        </div>
+      </section>
       <section id="ttGroupSnapshot" class="group-snapshot" aria-label="Last class snapshot"></section>
       <section id="ttRosterPicker" class="roster-picker-panel" hidden>
         <div>
@@ -122,13 +138,38 @@
       <button id="ttDockSaved" type="button" title="Saved lessons">Saved</button>
       <button id="ttDockData" type="button" title="Data Center">Files</button>
       <button id="ttDockProfile" type="button" title="Student profile">Data</button>
+      <button id="ttDockDisplay" type="button" title="Student display">Display</button>
       <button id="ttLaserToggle" type="button" title="Laser pointer">Laser</button>
       <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
+      <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Student display controls">
+        <button type="button" data-display-mode="private">Privacy</button>
+        <button type="button" data-display-mode="poster">Poster</button>
+        <button type="button" data-display-mode="hfw">HFW</button>
+        <button type="button" data-display-mode="passage">Passage</button>
+        <button type="button" data-display-mode="game">Game</button>
+        <button id="ttPresentDisplayProjector" type="button">Projector</button>
+        <button id="ttPresentDisplayOpen" type="button">Open</button>
+      </div>
     </aside>
 
     <canvas id="ttLaserCanvas" class="laser-canvas" aria-hidden="true"></canvas>
     <canvas id="ttNotesCanvas" class="notes-canvas" aria-hidden="true"></canvas>
+
+    <section id="ttLessonLaunch" class="lesson-launch" hidden aria-live="polite" aria-label="Lesson opening">
+      <div class="lesson-launch-card">
+        <span class="lesson-launch-kicker">Lesson ready</span>
+        <strong id="ttLaunchGroup">Group</strong>
+        <p id="ttLaunchMeta">Preparing the teaching view</p>
+        <div class="lesson-launch-details" aria-label="Lesson setup">
+          <span id="ttLaunchSubstep">Substep --</span>
+          <span id="ttLaunchLevel">Reader --</span>
+          <span id="ttLaunchWordlist">Wordlist p. --</span>
+          <span id="ttLaunchSentence">Sentences p. --</span>
+        </div>
+        <div class="lesson-launch-track" aria-hidden="true"><span></span></div>
+      </div>
+    </section>
 
     <section id="ttHomeScreen" class="home-screen" hidden>
       <header class="home-head">
@@ -136,6 +177,21 @@
           <p class="eyebrow">Home</p>
           <h2>Plan Today</h2>
           <span>Pick a group, glance at the last lesson, then build today’s lesson fast.</span>
+        </div>
+        <div class="home-support-actions" aria-label="Reference PDFs">
+          <span>Reference</span>
+          <div class="home-support-grid">
+            <details class="home-reference-menu">
+              <summary>Readers</summary>
+              <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Browse all</a>
+              <a id="ttCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Current charting page</a>
+            </details>
+            <details class="home-reference-menu">
+              <summary>Dictation</summary>
+              <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Browse all</a>
+              <a id="ttCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Current substep start</a>
+            </details>
+          </div>
         </div>
         <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
       </header>
@@ -150,7 +206,7 @@
           <div class="planner-actions">
             <button id="ttPlannerUseDefaults" type="button">Use smart defaults</button>
             <button id="ttPlannerBuild" type="button">Build lesson</button>
-            <button id="ttPlannerOpen" type="button">Open full lesson</button>
+            <button id="ttPlannerOpen" type="button">Start teaching</button>
           </div>
         </div>
         <div class="planner-core">
@@ -328,9 +384,14 @@
               <button id="ttOpenWhiteboard" class="small-action whiteboard-open" type="button">Whiteboard</button>
             </div>
           </div>
-          <div id="ttSection2Display" class="section2-display">
-            <span>Tap a word</span>
+          <div class="section2-card-stage">
+            <button id="ttSection2Prev" class="card-arrow section2-arrow" type="button" aria-label="Previous Section 2 word">‹</button>
+            <div id="ttSection2Display" class="section2-display">
+              <span>Tap a word</span>
+            </div>
+            <button id="ttSection2Next" class="card-arrow section2-arrow" type="button" aria-label="Next Section 2 word">›</button>
           </div>
+          <p id="ttSection2Count" class="card-count section2-count">0 of 0</p>
           <div id="ttSection2Editor" class="section2-editor" hidden>
             <label>
               Correct card split
@@ -471,10 +532,15 @@
         </label>
         <p class="mini-label">Tap a word to show it large for the student</p>
         <div id="ttPart7Hfw" class="word-row hfw-click-row"></div>
-        <div id="ttHfwDisplay" class="hfw-display" aria-live="polite">
-          <strong>Tap HFW</strong>
-          <span id="ttHfwSubstep"></span>
+        <div class="hfw-display-stage">
+          <button id="ttHfwPrev" class="card-arrow hfw-arrow" type="button" aria-label="Previous high-frequency word">‹</button>
+          <div id="ttHfwDisplay" class="hfw-display" aria-live="polite">
+            <strong>Tap HFW</strong>
+            <span id="ttHfwSubstep"></span>
+          </div>
+          <button id="ttHfwNext" class="card-arrow hfw-arrow" type="button" aria-label="Next high-frequency word">›</button>
         </div>
+        <p id="ttHfwCount" class="card-count hfw-count">0 of 0</p>
         <p class="teaching-note">Dictate one word at a time. Students segment syllables, tap sounds in each syllable, then spell with magnetic journal tiles or write on syllable cards.</p>
         <a class="next-link" href="#section8">Next: Section 8</a>
       </section>
@@ -544,7 +610,7 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js"></script>
-    <script src="teach-today.js"></script>
+    <script src="teach-today.js?v=section7-hfw-arrows-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

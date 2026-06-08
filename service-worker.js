@@ -1,15 +1,19 @@
-const CACHE_NAME = "teach-today-offline-v2026-06-05-planner-refine-1";
+const CACHE_NAME = "teach-today-offline-v2026-06-08-section7-hfw-arrows-1";
 
 const APP_SHELL = [
   "./",
   "./TeachToday.html",
+  "./ReferencePdfs.html",
+  "./StudentDisplay.html",
   "./StudentProfile.html",
   "./index.html",
   "./teach-today.css",
+  "./student-display.css",
   "./student-profile.css",
   "./styles.css",
   "./app.js",
   "./teach-today.js",
+  "./student-display.js",
   "./student-profile.js",
   "./reader-wordlists.js",
   "./reader-chart-index.js",

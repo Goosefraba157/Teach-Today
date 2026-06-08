@@ -36,7 +36,9 @@
     timerFill: document.querySelector("#timerFill"),
     wordStage: document.querySelector("#wordStage"),
     wordTrack: document.querySelector("#wordTrack"),
-    sliceBank: document.querySelector("#sliceBank"),
+    scoopLayer: document.querySelector("#scoopLayer"),
+    scoopModeBtn: document.querySelector("#scoopModeBtn"),
+    cutModeBtn: document.querySelector("#cutModeBtn"),
     clearBtn: document.querySelector("#clearBtn"),
     checkBtn: document.querySelector("#checkBtn"),
     streakCount: document.querySelector("#streakCount"),
@@ -51,6 +53,7 @@
   let round = null;
   let timerId = 0;
   let toastTimer = 0;
+  let nextRoundTimer = 0;
   let drag = null;
   const words = buildWordBank();
 
@@ -65,10 +68,14 @@
 
   function bindEvents() {
     dom.clearBtn.addEventListener("click", () => {
+      round.scoops = [];
       round.selected = [];
       renderRound();
     });
     dom.checkBtn.addEventListener("click", checkAnswer);
+    dom.scoopModeBtn.addEventListener("click", () => setMode("scoop"));
+    dom.cutModeBtn.addEventListener("click", () => setMode("cut"));
+    dom.scoopLayer.addEventListener("pointerdown", startDrag);
     window.addEventListener("pointermove", moveDrag);
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", endDrag);
@@ -83,23 +90,30 @@
   }
 
   function makeEntry(word, parts) {
+    const affixes = affixRanges(word, parts);
+    const suffix = affixes.find((item) => item.type === "suffix");
+    const suffixLength = suffix ? suffix.end - suffix.start : 0;
+    const syllableEnd = word.length - suffixLength;
+    const playParts = suffix ? partsWithoutSuffix(parts, word.slice(suffix.start, suffix.end)) : [...parts];
     const gaps = [];
     let cursor = 0;
-    parts.slice(0, -1).forEach((part) => {
+    playParts.slice(0, -1).forEach((part) => {
       cursor += part.length;
       gaps.push(cursor);
     });
     return {
       word,
-      parts,
+      parts: playParts,
       gaps,
-      affixes: affixRanges(word, parts),
-      level: parts.length > 2 ? "Boss round" : "Reader 3.1"
+      affixes,
+      syllableEnd,
+      level: playParts.length > 2 ? "Boss round" : "Reader 3.1"
     };
   }
 
   function nextRound() {
     clearInterval(timerId);
+    clearTimeout(nextRoundTimer);
     const pool = words.filter((entry) => {
       if (entry.parts.length === 2) return true;
       return state.streak >= 5 || state.totalPoints >= 750;
@@ -114,6 +128,7 @@
       ...entry,
       needed,
       selected: [],
+      scoops: [],
       startedAt: performance.now(),
       timeLimit,
       timeLeft: timeLimit,
@@ -135,7 +150,13 @@
     dom.streakCount.textContent = state.streak;
     dom.roundPoints.textContent = state.lastPoints ? `+${state.lastPoints}` : "+0";
     dom.roundLevel.textContent = round.level;
-    dom.prompt.textContent = `Separate ${titleWord(round.word)} into ${round.parts.length} syllables!`;
+    dom.prompt.textContent = state.mode === "cut"
+      ? `Cut ${titleWord(round.word)} into ${round.parts.length} syllables!`
+      : `Scoop ${titleWord(round.word)} into ${round.parts.length} syllables!`;
+    dom.checkBtn.textContent = state.mode === "cut" ? "Tap a Cut" : "Scoop";
+    dom.wordStage.dataset.mode = state.mode;
+    dom.scoopModeBtn.setAttribute("aria-pressed", String(state.mode === "scoop"));
+    dom.cutModeBtn.setAttribute("aria-pressed", String(state.mode === "cut"));
     dom.wordTrack.style.setProperty("--slot-count", round.word.length);
     dom.wordTrack.innerHTML = [...round.word].map((char, index) => {
       const gap = index + 1;
@@ -143,10 +164,10 @@
       const classes = ["gap-target"];
       if (round.selected.includes(gap)) classes.push("selected");
       if (round.reveal && round.gaps.includes(gap)) classes.push("correct");
-      if (round.reveal && round.wasCorrect === false && round.selected.includes(gap) && !round.gaps.includes(gap)) classes.push("wrong");
+      if ((round.reveal || round.tryWrong) && round.wasCorrect === false && round.selected.includes(gap) && !round.gaps.includes(gap)) classes.push("wrong");
       const tileClasses = ["letter-tile"];
       if (char === "-") tileClasses.push("is-hyphen");
-      if (round.reveal && round.wasCorrect) tileClasses.push("is-syllable-correct", `syllable-${syllableIndexFor(index) % 4}`);
+      if (round.reveal && round.wasCorrect && index < round.syllableEnd) tileClasses.push("is-syllable-correct", `syllable-${syllableIndexFor(index) % 4}`);
       if (round.reveal && round.wasCorrect && round.gaps.includes(index)) tileClasses.push("starts-syllable");
       if (round.reveal && round.wasCorrect && round.gaps.includes(gap)) tileClasses.push("ends-syllable");
       const affix = affixTypeFor(index);
@@ -154,117 +175,108 @@
       const letterClasses = ["letter-char"];
       if (vowels.has(char.toLowerCase())) letterClasses.push("is-vowel");
       return `
-        <div class="${tileClasses.join(" ")}">
+        <div class="${tileClasses.join(" ")}" data-letter-index="${index}">
           <span class="${letterClasses.join(" ")}">${escapeHtml(char)}</span>
-          ${hasGap ? `<button class="${classes.join(" ")}" type="button" data-gap="${gap}" aria-label="Slice after ${escapeHtml(char)}"></button>` : ""}
+          ${hasGap ? `<button class="${classes.join(" ")}" type="button" data-gap="${gap}" aria-label="Cut after ${escapeHtml(char)}"></button>` : ""}
         </div>
       `;
     }).join("");
     dom.wordTrack.querySelectorAll(".gap-target").forEach((button) => {
-      button.addEventListener("click", () => toggleGap(Number(button.dataset.gap)));
+      button.addEventListener("click", () => chooseCut(Number(button.dataset.gap)));
     });
-    dom.sliceBank.innerHTML = Array.from({ length: round.needed }, (_, index) => {
-      const set = round.selected[index] ? " is-set" : "";
-      return `<button class="slice-token${set}" type="button" data-token="${index}" aria-label="Slice marker ${index + 1}">|</button>`;
-    }).join("");
+    renderScoops();
     if (round.reveal) {
-      dom.sliceBank.innerHTML = `
-        <div class="syllable-reveal" aria-label="Correct syllables">
+      dom.scoopLayer.insertAdjacentHTML("beforeend", `
+        <foreignObject x="80" y="82" width="840" height="62">
+          <div class="syllable-reveal" aria-label="Correct syllables" xmlns="http://www.w3.org/1999/xhtml">
           ${round.parts.map((part) => `<span>${decoratePart(part)}</span>`).join("")}
-        </div>
-      `;
+          </div>
+        </foreignObject>
+      `);
       return updateProgress();
     }
-    dom.sliceBank.querySelectorAll(".slice-token").forEach((button) => {
-      button.addEventListener("pointerdown", (event) => startDrag(event, Number(button.dataset.token)));
-    });
     updateProgress();
   }
 
-  function toggleGap(gap) {
-    if (round.checked || gap < 1 || gap >= round.word.length) return;
-    if (round.selected.includes(gap)) {
-      round.selected = round.selected.filter((item) => item !== gap);
-    } else if (round.selected.length < round.needed) {
-      round.selected = [...round.selected, gap].sort((a, b) => a - b);
-    } else {
-      round.selected = [...round.selected.slice(1), gap].sort((a, b) => a - b);
-    }
-    renderRound();
-  }
-
-  function startDrag(event, tokenIndex) {
-    if (round.checked) return;
-    const source = event.currentTarget;
-    source.setPointerCapture(event.pointerId);
-    drag = { tokenIndex, pointerId: event.pointerId };
-    source.classList.add("is-dragging");
-    const ghost = source.cloneNode(true);
-    ghost.classList.add("drag-ghost");
-    ghost.id = "dragGhost";
-    document.body.appendChild(ghost);
-    moveGhost(event.clientX, event.clientY);
+  function startDrag(event) {
+    if (round.checked || state.mode !== "scoop") return;
+    dom.scoopLayer.setPointerCapture(event.pointerId);
+    const point = scoopPoint(event);
+    drag = { pointerId: event.pointerId, points: [point] };
+    renderScoops();
   }
 
   function moveDrag(event) {
-    if (!drag) return;
-    moveGhost(event.clientX, event.clientY);
-    const gap = nearestGap(event.clientX, event.clientY);
-    dom.wordTrack.querySelectorAll(".gap-target").forEach((button) => {
-      button.classList.toggle("selected", Number(button.dataset.gap) === gap || round.selected.includes(Number(button.dataset.gap)));
-    });
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    drag.points.push(scoopPoint(event));
+    renderScoops();
   }
 
   function endDrag(event) {
-    if (!drag) return;
-    const gap = nearestGap(event.clientX, event.clientY);
-    if (gap) {
-      const next = [...round.selected];
-      next[drag.tokenIndex] = gap;
-      round.selected = [...new Set(next.filter(Boolean))].sort((a, b) => a - b).slice(0, round.needed);
-    }
-    document.querySelectorAll(".slice-token.is-dragging").forEach((item) => item.classList.remove("is-dragging"));
-    document.querySelector("#dragGhost")?.remove();
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    drag.points.push(scoopPoint(event));
+    commitScoop(drag.points);
     drag = null;
-    renderRound();
-  }
-
-  function nearestGap(x, y) {
-    let winner = null;
-    let best = Infinity;
-    dom.wordTrack.querySelectorAll(".gap-target").forEach((button) => {
-      const rect = button.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const distance = Math.hypot(cx - x, cy - y);
-      if (distance < best) {
-        best = distance;
-        winner = Number(button.dataset.gap);
+    if (state.mode === "scoop") {
+      const correct = scoopsAreCorrect();
+      if (correct) {
+        round.selected = round.gaps;
+        round.checked = true;
+        clearInterval(timerId);
+        round.reveal = true;
+        round.wasCorrect = true;
+        awardRound();
+        return;
       }
-    });
-    return best < 115 ? winner : null;
-  }
-
-  function moveGhost(x, y) {
-    const ghost = document.querySelector("#dragGhost");
-    if (!ghost) return;
-    ghost.style.left = `${x}px`;
-    ghost.style.top = `${y}px`;
+      if (round.selected.length >= round.needed) {
+        retryScoop();
+        return;
+      }
+    }
+    renderRound();
   }
 
   function checkAnswer() {
     if (!round || round.checked) return;
-    if (round.selected.length !== round.needed) {
-      showToast(round.needed === 1 ? "Place 1 slice line." : `Place ${round.needed} slice lines.`);
+    const correct = state.mode === "cut" ? arraysEqual(round.selected, round.gaps) : scoopsAreCorrect();
+    if (state.mode === "scoop" && round.scoops.length < 1) {
+      showToast("Draw a scoop under the word.");
       return;
     }
+    if (state.mode === "cut" && round.selected.length !== round.needed) {
+      showToast(round.needed === 1 ? "Choose 1 cut point." : `Choose ${round.needed} cut points.`);
+      return;
+    }
+    if (state.mode === "scoop" && !correct) {
+      retryScoop();
+      return;
+    }
+    if (state.mode === "scoop" && correct) round.selected = round.gaps;
     round.checked = true;
     clearInterval(timerId);
-    const correct = arraysEqual(round.selected, round.gaps);
     round.reveal = true;
     round.wasCorrect = correct;
     if (correct) awardRound();
     else missRound();
+  }
+
+  function chooseCut(gap) {
+    if (round.checked || state.mode !== "cut" || gap < 1 || gap >= round.word.length) return;
+    round.selected = [gap];
+    if (round.needed > 1 && round.selected.length < round.needed) {
+      renderRound();
+      showToast(`Choose ${round.needed} cut points.`);
+      return;
+    }
+    if (arraysEqual(round.selected, round.gaps)) {
+      round.checked = true;
+      clearInterval(timerId);
+      round.reveal = true;
+      round.wasCorrect = true;
+      awardRound();
+      return;
+    }
+    retryCut();
   }
 
   function awardRound() {
@@ -283,7 +295,7 @@
     addHubPoints(points, { word: round.word, parts: round.parts });
     renderRound();
     celebrate(points);
-    setTimeout(nextRound, 2200);
+    scheduleNextRound(3100);
   }
 
   function missRound() {
@@ -297,7 +309,56 @@
     void dom.wordStage.offsetWidth;
     dom.wordStage.classList.add("shake");
     showToast(`${round.parts.join(" • ")}   +25 try points`);
-    setTimeout(nextRound, 2200);
+    scheduleNextRound(2200);
+  }
+
+  function retryScoop() {
+    clearInterval(timerId);
+    state.lastPoints = 0;
+    state.streak = 0;
+    saveState();
+    round.checked = true;
+    round.reveal = false;
+    round.wasCorrect = false;
+    round.tryWrong = true;
+    renderRound();
+    dom.wordStage.classList.remove("shake");
+    void dom.wordStage.offsetWidth;
+    dom.wordStage.classList.add("shake");
+    showToast("Not yet. Try the scoop break again.");
+    setTimeout(() => {
+      if (!round || round.reveal) return;
+      round.scoops = [];
+      round.selected = [];
+      round.checked = false;
+      round.tryWrong = false;
+      renderRound();
+      startTimer();
+    }, 1150);
+  }
+
+  function retryCut() {
+    clearInterval(timerId);
+    state.lastPoints = 0;
+    state.streak = 0;
+    saveState();
+    round.checked = true;
+    round.reveal = false;
+    round.wasCorrect = false;
+    round.tryWrong = true;
+    renderRound();
+    dom.wordStage.classList.remove("shake");
+    void dom.wordStage.offsetWidth;
+    dom.wordStage.classList.add("shake");
+    showToast("Not there. Try the cut again.");
+    setTimeout(() => {
+      if (!round || round.reveal) return;
+      round.selected = [];
+      round.checked = false;
+      round.tryWrong = false;
+      renderRound();
+      startTimer();
+    }, 1050);
   }
 
   function celebrate(points) {
@@ -329,7 +390,12 @@
     saveState();
     addHubPoints(10, { word: round.word, timeout: true });
     showToast(`Time! ${round.parts.join(" • ")}   +10`);
-    setTimeout(nextRound, 1350);
+    scheduleNextRound(1350);
+  }
+
+  function scheduleNextRound(delay) {
+    clearTimeout(nextRoundTimer);
+    nextRoundTimer = setTimeout(nextRound, delay);
   }
 
   function updateProgress() {
@@ -352,6 +418,251 @@
 
   function renderRoadDots() {
     dom.roadDots.innerHTML = "<span></span><span></span><span></span><span></span><span></span>";
+  }
+
+  function renderScoops() {
+    const drawn = round.scoops.map((scoop, index) => scoopPathMarkup(scoop, index, "drawn"));
+    const active = drag ? `<path class="scoop-path active" d="${pointsToPath(drag.points)}"></path>` : "";
+    const correct = round.reveal ? correctScoopMarkup() : "";
+    const labels = round.reveal && round.wasCorrect ? syllableLabelMarkup() : "";
+    const breaks = state.mode === "scoop" ? scoopBreakMarkup() : "";
+    dom.scoopLayer.innerHTML = `
+      <rect class="scoop-catch" x="0" y="0" width="1000" height="150"></rect>
+      ${correct}
+      ${drawn.join("")}
+      ${active}
+      ${breaks}
+      ${labels}
+    `;
+    updateTouchedLetters();
+  }
+
+  function scoopPoint(event) {
+    const rect = dom.scoopLayer.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(1000, ((event.clientX - rect.left) / rect.width) * 1000)),
+      y: Math.max(0, Math.min(150, ((event.clientY - rect.top) / rect.height) * 150))
+    };
+  }
+
+  function commitScoop(points) {
+    if (points.length < 2) return;
+    round.tryWrong = false;
+    const xs = points.map((point) => point.x);
+    const ys = points.map((point) => point.y);
+    const startX = Math.min(...xs);
+    const endX = Math.max(...xs);
+    const depth = Math.max(...ys) - Math.min(...ys);
+    const start = xToBoundary(startX);
+    const end = xToBoundary(endX);
+    if (end - start < 1 || depth < 14) {
+      showToast("Make a full scoop under a syllable.");
+      return;
+    }
+    const simplified = simplifyPoints(points);
+    round.scoops = [...round.scoops, { start, end, points: simplified, breaks: inferBreaks(simplified) }]
+      .sort((a, b) => a.start - b.start || a.end - b.end)
+      .slice(-round.parts.length);
+    round.selected = selectedBreaksFromScoops();
+  }
+
+  function scoopsAreCorrect() {
+    const spans = correctSpans();
+    const touched = allTouchedLetters();
+    if (!touched.size) return false;
+    const selected = selectedBreaksFromScoops();
+    round.selected = selected;
+    return arraysEqual(selected, round.gaps) && spans.every((span) => spanIsTouched(span, touched));
+  }
+
+  function correctSpans() {
+    const boundaries = [0, ...round.gaps, round.syllableEnd];
+    return boundaries.slice(0, -1).map((start, index) => ({ start, end: boundaries[index + 1] }));
+  }
+
+  function spanIsTouched(span, touched) {
+    const targetLetters = [];
+    for (let letter = span.start; letter < span.end; letter += 1) targetLetters.push(letter);
+    const hits = targetLetters.filter((letter) => touched.has(letter)).length;
+    const neededHits = Math.max(1, Math.ceil(targetLetters.length * 0.34));
+    return hits >= neededHits;
+  }
+
+  function allTouchedLetters() {
+    const touched = new Set();
+    round.scoops.forEach((scoop) => {
+      touchedLetters(scoop).forEach((letter) => touched.add(letter));
+    });
+    if (drag) {
+      touchedLetters({ points: drag.points }).forEach((letter) => touched.add(letter));
+    }
+    return touched;
+  }
+
+  function updateTouchedLetters() {
+    const touched = state.mode === "scoop" && !round.reveal ? allTouchedLetters() : new Set();
+    const selected = state.mode === "scoop" && !round.reveal ? selectedBreaksFromScoops() : [];
+    dom.wordTrack.querySelectorAll(".letter-tile").forEach((tile) => {
+      const index = Number(tile.dataset.letterIndex);
+      const touchedNow = touched.has(index);
+      const liveSyllable = liveSyllableIndex(index, selected);
+      tile.classList.toggle("is-scoop-touched", touchedNow);
+      tile.classList.toggle("is-scoop-syllable-0", touchedNow && liveSyllable === 0);
+      tile.classList.toggle("is-scoop-syllable-1", touchedNow && liveSyllable === 1);
+      tile.classList.toggle("is-scoop-syllable-2", touchedNow && liveSyllable === 2);
+      tile.classList.toggle("is-scoop-syllable-3", touchedNow && liveSyllable === 3);
+    });
+    dom.wordTrack.querySelectorAll(".gap-target").forEach((gap) => {
+      gap.classList.toggle("selected", selected.includes(Number(gap.dataset.gap)));
+    });
+  }
+
+  function liveSyllableIndex(letterIndex, selected) {
+    if (letterIndex >= round.syllableEnd) return -1;
+    const boundaries = [0, ...selected, round.syllableEnd].sort((a, b) => a - b);
+    for (let index = 0; index < boundaries.length - 1; index += 1) {
+      if (letterIndex >= boundaries[index] && letterIndex < boundaries[index + 1]) return index;
+    }
+    return 0;
+  }
+
+  function touchedLetters(scoop) {
+    const touched = new Set();
+    const letterWidth = 1000 / round.word.length;
+    scoop.points.forEach((point) => {
+      const letter = Math.max(0, Math.min(round.word.length - 1, Math.floor(point.x / letterWidth)));
+      const withinLetter = point.x - letter * letterWidth;
+      touched.add(letter);
+      if (withinLetter < letterWidth * 0.28 && letter > 0) touched.add(letter - 1);
+      if (withinLetter > letterWidth * 0.72 && letter < round.word.length - 1) touched.add(letter + 1);
+    });
+    return touched;
+  }
+
+  function midpoint(scoop) {
+    return (boundaryToX(scoop.start) + boundaryToX(scoop.end)) / 2;
+  }
+
+  function boundariesFromScoops() {
+    const starts = new Set(round.scoops.map((scoop) => scoop.start));
+    const ends = new Set(round.scoops.map((scoop) => scoop.end));
+    return [...ends].filter((end) => end > 0 && end < round.word.length && starts.has(end)).sort((a, b) => a - b);
+  }
+
+  function selectedBreaksFromScoops() {
+    const breaks = [];
+    round.scoops.forEach((scoop) => {
+      (scoop.breaks || inferBreaks(scoop.points)).forEach((gap) => {
+        if (gap > 0 && gap < round.syllableEnd) breaks.push(gap);
+      });
+    });
+    if (drag) {
+      inferBreaks(drag.points).forEach((gap) => {
+        if (gap > 0 && gap < round.syllableEnd) breaks.push(gap);
+      });
+    }
+    return dedupeBreaks(breaks).slice(0, round.needed).sort((a, b) => a - b);
+  }
+
+  function inferBreaks(points) {
+    if (!points || points.length < 5) return [];
+    const smoothed = smoothPoints(points);
+    const candidates = [];
+    for (let index = 2; index < smoothed.length - 2; index += 1) {
+      const prev = smoothed[index - 1];
+      const current = smoothed[index];
+      const next = smoothed[index + 1];
+      const isTopTurn = current.y <= prev.y && current.y <= next.y;
+      if (!isTopTurn || current.y > 78) continue;
+      const leftLow = Math.max(...smoothed.slice(Math.max(0, index - 5), index + 1).map((point) => point.y));
+      const rightLow = Math.max(...smoothed.slice(index, Math.min(smoothed.length, index + 6)).map((point) => point.y));
+      if (leftLow - current.y < 24 || rightLow - current.y < 24) continue;
+      candidates.push({ gap: xToBoundary(current.x), lift: leftLow + rightLow - current.y * 2 });
+    }
+    if (!candidates.length) return [];
+    return dedupeBreaks(candidates.sort((a, b) => b.lift - a.lift).map((item) => item.gap));
+  }
+
+  function smoothPoints(points) {
+    return points.map((point, index) => {
+      const window = points.slice(Math.max(0, index - 1), Math.min(points.length, index + 2));
+      return {
+        x: window.reduce((sum, item) => sum + item.x, 0) / window.length,
+        y: window.reduce((sum, item) => sum + item.y, 0) / window.length
+      };
+    });
+  }
+
+  function dedupeBreaks(breaks) {
+    const unique = [];
+    breaks.forEach((gap) => {
+      const clean = Math.max(1, Math.min(round.syllableEnd - 1, gap));
+      if (!unique.includes(clean)) unique.push(clean);
+    });
+    return unique.slice(0, Math.max(1, round.needed));
+  }
+
+  function scoopBreakMarkup() {
+    return selectedBreaksFromScoops().map((gap) => {
+      const x = boundaryToX(gap);
+      return `<g class="scoop-break"><line x1="${x}" y1="10" x2="${x}" y2="70"></line><circle cx="${x}" cy="12" r="10"></circle></g>`;
+    }).join("");
+  }
+
+  function xToBoundary(x) {
+    const raw = Math.round((x / 1000) * round.word.length);
+    return Math.max(0, Math.min(round.word.length, raw));
+  }
+
+  function boundaryToX(boundary) {
+    return (boundary / round.word.length) * 1000;
+  }
+
+  function correctScoopMarkup() {
+    const boundaries = [0, ...round.gaps, round.syllableEnd];
+    return boundaries.slice(0, -1).map((start, index) => {
+      const scoop = { start, end: boundaries[index + 1] };
+      return scoopPathMarkup(scoop, index, round.wasCorrect ? "correct" : "answer");
+    }).join("");
+  }
+
+  function scoopPathMarkup(scoop, index, mode) {
+    const d = scoop.points?.length ? pointsToPath(scoop.points) : spanToPath(scoop.start, scoop.end);
+    return `<path class="scoop-path ${mode} scoop-${index % 4}" d="${d}"></path>`;
+  }
+
+  function syllableLabelMarkup() {
+    const boundaries = [0, ...round.gaps, round.syllableEnd];
+    return boundaries.slice(0, -1).map((start, index) => {
+      const end = boundaries[index + 1];
+      const x = (boundaryToX(start) + boundaryToX(end)) / 2;
+      return `
+        <g class="scoop-label label-${index % 4}">
+          <rect x="${x - 82}" y="72" width="164" height="34" rx="8"></rect>
+          <text x="${x}" y="95">Syllable ${index + 1}</text>
+        </g>
+      `;
+    }).join("");
+  }
+
+  function spanToPath(start, end) {
+    const x1 = boundaryToX(start) + 14;
+    const x2 = boundaryToX(end) - 14;
+    const mid = (x1 + x2) / 2;
+    return `M ${x1} 38 Q ${mid} 126 ${x2} 38`;
+  }
+
+  function pointsToPath(points) {
+    if (points.length < 2) return "";
+    return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  }
+
+  function simplifyPoints(points) {
+    const step = Math.max(1, Math.floor(points.length / 18));
+    const sampled = points.filter((_, index) => index % step === 0);
+    const last = points[points.length - 1];
+    if (sampled[sampled.length - 1] !== last) sampled.push(last);
+    return sampled;
   }
 
   function syllableIndexFor(letterIndex) {
@@ -397,11 +708,29 @@
     return "";
   }
 
+  function partsWithoutSuffix(parts, suffixText) {
+    const suffix = suffixText.replace(/-/g, "");
+    if (!suffix) return [...parts];
+    const last = parts[parts.length - 1] || "";
+    if (last === suffix) return parts.slice(0, -1);
+    if (last.endsWith(suffix) && last.length > suffix.length) {
+      return [...parts.slice(0, -1), last.slice(0, -suffix.length)];
+    }
+    return [...parts];
+  }
+
   function decoratePart(part) {
     return [...part].map((char) => {
       const cls = vowels.has(char.toLowerCase()) ? " class=\"is-vowel\"" : "";
       return `<b${cls}>${escapeHtml(char)}</b>`;
     }).join("");
+  }
+
+  function setMode(mode) {
+    if (state.mode === mode) return;
+    state.mode = mode;
+    saveState();
+    nextRound();
   }
 
   function restorePlayer() {
@@ -415,6 +744,7 @@
   function loadState() {
     const empty = {
       playerName: "Player",
+      mode: "scoop",
       totalPoints: 0,
       streak: 0,
       bestStreak: 0,

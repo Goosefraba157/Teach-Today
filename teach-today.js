@@ -3,7 +3,11 @@ let ttChartCard = null;
 let ttCardDeck = [];
 let ttCardIndex = 0;
 let ttCardMode = "words";
+let ttSection2Deck = [];
+let ttSection2Index = 0;
 let ttSection2Word = "";
+let ttHfwDeck = [];
+let ttHfwIndex = 0;
 let ttLaserEnabled = false;
 let ttLaserDrawing = false;
 let ttLaserLastPoint = null;
@@ -27,6 +31,13 @@ let ttSectionReviewSubsteps = {};
 let ttPickerSelections = {};      // { pickerId: string[] }  — ordered selected words
 let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — word pools per substep
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
+let ttPlannerHomeScrollPositions = {};
+let ttLessonLaunchTimer = null;
+let ttStudentDisplayWindow = null;
+let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
+const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
+const ttStudentDisplayChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayStudentDisplay.v1") : null;
+let ttStudentDisplayScreens = [];
 
 function ttById(id) {
   return document.getElementById(id);
@@ -115,15 +126,15 @@ function ttRender() {
   ttFillSectionRefs(lesson);
   ttFillSounds(skill, lesson);
   ttFillWordRow(ttById("ttReviewWords"), lesson.sectionTwoReviewWords || [], {
-    onSelect: (word) => ttShowSection2Word(word, skill.id),
+    onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("review", word)
   });
   ttFillWordRow(ttById("ttCurrentWords"), lesson.sectionTwoCurrentWords || [], {
-    onSelect: (word) => ttShowSection2Word(word, skill.id),
+    onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("current", word)
   });
   ttFillSection2ReplacementTools(lesson, skill);
-  ttShowSection2Word(ttSection2Word || (lesson.sectionTwoCurrentWords || [])[0] || (lesson.sectionTwoReviewWords || [])[0] || "", skill.id);
+  ttFillSection2DisplayDeck(lesson, skill);
   ttFillSection3Cards(lesson);
   ttFillWordRow(ttById("ttHfw"), lesson.highFrequencyWords || []);
   ttFillSentences(lesson.readerSentences || []);
@@ -134,6 +145,219 @@ function ttRender() {
   ttById("ttWrap").textContent = "Ask one comprehension question, note the hardest word, and decide whether the next lesson should repeat, warm up, or advance.";
   ttSetupChart(lesson);
   ttRenderHomeScreen();
+  ttSyncStudentDisplay();
+}
+
+function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
+  const group = ttActiveGroup();
+  const lesson = ttLesson || ttBuildLesson();
+  const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+  const poster = ttSection1PhotoForSubstep(skill.id);
+  const hfwWords = hfwWordsForSubstep(skill.id, lesson).filter(Boolean).slice(0, 12);
+  const passageText = lesson.passage || `Use Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} for Section #9.`;
+  return {
+    mode,
+    updatedAt: new Date().toISOString(),
+    groupName: group.name || "Group",
+    substep: skill.id,
+    skillTitle: skill.title || "",
+    poster,
+    highFrequencyWords: hfwWords,
+    notebookSentence: "Copy the sentence your teacher gives you.",
+    passageTitle: `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
+    passageText,
+    gameUrl: "Games/index.html",
+    privacyTitle: "Private teacher work",
+    privacyMessage: "Keep reading, writing, or practicing while your teacher charts."
+  };
+}
+
+function ttSendStudentDisplay(payload = ttStudentDisplayPayload()) {
+  localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
+  localStorage.setItem("teachToday.studentDisplayMode", payload.mode);
+  ttStudentDisplayChannel?.postMessage(payload);
+  if (ttStudentDisplayWindow && !ttStudentDisplayWindow.closed) {
+    ttStudentDisplayWindow.postMessage({ type: "teachTodayStudentDisplay", payload }, window.location.origin);
+  }
+  ttUpdateStudentDisplayStatus(payload.mode);
+}
+
+function ttStudentDisplayWindowFeatures(screen = null) {
+  if (!screen) return "";
+  const width = Math.max(320, Math.round(screen.availWidth || screen.width || 1280));
+  const height = Math.max(320, Math.round(screen.availHeight || screen.height || 720));
+  const left = Math.round(screen.availLeft ?? screen.left ?? 0);
+  const top = Math.round(screen.availTop ?? screen.top ?? 0);
+  return `popup=yes,left=${left},top=${top},width=${width},height=${height}`;
+}
+
+function ttOpenStudentDisplay(mode = ttStudentDisplayMode, options = {}) {
+  ttStudentDisplayMode = mode || ttStudentDisplayMode || "private";
+  const payload = ttStudentDisplayPayload(ttStudentDisplayMode);
+  localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
+  localStorage.setItem("teachToday.studentDisplayMode", ttStudentDisplayMode);
+  ttStudentDisplayWindow = window.open("StudentDisplay.html", "teachTodayStudentDisplay", ttStudentDisplayWindowFeatures(options.screen));
+  ttStudentDisplayWindow?.focus?.();
+  setTimeout(() => ttSendStudentDisplay(payload), 250);
+  ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
+}
+
+function ttSetStudentDisplayMode(mode) {
+  ttStudentDisplayMode = mode || "private";
+  if (!ttStudentDisplayWindow || ttStudentDisplayWindow.closed) {
+    ttOpenStudentDisplay(ttStudentDisplayMode);
+    return;
+  }
+  ttSendStudentDisplay(ttStudentDisplayPayload(ttStudentDisplayMode));
+}
+
+function ttSyncStudentDisplay() {
+  const payload = ttStudentDisplayPayload(ttStudentDisplayMode);
+  localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
+  if (ttStudentDisplayWindow && !ttStudentDisplayWindow.closed) ttSendStudentDisplay(payload);
+  else ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
+}
+
+function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode) {
+  const status = ttById("ttDisplayStatus");
+  const labels = {
+    private: "Privacy screen ready",
+    poster: "Showing Section 1 poster",
+    hfw: "Showing high-frequency words",
+    passage: "Showing Section 9 passage",
+    game: "Showing game hub"
+  };
+  if (status) status.textContent = labels[mode] || "Student display ready";
+  ttById("ttDisplayPanel")?.querySelectorAll("[data-display-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.displayMode === mode);
+  });
+  ttById("ttPresentDisplayTray")?.querySelectorAll("[data-display-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.displayMode === mode);
+  });
+  ttById("ttDockDisplay")?.classList.toggle("active", !ttById("ttPresentDisplayTray")?.hidden);
+}
+
+function ttTogglePresentDisplayTray(force = null) {
+  const tray = ttById("ttPresentDisplayTray");
+  const dock = document.querySelector(".presentation-dock");
+  if (!tray) return;
+  const shouldOpen = force ?? tray.hidden;
+  tray.hidden = !shouldOpen;
+  dock?.classList.toggle("display-tray-open", shouldOpen);
+  ttById("ttDockDisplay")?.classList.toggle("active", shouldOpen);
+  if (shouldOpen) ttUpdateStudentDisplayStatus();
+}
+
+function ttStudentDisplayStatusText(text) {
+  const status = ttById("ttDisplayStatus");
+  if (status) status.textContent = text;
+}
+
+function ttManualStudentDisplayFallback(reason = "Automatic screen choice is not available in this browser.") {
+  ttShowManualStudentDisplaySetup(reason);
+  ttStudentDisplayStatusText(`${reason} Manual setup is ready.`);
+}
+
+function ttScreenLabel(screen, index) {
+  const label = screen.label || (screen.isPrimary ? "Primary display" : `Display ${index + 1}`);
+  const size = `${Math.round(screen.width || screen.availWidth || 0)} x ${Math.round(screen.height || screen.availHeight || 0)}`;
+  const badges = [screen.isPrimary ? "primary" : "", screen.isInternal ? "built-in" : ""].filter(Boolean).join(", ");
+  return `${label}${size.trim() !== "0 x 0" ? ` (${size})` : ""}${badges ? ` - ${badges}` : ""}`;
+}
+
+function ttShowScreenChoice(screens) {
+  ttStudentDisplayScreens = screens;
+  const existing = ttById("ttScreenChoicePanel");
+  existing?.remove();
+  const panel = document.createElement("section");
+  panel.id = "ttScreenChoicePanel";
+  panel.className = "screen-choice-panel";
+  panel.setAttribute("aria-label", "Choose student display screen");
+  panel.innerHTML = `
+    <div>
+      <p>Student Display</p>
+      <strong>Choose a screen</strong>
+      <span>Pick the smartboard or extended display. If it lands wrong, use manual move.</span>
+    </div>
+    <div class="screen-choice-actions">
+      ${screens.map((screen, index) => `<button type="button" data-screen-index="${index}">${escapeHtml(ttScreenLabel(screen, index))}</button>`).join("")}
+      <button id="ttScreenChoiceManual" class="secondary" type="button">Manual move</button>
+      <button id="ttScreenChoiceClose" class="secondary" type="button">Close</button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  panel.querySelectorAll("[data-screen-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const screen = ttStudentDisplayScreens[Number(button.dataset.screenIndex)];
+      ttOpenStudentDisplay(ttStudentDisplayMode, { screen });
+      ttStudentDisplayStatusText(`Student display sent to ${ttScreenLabel(screen, Number(button.dataset.screenIndex))}.`);
+      panel.remove();
+    });
+  });
+  panel.querySelector("#ttScreenChoiceManual")?.addEventListener("click", () => {
+    panel.remove();
+    ttManualStudentDisplayFallback("Manual setup:");
+  });
+  panel.querySelector("#ttScreenChoiceClose")?.addEventListener("click", () => panel.remove());
+}
+
+function ttShowManualStudentDisplaySetup(reason) {
+  ttById("ttScreenChoicePanel")?.remove();
+  const panel = document.createElement("section");
+  panel.id = "ttScreenChoicePanel";
+  panel.className = "screen-choice-panel";
+  panel.setAttribute("aria-label", "Manual student display setup");
+  panel.innerHTML = `
+    <div>
+      <p>Manual Setup</p>
+      <strong>Move the student display yourself</strong>
+      <span>${escapeHtml(reason)} Open the student display, drag it to the smartboard or extended monitor, then make that window full screen.</span>
+    </div>
+    <div class="screen-choice-actions">
+      <button id="ttScreenChoiceOpenManual" type="button">Open student display</button>
+      <button id="ttScreenChoiceClose" class="secondary" type="button">Close</button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  panel.querySelector("#ttScreenChoiceOpenManual")?.addEventListener("click", () => {
+    ttOpenStudentDisplay(ttStudentDisplayMode);
+    ttStudentDisplayStatusText("Manual display opened. Move it to the smartboard, then make it full screen.");
+    panel.remove();
+  });
+  panel.querySelector("#ttScreenChoiceClose")?.addEventListener("click", () => panel.remove());
+}
+
+async function ttProjectStudentDisplay() {
+  ttStudentDisplayStatusText("Checking connected screens...");
+  if (!window.isSecureContext) {
+    ttManualStudentDisplayFallback("Screen detection needs a secure app window.");
+    return;
+  }
+  if (!window.getScreenDetails) {
+    ttManualStudentDisplayFallback("This browser cannot choose a display automatically.");
+    return;
+  }
+  try {
+    const details = await window.getScreenDetails();
+    const screens = Array.from(details?.screens || []);
+    if (screens.length < 2) {
+      ttManualStudentDisplayFallback("Only one screen was detected.");
+      return;
+    }
+    const current = details.currentScreen;
+    const preferred = screens.filter((screen) => screen !== current && !screen.isPrimary);
+    const candidates = preferred.length ? preferred : screens.filter((screen) => screen !== current);
+    const choices = candidates.length ? candidates : screens;
+    if (choices.length === 1) {
+      ttOpenStudentDisplay(ttStudentDisplayMode, { screen: choices[0] });
+      ttStudentDisplayStatusText(`Student display sent to ${ttScreenLabel(choices[0], screens.indexOf(choices[0]))}.`);
+      return;
+    }
+    ttShowScreenChoice(choices);
+  } catch (error) {
+    const denied = error?.name === "NotAllowedError";
+    ttManualStudentDisplayFallback(denied ? "Screen permission was not allowed." : "Automatic screen choice did not work.");
+  }
 }
 
 function ttFillSectionRefs(lesson) {
@@ -308,6 +532,22 @@ function ttRestoreScroll(planId = ttActivePlanId()) {
   if (!planId) return;
   const top = appState.lessonScrollPositions?.[planId];
   if (typeof top !== "number") return;
+  ttRestoringScroll = true;
+  requestAnimationFrame(() => {
+    window.scrollTo({ top, behavior: "auto" });
+    setTimeout(() => {
+      ttRestoringScroll = false;
+    }, 60);
+  });
+}
+
+function ttRememberHomeScroll(groupId = ttPlannerGroupId || appState.selectedGroupId || "") {
+  if (!groupId || ttRestoringScroll) return;
+  ttPlannerHomeScrollPositions[groupId] = Math.max(0, Math.round(window.scrollY || document.documentElement.scrollTop || 0));
+}
+
+function ttRestoreHomeScroll(groupId = ttPlannerGroupId || appState.selectedGroupId || "") {
+  const top = ttPlannerHomeScrollPositions[groupId] || 0;
   ttRestoringScroll = true;
   requestAnimationFrame(() => {
     window.scrollTo({ top, behavior: "auto" });
@@ -628,6 +868,12 @@ function ttRenderGroupSnapshot(group) {
 }
 
 function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
+  if (ttLessonLaunchTimer) {
+    clearTimeout(ttLessonLaunchTimer);
+    ttLessonLaunchTimer = null;
+  }
+  ttById("ttLessonLaunch")?.setAttribute("hidden", "");
+  document.body.classList.remove("lesson-launching", "lesson-home-exit", "lesson-flow-enter");
   ttPlannerGroupId = groupId;
   const home = ttById("ttHomeScreen");
   const flow = document.querySelector(".teach-flow");
@@ -635,17 +881,72 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   if (flow) flow.hidden = true;
   document.body.classList.add("home-mode");
   ttRenderHomeScreen();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  ttRestoreHomeScroll(groupId);
 }
 
-function ttOpenTeachFlow() {
+function ttReduceMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+}
+
+function ttUpdateLessonLaunch(group = ttActiveGroup(), lesson = ttLesson) {
+  const launch = ttById("ttLessonLaunch");
+  if (!launch || !group) return null;
+  const substep = lesson?.substep || group.substep || "--";
+  const reader = lesson?.reader || lesson?.readerLevel || group.readerLevel || "AB";
+  const wordlist = lesson?.wordlistPageNumber || "--";
+  const sentence = lesson?.sentencePageNumber || "--";
+  const students = (group.students || []).filter(Boolean);
+  const studentText = students.length ? `${students.length} student${students.length === 1 ? "" : "s"}` : "No students assigned";
+  ttById("ttLaunchGroup").textContent = group.name || "Current group";
+  ttById("ttLaunchMeta").textContent = `${studentText} - ready for the live lesson view`;
+  ttById("ttLaunchSubstep").textContent = `Substep ${substep}`;
+  ttById("ttLaunchLevel").textContent = `Reader ${reader}`;
+  ttById("ttLaunchWordlist").textContent = `Wordlist p. ${wordlist}`;
+  ttById("ttLaunchSentence").textContent = `Sentences p. ${sentence}`;
+  launch.hidden = false;
+  return launch;
+}
+
+function ttOpenTeachFlow(options = {}) {
+  if (document.body.classList.contains("home-mode")) ttRememberHomeScroll();
   const home = ttById("ttHomeScreen");
   const flow = document.querySelector(".teach-flow");
-  if (home) home.hidden = true;
-  if (flow) flow.hidden = false;
-  document.body.classList.remove("home-mode");
-  ttRender();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  const launch = ttById("ttLessonLaunch");
+  const fromHome = document.body.classList.contains("home-mode");
+  const useTransition = options.transition !== false && fromHome && !ttReduceMotion() && launch;
+  const targetId = options.targetId || "";
+  const revealFlow = () => {
+    if (home) home.hidden = true;
+    if (flow) flow.hidden = false;
+    document.body.classList.remove("home-mode", "lesson-home-exit");
+    document.body.classList.add("lesson-flow-enter");
+    ttRender();
+    const target = targetId ? ttById(targetId) : null;
+    if (target) {
+      requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+    } else {
+      window.scrollTo({ top: 0, behavior: useTransition ? "auto" : "smooth" });
+    }
+    if (ttLessonLaunchTimer) clearTimeout(ttLessonLaunchTimer);
+    ttLessonLaunchTimer = setTimeout(() => {
+      launch?.setAttribute("hidden", "");
+      document.body.classList.remove("lesson-launching", "lesson-flow-enter");
+      ttLessonLaunchTimer = null;
+    }, useTransition ? 520 : 0);
+  };
+
+  if (!useTransition) {
+    launch?.setAttribute("hidden", "");
+    document.body.classList.remove("lesson-launching", "lesson-home-exit", "lesson-flow-enter");
+    revealFlow();
+    return;
+  }
+
+  if (ttLessonLaunchTimer) clearTimeout(ttLessonLaunchTimer);
+  ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
+  document.body.classList.remove("lesson-flow-enter");
+  document.body.classList.add("lesson-launching", "lesson-home-exit");
+  ttLessonLaunchTimer = setTimeout(revealFlow, 240);
 }
 
 function ttRenderHomeScreen() {
@@ -668,6 +969,7 @@ function ttRenderHomeScreen() {
     });
   }
   ttRenderPlannerPanel();
+  ttUpdateHomeReferenceLinks();
 }
 
 function ttSubstepProgressBar(group) {
@@ -760,6 +1062,92 @@ function ttRenderPlannerPanel() {
   ttById("ttPlannerSections").innerHTML = ttPlannerSectionsHtml(group, skill, lesson);
   ttBindPlannerChips();
   ttRenderPlannerPreview(group, skill, lesson);
+  ttUpdateHomeReferenceLinks();
+}
+
+const ttDictationBookStartPages = {
+  "1.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 9 },
+  "1.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 11 },
+  "1.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 14 },
+  "1.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 17 },
+  "1.5": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 18 },
+  "1.6": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 19 },
+  "2.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 33 },
+  "2.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 34 },
+  "2.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 37 },
+  "2.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 38 },
+  "2.5": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf", page: 40 },
+  "3.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 4 },
+  "3.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 8 },
+  "3.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 13 },
+  "3.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 14 },
+  "3.5": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 16 },
+  "4.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 36 },
+  "4.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 38 },
+  "4.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 42 },
+  "4.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf", page: 43 },
+  "5.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 4 },
+  "5.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 5 },
+  "5.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 10 },
+  "5.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 12 },
+  "5.5": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 17 },
+  "6.1": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 36 },
+  "6.2": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 40 },
+  "6.3": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 45 },
+  "6.4": { file: "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf", page: 46 },
+  "7.1": { file: "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf", page: 13 },
+  "7.2": { file: "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf", page: 16 },
+  "7.3": { file: "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf", page: 18 },
+  "7.4": { file: "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf", page: 21 },
+  "7.5": { file: "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf", page: 25 }
+};
+
+function ttPlannerReferenceContext() {
+  const group = ttPlannerGroup() || ttActiveGroup();
+  if (!group) return null;
+  const useDraft = ttPlannerDraft?.groupId === group.id;
+  const substep = useDraft ? ttPlannerDraft.substep : ttLesson?.substep || group.substep;
+  const skill = scopeMap.find((item) => item.id === substep) || activeStep(group);
+  const level = useDraft ? ttPlannerDraft.level || group.readerLevel || "AB" : ttLesson?.readerLevel || group.readerLevel || "AB";
+  const fallbackPage = pageAssignment(group, skill, "wordlist", 0, level).page || 0;
+  const wordlist = useDraft
+    ? Number(ttPlannerDraft.wordlist || fallbackPage)
+    : Number(ttLesson?.wordlistPageNumber || fallbackPage);
+  return { group, skill, level, wordlist };
+}
+
+function ttReferencePdfHref(type) {
+  const context = ttPlannerReferenceContext();
+  if (!context?.skill) return "";
+  if (type === "reader") {
+    const reader = Number(context.skill.reader || String(context.skill.id || "").split(".")[0]);
+    if (!reader || !context.wordlist) return "";
+    return `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf#page=${context.wordlist + 2}`;
+  }
+  const entry = ttDictationBookStartPages[context.skill.id];
+  return entry ? `${entry.file}#page=${entry.page}` : "";
+}
+
+function ttSetReferenceLink(id, href, fallbackHref, label) {
+  const link = ttById(id);
+  if (!link) return;
+  link.href = href || fallbackHref;
+  link.setAttribute("aria-disabled", href ? "false" : "true");
+  link.textContent = label;
+}
+
+function ttUpdateHomeReferenceLinks() {
+  const context = ttPlannerReferenceContext();
+  const readerHref = ttReferencePdfHref("reader");
+  const dictationHref = ttReferencePdfHref("dictation");
+  const readerLabel = readerHref && context
+    ? `Current Reader ${context.skill.reader}, p. ${context.wordlist}`
+    : "Current charting page";
+  const dictationLabel = dictationHref && context
+    ? `Current ${context.skill.id} start`
+    : "Current substep start";
+  ttSetReferenceLink("ttCurrentReaderPdf", readerHref, "ReferencePdfs.html?set=readers", readerLabel);
+  ttSetReferenceLink("ttCurrentDictationPdf", dictationHref, "ReferencePdfs.html?set=dictation", dictationLabel);
 }
 
 function ttPlannerLastLessonText(group) {
@@ -956,6 +1344,8 @@ function ttSetSection8SlotSubstep(btn) {
   const skill = scopeMap.find((s) => s.id === ttPlannerDraft?.substep) || activeStep(ttPlannerGroup());
   if (!skill) return;
   container.outerHTML = ttSection8RealSlotsHtml(skill);
+  ttSyncSection8RealSelectionState();
+  ttRefreshPreview();
 }
 
 function ttSetSection8SlotWord(btn) {
@@ -973,7 +1363,8 @@ function ttSetSection8SlotWord(btn) {
   slot?.querySelectorAll(".s8-slot-chips button").forEach((c) => {
     c.classList.toggle("selected", c.dataset.word === ttSection8RealSlots[slotIdx].word);
   });
-  ttRenderPlannerPreview(ttPlannerGroup());
+  ttSyncSection8RealSelectionState();
+  ttRefreshPreview();
 }
 
 function ttSetSection8SlotCustom(inputEl, slotIdx) {
@@ -1001,7 +1392,16 @@ function ttSetSection8SlotCustom(inputEl, slotIdx) {
     btn.addEventListener("click", () => ttSetSection8SlotWord(btn));
     chipArea.prepend(btn);
   }
-  ttRenderPlannerPreview(ttPlannerGroup());
+  ttSyncSection8RealSelectionState();
+  ttRefreshPreview();
+}
+
+function ttSection8RealWords() {
+  return uniqueWords((ttSection8RealSlots || []).map((slot) => slot?.word).filter(Boolean));
+}
+
+function ttSyncSection8RealSelectionState() {
+  ttPickerSelections.dictationReal = ttSection8RealWords();
 }
 
 function ttPlannerSectionsHtml(group, skill, lesson) {
@@ -1579,7 +1979,7 @@ function ttUsePlannerDefaults() {
   ttRenderPlannerPanel();
 }
 
-function ttBuildPlannerLesson() {
+function ttBuildPlannerLesson(options = {}) {
   const group = ttPlannerGroup();
   if (!group) return;
   const draft = ttEnsurePlannerDraft(group);
@@ -1599,7 +1999,11 @@ function ttBuildPlannerLesson() {
   ttApplyPlannerSelectionsToLesson(group, skill);
   ttSaveDraftLesson({ status: false });
   saveState();
-  ttOpenTeachFlow();
+  ttOpenTeachFlow(options.openOptions || {});
+}
+
+function ttOpenPlannerPreviewSection(sectionNumber) {
+  ttBuildPlannerLesson({ openOptions: { targetId: `section${sectionNumber}` } });
 }
 
 function ttApplyPlannerSelectionsToLesson(group, skill) {
@@ -1639,7 +2043,7 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
   ttLesson.dictationPlanOverride = [
     { label: "5 sounds", values: ttPlannerSelected("dictationSounds") },
     { label: "5 word elements", values: ttPlannerSelected("dictationElements") },
-    { label: "5 real words", values: (ttSection8RealSlots.map((s) => s.word).filter(Boolean).length ? ttSection8RealSlots.map((s) => s.word).filter(Boolean) : ttPlannerSelected("dictationReal")) },
+    { label: "5 real words", values: (ttSection8RealWords().length ? ttSection8RealWords() : ttPlannerSelected("dictationReal")) },
     { label: "3 nonsense words", values: ttPlannerSelected("dictationNonsense") },
     { label: "3 phrases", values: ttPlannerSelected("dictationPhrases") },
     { label: "2 sentences", values: dictationSentences }
@@ -1710,6 +2114,7 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
         <span>Lesson Preview</span>
         <strong>${escapeHtml(group.name)} · ${escapeHtml(activeLesson.substep)}</strong>
         <em>Reader ${escapeHtml(activeLesson.reader)}, wordlist p. ${escapeHtml(activeLesson.wordlistPageNumber || "--")} · sentences p. ${escapeHtml(activeLesson.sentencePageNumber || "--")}</em>
+        <button class="preview-open-btn" type="button">Start teaching</button>
       </header>
       ${ttPlannerPreviewBlock("2", "Teach & Review", [
         ["Review", activeLesson.sectionTwoReviewWords || []],
@@ -1736,7 +2141,15 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
         ["Sentences", block("sentences")]
       ], prevWordSet)}
     </div>`;
+  ttBindPlannerPreviewActions(preview);
   appState.selectedGroupId = originalSelectedGroupId;
+}
+
+function ttBindPlannerPreviewActions(preview) {
+  preview.querySelector(".preview-open-btn")?.addEventListener("click", () => ttBuildPlannerLesson());
+  preview.querySelectorAll(".preview-jump-section").forEach((section) => {
+    section.addEventListener("dblclick", () => ttOpenPlannerPreviewSection(section.dataset.jumpSection));
+  });
 }
 
 function ttPlannerPreviewBlock(number, title, rows, prevWords = new Set()) {
@@ -1754,7 +2167,7 @@ function ttPlannerPreviewBlock(number, title, rows, prevWords = new Set()) {
     }).join(", ");
     return `<p><b>${escapeHtml(label)}:</b> ${wordSpans}</p>`;
   }).join("");
-  return `<section class="${statusClass}">
+  return `<section class="${statusClass} preview-jump-section" data-jump-section="${escapeHtml(number)}" title="Double-click to open Section ${escapeHtml(number)}">
     <h3><span>${number}</span>${escapeHtml(title)}${allFilled ? ' <span class="preview-check">✓</span>' : ""}</h3>
     ${rowsHtml}
   </section>`;
@@ -2964,7 +3377,7 @@ function ttFillSection2ReviewCategoryWords(categoryId, currentSubstep) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = word;
-    button.addEventListener("click", () => ttShowSection2Word(word, currentSubstep));
+    button.addEventListener("click", () => ttShowSection2WordByDeck(word, currentSubstep));
     container.appendChild(button);
   });
 }
@@ -3022,6 +3435,33 @@ function ttReplaceSection2Word(kind, oldWord) {
   }
   ttSaveDraftLesson();
   ttRender();
+}
+
+function ttFillSection2DisplayDeck(lesson, skill) {
+  const review = lesson.sectionTwoReviewWords || [];
+  const current = lesson.sectionTwoCurrentWords || [];
+  ttSection2Deck = review.map((word) => ({ word, type: "Review", label: "Review word" }))
+    .concat(current.map((word) => ({ word, type: "Current", label: "Current word" })));
+  const preferredWord = ttSection2Word || review[0] || current[0] || "";
+  const preferredIndex = ttSection2Deck.findIndex((card) => card.word === preferredWord);
+  ttShowSection2Card(preferredIndex >= 0 ? preferredIndex : 0, skill.id);
+}
+
+function ttShowSection2Card(index, substep = ttLesson?.substep || ttActiveGroup().substep) {
+  if (!ttSection2Deck.length) {
+    ttSection2Index = 0;
+    ttShowSection2Word("", substep, { preserveDeckIndex: true });
+    return;
+  }
+  ttSection2Index = (index + ttSection2Deck.length) % ttSection2Deck.length;
+  const card = ttSection2Deck[ttSection2Index];
+  ttShowSection2Word(card.word, substep, { preserveDeckIndex: true });
+}
+
+function ttShowSection2WordByDeck(word, substep = ttLesson?.substep || ttActiveGroup().substep) {
+  const index = ttSection2Deck.findIndex((card) => card.word === word);
+  if (index >= 0) ttShowSection2Card(index, substep);
+  else ttShowSection2Word(word, substep);
 }
 
 function ttReplaceSimpleListWord(key, oldWord, pool = []) {
@@ -3358,16 +3798,21 @@ function isMarkedReviewWord(word) {
   return (group.markedReviewWords || []).some((item) => item.word === word);
 }
 
-function ttShowSection2Word(word, substep) {
+function ttShowSection2Word(word, substep, options = {}) {
   const display = ttById("ttSection2Display");
   const hint = ttById("ttSection2Hint");
   const editor = ttById("ttSection2Editor");
   if (!display || !hint) return;
+  if (!options.preserveDeckIndex) {
+    const deckIndex = ttSection2Deck.findIndex((card) => card.word === word);
+    if (deckIndex >= 0) ttSection2Index = deckIndex;
+  }
   ttSection2Word = word;
   display.innerHTML = "";
   if (editor) editor.hidden = true;
   if (!word) {
     display.innerHTML = "<span>Tap a word</span>";
+    ttRenderSection2Count();
     hint.textContent = "One-syllable words show sound cards. Multisyllabic words show syllable cards.";
     return;
   }
@@ -3388,7 +3833,19 @@ function ttShowSection2Word(word, substep) {
   hint.textContent = cards.mode === "sounds"
     ? "Sound cards: yellow consonants, pink vowels, green glued/welded sounds."
     : "Syllable / word-part cards: yellow affixes and white syllable or Latin-base cards.";
+  ttRenderSection2Count();
   ttRenderMarkedWords();
+}
+
+function ttRenderSection2Count() {
+  const count = ttById("ttSection2Count");
+  if (!count) return;
+  if (!ttSection2Deck.length) {
+    count.textContent = "0 of 0";
+    return;
+  }
+  const card = ttSection2Deck[ttSection2Index] || {};
+  count.textContent = `${card.type || "Card"} ${ttSection2Index + 1} of ${ttSection2Deck.length}`;
 }
 
 function ttUseCustomSection2Word() {
@@ -5328,6 +5785,8 @@ function easyWordScore(word) {
 function ttFillHfwDisplayWords(words, substep) {
   const container = ttById("ttPart7Hfw");
   const hfwWords = words.filter(isUsableHfwWord);
+  ttHfwDeck = hfwWords;
+  ttHfwIndex = 0;
   container.innerHTML = "";
   if (!hfwWords.length) {
     const item = document.createElement("span");
@@ -5340,15 +5799,46 @@ function ttFillHfwDisplayWords(words, substep) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = word;
-    button.addEventListener("click", () => ttShowHfw(word, substep));
+    button.addEventListener("click", () => ttShowHfwByDeck(word, substep));
     container.appendChild(button);
   });
-  ttShowHfw(hfwWords[0], substep);
+  ttShowHfwCard(0, substep);
 }
 
-function ttShowHfw(word, substep) {
-  ttById("ttHfwDisplay").querySelector("strong").textContent = word;
+function ttShowHfwCard(index, substep = ttById("ttHfwStep")?.value || ttLesson?.substep || "") {
+  if (!ttHfwDeck.length) {
+    ttShowHfw("Tap HFW", substep);
+    return;
+  }
+  ttHfwIndex = (index + ttHfwDeck.length) % ttHfwDeck.length;
+  ttShowHfw(ttHfwDeck[ttHfwIndex], substep, { preserveDeckIndex: true });
+}
+
+function ttShowHfwByDeck(word, substep = ttById("ttHfwStep")?.value || ttLesson?.substep || "") {
+  const deckIndex = ttHfwDeck.findIndex((item) => item === word);
+  if (deckIndex >= 0) {
+    ttShowHfwCard(deckIndex, substep);
+    return;
+  }
+  ttShowHfw(word, substep);
+}
+
+function ttShowHfw(word, substep, options = {}) {
+  const display = ttById("ttHfwDisplay");
+  if (!display) return;
+  if (!options.preserveDeckIndex) {
+    const deckIndex = ttHfwDeck.findIndex((item) => item === word);
+    if (deckIndex >= 0) ttHfwIndex = deckIndex;
+  }
+  display.querySelector("strong").textContent = word;
   ttById("ttHfwSubstep").textContent = substep;
+  ttRenderHfwCount();
+}
+
+function ttRenderHfwCount() {
+  const count = ttById("ttHfwCount");
+  if (!count) return;
+  count.textContent = ttHfwDeck.length ? `${ttHfwIndex + 1} of ${ttHfwDeck.length}` : "0 of 0";
 }
 
 function ttFillSentences(sentences) {
@@ -5467,7 +5957,7 @@ function ttDictationReplacementPool(label, lesson, skill) {
   const substep = lesson.substep || skill.id;
   if (/sounds/i.test(label)) return soundsFromWords((lesson.realWords || []).concat(lesson.nonsenseWords || []), skill.id).concat(fiveDictationSounds(skill.id));
   if (/word elements/i.test(label)) return elementsFromWords((lesson.realWords || []).concat(lesson.readerSentences || []), skill.id).concat(fiveWordElements(skill.id, lesson.realWords || []));
-  if (/real words/i.test(label)) return ttCurrentRealWordPool(lesson, skill).concat(ttReviewRealWordPool(lesson, skill));
+  if (/real words/i.test(label)) return ttSection8RealWords().concat(ttCurrentRealWordPool(lesson, skill), ttReviewRealWordPool(lesson, skill));
   if (/nonsense/i.test(label)) return ttNonsenseWordPool(lesson, skill);
   if (/phrases/i.test(label)) return rankedCurrentDictationPhraseRows(currentDictationPhraseRows(substep), lesson, skill)
     .concat(currentDictationPhraseBank(substep));
@@ -6014,6 +6504,7 @@ function ttSelectStudent(student) {
 async function ttTogglePresentation(force = null) {
   const shouldPresent = force ?? !document.body.classList.contains("presentation-mode");
   document.body.classList.toggle("presentation-mode", shouldPresent);
+  if (!shouldPresent) ttTogglePresentDisplayTray(false);
   const button = ttById("ttPresent");
   if (button) button.textContent = shouldPresent ? "Exit" : "Present";
   try {
@@ -6639,7 +7130,10 @@ function ttBind() {
     if (appStateSwitchGroup(event.target.value)) return;
   });
 
-  ttById("ttHome")?.addEventListener("click", () => ttShowHomeScreen());
+  ttById("ttHome")?.addEventListener("click", () => {
+    if (!document.body.classList.contains("home-mode")) ttRememberScroll();
+    ttShowHomeScreen();
+  });
   ttById("ttHomeOpenCurrent")?.addEventListener("click", () => ttOpenTeachFlow());
   ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
   ttById("ttPlannerBuild")?.addEventListener("click", () => ttBuildPlannerLesson());
@@ -6719,6 +7213,22 @@ function ttBind() {
     if (!panel.hidden) ttRenderAttendancePanel(ttActiveGroup());
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
+  ttById("ttDisplayToggle")?.addEventListener("click", () => {
+    const panel = ttById("ttDisplayPanel");
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) ttUpdateStudentDisplayStatus();
+  });
+  ttById("ttDisplayOpen")?.addEventListener("click", () => ttOpenStudentDisplay(ttStudentDisplayMode));
+  ttById("ttDisplayProjector")?.addEventListener("click", () => ttProjectStudentDisplay());
+  ttById("ttDisplayPanel")?.querySelectorAll("[data-display-mode]").forEach((button) => {
+    button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
+  });
+  ttById("ttDockDisplay")?.addEventListener("click", () => ttTogglePresentDisplayTray());
+  ttById("ttPresentDisplayOpen")?.addEventListener("click", () => ttOpenStudentDisplay(ttStudentDisplayMode));
+  ttById("ttPresentDisplayProjector")?.addEventListener("click", () => ttProjectStudentDisplay());
+  ttById("ttPresentDisplayTray")?.querySelectorAll("[data-display-mode]").forEach((button) => {
+    button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
+  });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttDockNew").addEventListener("click", () => ttDockClick("ttRefresh"));
   ttById("ttDockSaved").addEventListener("click", () => ttDockClick("ttSavedToggle"));
@@ -6757,7 +7267,10 @@ function ttBind() {
   });
   window.addEventListener("scroll", () => {
     clearTimeout(scrollSaveTimer);
-    scrollSaveTimer = setTimeout(() => ttRememberScroll(), 120);
+    scrollSaveTimer = setTimeout(() => {
+      if (document.body.classList.contains("home-mode")) ttRememberHomeScroll();
+      else ttRememberScroll();
+    }, 120);
   }, { passive: true });
   ttById("ttSavedToggle").addEventListener("click", () => {
     const panel = ttById("ttSavedPanel");
@@ -6792,7 +7305,7 @@ function ttBind() {
     if (event.key === "Escape") ttCancelSection2Edit();
   });
   ttById("ttCurrentWordSelect").addEventListener("change", (event) => {
-    if (event.target.value) ttShowSection2Word(event.target.value, ttLesson?.substep || ttActiveGroup().substep);
+    if (event.target.value) ttShowSection2WordByDeck(event.target.value, ttLesson?.substep || ttActiveGroup().substep);
   });
   ttById("ttReviewCategory").addEventListener("change", (event) => {
     ttFillSection2ReviewCategoryWords(event.target.value, ttLesson?.substep || ttActiveGroup().substep);
@@ -6802,6 +7315,8 @@ function ttBind() {
     if (event.key === "Enter") ttUseCustomSection2Word();
   });
   ttById("ttOpenWhiteboard").addEventListener("click", () => ttOpenWhiteboard());
+  ttById("ttSection2Prev")?.addEventListener("click", () => ttShowSection2Card(ttSection2Index - 1));
+  ttById("ttSection2Next")?.addEventListener("click", () => ttShowSection2Card(ttSection2Index + 1));
   ttById("ttCloseWhiteboard").addEventListener("click", () => ttCloseWhiteboard());
   ttById("ttWhiteboardBuildWord").addEventListener("click", () => ttBuildCurrentWordOnWhiteboard());
   ttById("ttWhiteboardAddBlank").addEventListener("click", () => ttAddBlankSyllableCard());
@@ -6827,6 +7342,8 @@ function ttBind() {
     if (!ttLesson) return;
     ttFillHfwDisplayWords(hfwWordsForSubstep(event.target.value, ttLesson), event.target.value);
   });
+  ttById("ttHfwPrev")?.addEventListener("click", () => ttShowHfwCard(ttHfwIndex - 1));
+  ttById("ttHfwNext")?.addEventListener("click", () => ttShowHfwCard(ttHfwIndex + 1));
   ttById("ttSection3HfwStep")?.addEventListener("change", () => {
     ttCardMode = "hfw";
     ttFillSection3Cards(ttLesson);
