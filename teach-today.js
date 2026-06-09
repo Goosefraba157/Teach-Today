@@ -1156,6 +1156,9 @@ function ttUpdateHomeReferenceLinks() {
     : "Current substep start";
   ttSetReferenceLink("ttCurrentReaderPdf", readerHref, "ReferencePdfs.html?set=readers", readerLabel);
   ttSetReferenceLink("ttCurrentDictationPdf", dictationHref, "ReferencePdfs.html?set=dictation", dictationLabel);
+  // Also update the ribbon reference panel links
+  ttSetReferenceLink("ttRibbonCurrentReaderPdf", readerHref, "ReferencePdfs.html?set=readers", readerLabel);
+  ttSetReferenceLink("ttRibbonCurrentDictationPdf", dictationHref, "ReferencePdfs.html?set=dictation", dictationLabel);
 }
 
 function ttPlannerLastLessonText(group) {
@@ -7319,8 +7322,14 @@ function ttBind() {
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttDockNew").addEventListener("click", () => ttDockClick("ttRefresh"));
-  ttById("ttDockSaved").addEventListener("click", () => ttDockClick("ttSavedToggle"));
-  ttById("ttDockData").addEventListener("click", () => ttDockClick("ttDataToggle"));
+  ttById("ttDockSaved").addEventListener("click", () => {
+    ttTogglePresentation(false);
+    ttById("ttSavedToggle")?.click();
+  });
+  ttById("ttDockData").addEventListener("click", () => {
+    ttTogglePresentation(false);
+    ttById("ttDataToggle")?.click();
+  });
   ttById("ttDockProfile").addEventListener("click", () => ttDockClick("ttProfile"));
   ttById("ttLaserToggle").addEventListener("click", () => ttToggleLaser());
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
@@ -7362,20 +7371,54 @@ function ttBind() {
   }, { passive: true });
   ttById("ttSavedToggle").addEventListener("click", () => {
     const panel = ttById("ttSavedPanel");
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) {
-      ttRenderSavedLessons(ttActiveGroup());
-      panel.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    const isOpen = !panel.hidden;
+    // Close other ribbon panels first
+    ttById("ttDataPanel").hidden = true;
+    ttById("ttDataToggle").classList.remove("active");
+    ttById("ttReferencePanel").hidden = true;
+    ttById("ttRibbonReaders").classList.remove("active");
+    ttById("ttRibbonDictation").classList.remove("active");
+    panel.hidden = isOpen;
+    ttById("ttSavedToggle").classList.toggle("active", !isOpen);
+    if (!panel.hidden) ttRenderSavedLessons(ttActiveGroup());
+  });
+  ttById("ttSavedClose")?.addEventListener("click", () => {
+    ttById("ttSavedPanel").hidden = true;
+    ttById("ttSavedToggle").classList.remove("active");
   });
   ttById("ttDataToggle").addEventListener("click", () => {
     const panel = ttById("ttDataPanel");
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) {
-      ttRenderDataCenter();
-      panel.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    const isOpen = !panel.hidden;
+    // Close other ribbon panels first
+    ttById("ttSavedPanel").hidden = true;
+    ttById("ttSavedToggle").classList.remove("active");
+    ttById("ttReferencePanel").hidden = true;
+    ttById("ttRibbonReaders").classList.remove("active");
+    ttById("ttRibbonDictation").classList.remove("active");
+    panel.hidden = isOpen;
+    ttById("ttDataToggle").classList.toggle("active", !isOpen);
+    if (!panel.hidden) ttRenderDataCenter();
   });
+  ttById("ttDataClose")?.addEventListener("click", () => {
+    ttById("ttDataPanel").hidden = true;
+    ttById("ttDataToggle").classList.remove("active");
+  });
+  // Reference panel (Readers / Dictation)
+  function ttToggleReferencePanel(trigger) {
+    const panel = ttById("ttReferencePanel");
+    const isOpen = !panel.hidden;
+    // Close other ribbon panels
+    ttById("ttSavedPanel").hidden = true;
+    ttById("ttSavedToggle").classList.remove("active");
+    ttById("ttDataPanel").hidden = true;
+    ttById("ttDataToggle").classList.remove("active");
+    ttById("ttRibbonReaders").classList.remove("active");
+    ttById("ttRibbonDictation").classList.remove("active");
+    panel.hidden = isOpen;
+    if (!isOpen) ttById(trigger).classList.add("active");
+  }
+  ttById("ttRibbonReaders")?.addEventListener("click", () => ttToggleReferencePanel("ttRibbonReaders"));
+  ttById("ttRibbonDictation")?.addEventListener("click", () => ttToggleReferencePanel("ttRibbonDictation"));
   ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());

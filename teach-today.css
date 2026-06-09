@@ -889,6 +889,13 @@ button:hover:not(:disabled) {
   color: #0f766e;
 }
 
+#ttRibbonReaders,
+#ttRibbonDictation {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+}
+
 .presentation-dock {
   position: fixed;
   right: 6px;
@@ -2608,12 +2615,185 @@ body.presentation-mode #ttEditSection2Cards {
   text-transform: uppercase;
 }
 
-.saved-panel[hidden] {
+.saved-panel[hidden],
+.data-panel[hidden] {
   display: none;
 }
 
-.data-panel[hidden] {
+/* ══════════════════════════════════════════════════════
+   RIBBON DROPDOWN PANELS
+   Panels that appear inline under the teach-bar ribbon,
+   styled like the attendance/display panels.
+══════════════════════════════════════════════════════ */
+
+.ribbon-dropdown-panel {
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.09);
+}
+
+.ribbon-dropdown-panel[hidden] {
   display: none;
+}
+
+/* Shared head row: title + subtitle + close button */
+.ribbon-dropdown-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ribbon-dropdown-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.ribbon-dropdown-sub {
+  margin: 0;
+  flex: 1;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ribbon-dropdown-close {
+  min-height: 24px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 2px 7px !important;
+  background: #fff !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0;
+}
+
+.ribbon-dropdown-close:hover {
+  border-color: #94a3b8 !important;
+  color: var(--ink) !important;
+}
+
+/* Scrollable content area for History panel */
+.ribbon-dropdown-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ── History (Saved Lessons) panel ── */
+.saved-panel {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.saved-panel .ribbon-dropdown-title { color: #0369a1; }
+
+/* ── Records (Data Center) panel ── */
+.data-panel {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+}
+
+.data-panel .ribbon-dropdown-title { color: var(--teal); }
+
+/* ── Reference panel ── */
+.reference-panel {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 10px 12px;
+}
+
+.reference-panel[hidden] {
+  display: none;
+}
+
+.ref-panel-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ref-panel-sep {
+  width: 1px;
+  background: #e2e8f0;
+  align-self: stretch;
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+
+.ref-panel-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
+}
+
+.ref-panel-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+
+.ref-panel-link:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: #f0fdfa;
+}
+
+.ref-panel-current {
+  border-color: #bae6fd;
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.ref-panel-current:hover {
+  border-color: #0369a1;
+  background: #bae6fd;
+  color: #0c4a6e;
+}
+
+/* Keep ribbon-button active state for reference/history/records toggles */
+#ttRibbonReaders.active,
+#ttRibbonDictation.active {
+  border-color: #64748b;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+#ttSavedToggle.active {
+  border-color: #0369a1;
+  background: #bae6fd;
+  color: #0c4a6e;
+}
+
+#ttDataToggle.active {
+  border-color: var(--teal);
+  background: #99f6e4;
+  color: #134e4a;
 }
 
 .data-status-grid {

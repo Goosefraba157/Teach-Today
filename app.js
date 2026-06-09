@@ -1832,10 +1832,11 @@ function resetLiveCharting(card) {
   card.dataset.lastSavedSignature = "";
   card.querySelector(".live-timer").textContent = "0 sec";
   speechPositions.set(card.dataset.lessonId, 0);
+  highlightCurrentWord(card);
   if (isSpeechMuted && mutedCard === card) unmuteSpeech(card);
   card.querySelectorAll(".chart-cell[data-word]").forEach((cell) => {
     cell.dataset.correct = "true";
-    cell.classList.remove("word-skipped", "word-uncertain");
+    cell.classList.remove("word-skipped", "word-uncertain", "word-mismatch", "word-current");
     const score = cell.querySelector(".score-one");
     if (score) {
       score.classList.add("active", "ok");
@@ -2035,13 +2036,28 @@ function isPhoneticMatch(heard, expected) {
   const h = heard.toLowerCase().replace(/[^a-z]/g, "");
   const e = expected.toLowerCase().replace(/[^a-z]/g, "");
   if (h === e) return true;
-  const threshold = e.length <= 3 ? 0 : e.length <= 5 ? 1 : 2;
-  return levenshtein(h, e) <= threshold;
+  // Only allow 1 edit distance for words 5+ chars — keeps it tight
+  if (e.length < 5) return false;
+  return levenshtein(h, e) <= 1;
+}
+
+function isExactMatch(heard, expected) {
+  const h = heard.toLowerCase().replace(/[^a-z]/g, "");
+  const e = expected.toLowerCase().replace(/[^a-z]/g, "");
+  return h === e;
 }
 
 function speechCells(card) {
   const half = activeChartHalf(card);
   return [...card.querySelectorAll(`.chart-cell[data-word][data-section="${half}"]`)];
+}
+
+function highlightCurrentWord(card) {
+  const cells = speechCells(card);
+  const pos = speechPositions.get(card.dataset.lessonId) || 0;
+  cells.forEach((c) => c.classList.remove("word-current"));
+  const nextCell = pos < cells.length ? cells[COLUMN_READ_ORDER[pos]] : null;
+  if (nextCell) nextCell.classList.add("word-current");
 }
 
 function processHeardWord(heard, confidence, card) {
@@ -2064,21 +2080,25 @@ function processHeardWord(heard, confidence, card) {
         const skipCell = cells[COLUMN_READ_ORDER[pos + skip]];
         if (skipCell) skipCell.classList.add("word-skipped");
       }
-      // Fill "said..." if different from expected (possible error or autocorrect)
+
+      const exact = isExactMatch(heard, expected);
+
+      // Fill "said..." with what was actually heard if it differs
       const input = cell.querySelector(".said-input");
-      if (input && !input.dataset.edited) {
-        const heardClean = heard.toLowerCase().replace(/[^a-z]/g, "");
-        const expClean = expected.toLowerCase().replace(/[^a-z]/g, "");
-        if (heardClean !== expClean) input.value = heard;
+      if (input && !input.dataset.edited && !exact) {
+        input.value = heard;
       }
-      // Flag low confidence — likely autocorrected
-      if (confidence > 0 && confidence < 0.75) {
-        cell.classList.add("word-uncertain");
+
+      // Flag the word if what was heard differs from expected
+      // (could be mispronunciation OR autocorrect — either way, worth a look)
+      if (!exact) {
+        cell.classList.add("word-mismatch");
       }
+
       pos = pos + offset + 1;
       speechPositions.set(lessonId, pos);
-      // Update status to show progress
       setRecordingStatus(card, `Listening… ${pos}/${cells.length}`, "live");
+      highlightCurrentWord(card);
       return;
     }
   }

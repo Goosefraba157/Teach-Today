@@ -113,6 +113,14 @@
         </div>
         <div class="ribbon-sep"></div>
         <div class="ribbon-group">
+          <span class="ribbon-label">Reference</span>
+          <div class="ribbon-buttons">
+            <button id="ttRibbonReaders" type="button" title="Reader PDFs">Readers</button>
+            <button id="ttRibbonDictation" type="button" title="Dictation PDFs">Dictation</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
           <span class="ribbon-label">Data</span>
           <div class="ribbon-buttons">
             <button id="ttSavedToggle" type="button" title="Saved lessons">History</button>
@@ -161,6 +169,58 @@
         <input id="ttNewRosterGrade" type="text" placeholder="Grade">
         <button id="ttRosterAddNew" type="button">Add new</button>
         <button id="ttRosterClose" class="secondary" type="button">Close</button>
+      </section>
+
+      <!-- ── Reference dropdown panel ── -->
+      <section id="ttReferencePanel" class="ribbon-dropdown-panel reference-panel" hidden aria-label="Reference PDFs">
+        <div class="ref-panel-col">
+          <p class="ref-panel-label">Readers</p>
+          <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
+          <a id="ttRibbonCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current charting page</a>
+        </div>
+        <div class="ref-panel-sep"></div>
+        <div class="ref-panel-col">
+          <p class="ref-panel-label">Dictation</p>
+          <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
+          <a id="ttRibbonCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current substep start</a>
+        </div>
+      </section>
+
+      <!-- ── History dropdown panel (moved from teach-flow) ── -->
+      <section id="ttSavedPanel" class="ribbon-dropdown-panel saved-panel" hidden>
+        <div class="ribbon-dropdown-head">
+          <span class="ribbon-dropdown-title">✓ Saved Lessons</span>
+          <p class="ribbon-dropdown-sub">Saved in this app on this device/browser</p>
+          <button id="ttSavedClose" class="ribbon-dropdown-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div id="ttSavedLessons" class="saved-lessons ribbon-dropdown-scroll"></div>
+      </section>
+
+      <!-- ── Records dropdown panel (moved from teach-flow) ── -->
+      <section id="ttDataPanel" class="ribbon-dropdown-panel data-panel" hidden>
+        <div class="ribbon-dropdown-head">
+          <span class="ribbon-dropdown-title">↧ Records &amp; Data</span>
+          <p class="ribbon-dropdown-sub">Protect your records and move data between devices</p>
+          <button id="ttDataClose" class="ribbon-dropdown-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="data-status-grid">
+          <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
+          <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
+          <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
+          <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
+          <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
+        </div>
+        <div class="data-actions">
+          <button id="ttBackupData" type="button">Save backup file</button>
+          <button id="ttConnectCloudSync" type="button">Choose local folder</button>
+          <button id="ttSyncCloudNow" type="button">Save local file now</button>
+          <button id="ttFirebaseSyncNow" type="button">Firebase + local sync now</button>
+          <button id="ttRestoreData" type="button">Restore backup</button>
+          <button id="ttExportCsv" type="button">Export spreadsheet</button>
+        </div>
+        <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
+        <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
+        <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
       </section>
     </header>
 
@@ -345,35 +405,6 @@
           <div><span>Sentences</span><strong id="ttSentencePage"></strong></div>
           <div><span>Passage</span><strong id="ttPassagePage"></strong></div>
         </div>
-      </section>
-
-      <section id="ttSavedPanel" class="teach-card saved-panel" hidden>
-        <div class="section-head"><span>✓</span><h2>Saved Lessons</h2></div>
-        <p class="mini-label">Saved in this app on this device/browser</p>
-        <div id="ttSavedLessons" class="saved-lessons"></div>
-      </section>
-
-      <section id="ttDataPanel" class="teach-card data-panel" hidden>
-        <div class="section-head"><span>↧</span><h2>Data Center</h2></div>
-        <p class="mini-label">Use this to protect iPad records and move data between devices</p>
-        <div class="data-status-grid">
-          <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
-          <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
-          <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
-          <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
-          <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
-        </div>
-        <div class="data-actions">
-          <button id="ttBackupData" type="button">Save backup file</button>
-          <button id="ttConnectCloudSync" type="button">Choose local folder</button>
-          <button id="ttSyncCloudNow" type="button">Save local file now</button>
-          <button id="ttFirebaseSyncNow" type="button">Firebase + local sync now</button>
-          <button id="ttRestoreData" type="button">Restore backup</button>
-          <button id="ttExportCsv" type="button">Export spreadsheet</button>
-        </div>
-        <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
-        <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
-        <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
       </section>
 
       <section id="section1" class="teach-card">

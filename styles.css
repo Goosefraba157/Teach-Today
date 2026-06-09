@@ -1379,3 +1379,22 @@ textarea {
   color: #fff;
   border-color: #ef4444;
 }
+
+/* word-mismatch: heard something different — check this word */
+.word-mismatch {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-radius: 6px;
+  background: #fff7ed;
+}
+.word-mismatch .score-one.ok {
+  background: #fdba74;
+  color: #431407;
+}
+
+/* word-current: the next word the tracker is listening for */
+.word-current {
+  outline: 2px dashed #3b82f6;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
