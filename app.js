@@ -2408,6 +2408,9 @@ function saveLiveRecord(card, options = {}) {
   if (pendingAudioUpload && typeof window.ttUploadAudioToStorage === "function") {
     window.ttUploadAudioToStorage(pendingAudioUpload.id, pendingAudioUpload.blob).catch(() => {});
   }
+  if (pendingAudioUpload && typeof window.ttSaveAudioToSyncFolder === "function") {
+    window.ttSaveAudioToSyncFolder(pendingAudioUpload.id, pendingAudioUpload.blob, record.audioFileName).catch(() => {});
+  }
   card.dataset.lastSavedSignature = liveDataSignature(card);
   syncActiveStudentUi(group);
   setRecordingStatus(card, "Saved");

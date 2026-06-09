@@ -1,4 +1,7 @@
 const storageKey = "dyslexiaInstructionEngine.v2";
+const audioSyncDbName = "teachTodayCloudSync.v1";
+const audioSyncStore = "handles";
+const audioSyncHandleKey = "syncDirectory";
 let comparisonScope = "group";
 
 function byId(id) {
@@ -966,6 +969,37 @@ async function loadAudioBlob(id) {
   });
 }
 
+function openAudioSyncDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(audioSyncDbName, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(audioSyncStore);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAudioSyncFolderHandle() {
+  if (!window.showDirectoryPicker) return null;
+  const db = await openAudioSyncDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(audioSyncStore, "readonly");
+    const req = tx.objectStore(audioSyncStore).get(audioSyncHandleKey);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadAudioSyncFile(fileName) {
+  if (!fileName) return null;
+  const handle = await getAudioSyncFolderHandle().catch(() => null);
+  if (!handle) return null;
+  const permission = await handle.queryPermission?.({ mode: "read" });
+  if (permission !== "granted") return null;
+  const fileHandle = await handle.getFileHandle(fileName).catch(() => null);
+  if (!fileHandle) return null;
+  return fileHandle.getFile();
+}
+
 function renderRows(records) {
   const body = byId("recordRows");
   body.innerHTML = "";
@@ -1040,12 +1074,14 @@ async function renderRecordingsSection(records) {
     // Use Firebase Storage URL if available, otherwise load from IndexedDB
     if (record.audioUrl) return { record, url: record.audioUrl, fromCloud: true };
     const blob = await loadAudioBlob(record.audioRecordingId).catch(() => null);
-    const url = blob ? URL.createObjectURL(blob) : null;
-    return { record, url, fromCloud: false };
+    if (blob) return { record, url: URL.createObjectURL(blob), fromCloud: false };
+    const syncedFile = await loadAudioSyncFile(record.audioSyncFile || record.audioFileName).catch(() => null);
+    const url = syncedFile ? URL.createObjectURL(syncedFile) : null;
+    return { record, url, fromCloud: false, fromSyncFolder: Boolean(syncedFile) };
   }));
 
   container.innerHTML = "";
-  cards.forEach(({ record, url, fromCloud }) => {
+  cards.forEach(({ record, url, fromCloud, fromSyncFolder }) => {
     const card = document.createElement("div");
     card.className = "recording-card";
     const fileName = record.audioFileName || "recording.webm";
@@ -1065,7 +1101,8 @@ async function renderRecordingsSection(records) {
       return;
     }
 
-    const cloudBadge = `<span style="font-size:11px;color:${fromCloud ? "#4a90e2" : "#777"};">${escapeHtml(audioCloudLabel(record, fromCloud))}</span>`;
+    const badgeText = fromSyncFolder ? "Synced folder" : audioCloudLabel(record, fromCloud);
+    const cloudBadge = `<span style="font-size:11px;color:${fromCloud || fromSyncFolder ? "#4a90e2" : "#777"};">${escapeHtml(badgeText)}</span>`;
     card.innerHTML = `
       <div class="recording-card-meta recording-card-full">
         <strong>${escapeHtml(fileName)}</strong>

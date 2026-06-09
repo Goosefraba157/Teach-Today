@@ -4973,6 +4973,15 @@ async function ttSaveAudioToSyncFolder(recordId, blob, fileName) {
 }
 window.ttSaveAudioToSyncFolder = ttSaveAudioToSyncFolder;
 
+async function ttSavePendingAudioToSyncFolder() {
+  const pending = (appState.masterRecords || []).filter((record) => record.audioRecordingId && record.audioFileName && !record.audioSyncFile);
+  if (!pending.length) return;
+  for (const record of pending) {
+    const blob = await window.loadAudioBlob?.(record.audioRecordingId).catch(() => null);
+    if (blob) await ttSaveAudioToSyncFolder(record.audioRecordingId, blob, record.audioFileName);
+  }
+}
+
 async function ttFirebaseReadPayload() {
   if (!ttFirebaseUser) return null;
   const { firestoreDb, doc, getDoc } = await ttFirebaseSdk();
@@ -5296,6 +5305,7 @@ async function ttCloudSyncWrite(reason = "Saved local backup file.") {
     const latestWritable = await latestFileHandle.createWritable();
     await latestWritable.write(backupText);
     await latestWritable.close();
+    await ttSavePendingAudioToSyncFolder();
     localStorage.setItem("teachToday.lastCloudSyncAt", now.toISOString());
     localStorage.setItem("teachToday.cloudSyncStatus", `${reason} File: ${datedFileName}.`);
   } catch {
