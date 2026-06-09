@@ -33,6 +33,9 @@ let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — wor
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttPlannerHomeScrollPositions = {};
 let ttLessonLaunchTimer = null;
+let ttPresentationMenuTimer = null;
+let ttPresentationLogoTapCount = 0;
+let ttPresentationLogoTapTimer = null;
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
@@ -949,8 +952,9 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
     clearTimeout(ttLessonLaunchTimer);
     ttLessonLaunchTimer = null;
   }
+  ttTogglePresentation(false);
   ttById("ttLessonLaunch")?.setAttribute("hidden", "");
-  document.body.classList.remove("lesson-launching", "lesson-home-exit", "lesson-flow-enter");
+  document.body.classList.remove("lesson-launching", "lesson-home-exit", "lesson-flow-enter", "legacy-full-lesson-mode");
   ttPlannerGroupId = groupId;
   const home = ttById("ttHomeScreen");
   const flow = document.querySelector(".teach-flow");
@@ -992,12 +996,16 @@ function ttOpenTeachFlow(options = {}) {
   const fromHome = document.body.classList.contains("home-mode");
   const useTransition = options.transition !== false && fromHome && !ttReduceMotion() && launch;
   const targetId = options.targetId || "";
+  const openAsPresentation = options.presentation !== false && !options.legacyFullLesson;
   const revealFlow = () => {
     if (home) home.hidden = true;
     if (flow) flow.hidden = false;
     document.body.classList.remove("home-mode", "lesson-home-exit");
+    document.body.classList.toggle("legacy-full-lesson-mode", Boolean(options.legacyFullLesson));
     document.body.classList.add("lesson-flow-enter");
     ttRender();
+    if (openAsPresentation) ttTogglePresentation(true);
+    else ttTogglePresentation(false, { fullscreen: false });
     const target = targetId ? ttById(targetId) : null;
     if (target) {
       requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -7067,16 +7075,69 @@ function ttSelectStudent(student) {
   ttFillFrontStudents(ttActiveGroup());
 }
 
-async function ttTogglePresentation(force = null) {
+function ttSchedulePresentationMenuClose(delay = 6500) {
+  if (ttPresentationMenuTimer) clearTimeout(ttPresentationMenuTimer);
+  if (!document.body.classList.contains("presentation-mode")) return;
+  ttPresentationMenuTimer = setTimeout(() => {
+    document.body.classList.remove("present-menu-open");
+    ttPresentationMenuTimer = null;
+  }, delay);
+}
+
+function ttSetPresentationMenu(open, { hold = false } = {}) {
+  if (!document.body.classList.contains("presentation-mode")) return;
+  document.body.classList.toggle("present-menu-open", open);
+  if (ttPresentationMenuTimer) {
+    clearTimeout(ttPresentationMenuTimer);
+    ttPresentationMenuTimer = null;
+  }
+  if (open && !hold) ttSchedulePresentationMenuClose();
+}
+
+function ttOpenLegacyFullLesson() {
+  ttSetPresentationMenu(false);
+  document.body.classList.add("legacy-full-lesson-mode");
+  ttTogglePresentation(false);
+}
+
+function ttHandlePresentationLogoClick() {
+  if (!document.body.classList.contains("presentation-mode")) return;
+  ttPresentationLogoTapCount += 1;
+  if (ttPresentationLogoTapTimer) clearTimeout(ttPresentationLogoTapTimer);
+  ttPresentationLogoTapTimer = setTimeout(() => {
+    ttPresentationLogoTapCount = 0;
+    ttPresentationLogoTapTimer = null;
+  }, 2400);
+  if (ttPresentationLogoTapCount >= 5) {
+    ttPresentationLogoTapCount = 0;
+    if (ttPresentationLogoTapTimer) clearTimeout(ttPresentationLogoTapTimer);
+    ttPresentationLogoTapTimer = null;
+    ttOpenLegacyFullLesson();
+    return;
+  }
+  ttSetPresentationMenu(true);
+}
+
+async function ttTogglePresentation(force = null, options = {}) {
   const shouldPresent = force ?? !document.body.classList.contains("presentation-mode");
   document.body.classList.toggle("presentation-mode", shouldPresent);
-  if (!shouldPresent) ttTogglePresentDisplayTray(false);
+  if (shouldPresent) {
+    document.body.classList.remove("legacy-full-lesson-mode");
+    ttSetPresentationMenu(false);
+  } else {
+    ttTogglePresentDisplayTray(false);
+    document.body.classList.remove("present-menu-open");
+    if (ttPresentationMenuTimer) {
+      clearTimeout(ttPresentationMenuTimer);
+      ttPresentationMenuTimer = null;
+    }
+  }
   const button = ttById("ttPresent");
   if (button) button.textContent = shouldPresent ? "Exit" : "Present";
   try {
-    if (shouldPresent && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+    if (shouldPresent && options.fullscreen !== false && document.documentElement.requestFullscreen && !document.fullscreenElement) {
       await document.documentElement.requestFullscreen();
-    } else if (!shouldPresent && document.exitFullscreen && document.fullscreenElement) {
+    } else if (!shouldPresent && options.fullscreen !== false && document.exitFullscreen && document.fullscreenElement) {
       await document.exitFullscreen();
     }
   } catch {
@@ -7779,6 +7840,20 @@ function ttBind() {
     if (!panel.hidden) ttRenderAttendancePanel(ttActiveGroup());
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
+  ttById("ttPresentMenuLogo")?.addEventListener("click", () => ttHandlePresentationLogoClick());
+  document.querySelector(".teach-bar .brand-block")?.addEventListener("click", () => ttHandlePresentationLogoClick());
+  document.querySelector(".teach-bar")?.addEventListener("pointerenter", () => {
+    if (document.body.classList.contains("present-menu-open")) ttSetPresentationMenu(true, { hold: true });
+  });
+  document.querySelector(".teach-bar")?.addEventListener("pointerleave", () => {
+    if (document.body.classList.contains("present-menu-open")) ttSchedulePresentationMenuClose(2400);
+  });
+  document.querySelector(".teach-bar")?.addEventListener("focusin", () => {
+    if (document.body.classList.contains("present-menu-open")) ttSetPresentationMenu(true, { hold: true });
+  });
+  document.querySelector(".teach-bar")?.addEventListener("focusout", () => {
+    if (document.body.classList.contains("present-menu-open")) ttSchedulePresentationMenuClose(2400);
+  });
   ttById("ttDisplayToggle")?.addEventListener("click", () => {
     const panel = ttById("ttDisplayPanel");
     panel.hidden = !panel.hidden;
@@ -7796,19 +7871,14 @@ function ttBind() {
     button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
-  ttById("ttDockNew").addEventListener("click", () => ttDockClick("ttRefresh"));
-  ttById("ttDockSaved").addEventListener("click", () => {
-    ttTogglePresentation(false);
-    ttById("ttSavedToggle")?.click();
-  });
-  ttById("ttDockData").addEventListener("click", () => {
-    ttTogglePresentation(false);
-    ttById("ttDataToggle")?.click();
-  });
-  ttById("ttDockProfile").addEventListener("click", () => ttDockClick("ttProfile"));
   ttById("ttLaserToggle").addEventListener("click", () => ttToggleLaser());
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("present-menu-open")) {
+      ttSetPresentationMenu(false);
+    }
+  });
   document.addEventListener("pointerdown", ttLaserStart);
   document.addEventListener("pointermove", ttLaserMove);
   document.addEventListener("pointerup", ttLaserEnd);
