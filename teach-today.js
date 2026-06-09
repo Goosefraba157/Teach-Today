@@ -51,6 +51,7 @@ function ttBuildLesson() {
   const group = ttActiveGroup();
   const skill = activeStep(group);
   ttLesson = createLesson(group, skill, 0, 1);
+  ttEnsureSection2MissIndexes(ttLesson, group, skill);
   return ttLesson;
 }
 
@@ -125,6 +126,7 @@ function ttRender() {
   ttFillOverview(group, skill);
   ttFillSectionRefs(lesson);
   ttFillSounds(skill, lesson);
+  ttEnsureSection2MissIndexes(lesson, group, skill);
   ttFillWordRow(ttById("ttReviewWords"), lesson.sectionTwoReviewWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("review", word)
@@ -132,6 +134,14 @@ function ttRender() {
   ttFillWordRow(ttById("ttCurrentWords"), lesson.sectionTwoCurrentWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("current", word)
+  });
+  ttFillWordRow(ttById("ttLastMissedWords"), lesson.sectionTwoLastMissedWords || [], {
+    onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2Word("lastMisses", word)
+  });
+  ttFillWordRow(ttById("ttPriorityMissedWords"), lesson.sectionTwoPriorityMissedWords || [], {
+    onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2Word("priorityMisses", word)
   });
   ttFillSection2ReplacementTools(lesson, skill);
   ttFillSection2DisplayDeck(lesson, skill);
@@ -389,6 +399,7 @@ function ttRenderDataCenter() {
   const lastCloudSync = localStorage.getItem("teachToday.lastCloudSyncAt");
   const cloudStatus = localStorage.getItem("teachToday.cloudSyncStatus") || "Choose a local backup folder to save a file on this Mac.";
   const cloudFolder = localStorage.getItem("teachToday.cloudSyncFolderName");
+  const driveStatus = localStorage.getItem("teachToday.driveStatus") || "Connect Google Drive to upload audio into your Drive.";
   const lastFirebaseSync = localStorage.getItem("teachToday.lastFirebaseSyncAt");
   const firebaseStatus = localStorage.getItem("teachToday.firebaseSyncStatus") || "Firebase internet sync is ready.";
   const records = appState.masterRecords?.length || 0;
@@ -401,6 +412,7 @@ function ttRenderDataCenter() {
   const lastFirebaseSyncEl = ttById("ttLastFirebaseSync");
   const countsEl = ttById("ttDataCounts");
   const cloudStatusEl = ttById("ttCloudSyncStatus");
+  const driveStatusEl = ttById("ttDriveSyncStatus");
   const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
@@ -408,6 +420,7 @@ function ttRenderDataCenter() {
   if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced";
   if (countsEl) countsEl.textContent = `${records} / ${lessons}${dictation || encoding ? ` / ${dictation + encoding}` : ""}`;
   if (cloudStatusEl) cloudStatusEl.textContent = `${cloudFolder ? `${cloudFolder}: ` : ""}${cloudStatus} Local browser storage is still saved first.`;
+  if (driveStatusEl) driveStatusEl.textContent = `${driveStatus} Local browser storage is still saved first.`;
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
 }
 
@@ -2091,6 +2104,7 @@ function ttPlannerDraftLessonWithSelections(group = ttPlannerGroup()) {
   const originalLesson = ttLesson;
   ttLesson = lesson;
   ttApplyPlannerSelectionsToLesson(group, skill);
+  ttEnsureSection2MissIndexes(ttLesson, group, skill);
   const planned = ttClone(ttLesson);
   ttLesson = originalLesson;
   return { lesson: planned, skill };
@@ -2129,7 +2143,9 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
       </header>
       ${ttPlannerPreviewBlock("2", "Teach & Review", [
         ["Review", activeLesson.sectionTwoReviewWords || []],
-        ["Current", activeLesson.sectionTwoCurrentWords || []]
+        ["Current", activeLesson.sectionTwoCurrentWords || []],
+        ["Last Misses", activeLesson.sectionTwoLastMissedWords || []],
+        ["Priority", activeLesson.sectionTwoPriorityMissedWords || []]
       ], prevWordSet)}
       ${ttPlannerPreviewBlock("3", "Word Cards", [
         ["Review", activeLesson.sectionThreeReviewWords || section3ReviewCards(activeLesson)],
@@ -3103,6 +3119,8 @@ function targetSoundItemsForLesson(lesson, skill) {
   if (lesson.reverseDrillOverride?.length) return lesson.reverseDrillOverride;
   const words = []
     .concat(lesson.sectionTwoCurrentWords || [])
+    .concat(lesson.sectionTwoLastMissedWords || [])
+    .concat(lesson.sectionTwoPriorityMissedWords || [])
     .concat(lesson.realWords || [])
     .concat(dictationCurrentWords(skill.id, lesson.readerLevel || "AB", lesson.realWords || []));
   const text = words.join(" ").toLowerCase();
@@ -3350,6 +3368,91 @@ function section3CurrentCards(lesson) {
   return chooseWords(source.length ? source : chartingPageWords, 8, true);
 }
 
+function ttGroupChartRecords(group = ttActiveGroup()) {
+  const matching = (record) => record && (record.groupId === group.id || record.group === group.name);
+  return (appState.masterRecords || [])
+    .filter(matching)
+    .concat(group.chartResults || [])
+    .sort((a, b) => ttRecordTime(a) - ttRecordTime(b));
+}
+
+function ttMissWordsFromChartRecord(record) {
+  const wordRecords = (record?.wordRecords || [])
+    .filter((item) => item && item.correct === false)
+    .map((item) => item.word || item.value || "");
+  const wrongWords = (record?.wrongWords || []).filter(Boolean);
+  return uniqueWords(wordRecords.concat(wrongWords).filter(isUsableReaderWord));
+}
+
+function ttSection2RelevantMisses(words = [], lesson = {}, skill = null) {
+  const activeSkill = skill || scopeMap.find((item) => item.id === lesson.substep) || activeStep(ttActiveGroup());
+  const currentWords = new Set([].concat(lesson.realWords || [], lesson.nonsenseWords || []).map((word) => word.toLowerCase()));
+  const knownWords = new Set(
+    [].concat(
+      readerWordsFromSubstep(activeSkill.id, lesson.readerLevel || "AB"),
+      readerWordsFromSubstep(priorSubstep(activeSkill.id), lesson.readerLevel || "AB"),
+      priorDictationWords(activeSkill.id, lesson.readerLevel || "AB"),
+      ttCurrentRealWordPool(lesson, activeSkill),
+      ttReviewRealWordPool(lesson, activeSkill)
+    ).map((word) => word.toLowerCase())
+  );
+  const filtered = uniqueWords(words)
+    .filter(isUsableReaderWord)
+    .filter((word) => currentWords.has(word.toLowerCase()) || knownWords.has(word.toLowerCase()));
+  return filtered.length ? filtered : uniqueWords(words).filter(isUsableReaderWord);
+}
+
+function ttLastLessonMissedWords(group = ttActiveGroup(), lesson = ttLesson, skill = null) {
+  const currentPlanId = lesson?.savedPlanId || "";
+  const currentLessonId = lesson?.id || "";
+  const records = ttGroupChartRecords(group)
+    .filter((record) => !(currentPlanId && record.planId === currentPlanId))
+    .filter((record) => !(currentLessonId && record.lessonId === currentLessonId))
+    .filter((record) => ttMissWordsFromChartRecord(record).length);
+  if (!records.length) return ttSection2RelevantMisses(group.trouble || [], lesson, skill).slice(0, 6);
+  const lastDate = dateKey(records.at(-1).date || records.at(-1).displayDate);
+  const words = records
+    .filter((record) => dateKey(record.date || record.displayDate) === lastDate)
+    .flatMap(ttMissWordsFromChartRecord);
+  return ttSection2RelevantMisses(words, lesson, skill).slice(0, 8);
+}
+
+function ttPriorityMissedWords(group = ttActiveGroup(), lesson = ttLesson, skill = null) {
+  const counts = new Map();
+  const recency = new Map();
+  ttGroupChartRecords(group).forEach((record) => {
+    const time = ttRecordTime(record);
+    ttMissWordsFromChartRecord(record).forEach((word) => {
+      const key = word.toLowerCase();
+      counts.set(key, { word, count: (counts.get(key)?.count || 0) + 1 });
+      recency.set(key, Math.max(recency.get(key) || 0, time));
+    });
+  });
+  const ranked = [...counts.values()]
+    .sort((a, b) => b.count - a.count || (recency.get(b.word.toLowerCase()) || 0) - (recency.get(a.word.toLowerCase()) || 0))
+    .map((item) => item.word);
+  const fallback = (group.trouble || []).concat(ttLastLessonMissedWords(group, lesson, skill));
+  return ttSection2RelevantMisses(ranked.length ? ranked : fallback, lesson, skill).slice(0, 8);
+}
+
+function ttEnsureSection2MissIndexes(lesson = ttLesson, group = ttActiveGroup(), skill = null) {
+  if (!lesson || !group) return lesson;
+  const activeSkill = skill || scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+  const currentWords = new Set([].concat(lesson.sectionTwoReviewWords || [], lesson.sectionTwoCurrentWords || []).map((word) => word.toLowerCase()));
+  if (!Array.isArray(lesson.sectionTwoLastMissedWords) || !lesson.sectionTwoLastMissedWords.length) {
+    lesson.sectionTwoLastMissedWords = ttLastLessonMissedWords(group, lesson, activeSkill)
+      .filter((word) => !currentWords.has(word.toLowerCase()))
+      .slice(0, 6);
+  }
+  const used = new Set([].concat(lesson.sectionTwoReviewWords || [], lesson.sectionTwoCurrentWords || [], lesson.sectionTwoLastMissedWords || []).map((word) => word.toLowerCase()));
+  if (!Array.isArray(lesson.sectionTwoPriorityMissedWords) || !lesson.sectionTwoPriorityMissedWords.length) {
+    lesson.sectionTwoPriorityMissedWords = ttPriorityMissedWords(group, lesson, activeSkill)
+      .filter((word) => !used.has(word.toLowerCase()))
+      .slice(0, 6);
+  }
+  return lesson;
+}
+
 function ttFillSection2ReplacementTools(lesson, skill) {
   const currentSelect = ttById("ttCurrentWordSelect");
   if (currentSelect) {
@@ -3437,6 +3540,18 @@ function ttReplaceSection2Word(kind, oldWord) {
     ttLesson.sectionTwoCurrentWords = (ttLesson.sectionTwoCurrentWords || []).map((word) =>
       word === oldWord ? ttPickReplacement(pool, ttLesson.sectionTwoCurrentWords || [], oldWord) : word
     );
+  } else if (kind === "lastMisses") {
+    const pool = ttLastLessonMissedWords(ttActiveGroup(), ttLesson, skill)
+      .concat(ttPriorityMissedWords(ttActiveGroup(), ttLesson, skill));
+    ttLesson.sectionTwoLastMissedWords = (ttLesson.sectionTwoLastMissedWords || []).map((word) =>
+      word === oldWord ? ttPickReplacement(pool, ttLesson.sectionTwoLastMissedWords || [], oldWord) : word
+    );
+  } else if (kind === "priorityMisses") {
+    const pool = ttPriorityMissedWords(ttActiveGroup(), ttLesson, skill)
+      .concat(ttLastLessonMissedWords(ttActiveGroup(), ttLesson, skill));
+    ttLesson.sectionTwoPriorityMissedWords = (ttLesson.sectionTwoPriorityMissedWords || []).map((word) =>
+      word === oldWord ? ttPickReplacement(pool, ttLesson.sectionTwoPriorityMissedWords || [], oldWord) : word
+    );
   } else {
     const pool = section2ReviewWordsForCategory(ttById("ttReviewCategory")?.value || "blends", skill.id)
       .concat(dictationReviewWords(skill.id, ttLesson.readerLevel || "AB"), priorDictationWords(skill.id, ttLesson.readerLevel || "AB"));
@@ -3451,9 +3566,13 @@ function ttReplaceSection2Word(kind, oldWord) {
 function ttFillSection2DisplayDeck(lesson, skill) {
   const review = lesson.sectionTwoReviewWords || [];
   const current = lesson.sectionTwoCurrentWords || [];
+  const lastMisses = lesson.sectionTwoLastMissedWords || [];
+  const priorityMisses = lesson.sectionTwoPriorityMissedWords || [];
   ttSection2Deck = review.map((word) => ({ word, type: "Review", label: "Review word" }))
-    .concat(current.map((word) => ({ word, type: "Current", label: "Current word" })));
-  const preferredWord = ttSection2Word || review[0] || current[0] || "";
+    .concat(current.map((word) => ({ word, type: "Current", label: "Current word" })))
+    .concat(lastMisses.map((word) => ({ word, type: "Last miss", label: "Last lesson miss" })))
+    .concat(priorityMisses.map((word) => ({ word, type: "Priority", label: "Group priority miss" })));
+  const preferredWord = ttSection2Word || review[0] || current[0] || lastMisses[0] || priorityMisses[0] || "";
   const preferredIndex = ttSection2Deck.findIndex((card) => card.word === preferredWord);
   ttShowSection2Card(preferredIndex >= 0 ? preferredIndex : 0, skill.id);
 }
@@ -3500,6 +3619,9 @@ function ttRefreshSection(sectionNumber) {
   if (sectionNumber === "2") {
     ttLesson.sectionTwoReviewWords = sectionTwoReviewWords(skill, level, true);
     ttLesson.sectionTwoCurrentWords = sectionTwoCurrentWords((ttLesson.realWords || []).concat(ttLesson.nonsenseWords || []), true);
+    delete ttLesson.sectionTwoLastMissedWords;
+    delete ttLesson.sectionTwoPriorityMissedWords;
+    ttEnsureSection2MissIndexes(ttLesson, group, skill);
     ttSection2Word = "";
   }
   if (sectionNumber === "3") {
@@ -4036,6 +4158,7 @@ function ttSaveCurrentLesson(options = {}) {
   const group = ttActiveGroup();
   const skill = scopeMap.find((item) => item.id === ttLesson?.substep) || activeStep(group);
   if (!ttLesson) ttLesson = createLesson(group, skill, 0, 1);
+  ttEnsureSection2MissIndexes(ttLesson, group, skill);
   delete ttLesson.draftId;
   delete ttLesson.draftSavedAt;
   if (!ttLesson.savedPlanId) {
@@ -4239,9 +4362,9 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "1 SQD ADD TO NOTEBOOK": ttJoinLines(notebookItems),
     "1 SQD DRILL LEADER IF GROUP": (group.students || []).join(", "),
     "2 REVIEW CONCEPTS": `Review ${priorSubstep(skill.id)} and trouble patterns.`,
-    "2 REVIEW WORDS": ttJoinLines(lesson.sectionTwoReviewWords),
+    "2 REVIEW WORDS": ttJoinLines((lesson.sectionTwoReviewWords || []).concat(lesson.sectionTwoLastMissedWords || [])),
     "2 CURRENT CONCEPTS": concept,
-    "CURRENT WORDS 1": ttJoinLines(lesson.sectionTwoCurrentWords || lesson.realWords),
+    "CURRENT WORDS 1": ttJoinLines((lesson.sectionTwoCurrentWords || lesson.realWords || []).concat(lesson.sectionTwoPriorityMissedWords || [])),
     "2 ADD TO NOTEBOOK": ttJoinLines(notebookItems),
     "3 SUBSTEPS": skill.id,
     "3 WC ACTIVITY": `Review: ${ttJoinWords(section3Review)}\nCurrent: ${ttJoinWords(section3Current)}`,
@@ -4565,6 +4688,7 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
     }
     .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
     .label {
       margin-bottom: 3px;
       color: #475569;
@@ -4698,9 +4822,11 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
 
       ${ttPlanSection("2", "Teach & Review Concepts", lesson.wordlistMeta, `
         <div class="note"><strong>Teacher move:</strong> Build one current word. Ask students to identify the vowel/syllable type, mark word parts, then blend or read the full word.</div>
-        <div class="grid2">
+        <div class="grid4">
           <div>${ttPlanLabel("Review - prior concepts")}${ttPlanChips(lesson.sectionTwoReviewWords || [], "purple")}</div>
           <div>${ttPlanLabel("Current - from today's page")}${ttPlanChips(lesson.sectionTwoCurrentWords || [], "green")}</div>
+          <div>${ttPlanLabel("Last lesson misses")}${ttPlanChips(lesson.sectionTwoLastMissedWords || [], "orange")}</div>
+          <div>${ttPlanLabel("Group priority misses")}${ttPlanChips(lesson.sectionTwoPriorityMissedWords || [], "blue")}</div>
         </div>
       `, "#7c3aed")}
 
@@ -4828,11 +4954,15 @@ const ttFirebaseConfig = {
 };
 const ttFirebaseSdkVersion = "10.12.5";
 const ttFirebaseChunkSize = 350000;
+const ttDriveScope = "https://www.googleapis.com/auth/drive.file";
+const ttDriveFolderName = "Teach Today Recordings";
 let ttFirebaseSdkPromise = null;
 let ttFirebaseTimer = null;
 let ttFirebaseBusy = false;
 let ttFirebasePending = false;
 let ttFirebaseUser = null; // set after Google sign-in
+let ttDriveAccessToken = "";
+let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 
 // Returns the Firestore doc path: per-user when signed in, legacy path as fallback
 function ttFirebaseDocPath() {
@@ -4933,6 +5063,150 @@ async function ttUploadAudioToStorage(recordId, blob) {
   }
 }
 window.ttUploadAudioToStorage = ttUploadAudioToStorage;
+
+function ttDriveHeaders(contentType = "application/json") {
+  const headers = { Authorization: `Bearer ${ttDriveAccessToken}` };
+  if (contentType) headers["Content-Type"] = contentType;
+  return headers;
+}
+
+async function ttEnsureDrivePermission() {
+  if (ttDriveAccessToken) return true;
+  const { firebaseAuth, GoogleAuthProvider, signInWithPopup } = await ttFirebaseSdk();
+  const provider = new GoogleAuthProvider();
+  provider.addScope(ttDriveScope);
+  const result = await signInWithPopup(firebaseAuth, provider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  ttDriveAccessToken = credential?.accessToken || "";
+  if (ttDriveAccessToken) {
+    localStorage.setItem("teachToday.driveStatus", "Google Drive audio is connected.");
+    ttRenderDataCenter();
+  }
+  return Boolean(ttDriveAccessToken);
+}
+
+async function ttDriveRequest(path, options = {}) {
+  if (!(await ttEnsureDrivePermission())) throw new Error("Google Drive permission was not granted.");
+  const response = await fetch(`https://www.googleapis.com/drive/v3/${path}`, {
+    ...options,
+    headers: { ...ttDriveHeaders(options.contentType), ...(options.headers || {}) }
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => response.statusText);
+    throw new Error(`Drive request failed (${response.status}): ${detail}`);
+  }
+  return response.json();
+}
+
+async function ttDriveUploadMultipart(metadata, blob) {
+  if (!(await ttEnsureDrivePermission())) throw new Error("Google Drive permission was not granted.");
+  const boundary = `teach_today_${Date.now()}`;
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify(metadata),
+    `\r\n--${boundary}\r\nContent-Type: ${blob.type || "audio/webm"}\r\n\r\n`,
+    blob,
+    `\r\n--${boundary}--`
+  ], { type: `multipart/related; boundary=${boundary}` });
+  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+    method: "POST",
+    headers: ttDriveHeaders(body.type),
+    body
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => response.statusText);
+    throw new Error(`Drive upload failed (${response.status}): ${detail}`);
+  }
+  return response.json();
+}
+
+async function ttDriveCreateMetadata(metadata) {
+  return ttDriveRequest("files?fields=id,name,webViewLink", {
+    method: "POST",
+    body: JSON.stringify(metadata)
+  });
+}
+
+async function ttDriveFolder() {
+  if (ttDriveFolderId) return ttDriveFolderId;
+  const query = [
+    "mimeType='application/vnd.google-apps.folder'",
+    "name='Teach Today Recordings'",
+    "trashed=false"
+  ].join(" and ");
+  const result = await ttDriveRequest(`files?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id,name)&pageSize=1`);
+  ttDriveFolderId = result.files?.[0]?.id || "";
+  if (!ttDriveFolderId) {
+    const folder = await ttDriveCreateMetadata({
+      name: ttDriveFolderName,
+      mimeType: "application/vnd.google-apps.folder"
+    });
+    ttDriveFolderId = folder.id || "";
+  }
+  if (ttDriveFolderId) localStorage.setItem("teachToday.driveFolderId", ttDriveFolderId);
+  return ttDriveFolderId;
+}
+
+async function ttUploadAudioToDrive(recordId, blob, fileName) {
+  if (!blob || !fileName) return null;
+  if (!ttDriveAccessToken) {
+    ttPatchAudioRecord(recordId, {
+      driveUploadStatus: "queued",
+      driveUploadMessage: "Connect Google Drive audio from Records to upload this file."
+    }, { sync: false });
+    return null;
+  }
+  try {
+    ttPatchAudioRecord(recordId, {
+      driveUploadStatus: "uploading",
+      driveUploadMessage: "Uploading audio to Google Drive."
+    }, { sync: false });
+    const folderId = await ttDriveFolder();
+    const file = await ttDriveUploadMultipart({
+      name: fileName,
+      parents: folderId ? [folderId] : undefined,
+      mimeType: blob.type || "audio/webm"
+    }, blob);
+    ttPatchAudioRecord(recordId, {
+      driveFileId: file.id,
+      driveFileName: file.name || fileName,
+      driveWebViewLink: file.webViewLink || "",
+      driveUploadStatus: "cloud-ready",
+      driveUploadMessage: "Audio uploaded to Google Drive.",
+      driveUploadedAt: new Date().toISOString()
+    }, { sync: false });
+    await ttFirebaseSyncWrite("Saved Google Drive recording link.");
+    localStorage.setItem("teachToday.driveStatus", "Audio uploaded to Google Drive.");
+    ttRenderDataCenter();
+    return file.id;
+  } catch (err) {
+    console.warn("Audio upload to Google Drive failed:", err);
+    ttPatchAudioRecord(recordId, {
+      driveUploadStatus: "failed",
+      driveUploadMessage: `Google Drive upload failed: ${err?.message || "unknown error"}`
+    });
+    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${err?.message || "unknown error"}`);
+    ttRenderDataCenter();
+    return null;
+  }
+}
+window.ttUploadAudioToDrive = ttUploadAudioToDrive;
+
+async function ttUploadPendingAudioToDrive() {
+  const pending = (appState.masterRecords || []).filter((record) => record.audioRecordingId && record.audioFileName && !record.driveFileId);
+  if (!pending.length) {
+    localStorage.setItem("teachToday.driveStatus", "Google Drive audio is connected. No local recordings need upload.");
+    ttRenderDataCenter();
+    return;
+  }
+  if (!(await ttEnsureDrivePermission())) return;
+  localStorage.setItem("teachToday.driveStatus", `Uploading ${pending.length} recording(s) to Google Drive...`);
+  ttRenderDataCenter();
+  for (const record of pending) {
+    const blob = await window.loadAudioBlob?.(record.audioRecordingId).catch(() => null);
+    if (blob) await ttUploadAudioToDrive(record.audioRecordingId, blob, record.audioFileName);
+  }
+}
 
 // On sign-in, upload any recordings that are in IndexedDB but never reached Firebase Storage
 async function ttUploadPendingAudioRecordings() {
@@ -5098,7 +5372,15 @@ function ttUpdateFirebaseAuthUI() {
 async function ttFirebaseSignIn() {
   try {
     const { firebaseAuth, GoogleAuthProvider, signInWithPopup } = await ttFirebaseSdk();
-    await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    provider.addScope(ttDriveScope);
+    const result = await signInWithPopup(firebaseAuth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    ttDriveAccessToken = credential?.accessToken || "";
+    if (ttDriveAccessToken) {
+      localStorage.setItem("teachToday.driveStatus", "Google Drive audio is connected.");
+      ttUploadPendingAudioToDrive().catch(() => {});
+    }
   } catch (err) {
     localStorage.setItem("teachToday.firebaseSyncStatus", `Sign-in failed: ${err.message}`);
     ttRenderDataCenter();
@@ -7530,6 +7812,10 @@ function ttBind() {
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
+  ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {
+    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${err?.message || "unknown error"}`);
+    ttRenderDataCenter();
+  }));
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   document.getElementById("ttFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());

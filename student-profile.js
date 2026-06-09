@@ -2,6 +2,18 @@ const storageKey = "dyslexiaInstructionEngine.v2";
 const audioSyncDbName = "teachTodayCloudSync.v1";
 const audioSyncStore = "handles";
 const audioSyncHandleKey = "syncDirectory";
+const profileFirebaseConfig = {
+  apiKey: "AIzaSyAQxODRvRAINGXfSxlqTxiyhkeisIPQLEs",
+  authDomain: "teach-today-35149.firebaseapp.com",
+  projectId: "teach-today-35149",
+  storageBucket: "teach-today-35149.firebasestorage.app",
+  messagingSenderId: "506415947825",
+  appId: "1:506415947825:web:9415befdc50d928eccb510"
+};
+const profileFirebaseSdkVersion = "10.12.5";
+const profileDriveScope = "https://www.googleapis.com/auth/drive.file";
+let profileFirebaseSdkPromise = null;
+let profileDriveAccessToken = "";
 let comparisonScope = "group";
 
 function byId(id) {
@@ -19,6 +31,39 @@ function state() {
   } catch {
     return {};
   }
+}
+
+async function profileFirebaseSdk() {
+  if (profileFirebaseSdkPromise) return profileFirebaseSdkPromise;
+  profileFirebaseSdkPromise = Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-auth.js`)
+  ]).then(([appModule, authModule]) => {
+    const firebaseApp = appModule.initializeApp(profileFirebaseConfig);
+    const firebaseAuth = authModule.getAuth(firebaseApp);
+    return { ...authModule, firebaseAuth };
+  });
+  return profileFirebaseSdkPromise;
+}
+
+async function ensureProfileDrivePermission() {
+  if (profileDriveAccessToken) return true;
+  const { firebaseAuth, GoogleAuthProvider, signInWithPopup } = await profileFirebaseSdk();
+  const provider = new GoogleAuthProvider();
+  provider.addScope(profileDriveScope);
+  const result = await signInWithPopup(firebaseAuth, provider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  profileDriveAccessToken = credential?.accessToken || "";
+  return Boolean(profileDriveAccessToken);
+}
+
+async function loadDriveAudioFile(fileId) {
+  if (!fileId || !(await ensureProfileDrivePermission())) return null;
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
+    headers: { Authorization: `Bearer ${profileDriveAccessToken}` }
+  });
+  if (!response.ok) throw new Error(`Google Drive file could not load (${response.status}).`);
+  return response.blob();
 }
 
 function params() {
@@ -1091,11 +1136,16 @@ async function renderRecordingsSection(records) {
     const metaText = `${dateLabel} · Substep ${substep}${half}`;
 
     if (!url) {
+      const driveAction = record.driveFileId
+        ? `<button type="button" class="drive-audio-btn" data-drive-file-id="${escapeHtml(record.driveFileId)}">Play from Google Drive</button>`
+        : "";
       card.innerHTML = `
         <div class="recording-card-meta">
           <strong>${escapeHtml(fileName)}</strong>
           <span>${escapeHtml(metaText)} · ${escapeHtml(audioCloudLabel(record))}</span>
           ${record.audioUploadMessage ? `<span>${escapeHtml(record.audioUploadMessage)}</span>` : ""}
+          ${record.driveUploadMessage ? `<span>${escapeHtml(record.driveUploadMessage)}</span>` : ""}
+          ${driveAction}
         </div>`;
       container.appendChild(card);
       return;
@@ -1113,6 +1163,29 @@ async function renderRecordingsSection(records) {
         ${fromCloud ? "" : `<a href="${url}" download="${escapeHtml(fileName)}">⬇ Download</a>`}
       </div>`;
     container.appendChild(card);
+  });
+
+  container.querySelectorAll(".drive-audio-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      button.textContent = "Loading...";
+      try {
+        const blob = await loadDriveAudioFile(button.dataset.driveFileId);
+        if (!blob) {
+          button.textContent = "Drive not connected";
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.src = url;
+        audio.style.width = "100%";
+        audio.style.marginTop = "6px";
+        button.replaceWith(audio);
+      } catch (err) {
+        button.textContent = "Drive file not found";
+        console.warn("Google Drive audio load failed:", err);
+      }
+    });
   });
 }
 
@@ -1183,6 +1256,18 @@ byId("printProfile").addEventListener("click", () => {
 byId("backTeach").addEventListener("click", () => {
   const { group } = selectedContext();
   location.href = `TeachToday.html?group=${encodeURIComponent(group.id || "")}`;
+});
+byId("connectDriveAudio")?.addEventListener("click", async () => {
+  const button = byId("connectDriveAudio");
+  button.textContent = "Connecting...";
+  try {
+    const connected = await ensureProfileDrivePermission();
+    button.textContent = connected ? "Drive connected" : "Google Drive";
+    render();
+  } catch (err) {
+    button.textContent = "Drive failed";
+    console.warn("Google Drive permission failed:", err);
+  }
 });
 byId("compareGroup").addEventListener("click", () => {
   comparisonScope = "group";

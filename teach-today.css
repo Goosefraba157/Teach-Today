@@ -2452,43 +2452,49 @@ body.presentation-mode #section2 .section-head {
 }
 
 body.presentation-mode .section2-teach-layout {
-  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: start;
-  gap: 10px;
+  gap: 8px;
 }
 
 body.presentation-mode .section2-picker {
   position: sticky;
   top: 62px;
   display: grid;
+  grid-template-columns: 1fr;
   align-content: start;
+  gap: 5px;
+  width: clamp(92px, 8vw, 118px);
   max-height: calc(100vh - 92px);
   overflow: auto;
-  padding: 6px;
+  padding: 5px;
   border: 1px solid #dbe6f3;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #f8fafc;
 }
 
 body.presentation-mode .section2-picker h3 {
-  margin: 8px 0 6px;
-  font-size: 12px;
+  margin: 0 0 2px;
+  font-size: 8px;
+  line-height: 1;
   color: var(--muted);
 }
 
 body.presentation-mode #section2 .word-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
 }
 
 body.presentation-mode #section2 .word-row button {
-  min-height: 34px;
-  width: 100%;
-  padding: 5px 7px;
-  border-radius: 8px;
-  font-size: clamp(11px, 1.12vw, 15px);
-  line-height: 1.05;
+  min-height: 0;
+  width: auto;
+  max-width: 100%;
+  padding: 2px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1.1;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2496,10 +2502,11 @@ body.presentation-mode #section2 .word-row button {
 
 body.presentation-mode .section2-display-wrap {
   margin-top: 0;
+  min-width: 0;
 }
 
 body.presentation-mode .section2-display {
-  min-height: min(72vh, 720px);
+  min-height: min(78vh, 760px);
 }
 
 body.presentation-mode .section2-tool-row .mini-label {
@@ -3265,6 +3272,20 @@ body.presentation-mode #ttEditSection2Cards {
   font-weight: 900;
 }
 
+#section2 .word-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 6px;
+}
+
+#section2 .word-row button {
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 13px;
+  line-height: 1.1;
+  text-align: left;
+}
+
 .word-row button.marked-word {
   border-color: var(--line);
   background: var(--soft);
@@ -3321,7 +3342,18 @@ body.presentation-mode #ttEditSection2Cards {
 }
 
 .section2-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
   min-width: 0;
+}
+
+.section2-picker article {
+  min-width: 0;
+}
+
+.section2-picker h3 {
+  margin: 0 0 6px;
 }
 
 .section2-tool-actions {
@@ -5290,17 +5322,22 @@ body.presentation-mode #ttEditSection2Cards {
 }
 
 @media (max-width: 760px) {
+  .section2-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   body.presentation-mode .section2-teach-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: max-content minmax(0, 1fr);
   }
 
   body.presentation-mode .section2-picker {
-    position: static;
-    max-height: none;
+    position: sticky;
+    max-height: calc(100vh - 92px);
   }
 
   body.presentation-mode #section2 .word-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -5458,9 +5495,9 @@ body {
   border-top: 4px solid #16a34a;
 }
 
-/* --- Word chips: bigger, friendlier ------------------------ */
-.word-row button {
-  border-radius: 12px;
+/* --- Section 2 word chips: compact lesson lists ------------ */
+#section2 .word-row button {
+  border-radius: 8px;
 }
 
 /* --- Card mode buttons: pill shape for iPad tap ------------ */
