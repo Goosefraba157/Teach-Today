@@ -13,6 +13,9 @@ Teach Today Local BackUps/
 .tmp-*
 outputs/
 
+# Accidental nested checkout of this same repo
+Teach-Today/
+
 # Node modules (Codex tooling — never commit these)
 node_modules/
 **/node_modules/
