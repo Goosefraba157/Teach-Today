@@ -5354,3 +5354,24 @@ body.home-mode .home-screen {
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* Firebase auth UI */
+.firebase-user-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+}
+.firebase-sign-in-btn {
+  background: #4285f4;
+  color: #fff;
+  border-color: #4285f4;
+}
+.firebase-sign-in-btn:hover {
+  background: #3367d6;
+  border-color: #3367d6;
+}

@@ -4815,13 +4815,19 @@ const ttFirebaseConfig = {
   messagingSenderId: "506415947825",
   appId: "1:506415947825:web:9415befdc50d928eccb510"
 };
-const ttFirebaseDocPath = ["teachTodaySync", "main"];
 const ttFirebaseSdkVersion = "10.12.5";
 const ttFirebaseChunkSize = 350000;
 let ttFirebaseSdkPromise = null;
 let ttFirebaseTimer = null;
 let ttFirebaseBusy = false;
 let ttFirebasePending = false;
+let ttFirebaseUser = null; // set after Google sign-in
+
+// Returns the Firestore doc path: per-user when signed in, legacy path as fallback
+function ttFirebaseDocPath() {
+  if (ttFirebaseUser) return ["users", ttFirebaseUser.uid, "teachTodaySync", "main"];
+  return ["teachTodaySync", "main"];
+}
 
 function ttBackupPayload(now = new Date()) {
   return {
@@ -4849,18 +4855,22 @@ async function ttFirebaseSdk() {
   if (ttFirebaseSdkPromise) return ttFirebaseSdkPromise;
   ttFirebaseSdkPromise = Promise.all([
     import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-app.js`),
-    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-firestore.js`)
-  ]).then(([appModule, firestoreModule]) => {
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-firestore.js`),
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-auth.js`)
+  ]).then(([appModule, firestoreModule, authModule]) => {
     const firebaseApp = appModule.initializeApp(ttFirebaseConfig);
     const firestoreDb = firestoreModule.getFirestore(firebaseApp);
-    return { ...firestoreModule, firestoreDb };
+    const firebaseAuth = authModule.getAuth(firebaseApp);
+    return { ...firestoreModule, ...authModule, firestoreDb, firebaseAuth };
   });
   return ttFirebaseSdkPromise;
 }
 
 async function ttFirebaseReadPayload() {
+  if (!ttFirebaseUser) return null;
   const { firestoreDb, doc, getDoc } = await ttFirebaseSdk();
-  const snapshot = await getDoc(doc(firestoreDb, ...ttFirebaseDocPath));
+  const path = ttFirebaseDocPath();
+  const snapshot = await getDoc(doc(firestoreDb, ...path));
   if (!snapshot.exists()) return null;
   const data = snapshot.data();
   if (data?.payload) return data.payload;
@@ -4868,7 +4878,7 @@ async function ttFirebaseReadPayload() {
   const chunks = [];
   for (let index = 0; index < data.chunkCount; index += 1) {
     const id = String(index).padStart(4, "0");
-    const chunkSnapshot = await getDoc(doc(firestoreDb, ...ttFirebaseDocPath, "chunks", id));
+    const chunkSnapshot = await getDoc(doc(firestoreDb, ...path, "chunks", id));
     if (!chunkSnapshot.exists()) return null;
     chunks.push(chunkSnapshot.data()?.text || "");
   }
@@ -4891,6 +4901,7 @@ async function ttFirebaseRestoreIfNewer() {
 }
 
 async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
+  if (!ttFirebaseUser) return; // require sign-in
   if (ttFirebaseBusy) {
     ttFirebasePending = true;
     return;
@@ -4903,18 +4914,19 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
       return;
     }
     const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+    const path = ttFirebaseDocPath();
     const now = new Date();
     const payload = ttBackupPayload(now);
     const serialized = JSON.stringify(payload);
     const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
     for (let index = 0; index < chunkCount; index += 1) {
       const id = String(index).padStart(4, "0");
-      await setDoc(doc(firestoreDb, ...ttFirebaseDocPath, "chunks", id), {
+      await setDoc(doc(firestoreDb, ...path, "chunks", id), {
         index,
         text: serialized.slice(index * ttFirebaseChunkSize, (index + 1) * ttFirebaseChunkSize)
       });
     }
-    await setDoc(doc(firestoreDb, ...ttFirebaseDocPath), {
+    await setDoc(doc(firestoreDb, ...path), {
       kind: "TeachTodayFirebaseSync",
       version: 2,
       updatedAt: serverTimestamp(),
@@ -4951,16 +4963,84 @@ async function ttSyncFirebaseAndLocalNow() {
   ]);
 }
 
+// --- Auth UI helpers ---
+function ttUpdateFirebaseAuthUI() {
+  const badge = document.getElementById("ttFirebaseUserBadge");
+  const signInBtn = document.getElementById("ttFirebaseSignIn");
+  const signOutBtn = document.getElementById("ttFirebaseSignOut");
+  if (ttFirebaseUser) {
+    if (badge) { badge.textContent = ttFirebaseUser.displayName || ttFirebaseUser.email; badge.hidden = false; }
+    if (signInBtn) signInBtn.hidden = true;
+    if (signOutBtn) signOutBtn.hidden = false;
+  } else {
+    if (badge) badge.hidden = true;
+    if (signInBtn) signInBtn.hidden = false;
+    if (signOutBtn) signOutBtn.hidden = true;
+  }
+}
+
+async function ttFirebaseSignIn() {
+  try {
+    const { firebaseAuth, GoogleAuthProvider, signInWithPopup } = await ttFirebaseSdk();
+    await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+  } catch (err) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Sign-in failed: ${err.message}`);
+    ttRenderDataCenter();
+  }
+}
+
+async function ttFirebaseSignOut() {
+  const { firebaseAuth, signOut } = await ttFirebaseSdk();
+  await signOut(firebaseAuth);
+}
+
+// Copies legacy shared-path data to the new per-user path (runs once on first sign-in)
+async function ttFirebaseMigrateLegacyData() {
+  try {
+    const { firestoreDb, doc, getDoc, setDoc } = await ttFirebaseSdk();
+    const legacySnap = await getDoc(doc(firestoreDb, "teachTodaySync", "main"));
+    if (!legacySnap.exists()) return;
+    const userPath = ttFirebaseDocPath();
+    const userSnap = await getDoc(doc(firestoreDb, ...userPath));
+    if (userSnap.exists()) return; // user already has their own data
+    const legacyData = legacySnap.data();
+    await setDoc(doc(firestoreDb, ...userPath), { ...legacyData, _migratedFrom: "legacy", _migratedAt: new Date().toISOString() });
+    if (legacyData.chunkCount) {
+      for (let i = 0; i < legacyData.chunkCount; i++) {
+        const id = String(i).padStart(4, "0");
+        const chunkSnap = await getDoc(doc(firestoreDb, "teachTodaySync", "main", "chunks", id));
+        if (chunkSnap.exists()) await setDoc(doc(firestoreDb, ...userPath, "chunks", id), chunkSnap.data());
+      }
+    }
+    console.log("[Teach Today] Legacy Firebase data migrated to user path.");
+  } catch (err) {
+    console.warn("[Teach Today] Legacy data migration skipped:", err.message);
+  }
+}
+
 async function ttInitFirebaseSync() {
   try {
-    await ttFirebaseRestoreIfNewer();
-    ttQueueFirebaseSync();
-    localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase internet sync is on.");
+    const { firebaseAuth, onAuthStateChanged } = await ttFirebaseSdk();
+    onAuthStateChanged(firebaseAuth, async (user) => {
+      const wasSignedIn = !!ttFirebaseUser;
+      ttFirebaseUser = user;
+      ttUpdateFirebaseAuthUI();
+      if (user) {
+        localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Checking cloud data…`);
+        ttRenderDataCenter();
+        if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
+        await ttFirebaseRestoreIfNewer();
+        ttQueueFirebaseSync();
+        localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
+      } else {
+        localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
+      }
+      ttRenderDataCenter();
+    });
   } catch (error) {
     const detail = error?.code || error?.message || "unknown error";
     console.warn("Teach Today Firebase startup failed:", error);
-    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase is not reachable yet (${detail}).`);
-  } finally {
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase not reachable (${detail}).`);
     ttRenderDataCenter();
   }
 }
@@ -7293,6 +7373,8 @@ function ttBind() {
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
+  document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
+  document.getElementById("ttFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
