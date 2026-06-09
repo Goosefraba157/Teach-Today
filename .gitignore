@@ -13,6 +13,10 @@ Teach Today Local BackUps/
 .tmp-*
 outputs/
 
+# Node modules (Codex tooling — never commit these)
+node_modules/
+**/node_modules/
+
 # Local PDF resources (large, proprietary)
 Readers in PDF form/
 Dictation Books in PDF form/
