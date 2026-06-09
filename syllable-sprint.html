@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decode Dash</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d1117; display:flex; align-items:center; justify-content:center;
+       min-height:100vh; font-family:Arial,sans-serif; overflow:hidden; user-select:none; }
+canvas { max-width:100vw; max-height:100vh; border-radius:16px;
+         box-shadow:0 0 80px rgba(42,157,143,0.4); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// ── Wilson colors ──────────────────────────────────────
+const V_BG='#F4A7B9', V_DARK='#9C2742';
+const C_BG='#FFFBD0', C_DARK='#8A7800';
+const W_BG='#B4E8A4', W_DARK='#286020';   // welded/glued green
+const TEAL='#2A9D8F', ORANGE='#E76F51', YELLOW='#E9C46A';
+const VOWELS=new Set(['A','E','I','O','U']);
+
+// ── Welded/glued sounds ────────────────────────────────
+const WELDED_WORDS=new Set([
+  'CAN','FAN','MAN','PAN','RAN','TAN','VAN','BAN',
+  'HAM','JAM','RAM','YAM','DAM',
+]);
+
+// ── 1.3 Word data — [WORD, OPEN_CONS, VOWEL, ANSWER] ──
+// OPEN_CONS + VOWEL = pre-filled stem tiles; ANSWER = closing phoneme (1-2 chars)
+const W13=[
+  // ── CVC (no digraph) ──
+  ['BAD','B','A','D'],['BAG','B','A','G'],['BAT','B','A','T'],
+  ['BED','B','E','D'],['BEG','B','E','G'],['BET','B','E','T'],
+  ['BIB','B','I','B'],['BID','B','I','D'],['BIG','B','I','G'],
+  ['BIN','B','I','N'],['BIT','B','I','T'],
+  ['BOG','B','O','G'],['BUD','B','U','D'],['BUG','B','U','G'],
+  ['BUN','B','U','N'],['BUS','B','U','S'],['BUT','B','U','T'],
+  ['CAB','C','A','B'],['CAP','C','A','P'],['CAT','C','A','T'],
+  ['COB','C','O','B'],['COP','C','O','P'],['COT','C','O','T'],
+  ['CUB','C','U','B'],['CUP','C','U','P'],['CUT','C','U','T'],
+  ['DAB','D','A','B'],['DAD','D','A','D'],
+  ['DEN','D','E','N'],['DID','D','I','D'],['DIG','D','I','G'],
+  ['DIM','D','I','M'],['DIP','D','I','P'],
+  ['DOG','D','O','G'],['DOT','D','O','T'],['DUB','D','U','B'],['DUG','D','U','G'],
+  ['FAD','F','A','D'],['FAT','F','A','T'],
+  ['FIG','F','I','G'],['FIN','F','I','N'],['FIT','F','I','T'],
+  ['FOG','F','O','G'],['FUN','F','U','N'],
+  ['GAP','G','A','P'],['GUM','G','U','M'],['GUN','G','U','N'],['GUT','G','U','T'],
+  ['HAT','H','A','T'],['HEN','H','E','N'],
+  ['HID','H','I','D'],['HIM','H','I','M'],['HIP','H','I','P'],['HIT','H','I','T'],
+  ['HOG','H','O','G'],['HOP','H','O','P'],['HOT','H','O','T'],
+  ['HUB','H','U','B'],['HUG','H','U','G'],['HUM','H','U','M'],['HUT','H','U','T'],
+  ['JAB','J','A','B'],['JET','J','E','T'],
+  ['JIG','J','I','G'],['JOB','J','O','B'],['JOG','J','O','G'],['JOT','J','O','T'],
+  ['JUG','J','U','G'],['JUT','J','U','T'],
+  ['KEG','K','E','G'],['KID','K','I','D'],['KIN','K','I','N'],['KIT','K','I','T'],
+  ['LAB','L','A','B'],['LAG','L','A','G'],['LAP','L','A','P'],
+  ['LED','L','E','D'],['LEG','L','E','G'],['LET','L','E','T'],
+  ['LID','L','I','D'],['LIP','L','I','P'],['LIT','L','I','T'],
+  ['LOG','L','O','G'],['LOP','L','O','P'],['LOT','L','O','T'],['LUG','L','U','G'],
+  ['MAD','M','A','D'],['MAP','M','A','P'],['MAT','M','A','T'],
+  ['MEN','M','E','N'],['MET','M','E','T'],['MOB','M','O','B'],['MOP','M','O','P'],['MUD','M','U','D'],
+  ['NAB','N','A','B'],['NAG','N','A','G'],['NAP','N','A','P'],
+  ['NET','N','E','T'],['NIP','N','I','P'],['NOD','N','O','D'],['NOT','N','O','T'],['NUT','N','U','T'],
+  ['PAD','P','A','D'],['PAT','P','A','T'],
+  ['PEG','P','E','G'],['PEN','P','E','N'],['PET','P','E','T'],
+  ['PIN','P','I','N'],['PIT','P','I','T'],['POD','P','O','D'],
+  ['POP','P','O','P'],['POT','P','O','T'],['PUB','P','U','B'],
+  ['PUG','P','U','G'],['PUN','P','U','N'],['PUP','P','U','P'],
+  ['RAG','R','A','G'],['RAT','R','A','T'],
+  ['RED','R','E','D'],['RIB','R','I','B'],['RID','R','I','D'],
+  ['RIG','R','I','G'],['RIM','R','I','M'],['RIP','R','I','P'],
+  ['ROD','R','O','D'],['ROT','R','O','T'],
+  ['RUB','R','U','B'],['RUG','R','U','G'],['RUN','R','U','N'],['RUT','R','U','T'],
+  ['SAD','S','A','D'],['SAG','S','A','G'],['SAP','S','A','P'],['SAT','S','A','T'],
+  ['SIN','S','I','N'],['SIP','S','I','P'],['SIT','S','I','T'],
+  ['SOB','S','O','B'],['SOD','S','O','D'],
+  ['SUB','S','U','B'],['SUM','S','U','M'],['SUN','S','U','N'],
+  ['TAB','T','A','B'],['TAG','T','A','G'],['TAP','T','A','P'],['TEN','T','E','N'],
+  ['TIN','T','I','N'],['TIP','T','I','P'],['TOP','T','O','P'],
+  ['TUB','T','U','B'],['VAT','V','A','T'],['VET','V','E','T'],
+  ['WIG','W','I','G'],['WIN','W','I','N'],
+  ['YAK','Y','A','K'],['YUM','Y','U','M'],['ZAP','Z','A','P'],['ZIP','Z','I','P'],
+  // ── Welded "an" / "am" ──
+  ['CAN','C','A','N'],['FAN','F','A','N'],['MAN','M','A','N'],
+  ['PAN','P','A','N'],['RAN','R','A','N'],['TAN','T','A','N'],
+  ['VAN','V','A','N'],['BAN','B','A','N'],
+  ['HAM','H','A','M'],['JAM','J','A','M'],['RAM','R','A','M'],
+  ['YAM','Y','A','M'],['DAM','D','A','M'],
+  // ── Closing -CK ──
+  ['BACK','B','A','CK'],['DECK','D','E','CK'],['DOCK','D','O','CK'],
+  ['DUCK','D','U','CK'],['HACK','H','A','CK'],['KICK','K','I','CK'],
+  ['LACK','L','A','CK'],['LICK','L','I','CK'],['LOCK','L','O','CK'],
+  ['LUCK','L','U','CK'],['MOCK','M','O','CK'],['MUCK','M','U','CK'],
+  ['NECK','N','E','CK'],['PACK','P','A','CK'],['PECK','P','E','CK'],
+  ['PICK','P','I','CK'],['PUCK','P','U','CK'],['RACK','R','A','CK'],
+  ['ROCK','R','O','CK'],['SACK','S','A','CK'],['SICK','S','I','CK'],
+  ['SOCK','S','O','CK'],['TACK','T','A','CK'],['TICK','T','I','CK'],
+  ['TUCK','T','U','CK'],['WICK','W','I','CK'],['YUCK','Y','U','CK'],
+  // ── Closing -SH ──
+  ['BASH','B','A','SH'],['CASH','C','A','SH'],['DASH','D','A','SH'],
+  ['DISH','D','I','SH'],['FISH','F','I','SH'],['GASH','G','A','SH'],
+  ['GUSH','G','U','SH'],['HASH','H','A','SH'],['HUSH','H','U','SH'],
+  ['LASH','L','A','SH'],['LUSH','L','U','SH'],['MASH','M','A','SH'],
+  ['MESH','M','E','SH'],['MUSH','M','U','SH'],['RASH','R','A','SH'],
+  ['RUSH','R','U','SH'],['SASH','S','A','SH'],['WISH','W','I','SH'],
+  // ── Closing -CH ──
+  ['MUCH','M','U','CH'],['RICH','R','I','CH'],['SUCH','S','U','CH'],
+  // ── Closing -TH ──
+  ['BATH','B','A','TH'],['MATH','M','A','TH'],['MOTH','M','O','TH'],
+  ['PATH','P','A','TH'],['WITH','W','I','TH'],
+  // ── Opening SH- ──
+  ['SHACK','SH','A','CK'],['SHED','SH','E','D'],['SHIN','SH','I','N'],
+  ['SHIP','SH','I','P'],['SHOP','SH','O','P'],['SHOT','SH','O','T'],
+  ['SHUT','SH','U','T'],['SHUN','SH','U','N'],
+  // ── Opening CH- ──
+  ['CHAP','CH','A','P'],['CHAT','CH','A','T'],['CHIN','CH','I','N'],
+  ['CHIP','CH','I','P'],['CHOP','CH','O','P'],['CHUG','CH','U','G'],['CHUM','CH','U','M'],
+  ['CHECK','CH','E','CK'],['CHICK','CH','I','CK'],['CHOCK','CH','O','CK'],['CHUCK','CH','U','CK'],
+  // ── Opening TH- ──
+  ['THAT','TH','A','T'],['THEN','TH','E','N'],['THIN','TH','I','N'],
+  ['THUD','TH','U','D'],['THICK','TH','I','CK'],
+  // ── Opening WH- ──
+  ['WHACK','WH','A','CK'],['WHEN','WH','E','N'],['WHIM','WH','I','M'],
+  ['WHIP','WH','I','P'],['WHIZ','WH','I','Z'],
+];
+
+// Build word objects and lookup map
+const WORDS_13=W13.map(([word,open,vow,answer])=>({
+  word, tiles:[open,vow], answer,
+  isWelded: WELDED_WORDS.has(word),
+}));
+const WORD_BY_NAME=Object.fromEntries(WORDS_13.map(w=>[w.word,w]));
+
+// Valid answers per stem (for collision — allow any real word from same stem)
+const STEM_MAP={};
+WORDS_13.forEach(({tiles,answer})=>{
+  const k=tiles.join('');
+  if(!STEM_MAP[k]) STEM_MAP[k]=new Set();
+  STEM_MAP[k].add(answer);
+});
+
+// Distractor pool: single consonants + digraphs
+const CONS_POOL=['B','D','F','G','H','K','L','M','N','P','R','S','T','V','W','Z'];
+const DIG_POOL=['SH','CH','TH','CK','WH'];
+const ALL_ANSWERS=[...CONS_POOL,...DIG_POOL];
+
+// Current sub-step selection
+let selectedSubstep='1.3';
+
+const TOTAL_WORDS=10;
+const LANES=[155,295,435];
+const GROUND_Y=475;
+const PX_MIN=80, PX_MAX=800, PX_START=160;
+const TILE_SPEED=1.3;
+
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const W=860, H=520;
+canvas.width=W; canvas.height=H;
+
+// ── State ──────────────────────────────────────────────
+let state='title';
+let frame=0;
+let player;
+let tiles=[], particles=[], floaters=[];
+let wordBag=[], wordsDone=0;
+let currentWord=null;           // {word,stem,close}
+let wordTimes=[];               // seconds per word
+let wordStartFrame=0;
+let totalFrames=0;
+let score=0, streak=0, highScore=0;
+let lives=3, invincible=0;
+let winTimer=0;
+let reshufflePool=null;         // letters to reuse on reshuffle
+let spawnTimer=0;
+let bgScrollV=0, bgScroll=0;
+let keys={};
+let touchRun=false;        // iPad RUN button held
+let touchRunId=null;       // touch identifier for RUN button
+let swipeTx=0,swipeTy=0,swipeTouchId=null; // swipe tracking
+let gameRound=0; // counts completed games
+
+// Touch button zones (canvas coordinates)
+const TB={
+  laneUp:  {x:4,  y:148, w:70, h:72},
+  laneDown:{x:4,  y:228, w:70, h:72},
+  run:     {x:790,y:148, w:66, h:155},
+  shuffle: {x:4,  y:308, w:70, h:60},
+};
+function inRect(cx,cy,r){ return cx>=r.x&&cx<r.x+r.w&&cy>=r.y&&cy<r.y+r.h; }
+
+function drawTouchButtons(){
+  function btn(x,y,w,h,label,active,sub){
+    ctx.save(); ctx.globalAlpha=0.72;
+    ctx.fillStyle=active?'rgba(255,200,0,0.28)':'rgba(0,0,0,0.42)';
+    rr(x,y,w,h,12); ctx.fill();
+    ctx.strokeStyle=active?'rgba(255,200,0,0.85)':'rgba(255,255,255,0.2)';
+    ctx.lineWidth=2; rr(x,y,w,h,12); ctx.stroke();
+    ctx.fillStyle=active?'#FFD700':'rgba(255,255,255,0.6)';
+    ctx.font=`bold ${h>100?24:19}px Arial`; ctx.textAlign='center';
+    ctx.fillText(label, x+w/2, y+h/2+(sub?2:8));
+    if(sub){
+      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='10px Arial';
+      ctx.fillText(sub, x+w/2, y+h/2+18);
+    }
+    ctx.restore();
+  }
+  btn(TB.laneUp.x,  TB.laneUp.y,  TB.laneUp.w,  TB.laneUp.h,  '▲', false);
+  btn(TB.laneDown.x,TB.laneDown.y,TB.laneDown.w,TB.laneDown.h,'▼', false);
+  btn(TB.run.x,     TB.run.y,     TB.run.w,     TB.run.h,     '▶', touchRun,'RUN');
+  btn(TB.shuffle.x, TB.shuffle.y, TB.shuffle.w, TB.shuffle.h, '↩', false);
+}
+
+// ── Mini-game state ────────────────────────────────────
+// step: 0=scoop 1=draw-c 2=symbol-pick 3=celebrate
+let mg={
+  wordObj:null, phonemes:['C','A','T'], step:0,
+  scoopDrawing:false, scoopAnim:0, isDragging:false, dragPoints:[],
+  cDrawing:false, cPoints:[], cDone:false, cAnim:0, cDoneTimer:0,
+  symbolPick:null, wrongFlash:0,
+  celebTimer:0,
+};
+
+function mgLayout(){
+  const tW=84,tH=76,gap=18;
+  const tot=3*(tW+gap)-gap;
+  const tx0=W/2-tot/2, ty0=118;
+  const vowelCX=tx0+tW+gap+tW/2;   // center of vowel (middle) tile = W/2
+  const scoopY=ty0+tH+52;
+  const scoopX1=tx0-10, scoopX2=tx0+tot+10;
+  const labelY=scoopY+42;
+  const breveY=ty0-26;
+  return {tW,tH,gap,tot,tx0,ty0,vowelCX,scoopY,scoopX1,scoopX2,labelY,breveY};
+}
+
+function getCanvasXY(clientX,clientY){
+  const rect=canvas.getBoundingClientRect();
+  return {x:(clientX-rect.left)*(W/rect.width), y:(clientY-rect.top)*(H/rect.height)};
+}
+
+// Symbol choice cards — placed directly below the word tiles, near the vowel
+function symbolCards(L){
+  const cW=108, cH=56, gap=12, tot=3*(cW+gap)-gap;
+  const cx0=(W-tot)/2, cy=L.ty0+L.tH+6;
+  return [
+    {id:'short',x:cx0,           y:cy,w:cW,h:cH,name:'SHORT'},
+    {id:'long', x:cx0+cW+gap,    y:cy,w:cW,h:cH,name:'LONG'},
+    {id:'schwa',x:cx0+2*(cW+gap),y:cy,w:cW,h:cH,name:'SCHWA'},
+  ];
+}
+
+function mgHandleDown(x,y){
+  const L=mgLayout();
+  if(mg.step===0&&!mg.scoopDrawing){
+    if(y>L.scoopY-70&&y<L.scoopY+70){
+      mg.isDragging=true; mg.dragPoints=[{x,y}];
+    }
+  } else if(mg.step===1&&!mg.cDone){
+    // Start drawing "c" — accept if near the guide area
+    if(Math.abs(x-W/2)<80&&Math.abs(y-L.labelY)<80){
+      mg.cDrawing=true; mg.cPoints=[{x,y}];
+    }
+  } else if(mg.step===2){
+    // Symbol picker tap
+    symbolCards(L).forEach(card=>{
+      if(x>=card.x&&x<card.x+card.w&&y>=card.y&&y<card.y+card.h){
+        if(card.id==='short'){
+          mg.symbolPick='short'; mg.step=3; mg.celebTimer=0;
+          spawnBurst(W/2,H/2,'#FFD700',24);
+          spawnBurst(W/2-120,H/3,'#F4A7B9',14);
+          spawnBurst(W/2+120,H/3,'#A8E6CF',14);
+          spawnFloater(W/2,card.y-24,'SHORT ✓ — closed = short vowel!','#A8E6CF');
+        } else {
+          mg.wrongFlash=50;
+          spawnFloater(W/2,card.y-24,'Nope! Closed = SHORT sound ˘','rgba(255,140,140,0.95)');
+        }
+      }
+    });
+  } else if(mg.step===3&&mg.celebTimer>80){
+    state='results';
+  }
+}
+function mgHandleMove(x,y){
+  if(mg.isDragging) mg.dragPoints.push({x,y});
+  if(mg.cDrawing) mg.cPoints.push({x,y});
+}
+function mgHandleUp(x,y){
+  if(mg.step===0&&mg.isDragging){
+    mg.isDragging=false;
+    const pts=mg.dragPoints, L=mgLayout();
+    if(pts.length>4){
+      const dx=pts[pts.length-1].x-pts[0].x;
+      const dy=Math.abs(pts[pts.length-1].y-pts[0].y);
+      if(dx>L.tot*0.45&&dy<90){
+        mg.scoopDrawing=true; mg.scoopAnim=0;
+        spawnFloater(W/2,L.scoopY-30,'Great scoop! ✓','#A8E6CF');
+      } else {
+        spawnFloater(W/2,L.scoopY-30,'Draw left → right under the letters','rgba(255,160,160,0.9)');
+      }
+    }
+    mg.dragPoints=[];
+  } else if(mg.step===1&&mg.cDrawing){
+    mg.cDrawing=false;
+    const L=mgLayout();
+    const cx=W/2, cy=L.labelY;
+    const pts=mg.cPoints;
+    // Validate: curved to left of center, traveled enough
+    const hasLeft=pts.some(p=>p.x<cx-14);
+    let dist=0;
+    for(let i=1;i<pts.length;i++) dist+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);
+    if(hasLeft&&dist>28&&pts.length>3){
+      mg.cDone=true; mg.cAnim=0;
+      mg.cDoneTimer=44; // brief pause then advance to symbol picker
+      spawnFloater(cx,cy-34,'c ✓','#A8E6CF');
+    } else {
+      mg.cPoints=[];
+      spawnFloater(cx,cy-34,hasLeft?'Draw a bigger "c"!':'Curve to the LEFT — like the letter c','rgba(255,160,160,0.9)');
+    }
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+
+function pickWord(){
+  if(wordBag.length===0) wordBag=shuffle([...WORDS_13]);
+  return wordBag.pop();
+}
+function pickDistractors(answer){
+  const pool=ALL_ANSWERS.filter(c=>c!==answer);
+  const d1=pool[Math.floor(Math.random()*pool.length)];
+  let d2=pool[Math.floor(Math.random()*pool.length)];
+  while(d2===d1) d2=pool[Math.floor(Math.random()*pool.length)];
+  return [d1,d2];
+}
+
+// ── Spawn tiles (or reshuffle same letters) ────────────
+function spawnTiles(letters=null){
+  const answer=currentWord.answer;
+  if(!letters){
+    const dis=pickDistractors(answer);
+    letters=shuffle([answer,...dis]);
+  } else {
+    letters=shuffle([...letters]);
+  }
+  reshufflePool=letters;
+  const stemKey=currentWord.tiles.join('');
+  const validAnswers=STEM_MAP[stemKey]||new Set([answer]);
+  tiles=[];
+  for(let lane=0;lane<3;lane++){
+    const L=letters[lane];
+    tiles.push({
+      x:W+80, y:LANES[lane], lane,
+      letter:L,
+      correct:validAnswers.has(L),
+      alpha:1, done:false,
+      flying:false, vx:0,
+    });
+  }
+}
+
+// ── Start ──────────────────────────────────────────────
+function startGame(){
+  frame=0; totalFrames=0;
+  player={x:PX_START,y:LANES[1],lane:1,vy:0,jumping:false,hitFlash:0,runAnim:0};
+  tiles=[]; particles=[]; floaters=[];
+  wordBag=[]; wordsDone=0; wordTimes=[];
+  reshufflePool=null; spawnTimer=80;
+  lives=3; invincible=0; streak=0; score=0;
+  winTimer=0; bgScroll=0; bgScrollV=0;
+  currentWord=pickWord();
+  wordStartFrame=0;
+  state='playing';
+}
+
+// ── Background ─────────────────────────────────────────
+function drawBG(){
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0d1b3e'); sky.addColorStop(0.65,'#1a3a5c'); sky.addColorStop(1,'#0f2d3d');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  for(let i=0;i<28;i++){
+    ctx.beginPath();
+    ctx.arc(((i*317+bgScroll*0.03)%W),(i*137)%100+8,i%3?1:1.5,0,Math.PI*2);ctx.fill();
+  }
+  // ground
+  ctx.fillStyle=TEAL; ctx.fillRect(0,GROUND_Y-12,W,H-GROUND_Y+12);
+  const sw=88,off=bgScroll%(sw*2);
+  ctx.fillStyle='#1f8076';
+  for(let x=-sw*2+off;x<W+sw;x+=sw*2) ctx.fillRect(x,GROUND_Y-12,sw,H-GROUND_Y+12);
+  ctx.fillStyle=YELLOW; ctx.fillRect(0,GROUND_Y-14,W,4);
+  // lane dashes
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.setLineDash([26,26]);
+  LANES.forEach(ly=>{
+    const d=bgScroll%52;
+    ctx.beginPath(); ctx.moveTo(-d,ly+40); ctx.lineTo(W+52,ly+40); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+}
+
+// ── Word display ───────────────────────────────────────
+function drawWordBar(){
+  ctx.fillStyle='rgba(0,0,0,0.6)'; rr(10,8,W-20,98,12); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1.5; rr(10,8,W-20,98,12); ctx.stroke();
+
+  ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='bold 12px Arial';
+  ctx.fillText('CLOSE THE SYLLABLE — pick the closing sound!',W/2,24);
+
+  const [ph0,ph1]=currentWord.tiles;   // e.g. 'SH','I' or 'F','I'
+  const ans=currentWord.answer;        // e.g. 'SH' or 'P'
+  const isWelded=currentWord.isWelded;
+  const phonemes=[ph0,ph1,null];       // null = blank slot
+  const tW=68,tH=60,gap=14;
+  const total=3*(tW+gap)-gap;
+  const sx=W/2-total/2;
+
+  for(let i=0;i<3;i++){
+    const tx=sx+i*(tW+gap), ty=30;
+    const isV=i===1, isClosed=i===2;
+    const weldedV=isWelded&&isV;
+    const weldedC=isWelded&&isClosed;
+    const bg=(weldedV||weldedC)?W_BG:isV?V_BG:C_BG;
+    const bk=(weldedV||weldedC)?W_DARK:isV?V_DARK:C_DARK;
+
+    ctx.fillStyle='rgba(0,0,0,0.3)'; rr(tx+3,ty+3,tW,tH,10); ctx.fill();
+
+    if(isClosed){
+      const pulse=0.12+0.1*Math.sin(frame*0.15);
+      const pClr=(isWelded||ans.length>1)?'rgba(80,220,80,':'rgba(200,230,180,';
+      ctx.fillStyle=`${pClr}${pulse})`; rr(tx,ty,tW,tH,10); ctx.fill();
+      const pStr=(isWelded||ans.length>1)?'rgba(80,220,80,':'rgba(168,230,160,';
+      ctx.strokeStyle=`${pStr}${0.6+0.4*Math.sin(frame*0.15)})`;
+      ctx.lineWidth=3.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+      // Show hint chars count
+      const hint=ans.length>1?'??':'?';
+      ctx.fillStyle='rgba(200,255,180,0.5)'; ctx.font=`bold ${ans.length>1?18:14}px Arial`;
+      ctx.textAlign='center'; ctx.fillText(hint,tx+tW/2,ty+tH/2+6);
+    } else {
+      const ph=phonemes[i];
+      ctx.fillStyle=bg; rr(tx,ty,tW,tH,10); ctx.fill();
+      ctx.strokeStyle=bk; ctx.lineWidth=2.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+      ctx.fillStyle=bk; rr(tx+tW/2-10,ty+tH-5,20,14,4); ctx.fill();
+      const fs=ph.length>1?26:38;
+      ctx.fillStyle=bk; ctx.font=`bold ${fs}px Arial`;
+      ctx.textAlign='center'; ctx.fillText(ph.toLowerCase(),tx+tW/2,ty+tH-12);
+    }
+
+    const lbl=i===0?'cons.':i===1?'vowel':ans.length>1?'— ??':'— ?';
+    ctx.fillStyle=i===1?'rgba(244,167,185,0.8)':i===2?'rgba(168,230,160,0.7)':'rgba(200,190,150,0.6)';
+    ctx.font=`${i===2?'bold ':''}11px Arial`; ctx.textAlign='center';
+    ctx.fillText(lbl,tx+tW/2,ty+tH+14);
+  }
+
+  // C-bracket under all 3
+  const by=94;
+  ctx.strokeStyle='rgba(168,230,207,0.7)'; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(sx-4,by-8); ctx.lineTo(sx-4,by);
+  ctx.lineTo(sx+total+4,by); ctx.lineTo(sx+total+4,by-8);
+  ctx.stroke();
+  ctx.fillStyle='rgba(168,230,207,0.85)'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('C',sx+total/2,by+16);
+
+  // Timer
+  const elapsed=winTimer>0?wordTimes[wordTimes.length-1]:(frame-wordStartFrame)/60;
+  ctx.textAlign='right'; ctx.fillStyle=elapsed>8?'#FF6B6B':'rgba(255,255,255,0.6)';
+  ctx.font='bold 16px Arial';
+  ctx.fillText(`⏱ ${elapsed.toFixed(1)}s`,W-18,22);
+
+  // Word counter
+  ctx.textAlign='left'; ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 15px Arial';
+  ctx.fillText(`Word ${wordsDone+1} / ${TOTAL_WORDS}`,18,22);
+}
+
+// ── Letter tile ────────────────────────────────────────
+function drawTile(t){
+  if(t.done&&!t.flying) return;
+  const tw=70,th=64;
+  ctx.save(); ctx.globalAlpha=t.alpha;
+  ctx.translate(t.x,t.y);
+
+  // Arrow above (bobbing)
+  const arrowBob=Math.sin(frame*0.18)*5;
+  ctx.fillStyle=t.correct
+    ?`rgba(255,230,0,${0.8+0.2*Math.sin(frame*0.14)})`
+    :'rgba(200,200,200,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(0,-th/2-14+arrowBob);
+  ctx.lineTo(12,-th/2-30+arrowBob);
+  ctx.lineTo(-12,-th/2-30+arrowBob);
+  ctx.closePath(); ctx.fill();
+
+  // Glow for correct
+  if(t.correct){
+    const g=0.5+0.5*Math.sin(frame*0.12);
+    ctx.shadowColor=C_BG; ctx.shadowBlur=26*g;
+  }
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.28)'; rr(-tw/2+3,-th/2+3,tw,th,11); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // Tile (always consonant — closing consonant)
+  ctx.fillStyle=C_BG; rr(-tw/2,-th/2,tw,th,11); ctx.fill();
+  ctx.strokeStyle=t.correct?'#FFD700':C_DARK;
+  ctx.lineWidth=t.correct?3.5:2.5; rr(-tw/2,-th/2,tw,th,11); ctx.stroke();
+
+  // Wilson tab
+  ctx.fillStyle=C_DARK; rr(-11,th/2-5,22,14,4); ctx.fill();
+
+  // Letter — lowercase (smaller font for digraphs)
+  const tfs=t.letter.length>1?24:38;
+  ctx.fillStyle=C_DARK; ctx.font=`bold ${tfs}px Arial`; ctx.textAlign='center';
+  ctx.fillText(t.letter.toLowerCase(),0,t.letter.length>1?11:13);
+
+  ctx.restore();
+}
+
+// ── Player ─────────────────────────────────────────────
+function drawPlayer(){
+  const px=player.x, py=player.y;
+  const bob=player.jumping?0:Math.sin(frame*0.24)*3;
+  const lp=player.runAnim;
+  const running=keys['d']||keys['D']||keys['ArrowRight']||touchRun;
+
+  if(invincible>0&&Math.floor(frame/4)%2===1) return; // blink
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  ctx.beginPath(); ctx.ellipse(px,GROUND_Y-7,18,5,0,0,Math.PI*2); ctx.fill();
+
+  const l1=Math.sin(lp)*12, l2=Math.sin(lp+Math.PI)*12;
+
+  // Back leg
+  ctx.fillStyle='#1a3a5c'; rr(px-8,py-3+bob,12,24+l2,4); ctx.fill();
+  ctx.fillStyle=ORANGE; rr(px-13,py+19+l2+bob,17,8,3); ctx.fill();
+
+  // Body
+  ctx.fillStyle=player.hitFlash>0?'#ff6060':running?'#1976D2':'#1565C0';
+  rr(px-16,py-33+bob,32,36,9); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(px-16,py-16+bob,32,4);
+
+  // Backpack
+  ctx.fillStyle=ORANGE; rr(px+11,py-31+bob,14,24,5); ctx.fill();
+  ctx.fillStyle='#b04020'; ctx.fillRect(px+13,py-26+bob,3,14);
+
+  // Front leg
+  ctx.fillStyle='#1a3a5c'; rr(px-4,py-3+bob,12,24+l1,4); ctx.fill();
+  ctx.fillStyle=ORANGE; rr(px-2,py+19+l1+bob,17,8,3); ctx.fill();
+
+  // Head
+  ctx.fillStyle='#FFCBA4'; ctx.beginPath(); ctx.arc(px,py-41+bob,16,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#4A2C0A'; ctx.beginPath(); ctx.arc(px,py-50+bob,16,Math.PI,0); ctx.fill();
+  ctx.fillRect(px-16,py-50+bob,32,8);
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(px+7,py-42+bob,2.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px+8,py-43+bob,1,0,Math.PI*2); ctx.fill();
+
+  // Smile / determined mouth when running
+  ctx.strokeStyle='#666'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  if(running) { ctx.moveTo(px,py-36+bob); ctx.lineTo(px+9,py-36+bob); }
+  else ctx.arc(px+5,py-36+bob,5,0.1,Math.PI-0.1);
+  ctx.stroke();
+
+  // Arms
+  const a1=Math.sin(lp+Math.PI)*0.6, a2=Math.sin(lp)*0.6;
+  ctx.strokeStyle='#1565C0'; ctx.lineWidth=8; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(px-3,py-22+bob); ctx.lineTo(px-20+a1*16,py-6+bob); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px+3,py-22+bob); ctx.lineTo(px+18+a2*16,py-6+bob); ctx.stroke();
+
+  // Speed trail when running
+  if(running&&!player.jumping){
+    for(let i=1;i<=3;i++){
+      ctx.fillStyle=`rgba(100,200,255,${0.15*i})`;
+      ctx.beginPath(); ctx.ellipse(px-i*16,py-20+bob,8,18,0,0,Math.PI*2); ctx.fill();
+    }
+  }
+}
+
+// ── Particles & floaters ───────────────────────────────
+function spawnBurst(x,y,color,n=14){
+  for(let i=0;i<n;i++){
+    const a=Math.PI*2*i/n+Math.random()*0.4, spd=3+Math.random()*5;
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,
+      r:4+Math.random()*5,color,life:1,decay:0.02+Math.random()*0.015});
+  }
+}
+function spawnFloater(x,y,txt,color='#FFD700'){
+  floaters.push({x,y,txt,color,life:1,vy:-1.8});
+}
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.save(); ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+function drawFloaters(){
+  floaters.forEach(f=>{
+    ctx.save(); ctx.globalAlpha=f.life;
+    ctx.fillStyle=f.color; ctx.font=`bold ${20+(1-f.life)*8}px Arial`;
+    ctx.textAlign='center'; ctx.fillText(f.txt,f.x,f.y);
+    ctx.restore();
+  });
+}
+
+// ── HUD ────────────────────────────────────────────────
+// MENU button zone (top-left, always visible during game)
+const MENU_BTN={x:8,y:8,w:72,h:32};
+function inMenuBtn(cx,cy){ return cx>=MENU_BTN.x&&cx<MENU_BTN.x+MENU_BTN.w&&cy>=MENU_BTN.y&&cy<MENU_BTN.y+MENU_BTN.h; }
+function drawMenuBtn(){
+  ctx.save(); ctx.globalAlpha=0.72;
+  ctx.fillStyle='rgba(0,0,0,0.5)'; rr(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h,8); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=1.5; rr(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h,8); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+  ctx.fillText('⬅ MENU',MENU_BTN.x+MENU_BTN.w/2,MENU_BTN.y+MENU_BTN.h/2+5);
+  ctx.restore();
+}
+function goMenu(){ state='title'; winTimer=0; tiles=[]; particles=[]; floaters=[]; }
+
+function drawHUD(){
+  drawMenuBtn();
+  drawTouchButtons();
+
+  for(let i=0;i<3;i++){
+    ctx.font='24px Arial';
+    ctx.fillStyle=i<lives?'#FF4D6D':'rgba(255,77,109,0.18)';
+    ctx.textAlign='left'; ctx.fillText('♥',84+i*32,H-16);
+  }
+  if(streak>=3){
+    ctx.textAlign='center'; ctx.fillStyle='#FFD700';
+    ctx.font=`bold ${14+Math.min(streak,7)}px Arial`;
+    ctx.fillText(`🔥 ${streak}× STREAK`,W/2,H-16);
+  }
+  ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='12px Arial';
+  ctx.fillText('D/→ run  •  W/S lanes  •  SPACE reshuffle',W-90,H-16);
+}
+
+// ── Word complete overlay — animated red-marker Wilson marking ─
+function drawWinOverlay(){
+  const elapsed=winTimer>0?120-winTimer:0;
+  const a=Math.min(1,elapsed/10);
+  if(a<=0) return;
+
+  // dim screen
+  ctx.fillStyle=`rgba(0,0,0,${a*0.55})`; ctx.fillRect(0,0,W,H);
+
+  // panel
+  const pw=540, ph=255, px=(W-pw)/2, py=(H-ph)/2-10;
+  ctx.fillStyle=`rgba(10,26,18,${a*0.96})`; rr(px,py,pw,ph,18); ctx.fill();
+  ctx.strokeStyle=`rgba(168,230,207,${a*0.45})`; ctx.lineWidth=2;
+  rr(px,py,pw,ph,18); ctx.stroke();
+
+  const lastWName=completedWords[completedWords.length-1]||'CAT';
+  const lastW=WORD_BY_NAME[lastWName]||WORDS_13[0];
+  const isWelded=lastW.isWelded;
+  const ovPhonemes=[lastW.tiles[0], lastW.tiles[1], lastW.answer];
+
+  // Wilson-colored tiles (medium)
+  const tW=76, tH=66, tGap=12, totW=3*(tW+tGap)-tGap;
+  const tx0=(W-totW)/2, ty0=py+26;
+
+  for(let i=0;i<3;i++){
+    const ph=ovPhonemes[i];
+    const isV=i===1;
+    const wTile=isWelded&&i>=1;
+    const tx=tx0+i*(tW+tGap), ty=ty0;
+    const bg=wTile?W_BG:isV?V_BG:C_BG;
+    const bk=wTile?W_DARK:isV?V_DARK:C_DARK;
+    ctx.fillStyle='rgba(0,0,0,0.28)'; rr(tx+3,ty+3,tW,tH,10); ctx.fill();
+    ctx.fillStyle=bg; rr(tx,ty,tW,tH,10); ctx.fill();
+    ctx.strokeStyle=bk; ctx.lineWidth=2.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+    ctx.fillStyle=bk; rr(tx+tW/2-11,ty+tH-4,22,14,4); ctx.fill();
+    const ovFs=ph.length>1?24:36;
+    ctx.fillStyle=bk; ctx.font=`bold ${ovFs}px Arial`; ctx.textAlign='center';
+    ctx.fillText(ph.toLowerCase(), tx+tW/2, ty+tH-12);
+  }
+
+  // Marker positions
+  const vowelCX=(W-totW)/2+tW+tGap+tW/2;  // = W/2
+  const tileBot=ty0+tH;
+  const scoopY=tileBot+28, scoopX1=tx0-6, scoopX2=tx0+totW+6;
+  const cY=scoopY+40, breveY=ty0-22;
+
+  // Phases: 0-24 scoop, 24-42 c, 42-64 breve, 64-120 hold+time
+  const scoopP=Math.min(1,Math.max(0,elapsed/24));
+  const cP    =elapsed>24?Math.min(1,(elapsed-24)/16):0;
+  const breveP=elapsed>42?Math.min(1,(elapsed-42)/20):0;
+  const timeP =elapsed>64?Math.min(1,(elapsed-64)/16):0;
+
+  // ── Red marker style ──
+  ctx.strokeStyle='#CC2200'; ctx.fillStyle='#CC2200';
+  ctx.lineWidth=4.5; ctx.lineCap='round'; ctx.lineJoin='round';
+
+  // Scoop arc (quadratic bezier, left→right)
+  if(scoopP>0){
+    const steps=44, cpX=W/2, cpY=scoopY+30;
+    ctx.beginPath();
+    for(let i=0;i<=Math.round(steps*scoopP);i++){
+      const t=i/steps;
+      const bx=(1-t)*(1-t)*scoopX1+2*(1-t)*t*cpX+t*t*scoopX2;
+      const by=(1-t)*(1-t)*scoopY+2*(1-t)*t*cpY+t*t*scoopY;
+      i===0?ctx.moveTo(bx,by):ctx.lineTo(bx,by);
+    }
+    ctx.stroke();
+    // Left tick
+    ctx.beginPath(); ctx.moveTo(scoopX1,scoopY-10); ctx.lineTo(scoopX1,scoopY); ctx.stroke();
+    // Right tick when fully drawn
+    if(scoopP>0.97){
+      ctx.beginPath(); ctx.moveTo(scoopX2,scoopY-10); ctx.lineTo(scoopX2,scoopY); ctx.stroke();
+    }
+  }
+
+  // 'c' label below scoop
+  if(cP>0){
+    ctx.save(); ctx.globalAlpha=Math.min(1,cP*2);
+    ctx.fillStyle='#CC2200';
+    ctx.font=`bold ${Math.round(16+14*cP)}px Arial`; ctx.textAlign='center';
+    ctx.fillText('c', W/2, cY);
+    ctx.restore();
+  }
+
+  // Breve ˘ above vowel
+  if(breveP>0){
+    ctx.beginPath();
+    ctx.arc(vowelCX, breveY, 14, 0, Math.PI*breveP, false);
+    ctx.stroke();
+  }
+
+  // "CLOSED! ✓ — Xs" text
+  if(timeP>0){
+    ctx.save(); ctx.globalAlpha=timeP;
+    const wt=wordTimes[wordTimes.length-1];
+    ctx.fillStyle='#A8E6CF'; ctx.font='bold 15px Arial'; ctx.textAlign='center';
+    ctx.fillText(`CLOSED! ✓ — ${wt.toFixed(1)}s`, W/2, py+ph-18);
+    ctx.restore();
+  }
+}
+
+// ── Results screen ─────────────────────────────────────
+function drawResults(){
+  drawBG();
+  ctx.fillStyle='rgba(0,0,0,0.6)'; rr(40,30,W-80,H-60,18); ctx.fill();
+
+  ctx.textAlign='center';
+  ctx.fillStyle=YELLOW; ctx.font='bold 40px Arial';
+  ctx.fillText('🏆 LEVEL COMPLETE!',W/2,80);
+
+  const totalSecs=totalFrames/60;
+  ctx.fillStyle='#A8E6CF'; ctx.font='bold 28px Arial';
+  ctx.fillText(`Total time: ${totalSecs.toFixed(1)}s`,W/2,120);
+
+  const avg=totalSecs/TOTAL_WORDS;
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='18px Arial';
+  ctx.fillText(`Avg per word: ${avg.toFixed(1)}s`,W/2,152);
+
+  // Stars
+  const stars=avg<3?3:avg<5?2:1;
+  ctx.font='36px Arial'; ctx.textAlign='center';
+  ctx.fillText(['','⭐','⭐⭐','⭐⭐⭐'][stars],W/2,192);
+
+  // Word breakdown table
+  const cols=2, rows=Math.ceil(TOTAL_WORDS/cols);
+  const tw=180, th=30, gx=20, gy=6;
+  const tableW=cols*(tw+gx)-gx, tableH=rows*(th+gy)-gy;
+  const tx0=W/2-tableW/2, ty0=210;
+
+  wordTimes.forEach((t,i)=>{
+    const col=i%cols, row=Math.floor(i/cols);
+    const x=tx0+col*(tw+gx), y=ty0+row*(th+gy);
+    const fast=t<3, med=t<6;
+    ctx.fillStyle=fast?'rgba(168,230,150,0.15)':med?'rgba(255,215,0,0.1)':'rgba(255,100,100,0.12)';
+    rr(x,y,tw,th,6); ctx.fill();
+    ctx.strokeStyle=fast?'rgba(168,230,150,0.4)':med?'rgba(255,215,0,0.3)':'rgba(255,100,100,0.25)';
+    ctx.lineWidth=1.5; rr(x,y,tw,th,6); ctx.stroke();
+
+    // Reconstruct word (we stored it with winTimer display)
+    ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.font='bold 15px Arial'; ctx.textAlign='left';
+    ctx.fillText((completedWords[i]||`Word ${i+1}`).toLowerCase(),x+10,y+20);
+    ctx.textAlign='right';
+    ctx.fillStyle=fast?'#A8E6CF':med?YELLOW:'#FF8888';
+    ctx.fillText(`${t.toFixed(1)}s`,x+tw-8,y+20);
+  });
+
+  // Best score
+  if(totalSecs<=(highScore||9999)){
+    ctx.fillStyle='#FFD700'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.fillText(totalSecs<=highScore?'🎉 Personal Best!':'',W/2,ty0+tableH+30);
+  }
+
+  // Restart
+  const pulse=0.94+0.06*Math.sin(frame*0.08);
+  ctx.save(); ctx.translate(W/2,ty0+tableH+65); ctx.scale(pulse,pulse);
+  ctx.fillStyle=ORANGE; rr(-110,-26,220,52,26); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 22px Arial'; ctx.textAlign='center';
+  ctx.fillText('▶  PLAY AGAIN',0,9); ctx.restore();
+}
+
+let completedWords=[]; // track words completed for results screen
+
+// ── Scooping mini-game ─────────────────────────────────
+function updateScooping(){
+  frame++;
+  // Scoop arc animation
+  if(mg.scoopDrawing){
+    mg.scoopAnim=Math.min(1,mg.scoopAnim+0.045);
+    if(mg.scoopAnim>=1){ mg.step=1; mg.scoopDrawing=false; }
+  }
+  // "c" drawn — animate it appearing, then advance to symbol picker
+  if(mg.cDone&&mg.cAnim<1) mg.cAnim=Math.min(1,mg.cAnim+0.1);
+  if(mg.cDoneTimer>0){
+    mg.cDoneTimer--;
+    if(mg.cDoneTimer===0&&mg.step===1) mg.step=2;
+  }
+  // Wrong symbol flash countdown
+  if(mg.wrongFlash>0) mg.wrongFlash--;
+  // Celebrate auto-advance
+  if(mg.step===3){ mg.celebTimer++; if(mg.celebTimer>=360) state='results'; }
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.25;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  floaters.forEach(f=>{f.y+=f.vy;f.life-=0.017;});
+  floaters=floaters.filter(f=>f.life>0);
+}
+
+function drawScooping(){
+  // Chalkboard background
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0a150a'); sky.addColorStop(1,'#0d200d');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,0.04)';
+  for(let i=0;i<40;i++) ctx.fillRect((i*233)%W,(i*97)%H,1+i%3,1);
+
+  // Panel
+  ctx.fillStyle='#1e3d1e'; rr(55,20,W-110,H-40,18); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=2.5;
+  rr(55,20,W-110,H-40,18); ctx.stroke();
+
+  // Header
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font='bold 20px Arial';
+  ctx.fillText('MARK THE CLOSED SYLLABLE',W/2,54);
+
+  const stepLabels=[
+    '① Draw a scoop under all the letters  →',
+    '② Write  c  below the scoop  —  c  stands for  CLOSED',
+    '③ What sound does the vowel make?',
+    '✓  Well done — remember this every time!'
+  ];
+  ctx.fillStyle=YELLOW; ctx.font='bold 15px Arial';
+  ctx.fillText(stepLabels[Math.min(mg.step,3)],W/2,80);
+
+  const L=mgLayout();
+
+  // ── Word tiles ──────────────────────────────────────
+  const mgWelded=mg.wordObj.isWelded;
+  for(let i=0;i<3;i++){
+    const ph=mg.phonemes[i]||'?';
+    const isV=i===1;
+    const wTile=mgWelded&&i>=1;
+    const bg=wTile?W_BG:isV?V_BG:C_BG;
+    const bk=wTile?W_DARK:isV?V_DARK:C_DARK;
+    const tx=L.tx0+i*(L.tW+L.gap), ty=L.ty0;
+    ctx.fillStyle='rgba(0,0,0,0.4)'; rr(tx+3,ty+3,L.tW,L.tH,10); ctx.fill();
+    ctx.fillStyle=bg; rr(tx,ty,L.tW,L.tH,10); ctx.fill();
+    ctx.strokeStyle=bk; ctx.lineWidth=3;
+    rr(tx,ty,L.tW,L.tH,10); ctx.stroke();
+    ctx.fillStyle=bk; rr(tx+L.tW/2-12,ty+L.tH-4,24,16,4); ctx.fill();
+    const mgFs=ph.length>1?30:44;
+    ctx.fillStyle=bk; ctx.font=`bold ${mgFs}px Arial`; ctx.textAlign='center';
+    ctx.fillText(ph.toLowerCase(),tx+L.tW/2,ty+L.tH-12);
+    ctx.fillStyle=wTile?'rgba(40,96,32,0.7)':isV?'rgba(244,167,185,0.7)':'rgba(200,185,130,0.5)';
+    ctx.font='12px Arial';
+    ctx.fillText(wTile?'glued':isV?'vowel':'cons.',tx+L.tW/2,ty+L.tH+16);
+  }
+
+  // ── Scoop guide (step 0 only) ──────────────────────
+  if(mg.step===0){
+    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.setLineDash([10,10]);
+    ctx.beginPath(); ctx.moveTo(L.scoopX1,L.scoopY); ctx.lineTo(L.scoopX2,L.scoopY);
+    ctx.stroke(); ctx.setLineDash([]);
+    if(!mg.isDragging){
+      const pulse=0.5+0.5*Math.sin(frame*0.12);
+      ctx.fillStyle=`rgba(168,230,207,${0.5+pulse*0.4})`; ctx.font='bold 15px Arial'; ctx.textAlign='center';
+      ctx.fillText('← draw a scoop under the letters →',W/2,L.scoopY+28);
+    }
+    if(mg.isDragging&&mg.dragPoints.length>1){
+      ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=3.5; ctx.lineCap='round';
+      ctx.beginPath();
+      mg.dragPoints.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+      ctx.stroke();
+    }
+  }
+
+  // ── Scoop arc (step 1+ or animating) — fades during step 2+ ──
+  if(mg.scoopAnim>0||mg.step>=1){
+    const sa=Math.min(1,mg.scoopAnim+(mg.step>=1?1:0));
+    const scoopAlpha=mg.step>=2?0.28:0.88; // fade to background once cards appear
+    ctx.strokeStyle=`rgba(255,255,255,${scoopAlpha})`; ctx.lineWidth=3.5; ctx.lineCap='round';
+    ctx.beginPath();
+    const cpX=W/2, cpY=L.scoopY+30, steps=50;
+    for(let i=0;i<=Math.round(steps*sa);i++){
+      const t=i/steps;
+      const bx=(1-t)*(1-t)*L.scoopX1+2*(1-t)*t*cpX+t*t*L.scoopX2;
+      const by=(1-t)*(1-t)*L.scoopY+2*(1-t)*t*cpY+t*t*L.scoopY;
+      i===0?ctx.moveTo(bx,by):ctx.lineTo(bx,by);
+    }
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(L.scoopX1,L.scoopY-12); ctx.lineTo(L.scoopX1,L.scoopY); ctx.stroke();
+    if(sa>0.95){
+      ctx.beginPath(); ctx.moveTo(L.scoopX2,L.scoopY-12); ctx.lineTo(L.scoopX2,L.scoopY); ctx.stroke();
+    }
+  }
+
+  // ── Step 1: Draw "c" ────────────────────────────────
+  if(mg.step===1){
+    const cx=W/2, cy=L.labelY;
+    if(!mg.cDone){
+      // Dotted "c" guide — bigger, very obvious
+      const r=36;
+      ctx.strokeStyle='rgba(168,230,207,0.35)'; ctx.lineWidth=7;
+      ctx.setLineDash([10,10]);
+      ctx.beginPath();
+      ctx.arc(cx, cy-4, r, -Math.PI*0.18, Math.PI*1.18, false);
+      ctx.stroke(); ctx.setLineDash([]);
+
+      // "Start here" pulsing dot at top-right of arc
+      const sa=-Math.PI*0.18;
+      const sx=cx+r*Math.cos(sa), sy=cy-4+r*Math.sin(sa);
+      const pulse=0.6+0.4*Math.sin(frame*0.22);
+      ctx.fillStyle=`rgba(255,230,80,${pulse})`;
+      ctx.beginPath(); ctx.arc(sx,sy,8,0,Math.PI*2); ctx.fill();
+      // Arrow indicator
+      ctx.fillStyle=`rgba(255,230,80,${pulse*0.8})`; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+      ctx.fillText('start',sx,sy-14);
+
+      // Instruction
+      const ip=0.55+0.45*Math.sin(frame*0.14);
+      ctx.fillStyle=`rgba(255,255,255,${ip})`; ctx.font='bold 14px Arial';
+      ctx.fillText('write  c  here  (c = CLOSED)  ↑',cx,cy+52);
+
+      // Live trace preview (student drawing)
+      if(mg.cDrawing&&mg.cPoints.length>1){
+        ctx.strokeStyle='rgba(255,255,200,0.85)'; ctx.lineWidth=5; ctx.lineCap='round';
+        ctx.beginPath();
+        mg.cPoints.forEach((p,j)=>j===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ── "c" label — show once drawn; fade during step 2+ ──────
+  if(mg.cDone){
+    const ca=Math.min(1,mg.cAnim+(mg.step>=2?1:0));
+    const cAlpha=mg.step>=2?ca*0.28:ca*0.94; // fade to background once cards appear
+    ctx.fillStyle=`rgba(255,255,255,${cAlpha})`;
+    ctx.font=`bold ${Math.round(18+16*ca)}px Arial`; ctx.textAlign='center';
+    ctx.fillText('c',W/2,L.labelY);
+  }
+
+  // ── Step 2: Symbol picker — placed near the vowel ─────
+  if(mg.step===2){
+    const cards=symbolCards(L);
+    const labels=['SHORT','LONG','SCHWA'];
+    const wrongPulse=mg.wrongFlash/50;
+    const glow=0.4+0.4*Math.sin(frame*0.18);
+
+    // Pulse the vowel tile with a bright ring so it's unmistakably the target
+    const vx=L.tx0+L.tW+L.gap, vy=L.ty0; // vowel tile x
+    ctx.save();
+    ctx.globalAlpha=0.55+0.45*Math.sin(frame*0.22);
+    ctx.strokeStyle='#FFD700'; ctx.lineWidth=5;
+    rr(vx-3,vy-3,L.tW+6,L.tH+6,13); ctx.stroke();
+    ctx.restore();
+
+    // "?" above the vowel (where the symbol will appear)
+    const breveSpotY=L.breveY;
+    ctx.save();
+    ctx.globalAlpha=0.65+0.35*Math.sin(frame*0.2);
+    ctx.fillStyle='#FFD700'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.fillText('?',L.vowelCX,breveSpotY+6);
+    ctx.restore();
+
+    // Arrow from bottom of vowel tile to top of cards (pointing up to vowel)
+    const arrowX=L.vowelCX, arrowTop=vy+L.tH+3, arrowBot=cards[0].y-4;
+    ctx.save(); ctx.globalAlpha=0.5+0.3*Math.sin(frame*0.18);
+    ctx.strokeStyle='#FFD700'; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(arrowX,arrowTop); ctx.lineTo(arrowX,arrowBot); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Label above cards
+    ctx.fillStyle='rgba(255,230,100,0.9)'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText('Mark the vowel ↑  — what sound does it make?',W/2,cards[0].y-8);
+
+    // Draw each card
+    cards.forEach((card,i)=>{
+      const isCorrect=card.id==='short';
+      const isWrong=mg.wrongFlash>0&&!isCorrect;
+      const cx=card.x+card.w/2, midY=card.y+card.h/2;
+
+      ctx.fillStyle=isWrong?`rgba(180,40,40,${wrongPulse*0.55})`
+        :isCorrect?'rgba(28,75,45,0.85)':'rgba(0,0,0,0.5)';
+      rr(card.x,card.y,card.w,card.h,12); ctx.fill();
+
+      ctx.strokeStyle=isWrong?`rgba(255,80,80,${wrongPulse})`
+        :isCorrect?`rgba(100,230,140,${0.5+glow*0.5})`:'rgba(255,255,255,0.2)';
+      ctx.lineWidth=isCorrect?3:1.5;
+      rr(card.x,card.y,card.w,card.h,12); ctx.stroke();
+
+      // Symbol
+      ctx.strokeStyle='rgba(255,255,255,0.92)'; ctx.fillStyle='rgba(255,255,255,0.92)';
+      ctx.lineCap='round'; ctx.lineWidth=3.5;
+      if(i===0){
+        ctx.beginPath(); ctx.arc(cx,midY-9,16,0,Math.PI,false); ctx.stroke();
+      } else if(i===1){
+        ctx.fillRect(cx-18,midY-12,36,4);
+      } else {
+        ctx.font='bold 28px Arial'; ctx.textAlign='center'; ctx.fillText('ə',cx,midY-2);
+      }
+
+      // Name
+      ctx.fillStyle=isCorrect?'#A8E6CF':'rgba(255,255,255,0.6)';
+      ctx.font=`bold ${isCorrect?13:12}px Arial`; ctx.textAlign='center';
+      ctx.fillText(labels[i],cx,card.y+card.h-8);
+
+      // Glow ring on correct
+      if(isCorrect){
+        ctx.save(); ctx.globalAlpha=glow*0.3;
+        ctx.strokeStyle='#A8E6CF'; ctx.lineWidth=8;
+        rr(card.x-4,card.y-4,card.w+8,card.h+8,16); ctx.stroke();
+        ctx.restore();
+      }
+    });
+
+    // Wrong feedback below cards
+    if(mg.wrongFlash>0){
+      ctx.save(); ctx.globalAlpha=wrongPulse;
+      ctx.fillStyle='rgba(255,100,100,0.9)'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+      ctx.fillText('Closed syllables = SHORT vowel sound!',W/2,cards[0].y+cards[0].h+16);
+      ctx.restore();
+    }
+  }
+
+  // ── Breve drawn above vowel after correct pick (step 3) ──
+  if(mg.step===3){
+    const breveProg=Math.min(1,mg.celebTimer/30);
+    ctx.strokeStyle='#FFD700'; ctx.lineWidth=4.5; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.arc(L.vowelCX, L.breveY, 16, 0, Math.PI*breveProg, false);
+    ctx.stroke();
+  }
+
+  // ── Celebration (step 3) — character + speech bubble ──
+  if(mg.step===3){
+    const fa=Math.min(1,mg.celebTimer/40);
+    const slideIn=Math.min(1,(mg.celebTimer-10)/30); // character slides in after 10f
+
+    // --- Game character walks in from the left ---
+    if(slideIn>0&&player){
+      const charX=Math.round(88+(-50)*(1-slideIn)); // slides in from left edge of panel
+      const charY=450;
+      ctx.save();
+      ctx.globalAlpha=slideIn;
+      const sx=player.x,sy=player.y,sj=player.jumping,sf=player.hitFlash;
+      player.x=charX; player.y=charY; player.jumping=false; player.hitFlash=0;
+      drawPlayer();
+      player.x=sx; player.y=sy; player.jumping=sj; player.hitFlash=sf;
+      ctx.restore();
+
+      // --- Speech bubble (appears above and to the right of character) ---
+      if(slideIn>0.6){
+        const ba=Math.min(1,(mg.celebTimer-28)/20);
+        const bx=152, by=270, bw=566, bh=118, br=14;
+        ctx.save(); ctx.globalAlpha=ba;
+        ctx.fillStyle='rgba(10,30,20,0.95)'; rr(bx,by,bw,bh,br); ctx.fill();
+        ctx.strokeStyle='rgba(168,230,207,0.7)'; ctx.lineWidth=2; rr(bx,by,bw,bh,br); ctx.stroke();
+        // Triangle pointer down-left toward character head
+        ctx.fillStyle='rgba(10,30,20,0.95)';
+        ctx.beginPath(); ctx.moveTo(bx+28,by+bh); ctx.lineTo(bx+10,by+bh+18); ctx.lineTo(bx+50,by+bh); ctx.fill();
+        ctx.strokeStyle='rgba(168,230,207,0.5)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(bx+28,by+bh+1); ctx.lineTo(bx+10,by+bh+18); ctx.lineTo(bx+50,by+bh+1); ctx.stroke();
+
+        // Speech lines — staggered fade-in
+        const lines=[
+          {t:'Closed syllables are EVERYWHERE!', f:'bold 16px Arial', c:'#FFD700', dy:0},
+          {t:'"fan·tas·tic"  "plas·tic"  "rab·bit"  "sun·light"', f:'bold 13px Arial', c:'#A8E6CF', dy:24},
+          {t:'One rule. Thousands of words. You\'ve got this! 🚀', f:'bold 14px Arial', c:'rgba(255,255,255,0.9)', dy:48},
+          {t:'Keep closing those syllables!', f:'bold 13px Arial', c:'rgba(244,167,185,0.9)', dy:70},
+        ];
+        const cx2=bx+bw/2;
+        lines.forEach((ln,i)=>{
+          const la=Math.min(1,(mg.celebTimer-28-i*14)/16);
+          if(la<=0) return;
+          ctx.save(); ctx.globalAlpha=la*ba;
+          ctx.fillStyle=ln.c; ctx.font=ln.f; ctx.textAlign='center';
+          ctx.fillText(ln.t, cx2, by+28+ln.dy);
+          ctx.restore();
+        });
+        ctx.restore();
+      }
+    }
+
+    // "Tap to continue" prompt
+    if(mg.celebTimer>100){
+      const fp=0.65+0.35*Math.sin(frame*0.1);
+      ctx.save(); ctx.globalAlpha=fp;
+      ctx.fillStyle='#FFD700'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+      ctx.fillText('Tap anywhere to continue →',W/2,H-44);
+      ctx.restore();
+    }
+  }
+
+  drawParticles(); drawFloaters();
+}
+
+// ── Sub-step card data ─────────────────────────────────
+const SUBSTEPS=[
+  {id:'1.1', label:'Short Vowels', sub:'Basic CVC words',       locked:true},
+  {id:'1.2', label:'New Patterns',sub:'-ck, -ff, -ll, -ss',    locked:true},
+  {id:'1.3', label:'Digraphs',    sub:'sh  ch  th  wh  -ck',   locked:false},
+  {id:'1.4', label:'Blends',      sub:'bl, cr, st…',            locked:true},
+];
+
+// Hit-test for sub-step cards (returns substep id or null)
+function substepCardAt(cx,cy){
+  const cW=172,cH=104,gap=16,tot=SUBSTEPS.length*(cW+gap)-gap;
+  const x0=(W-tot)/2, y0=230;
+  for(let i=0;i<SUBSTEPS.length;i++){
+    const x=x0+i*(cW+gap);
+    if(cx>=x&&cx<x+cW&&cy>=y0&&cy<y0+cH) return SUBSTEPS[i];
+  }
+  return null;
+}
+
+// ── Title / Sub-step selector screen ───────────────────
+function drawTitle(){
+  drawBG();
+  ctx.textAlign='center';
+
+  // Header
+  ctx.shadowColor='#E76F51'; ctx.shadowBlur=32;
+  ctx.fillStyle='#FFD700'; ctx.font='bold 62px Arial';
+  ctx.fillText('DECODE DASH',W/2,80);
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='16px Arial';
+  ctx.fillText('Wilson Reading System — Book 1',W/2,108);
+
+  // Sub-step selector label
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='bold 13px Arial';
+  ctx.fillText('SELECT A STEP',W/2,194);
+  // divider
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-90,200); ctx.lineTo(W/2+90,200); ctx.stroke();
+
+  // Cards
+  const cW=172,cH=104,gap=16,tot=SUBSTEPS.length*(cW+gap)-gap;
+  const x0=(W-tot)/2, y0=210;
+  SUBSTEPS.forEach((s,i)=>{
+    const x=x0+i*(cW+gap);
+    const active=!s.locked;
+    // glow for active
+    if(active){
+      ctx.shadowColor=TEAL; ctx.shadowBlur=18;
+    }
+    ctx.fillStyle=active?'rgba(42,157,143,0.22)':'rgba(0,0,0,0.35)';
+    rr(x,y0,cW,cH,12); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=active?'rgba(42,157,143,0.9)':'rgba(255,255,255,0.1)';
+    ctx.lineWidth=active?2.5:1.5; rr(x,y0,cW,cH,12); ctx.stroke();
+
+    // Step number
+    ctx.textAlign='center';
+    ctx.fillStyle=active?YELLOW:'rgba(255,255,255,0.28)';
+    ctx.font=`bold 22px Arial`;
+    ctx.fillText(s.id, x+cW/2, y0+32);
+    // Label
+    ctx.fillStyle=active?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.3)';
+    ctx.font=`bold 15px Arial`;
+    ctx.fillText(s.label, x+cW/2, y0+56);
+    // Sub
+    ctx.fillStyle=active?'rgba(168,230,207,0.85)':'rgba(255,255,255,0.18)';
+    ctx.font='12px Arial';
+    ctx.fillText(s.sub, x+cW/2, y0+74);
+
+    if(s.locked){
+      ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.font='11px Arial';
+      ctx.fillText('coming soon', x+cW/2, y0+93);
+    } else {
+      // Pulsing play label
+      const p=0.7+0.3*Math.sin(frame*0.1);
+      ctx.fillStyle=`rgba(42,230,160,${p})`; ctx.font='bold 12px Arial';
+      ctx.fillText('▶  TAP TO PLAY', x+cW/2, y0+93);
+    }
+  });
+
+  // Quick instructions strip
+  ctx.fillStyle='rgba(0,0,0,0.38)'; rr(60,336,W-120,64,10); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+  ctx.fillText('Run to collect the closing sound and complete the syllable!',W/2,362);
+  ctx.fillStyle='rgba(255,230,0,0.75)'; ctx.font='13px Arial';
+  ctx.fillText('D / → run   •   W/S / ↑↓ change lanes   •   SPACE reshuffle',W/2,382);
+
+  // Keyboard shortcut note
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='12px Arial';
+  ctx.fillText('Press SPACE to start Step 1.3',W/2,415);
+
+  if(highScore){
+    ctx.fillStyle='#FFD700'; ctx.font='bold 16px Arial';
+    ctx.fillText(`🏆 Best: ${highScore.toFixed(1)}s`,W/2,452);
+  }
+}
+
+// ── Update ─────────────────────────────────────────────
+function update(){
+  frame++; totalFrames++;
+  player.hitFlash=Math.max(0,player.hitFlash-1);
+  if(invincible>0) invincible--;
+
+  // ── Player horizontal movement ──
+  const runRight=keys['d']||keys['D']||keys['ArrowRight']||touchRun;
+  const runLeft =keys['a']||keys['A']||keys['ArrowLeft'];
+  const runSpd  = runRight?4.5:runLeft?-2.5:0;
+  player.x=Math.max(PX_MIN,Math.min(PX_MAX,player.x+runSpd));
+  bgScrollV=runSpd*0.6;
+  bgScroll+=bgScrollV; bgScrollV*=0.85;
+
+  // run animation speed
+  if(runRight||runLeft) player.runAnim+=0.35;
+  else player.runAnim+=0.18;
+
+  // ── Player vertical (lane) ──
+  player.y+=(LANES[player.lane]-player.y)*0.18;
+
+  // ── Jump physics ──
+  if(player.jumping){
+    player.y+=player.vy;
+    player.vy+=0.75;
+    if(player.y>=LANES[player.lane]){
+      player.y=LANES[player.lane];
+      player.jumping=false; player.vy=0;
+    }
+  }
+
+  // ── Win timer (120 frames for red-marker animation) ──
+  if(winTimer>0){
+    winTimer--;
+    if(winTimer===0){
+      if(wordsDone>=TOTAL_WORDS){
+        if(!highScore||totalFrames/60<highScore) highScore=totalFrames/60;
+        gameRound++;
+        // Scooping mini-game after every game
+        const mgName=completedWords[Math.floor(Math.random()*completedWords.length)]||'CAT';
+        const mgWObj=WORD_BY_NAME[mgName]||WORDS_13[0];
+        mg={wordObj:mgWObj, phonemes:[...mgWObj.tiles, mgWObj.answer], step:0,
+          scoopDrawing:false,scoopAnim:0,isDragging:false,dragPoints:[],
+          cDrawing:false,cPoints:[],cDone:false,cAnim:0,cDoneTimer:0,
+          symbolPick:null,wrongFlash:0,
+          celebTimer:0};
+        state='scooping';
+      } else {
+        currentWord=pickWord();
+        wordStartFrame=frame;
+        tiles=[]; reshufflePool=null; spawnTimer=70;
+      }
+    }
+    // Move flying tiles
+    tiles.forEach(t=>{ if(t.flying){ t.x+=t.vx; t.alpha=Math.max(0,t.alpha-0.05); } });
+    tiles=tiles.filter(t=>!t.flying||t.x<W+200);
+    return;
+  }
+
+  // ── Spawn tiles ──
+  spawnTimer--;
+  if(spawnTimer<=0&&tiles.filter(t=>!t.done&&!t.flying).length===0){
+    spawnTiles(reshufflePool);
+    spawnTimer=999;
+  }
+
+  // ── Move tiles ──
+  tiles.forEach(t=>{
+    if(!t.done&&!t.flying) t.x-=TILE_SPEED;
+    if(t.flying){ t.x+=t.vx; t.alpha=Math.max(0,t.alpha-0.04); }
+  });
+
+  // ── Collision ──
+  if(!player.jumping){
+    tiles.forEach(t=>{
+      if(t.done||t.flying) return;
+      const dx=Math.abs(t.x-player.x), dy=Math.abs(t.y-player.y);
+      if(dx<44&&dy<44){
+        t.done=true;
+        if(t.correct){
+          streak++;
+          const elapsed=(frame-wordStartFrame)/60;
+          wordTimes.push(elapsed);
+          completedWords.push(currentWord.word);
+          const pts=Math.max(10,Math.round(100-elapsed*10));
+          score+=pts;
+          spawnBurst(t.x,t.y,C_BG,18);
+          spawnFloater(t.x,t.y-50,`${currentWord.word.toLowerCase()} ✓`,'#A8E6CF');
+          spawnFloater(t.x,t.y-80,`+${pts}`,'#FFD700');
+          // Clear remaining tiles (fly off)
+          tiles.forEach(o=>{ if(!o.done){ o.flying=true; o.vx=10+Math.random()*4; }});
+          wordsDone++;
+          winTimer=120;  // frames for red-marker animation
+        } else {
+          if(invincible===0){
+            lives--;
+            streak=0;
+            player.hitFlash=22;
+            invincible=100;
+            spawnBurst(player.x,player.y,'#FF4D6D',12);
+            spawnFloater(player.x,player.y-50,'✗ WRONG!','#FF4D6D');
+            if(lives<=0){
+              if(!highScore||totalFrames/60<highScore) highScore=totalFrames/60;
+              state='results';
+            }
+            // Wrong tile flies off, reshuffle
+            t.flying=true; t.vx=8;
+            // Reshuffle remaining + new tile with different distractors
+            setTimeout(()=>{
+              if(state!=='playing') return;
+              const answer=currentWord.answer;
+              let pool=[answer,...pickDistractors(answer)];
+              reshufflePool=null;
+              tiles.forEach(o=>{ if(!o.done) o.flying=true; o.vx=8; });
+              setTimeout(()=>{ spawnTimer=1; reshufflePool=null; },400);
+            },300);
+          }
+        }
+      }
+      // Tile drifted past player without hit
+      if(t.x<player.x-80&&!t.done){
+        t.done=true;
+        if(t.correct){ reshufflePool=null; spawnTimer=30; } // reshuffle with new letters
+      }
+    });
+  }
+
+  tiles=tiles.filter(t=>(!t.flying&&t.x>-100)||(t.flying&&t.x<W+250&&t.alpha>0));
+
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.25;p.life-=p.decay;});
+  particles=particles.filter(p=>p.life>0);
+  floaters.forEach(f=>{f.y+=f.vy;f.life-=0.017;});
+  floaters=floaters.filter(f=>f.life>0);
+}
+
+// ── Input ──────────────────────────────────────────────
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key==='Escape'){ if(state!=='title') goMenu(); return; }
+  if(e.code==='Space'){
+    e.preventDefault();
+    if(state==='title'){ startGame(); return; }
+    if(state==='results'){ startGame(); return; }
+    if(state==='playing'){
+      // Reshuffle: same letters, new lanes
+      if(!player.jumping){
+        player.vy=-16; player.jumping=true;
+        // Fly current tiles off, respawn same letters shuffled
+        const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+        tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
+        if(letters.length===3){ reshufflePool=letters; spawnTimer=50; }
+        else if(reshufflePool){ spawnTimer=50; }
+        spawnFloater(player.x,player.y-60,'↩ RESHUFFLE!','rgba(255,230,100,0.9)');
+      }
+    }
+    return;
+  }
+  if(state!=='playing') return;
+  if(['ArrowUp','w','W'].includes(e.key)){ e.preventDefault(); player.lane=Math.max(0,player.lane-1); }
+  if(['ArrowDown','s','S'].includes(e.key)){ e.preventDefault(); player.lane=Math.min(2,player.lane+1); }
+});
+window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+
+// ── Touch (multi-touch, iPad-friendly) ─────────────────
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  for(const touch of e.changedTouches){
+    const {x:tx2,y:ty2}=getCanvasXY(touch.clientX,touch.clientY);
+    if(state!=='title'&&inMenuBtn(tx2,ty2)){ goMenu(); continue; }
+    if(state==='scooping'){
+      const {x,y}=getCanvasXY(touch.clientX,touch.clientY); mgHandleDown(x,y); continue;
+    }
+    const {x,y}=getCanvasXY(touch.clientX,touch.clientY);
+    if(state==='playing'){
+      if(touchRunId===null&&inRect(x,y,TB.run)){
+        touchRun=true; touchRunId=touch.identifier; continue;
+      }
+      if(inRect(x,y,TB.laneUp)){ player.lane=Math.max(0,player.lane-1); continue; }
+      if(inRect(x,y,TB.laneDown)){ player.lane=Math.min(2,player.lane+1); continue; }
+      if(inRect(x,y,TB.shuffle)){
+        if(!player.jumping){
+          player.vy=-16; player.jumping=true;
+          const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+          tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
+          if(letters.length===3) reshufflePool=letters;
+          spawnTimer=50;
+          spawnFloater(player.x,player.y-60,'↩ RESHUFFLE!','rgba(255,230,100,0.9)');
+        }
+        continue;
+      }
+    }
+    // Track as main swipe touch
+    swipeTx=touch.clientX; swipeTy=touch.clientY; swipeTouchId=touch.identifier;
+  }
+},{passive:false});
+
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(const touch of e.changedTouches){
+    if(state==='scooping'){
+      const {x,y}=getCanvasXY(touch.clientX,touch.clientY); mgHandleMove(x,y);
+    }
+  }
+},{passive:false});
+
+canvas.addEventListener('touchend',e=>{
+  e.preventDefault();
+  for(const touch of e.changedTouches){
+    if(state==='scooping'){
+      const {x,y}=getCanvasXY(touch.clientX,touch.clientY); mgHandleUp(x,y); continue;
+    }
+    // Release RUN button
+    if(touch.identifier===touchRunId){ touchRun=false; touchRunId=null; continue; }
+    // Non-playing states: tap card or anywhere to start
+    if(state==='title'){
+      const {x,y}=getCanvasXY(touch.clientX,touch.clientY);
+      const card=substepCardAt(x,y);
+      if(card&&!card.locked){ selectedSubstep=card.id; startGame(); }
+      else if(!card){ startGame(); }
+      continue;
+    }
+    if(state!=='playing'){ startGame(); continue; }
+    // Swipe detection for the tracked touch
+    if(touch.identifier!==swipeTouchId) continue;
+    const dy=touch.clientY-swipeTy;
+    if(dy<-40&&!player.jumping){
+      // Fast swipe up = reshuffle
+      player.vy=-16; player.jumping=true;
+      const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+      tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
+      if(letters.length===3) reshufflePool=letters;
+      spawnTimer=50;
+      spawnFloater(player.x,player.y-60,'↩ RESHUFFLE!','rgba(255,230,100,0.9)');
+    }
+  }
+},{passive:false});
+
+// Mouse handlers — menu btn, title card click, mini-game
+canvas.addEventListener('mousedown',e=>{
+  const {x,y}=getCanvasXY(e.clientX,e.clientY);
+  if(state!=='title'&&inMenuBtn(x,y)){ goMenu(); return; }
+  if(state==='title'){
+    const card=substepCardAt(x,y);
+    if(card&&!card.locked){ selectedSubstep=card.id; startGame(); return; }
+  }
+  if(state!=='scooping') return;
+  mgHandleDown(x,y);
+});
+canvas.addEventListener('mousemove',e=>{
+  if(state!=='scooping') return;
+  const {x,y}=getCanvasXY(e.clientX,e.clientY); mgHandleMove(x,y);
+});
+canvas.addEventListener('mouseup',e=>{
+  if(state!=='scooping') return;
+  const {x,y}=getCanvasXY(e.clientX,e.clientY); mgHandleUp(x,y);
+});
+
+// ── Main loop ──────────────────────────────────────────
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  frame++;
+
+  if(state==='title'){
+    drawBG(); drawTitle();
+  } else if(state==='playing'){
+    update();
+    drawBG();
+    drawWordBar();
+    tiles.forEach(drawTile);
+    drawPlayer();
+    drawParticles(); drawFloaters();
+    drawHUD();
+    if(winTimer>0) drawWinOverlay();
+  } else if(state==='scooping'){
+    updateScooping();
+    drawScooping();
+    drawMenuBtn();
+  } else if(state==='results'){
+    drawResults();
+    drawParticles(); drawFloaters();
+    drawMenuBtn();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+state='title'; frame=0;
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

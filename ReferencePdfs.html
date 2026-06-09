@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Teach Today PDF Reference</title>
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <style>
+      :root {
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #dbe4ee;
+        --teal: #0f766e;
+        --teal-soft: #ecfeff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f8fafc;
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(980px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 18px 0 28px;
+      }
+
+      header {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 16px;
+        padding: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand img {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+
+      .eyebrow {
+        margin: 0 0 3px;
+        color: var(--teal);
+        font-size: 11px;
+        font-weight: 950;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.05;
+      }
+
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tabs a,
+      .pdf-card a {
+        display: inline-flex;
+        min-height: 38px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 950;
+        text-decoration: none;
+      }
+
+      .tabs a.active {
+        border-color: var(--teal);
+        background: var(--teal);
+        color: #fff;
+      }
+
+      .pdf-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .pdf-card {
+        display: grid;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-left: 7px solid var(--teal);
+        border-radius: 16px;
+        padding: 13px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+      }
+
+      .pdf-card strong {
+        font-size: 18px;
+        line-height: 1.08;
+      }
+
+      .pdf-card span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .pdf-card a {
+        justify-self: start;
+        border-color: #99f6e4;
+        background: var(--teal-soft);
+        color: var(--teal);
+      }
+
+      .pdf-card a:hover,
+      .pdf-card a:focus-visible,
+      .tabs a:hover,
+      .tabs a:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand">
+          <img src="assets/morrocoy-logo.png" alt="">
+          <div>
+            <p class="eyebrow">Teach Today Reference</p>
+            <h1 id="pageTitle">PDF Reference</h1>
+          </div>
+        </div>
+        <nav class="tabs" aria-label="PDF reference sets">
+          <a id="readersTab" href="ReferencePdfs.html?set=readers">Readers</a>
+          <a id="dictationTab" href="ReferencePdfs.html?set=dictation">Dictation books</a>
+        </nav>
+      </header>
+      <section id="pdfGrid" class="pdf-grid" aria-label="PDF files"></section>
+    </main>
+    <script>
+      const referenceSets = {
+        readers: {
+          title: "Readers",
+          tab: "readersTab",
+          items: [
+            ["Reader 1", "WRS Student Reader 1", "Readers%20in%20PDF%20form/WRS_Student_Reader_1.pdf"],
+            ["Reader 2", "WRS Student Reader 2", "Readers%20in%20PDF%20form/WRS_Student_Reader_2.pdf"],
+            ["Reader 3", "WRS Student Reader 3", "Readers%20in%20PDF%20form/WRS_Student_Reader_3.pdf"],
+            ["Reader 4", "WRS Student Reader 4", "Readers%20in%20PDF%20form/WRS_Student_Reader_4.pdf"],
+            ["Reader 5", "WRS Student Reader 5", "Readers%20in%20PDF%20form/WRS_Student_Reader_5.pdf"],
+            ["Reader 6", "WRS Student Reader 6", "Readers%20in%20PDF%20form/WRS_Student_Reader_6.pdf"],
+            ["Reader 7", "WRS Student Reader 7", "Readers%20in%20PDF%20form/WRS_Student_Reader_7.pdf"],
+            ["Reader 8", "WRS Student Reader 8", "Readers%20in%20PDF%20form/WRS_Student_Reader_8.pdf"],
+            ["Reader 9", "WRS Student Reader 9", "Readers%20in%20PDF%20form/WRS_Student_Reader_9.pdf"],
+            ["Reader 10", "WRS Student Reader 10", "Readers%20in%20PDF%20form/WRS_Student_Reader_10.pdf"],
+            ["Reader 11", "WRS Student Reader 11", "Readers%20in%20PDF%20form/WRS_Student_Reader_11.pdf"],
+            ["Reader 12", "WRS Student Reader 12", "Readers%20in%20PDF%20form/WRS_Student_Reader_12.pdf"]
+          ]
+        },
+        dictation: {
+          title: "Dictation Books",
+          tab: "dictationTab",
+          items: [
+            ["Steps 1-2", "First part of book", "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%201-2%20-%20first%20part%20of%20book.pdf"],
+            ["Steps 3-4", "Middle part of book", "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%203-4%20-%20middle%20part%20of%20book.pdf"],
+            ["Steps 5-6", "Last third of book", "Dictation%20Books%20in%20PDF%20form/Wilson%20WRS%20Dictation%20Book%20Steps%205-6%20-%20last%20third%20of%20book.pdf"],
+            ["Step 7", "Step 7 only", "Dictation%20Books%20in%20PDF%20form/WRS%20Dictation%20Book%20step%207%20only%20.pdf"]
+          ]
+        }
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const activeKey = referenceSets[params.get("set")] ? params.get("set") : "readers";
+      const activeSet = referenceSets[activeKey];
+      document.title = `Teach Today ${activeSet.title}`;
+      document.getElementById("pageTitle").textContent = activeSet.title;
+      document.getElementById(activeSet.tab).classList.add("active");
+      document.getElementById("pdfGrid").innerHTML = activeSet.items.map(([title, detail, href]) => `
+        <article class="pdf-card">
+          <strong>${title}</strong>
+          <span>${detail}</span>
+          <a href="${href}" target="_blank" rel="noopener">Open PDF</a>
+        </article>
+      `).join("");
+    </script>
+  </body>
+</html>

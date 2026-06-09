@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Progress Report — Teach Today</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 14px; color: #1e293b; background: #dde3ea; }
+    @page { size: letter portrait; margin: 0.65in; }
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; break-before: page; }
+      .report { box-shadow: none; margin: 0; padding: 0; max-width: none; border-radius: 0; }
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 9px 16px;
+      background: rgba(248, 250, 252, 0.97);
+      border-bottom: 1px solid rgba(15, 118, 110, 0.18);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .toolbar-brand {
+      display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+    }
+    .toolbar-logo {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid rgba(15, 118, 110, 0.22); object-fit: cover;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12); background: #fff;
+    }
+    .toolbar-brand-text { display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+    .toolbar-brand-text em {
+      font-style: normal; font-size: 9px; font-weight: 900;
+      letter-spacing: 0.1em; text-transform: uppercase; color: #0f766e;
+    }
+    .toolbar-brand-text strong { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .toolbar-sep { width: 1px; height: 24px; background: #e2e8f0; flex-shrink: 0; margin: 0 4px; }
+    .toolbar-spacer { flex: 1; }
+    .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn-primary {
+      background: #0f766e; color: white; border: 1px solid #0d6460;
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .btn-primary:hover { background: #0d6460; }
+    .btn-secondary {
+      background: white; border: 1px solid #e2e8f0; color: #475569;
+      padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f8fafc; border-color: #c7d2dc; }
+    .toolbar-hint { font-size: 12px; color: #94a3b8; }
+
+    /* ── Report page simulation ── */
+    .report {
+      max-width: 724px; margin: 28px auto 48px; background: white;
+      padding: 36px 42px 44px; box-shadow: 0 4px 32px rgba(0,0,0,0.13);
+      border-radius: 6px;
+    }
+
+    /* ── Header ── */
+    .report-header {
+      background: #0f766e; color: white;
+      border-radius: 10px; padding: 22px 26px; margin-bottom: 26px;
+    }
+    .report-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.12em;
+      text-transform: uppercase; opacity: 0.65; margin-bottom: 8px;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .student-name { font-size: 30px; font-weight: 800; line-height: 1.1; }
+    .report-generated { font-size: 10px; opacity: 0.7; text-align: right; line-height: 1.6; white-space: nowrap; }
+    .header-meta { margin-top: 9px; font-size: 13px; opacity: 0.88; display: flex; gap: 18px; flex-wrap: wrap; }
+    .header-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .header-bottom { margin-top: 12px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+    }
+    .data-range { font-size: 11px; opacity: 0.7; }
+
+    /* ── Section heading ── */
+    .section { margin-bottom: 22px; }
+    .section-heading {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #94a3b8;
+      border-bottom: 1.5px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 14px;
+    }
+
+    /* ── Metric tiles ── */
+    .tiles-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-bottom: 14px; }
+    .tile { border-radius: 8px; padding: 11px 14px; border: 1px solid #e2e8f0; background: #f8fafc; }
+    .tile.good  { background: #f0fdf4; border-color: #bbf7d0; }
+    .tile.watch { background: #fefce8; border-color: #fde68a; }
+    .tile.risk  { background: #fef2f2; border-color: #fecaca; }
+    .tile.gray  { background: #f8fafc; border-color: #e2e8f0; }
+    .tile strong { display: block; font-size: 21px; font-weight: 800; line-height: 1.15; }
+    .tile.good  strong { color: #15803d; }
+    .tile.watch strong { color: #92400e; }
+    .tile.risk  strong { color: #b91c1c; }
+    .tile.gray  strong { color: #475569; }
+    .tile span { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; display: block; }
+
+    /* ── Growth callout ── */
+    .growth-callout {
+      background: #f0fdfa; border: 1.5px solid #99f6e4;
+      border-radius: 8px; padding: 11px 15px; margin-bottom: 14px;
+    }
+    .growth-range {
+      font-size: 11px; font-weight: 700; color: #0f766e;
+      margin-bottom: 7px; display: flex; align-items: center; gap: 8px;
+    }
+    .growth-badge {
+      background: #ccfbf1; color: #0f766e; font-size: 9px; font-weight: 700;
+      border-radius: 999px; padding: 2px 8px;
+    }
+    .growth-items { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+    .growth-item { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+    .gi-label { font-size: 10px; color: #64748b; font-weight: 600; }
+    .gi-val { font-weight: 700; color: #1e293b; }
+    .gi-arrow { color: #94a3b8; font-size: 10px; }
+    .gi-up   { color: #0f766e; font-weight: 800; }
+    .gi-down { color: #dc2626; font-weight: 800; }
+    .gi-flat { color: #94a3b8; }
+
+    /* ── Charts ── */
+    .chart-box { margin-bottom: 8px; overflow: hidden; }
+    .chart-box svg { display: block; width: 100%; height: auto; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 10px; color: #64748b; font-weight: 600; margin-top: 5px; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .ld { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .ld-line { width: 18px; height: 1.5px; background: repeating-linear-gradient(90deg,#94a3b8 0 5px,transparent 5px 8px); display: inline-block; vertical-align: middle; }
+
+    /* ── Chip list ── */
+    .chip-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+    .chip { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 10px; font-size: 11px; color: #475569; }
+
+    /* ── Pattern grid ── */
+    .pattern-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .ptile { border-radius: 7px; padding: 9px 12px; }
+    .ptile.risk  { background: #fef2f2; border-left: 3px solid #ef4444; }
+    .ptile.watch { background: #fefce8; border-left: 3px solid #eab308; }
+    .ptile.info  { background: #eff6ff; border-left: 3px solid #60a5fa; }
+    .ptile strong { font-size: 11px; font-weight: 700; color: #1e293b; }
+    .ptile .pc { display: inline-block; background: rgba(0,0,0,0.08); border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 700; margin-left: 5px; }
+    .ptile p { font-size: 10px; color: #64748b; margin-top: 3px; line-height: 1.4; }
+    .ptile small { font-size: 9px; color: #94a3b8; }
+
+    /* ── Records table ── */
+    .table-wrap { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .data-table th {
+      background: #f1f5f9; color: #475569; font-weight: 700; text-align: left;
+      padding: 5px 7px; border-bottom: 1.5px solid #e2e8f0;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+    }
+    .data-table td { padding: 4px 7px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+    .data-table tr:nth-child(even) td { background: #fafafa; }
+    .c-good  { color: #15803d; font-weight: 700; }
+    .c-watch { color: #92400e; font-weight: 700; }
+    .c-risk  { color: #b91c1c; font-weight: 700; }
+    .flag { display: inline-block; background: #f0fdfa; color: #0f766e; border-radius: 3px; padding: 1px 4px; font-size: 8px; font-weight: 700; }
+
+    /* ── Footer ── */
+    .report-footer {
+      margin-top: 36px; padding-top: 12px; border-top: 1px solid #e2e8f0;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      font-size: 10px; color: #94a3b8;
+    }
+    .sig-area { text-align: right; }
+    .sig-line { border-top: 1px solid #94a3b8; width: 200px; text-align: center; padding-top: 4px; font-size: 9px; color: #94a3b8; }
+
+    /* ── Page break ── */
+    .page-break { page-break-before: always; break-before: page; margin-top: 32px; }
+    .page-break-after { page-break-after: always; break-after: page; }
+  </style>
+</head>
+<body>
+
+<div class="no-print toolbar">
+  <div class="toolbar-brand">
+    <img src="assets/morrocoy-logo.png" alt="" class="toolbar-logo">
+    <div class="toolbar-brand-text">
+      <em>Teach Today</em>
+      <strong>Student Report</strong>
+    </div>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-spacer"></div>
+  <div class="toolbar-actions">
+    <span class="toolbar-hint">Save as PDF from print dialog</span>
+    <button class="btn-secondary" onclick="history.back()">← Back</button>
+    <button class="btn-primary" onclick="window.print()">Print / Save PDF</button>
+  </div>
+</div>
+
+<div id="report" class="report">
+  <p style="color:#94a3b8;font-size:13px;">Loading report…</p>
+</div>
+
+<script src="sofia-carbajal-chart-data.js"></script>
+<script>
+"use strict";
+
+// ── State ────────────────────────────────────────────────
+const storageKey = "dyslexiaInstructionEngine.v2";
+
+function loadState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (typeof window.mergeSofiaCarbajalChartData === "function") {
+      window.mergeSofiaCarbajalChartData(raw);
+    }
+    return raw;
+  } catch { return {}; }
+}
+
+function qp() { return new URLSearchParams(location.search); }
+
+function getContext() {
+  const data = loadState();
+  const q = qp();
+  const group = (data.groups || []).find((g) => g.id === q.get("group"))
+    || (data.groups || []).find((g) => g.id === data.selectedGroupId)
+    || (data.groups || [])[0]
+    || { name: "No group", students: [] };
+  const student = q.get("student") || group.activeStudent || group.students[0] || "";
+  const profileGroup = student && !(group.students || []).includes(student)
+    ? (data.groups || []).find((g) => (g.students || []).includes(student)) || group
+    : group;
+  const records = (data.masterRecords || []).filter((r) =>
+    r.student === student && (!profileGroup.id || r.groupId === profileGroup.id || r.group === profileGroup.name)
+  );
+  const dictationMisses = (profileGroup.dictationMisses || []).filter((m) => m.student === student);
+  const encodingObservations = (profileGroup.encodingObservations || []).filter((o) => o.student === student);
+  const marked = (profileGroup.markedReviewWords || []).filter((w) => !w.student || w.student === student);
+  return { data, group: profileGroup, student, records, dictationMisses, encodingObservations, marked };
+}
+
+// ── Utility helpers ──────────────────────────────────────
+function escapeHtml(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" })[c]);
+}
+function titleCase(t) { return String(t || "").replace(/\b\w/g, (l) => l.toUpperCase()); }
+function shortDate(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  return isNaN(d) ? "" : d.toLocaleDateString([], { month: "numeric", day: "numeric" });
+}
+function formatDateShort(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  return isNaN(d) ? "" : d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+function dateKeyLocal(v) {
+  if (!v) return "";
+  const d = v instanceof Date ? v : new Date(v);
+  if (isNaN(d)) return "";
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function average(arr, fn) {
+  const vals = arr.map(fn).filter((n) => Number.isFinite(n) && n > 0);
+  return vals.length ? Math.round(vals.reduce((s, n) => s + n, 0) / vals.length) : 0;
+}
+function wcpmForRecord(r) {
+  const s = Number(r.seconds || 0);
+  return s ? Math.round((Number(r.correct || 0) / s) * 60) : 0;
+}
+function performanceStatus(records) {
+  const recent = records.slice(-5);
+  if (!recent.length) return { color: "gray", label: "No data yet" };
+  const avg = average(recent, (r) => Number(r.correct || 0));
+  const sec = average(recent, (r) => Number(r.seconds || 0));
+  const auto = recent.filter((r) => r.automaticity).length / recent.length;
+  if (avg >= 14.5 && sec && sec <= 35 && auto >= 0.8) return { color: "blue", label: "Strong Automaticity" };
+  if (avg >= 12 && sec && sec <= 35) return { color: "green", label: "Accurate and Automatic" };
+  if (avg >= 12) return { color: "yellow", label: "Accurate, Building Speed" };
+  if (avg < 10 || sec > 55) return { color: "red", label: "Needs Support Now" };
+  return { color: "orange", label: "Not Yet Accurate" };
+}
+function topCount(items) {
+  const m = new Map();
+  items.filter(Boolean).forEach((x) => m.set(x, (m.get(x) || 0) + 1));
+  return [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+}
+function commonWords(records) {
+  const m = new Map();
+  records.forEach((r) => (r.wrongWords || []).forEach((w) => m.set(w, (m.get(w) || 0) + 1)));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} (${n})`);
+}
+function commonDictMisses(misses) {
+  const m = new Map();
+  misses.forEach((x) => m.set(x.item, (m.get(x.item) || 0) + 1));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([w, n]) => `${w} (${n})`);
+}
+function delta(n, unit = "", lowerIsBetter = false) {
+  if (n === 0) return `<span class="gi-flat">±0${unit}</span>`;
+  const good = lowerIsBetter ? n < 0 : n > 0;
+  return `<span class="${good ? "gi-up" : "gi-down"}">${n > 0 ? "+" : ""}${n}${unit} ${good ? "▲" : "▼"}</span>`;
+}
+function tileClass(type, val) {
+  if (!val) return "gray";
+  if (type === "correct")  return val >= 14 ? "good" : val >= 12 ? "watch" : "risk";
+  if (type === "seconds")  return val <= 35 ? "good" : val <= 54 ? "watch" : "risk";
+  if (type === "wcpm")     return val >= 26 ? "good" : val >= 17 ? "watch" : "risk";
+  if (type === "auto")     return val >= 80 ? "good" : val >= 60 ? "watch" : "risk";
+  if (type === "misses")   return val === 0 ? "good" : val <= 2 ? "watch" : "risk";
+  return "gray";
+}
+function cellClass(type, val) {
+  const cls = tileClass(type, val);
+  return cls === "good" ? "c-good" : cls === "watch" ? "c-watch" : cls === "risk" ? "c-risk" : "";
+}
+
+// ── Phonics patterns ─────────────────────────────────────
+function hasVePattern(w) {
+  return /[aeiou][bcdfghjklmnpqrstvwxyz]e$/.test(w) || /[aeiou][bcdfghjklmnpqrstvwxyz]e(s|d|ing|ful|less|ly)?$/.test(w);
+}
+function detectPatterns(words) {
+  const defs = [
+    { id:"triple",  title:"Triple consonant blends",   level:"risk",  tests:["spr","str","scr","spl","shr","thr"], note:"Practice slow sound-by-sound blending." },
+    { id:"blend",   title:"Common blends",             level:"watch", tests:["sp","st","sk","sl","sm","sn","br","bl","cr","cl","dr","fl","fr","gl","gr","pl","pr","tr"], note:"Add quick drill and sound tapping." },
+    { id:"weldng",  title:"Welded /ng/ family",        level:"risk",  tests:["ang","ing","ong","ung"], note:"Check for /ing/ vs /ang/ substitutions." },
+    { id:"weldnk",  title:"Welded /nk/ family",        level:"watch", tests:["ank","ink","onk","unk"], note:"Keep welded sounds boxed as one unit." },
+    { id:"closedx", title:"Closed exceptions",         level:"watch", tests:["ild","ind","old","olt","ost"], note:"Review exception sound before reading." },
+    { id:"suffes",  title:"Suffix -es",                level:"risk",  tests:["es"], note:"Base-word plus suffix practice." },
+    { id:"suffed",  title:"Suffix -ed / -ing",         level:"watch", tests:["ed","ing"], note:"Read the base first, then add suffix." },
+    { id:"ve",      title:"Vowel-consonant-e",         level:"watch", tests:[], custom: hasVePattern, note:"Contrast v-e with closed syllables." },
+    { id:"fss",     title:"Final stable syllables",    level:"watch", tests:["ble","cle","dle","fle","gle","kle","ple","tle","zle"], note:"Mark final stable syllable first." },
+    { id:"latin",   title:"Latin bases",               level:"info",  tests:["dict","duct","fect","ject","lect","press","rupt","spect","struct","tract"], note:"Review base meaning and keep together." }
+  ];
+  return defs.map((def) => {
+    const hits = words.filter((w) => def.custom ? def.custom(w) : def.tests.some((t) => w.includes(t)));
+    const examples = [...new Set(hits)];
+    return { ...def, count: hits.length, examples };
+  }).filter((p) => p.count > 0).sort((a, b) => b.count - a.count);
+}
+
+// ── SVG chart builders (fixed-width, print-safe) ─────────
+function buildTrendSvg(records, W) {
+  if (records.length < 2) return `<p style="color:#94a3b8;font-size:12px;padding:12px 0">Not enough records to show a trend.</p>`;
+  const sorted = records.slice().sort((a, b) => new Date(a.date || a.displayDate || 0) - new Date(b.date || b.displayDate || 0));
+  const n = sorted.length;
+  const PL = 36, PR = 20, PT = 22, PB = 52;
+  const H = 185;
+  const plotW = W - PL - PR;
+  const plotH = H - PT - PB;
+  const maxWcpm = Math.max(30, ...sorted.map(wcpmForRecord));
+  const maxSec  = Math.max(60, ...sorted.map((r) => Number(r.seconds || 0)));
+  const xAt  = (i) => PL + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const yAcc = (v) => PT + plotH - (Math.min(Math.max(v, 0), 15) / 15) * plotH;
+  const yWpm = (v) => PT + plotH - (Math.min(Math.max(v, 0), maxWcpm) / maxWcpm) * plotH;
+  const ySec = (v) => v > 0 ? PT + (Math.min(v, maxSec) / maxSec) * plotH : null;
+
+  const accPts  = sorted.map((r, i) => ({ x: xAt(i), y: yAcc(Number(r.correct || 0)), v: Number(r.correct || 0) }));
+  const wcpmPts = sorted.map((r, i) => { const v = wcpmForRecord(r); return { x: xAt(i), y: v > 0 ? yWpm(v) : null, v }; });
+  const secPts  = sorted.map((r, i) => { const v = Number(r.seconds || 0); return { x: xAt(i), y: ySec(v), v }; });
+
+  const poly = (pts) => pts.filter((p) => p.y !== null).map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  // Grid lines
+  let gridSvg = "";
+  [0, 5, 10, 12, 15].forEach((v) => {
+    const y  = yAcc(v).toFixed(1);
+    const isT = v === 12;
+    gridSvg += `<line x1="${PL}" y1="${y}" x2="${(W - PR).toFixed(1)}" y2="${y}" stroke="${isT ? "#94a3b8" : "#e2e8f0"}" stroke-width="1"${isT ? ' stroke-dasharray="5 3"' : ""}></line>`;
+    gridSvg += `<text x="${(PL - 4).toFixed(1)}" y="${(Number(y) + 4).toFixed(1)}" font-size="9" fill="#94a3b8" text-anchor="end">${v}</text>`;
+    if (isT) gridSvg += `<text x="${(W - PR + 3).toFixed(1)}" y="${(Number(y) + 4).toFixed(1)}" font-size="8" fill="#94a3b8">goal</text>`;
+  });
+
+  // Substep change markers
+  let subSvg = "";
+  sorted.forEach((r, i) => {
+    if (i > 0 && r.substep && r.substep !== sorted[i - 1].substep) {
+      const x = xAt(i).toFixed(1);
+      subSvg += `<line x1="${x}" y1="${PT}" x2="${x}" y2="${(H - PB).toFixed(1)}" stroke="#0f766e" stroke-width="1" stroke-dasharray="3 2" opacity="0.35"></line>`;
+    }
+  });
+
+  // Date labels (skip to avoid overlap)
+  const step = Math.ceil(n / 18);
+  let dateSvg = "";
+  sorted.forEach((r, i) => {
+    if (i % step !== 0 && i !== n - 1) return;
+    const d = new Date(r.date || r.displayDate || "");
+    if (isNaN(d)) return;
+    const lbl = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const cx = xAt(i).toFixed(1);
+    const cy = (H - PB + 13).toFixed(1);
+    dateSvg += `<text x="${cx}" y="${cy}" font-size="9" fill="#64748b" text-anchor="end" transform="rotate(-40 ${cx} ${cy})">${escapeHtml(lbl)}</text>`;
+  });
+
+  // Dots
+  const dots = (pts, fill) => pts.map((p) => {
+    if (p.y === null) return "";
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${fill}" stroke="white" stroke-width="1.5"></circle>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Student decoding progress over time">
+    ${gridSvg}
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${(H - PB).toFixed(1)}" stroke="#cbd5e1" stroke-width="1.5"></line>
+    <line x1="${PL}" y1="${(H - PB).toFixed(1)}" x2="${(W - PR).toFixed(1)}" y2="${(H - PB).toFixed(1)}" stroke="#cbd5e1" stroke-width="1.5"></line>
+    ${subSvg}
+    ${secPts.filter((p) => p.y !== null).length >= 2 ? `<polyline points="${poly(secPts)}" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>` : ""}
+    ${wcpmPts.filter((p) => p.y !== null).length >= 2 ? `<polyline points="${poly(wcpmPts)}" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>` : ""}
+    <polyline points="${poly(accPts)}" fill="none" stroke="#0f766e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+    ${dots(secPts, "#d97706")}${dots(wcpmPts, "#2563eb")}${dots(accPts, "#0f766e")}
+    ${dateSvg}
+  </svg>`;
+}
+
+function buildDictationSvg(misses, W) {
+  const byDate = new Map();
+  misses.forEach((m) => {
+    const k = dateKeyLocal(m.date);
+    if (!k) return;
+    byDate.set(k, (byDate.get(k) || 0) + 1);
+  });
+  const dates = [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  if (dates.length < 1) return `<p style="color:#94a3b8;font-size:12px;padding:12px 0">No dictation data saved yet.</p>`;
+
+  const PL = 36, PR = 20, PT = 16, PB = 50;
+  const H = 150;
+  const plotH = H - PT - PB;
+  const maxC = Math.max(...dates.map(([, c]) => c), 1);
+  const barW = Math.max(18, Math.floor((W - PL - PR) / dates.length));
+  const step = Math.ceil(dates.length / 18);
+
+  // Grid
+  let gridSvg = "";
+  const gStep = maxC <= 4 ? 1 : maxC <= 10 ? 2 : 5;
+  for (let v = 0; v <= maxC; v += gStep) {
+    const y = (PT + plotH - (v / maxC) * plotH).toFixed(1);
+    gridSvg += `<line x1="${PL}" y1="${y}" x2="${(W - PR).toFixed(1)}" y2="${y}" stroke="#e2e8f0" stroke-width="1"></line>`;
+    gridSvg += `<text x="${(PL - 4).toFixed(1)}" y="${(Number(y) + 4).toFixed(1)}" font-size="9" fill="#94a3b8" text-anchor="end">${v}</text>`;
+  }
+
+  let barsSvg = "";
+  dates.forEach(([key, count], i) => {
+    const bH = Math.max(2, (count / maxC) * plotH);
+    const bx = (PL + i * barW + 2).toFixed(1);
+    const by = (PT + plotH - bH).toFixed(1);
+    const bw = (barW - 4).toFixed(1);
+    const cx = (PL + i * barW + barW / 2).toFixed(1);
+    const lbl = (i % step === 0 || i === dates.length - 1) ? shortDate(key + "T12:00:00") : "";
+    const cy = (H - PB + 13).toFixed(1);
+    barsSvg += `<rect x="${bx}" y="${by}" width="${bw}" height="${bH.toFixed(1)}" fill="#f87171" rx="2" opacity="0.85"></rect>`;
+    barsSvg += `<text x="${cx}" y="${(Number(by) - 3).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="middle" font-weight="700">${count}</text>`;
+    if (lbl) barsSvg += `<text x="${cx}" y="${cy}" font-size="9" fill="#64748b" text-anchor="end" transform="rotate(-40 ${cx} ${cy})">${escapeHtml(lbl)}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dictation misses per session">
+    ${gridSvg}
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${(H - PB).toFixed(1)}" stroke="#cbd5e1" stroke-width="1.5"></line>
+    <line x1="${PL}" y1="${(H - PB).toFixed(1)}" x2="${(W - PR).toFixed(1)}" y2="${(H - PB).toFixed(1)}" stroke="#cbd5e1" stroke-width="1.5"></line>
+    ${barsSvg}
+  </svg>`;
+}
+
+// ── Main report builder ───────────────────────────────────
+function buildReport() {
+  const { group, student, records, dictationMisses, encodingObservations, marked } = getContext();
+  const allEncoding = dictationMisses.concat(encodingObservations);
+
+  if (!student) {
+    document.getElementById("report").innerHTML = `<p style="color:#94a3b8;padding:32px">No student selected. Go back and open a profile first.</p>`;
+    return;
+  }
+
+  const sorted = records.slice().sort((a, b) => new Date(a.date || a.displayDate || 0) - new Date(b.date || b.displayDate || 0));
+  const recent5 = sorted.slice(-5);
+  const firstRec = sorted[0];
+  const lastRec  = sorted.at(-1);
+  const status   = performanceStatus(records);
+
+  // Averages (recent 5)
+  const avgCorrect = average(recent5, (r) => Number(r.correct || 0));
+  const avgSec     = average(recent5, (r) => Number(r.seconds || 0));
+  const avgWcpm    = average(recent5, wcpmForRecord);
+  const autoRate   = recent5.length ? Math.round(recent5.filter((r) => r.automaticity).length / recent5.length * 100) : 0;
+  const lastSubstep = lastRec?.substep || "--";
+
+  // Date range
+  const startDateStr = firstRec ? formatDateShort(firstRec.date || firstRec.displayDate) : "";
+  const endDateStr   = lastRec  ? formatDateShort(lastRec.date  || lastRec.displayDate)  : "";
+  const rangeStr     = startDateStr && endDateStr ? `${startDateStr} – ${endDateStr}` : "No data yet";
+
+  // Growth: decoding
+  const firstCorrect = firstRec ? Number(firstRec.correct || 0) : 0;
+  const lastCorrect  = lastRec  ? Number(lastRec.correct  || 0) : 0;
+  const firstSec = firstRec ? Number(firstRec.seconds || 0) : 0;
+  const lastSec  = lastRec  ? Number(lastRec.seconds  || 0) : 0;
+  const firstWcpm = firstRec ? wcpmForRecord(firstRec) : 0;
+  const lastWcpm  = lastRec  ? wcpmForRecord(lastRec)  : 0;
+
+  // Growth: dictation
+  const dictByDate = new Map();
+  allEncoding.forEach((m) => {
+    const k = dateKeyLocal(m.date);
+    if (!k) return;
+    dictByDate.set(k, (dictByDate.get(k) || 0) + 1);
+  });
+  const dictSessions = [...dictByDate.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const firstDictSess = dictSessions[0];
+  const lastDictSess  = dictSessions.at(-1);
+  const topDictArea   = topCount(allEncoding.map((m) => m.category || "Dictation"));
+  const lastDictItem  = allEncoding.at(-1)?.item || "--";
+  const recentDictCount = allEncoding.slice(-5).length;
+
+  // Patterns
+  const insightWs = [];
+  records.forEach((r) => insightWs.push(...(r.wrongWords || [])));
+  marked.forEach((w) => insightWs.push(w.word));
+  allEncoding.forEach((m) => insightWs.push(m.item));
+  const cleanWords = insightWs.map((w) => String(w || "").toLowerCase().replace(/[^a-z-]/g, "")).filter((w) => w.length >= 2);
+  const patterns = detectPatterns(cleanWords);
+
+  // Chart width for rendering (matches report content width - padding)
+  const CW = 640;
+
+  // ── Build sections ────────────────────────────────────
+
+  // 1. Header
+  const headerHtml = `
+    <div class="report-header">
+      <div class="report-label">Wilson Reading · Structured Literacy Progress Report</div>
+      <div class="header-top">
+        <div class="student-name">${escapeHtml(student)}</div>
+        <div class="report-generated">
+          Generated ${new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}<br>
+          Teach Today
+        </div>
+      </div>
+      <div class="header-meta">
+        <span>📚 ${escapeHtml(group.name || "No group")}</span>
+        <span>📍 Substep ${escapeHtml(lastSubstep)}</span>
+        <span>📊 ${records.length} charting record${records.length === 1 ? "" : "s"}</span>
+        <span>✏️ ${allEncoding.length} dictation miss${allEncoding.length === 1 ? "" : "es"}</span>
+      </div>
+      <div class="header-bottom">
+        <span class="status-badge">● ${escapeHtml(status.label)}</span>
+        <span class="data-range">${escapeHtml(rangeStr)}</span>
+      </div>
+    </div>`;
+
+  // 2. Decoding section
+  const decodingCallout = sorted.length >= 2 ? `
+    <div class="growth-callout">
+      <div class="growth-range">
+        ${escapeHtml(startDateStr)} → ${escapeHtml(endDateStr)}
+        <span class="growth-badge">${sorted.length} records</span>
+      </div>
+      <div class="growth-items">
+        <div class="growth-item">
+          <span class="gi-label">Correct/15</span>
+          <span class="gi-val">${firstCorrect}</span><span class="gi-arrow">→</span><span class="gi-val">${lastCorrect}</span>
+          ${delta(lastCorrect - firstCorrect)}
+        </div>
+        ${firstSec && lastSec ? `<div class="growth-item">
+          <span class="gi-label">sec/15w</span>
+          <span class="gi-val">${firstSec}</span><span class="gi-arrow">→</span><span class="gi-val">${lastSec}</span>
+          ${delta(lastSec - firstSec, " sec", true)}
+        </div>` : ""}
+        ${firstWcpm && lastWcpm ? `<div class="growth-item">
+          <span class="gi-label">WCPM</span>
+          <span class="gi-val">${firstWcpm}</span><span class="gi-arrow">→</span><span class="gi-val">${lastWcpm}</span>
+          ${delta(lastWcpm - firstWcpm)}
+        </div>` : ""}
+      </div>
+    </div>` : "";
+
+  const decodingSection = `
+    <div class="section">
+      <div class="section-heading">Decoding — Charting Progress</div>
+      <div class="tiles-row">
+        <div class="tile ${tileClass("correct", avgCorrect)}">
+          <strong>${avgCorrect || "--"}<small style="font-size:13px;font-weight:600">/15</small></strong>
+          <span>Avg Correct</span>
+        </div>
+        <div class="tile ${tileClass("seconds", avgSec)}">
+          <strong>${avgSec || "--"}<small style="font-size:13px;font-weight:600"> sec</small></strong>
+          <span>Avg sec/15w</span>
+        </div>
+        <div class="tile ${tileClass("wcpm", avgWcpm)}">
+          <strong>${avgWcpm || "--"}</strong>
+          <span>Avg WCPM</span>
+        </div>
+        <div class="tile ${tileClass("auto", autoRate)}">
+          <strong>${autoRate}%</strong>
+          <span>Automaticity</span>
+        </div>
+      </div>
+      ${decodingCallout}
+      <div class="chart-box">${buildTrendSvg(sorted, CW)}</div>
+      <div class="chart-legend">
+        <span><span class="ld" style="background:#0f766e"></span> Correct/15</span>
+        <span><span class="ld" style="background:#2563eb"></span> WCPM</span>
+        <span><span class="ld" style="background:#d97706"></span> sec/15w (lower = faster)</span>
+        <span><span class="ld-line"></span> 12/15 accuracy goal</span>
+      </div>
+    </div>`;
+
+  // 3. Encoding / dictation section
+  const missChips = commonDictMisses(allEncoding).slice(0, 16);
+  const dictCallout = dictSessions.length >= 2 ? `
+    <div class="growth-callout">
+      <div class="growth-range">
+        ${escapeHtml(formatDateShort(firstDictSess[0] + "T12:00:00"))} → ${escapeHtml(formatDateShort(lastDictSess[0] + "T12:00:00"))}
+        <span class="growth-badge">${dictSessions.length} sessions</span>
+      </div>
+      <div class="growth-items">
+        <div class="growth-item">
+          <span class="gi-label">Misses/session</span>
+          <span class="gi-val">${firstDictSess[1]}</span><span class="gi-arrow">→</span><span class="gi-val">${lastDictSess[1]}</span>
+          ${delta(lastDictSess[1] - firstDictSess[1], "", true)}
+        </div>
+      </div>
+    </div>` : "";
+
+  const encodingSection = `
+    <div class="section page-break">
+      <div class="section-heading">Encoding — Dictation Profile</div>
+      <div class="tiles-row">
+        <div class="tile ${tileClass("misses", allEncoding.length)}">
+          <strong>${allEncoding.length}</strong>
+          <span>Total Misses</span>
+        </div>
+        <div class="tile ${tileClass("misses", recentDictCount)}">
+          <strong>${recentDictCount}</strong>
+          <span>Recent (last 5)</span>
+        </div>
+        <div class="tile gray">
+          <strong style="font-size:14px">${escapeHtml(topDictArea || "--")}</strong>
+          <span>Top Area</span>
+        </div>
+        <div class="tile gray">
+          <strong style="font-size:14px">${escapeHtml(lastDictItem)}</strong>
+          <span>Last Miss</span>
+        </div>
+      </div>
+      ${missChips.length ? `<div class="chip-list">${missChips.map((w) => `<span class="chip">${escapeHtml(w)}</span>`).join("")}</div>` : ""}
+      ${dictCallout}
+      <div class="chart-box">${buildDictationSvg(allEncoding, CW)}</div>
+    </div>`;
+
+  // 4. Patterns section
+  const patternsSection = patterns.length ? `
+    <div class="section" style="margin-top:20px">
+      <div class="section-heading">Phonics Pattern Flags — Instructional Targets</div>
+      <div class="pattern-grid">
+        ${patterns.slice(0, 8).map((p) => `
+          <div class="ptile ${p.level}">
+            <strong>${escapeHtml(p.title)}<span class="pc">${p.count}</span></strong>
+            <p>${escapeHtml(p.note)}</p>
+            <small>${escapeHtml(p.examples.slice(0, 8).join(", "))}</small>
+          </div>`).join("")}
+      </div>
+    </div>` : "";
+
+  // 5. Lesson records table
+  const recordsRows = sorted.slice().reverse().map((r) => {
+    const correct = Number(r.correct ?? "");
+    const wrong   = r.wrongCount ?? Math.max((r.total || 15) - correct, 0);
+    const sec     = Number(r.seconds || 0);
+    const wcpm    = r.wcpm || wcpmForRecord(r);
+    const flags   = [r.accuracy && "Acc", r.fluency && "Flu", r.automaticity && "Auto"].filter(Boolean);
+    return `<tr>
+      <td>${escapeHtml(r.displayDate || r.date || "")}</td>
+      <td>${escapeHtml(r.substep || "")}</td>
+      <td>R${escapeHtml(r.reader || "")}, p.${escapeHtml(r.wordlistPage || "")}</td>
+      <td>${escapeHtml(titleCase(r.chartHalf || ""))}</td>
+      <td class="${cellClass("correct", correct)}">${correct}/${r.total || 15}</td>
+      <td class="${cellClass("misses", wrong)}">${wrong}</td>
+      <td class="${cellClass("seconds", sec)}">${sec || "--"}</td>
+      <td class="${cellClass("wcpm", wcpm)}">${wcpm || "--"}</td>
+      <td>${flags.map((f) => `<span class="flag">${f}</span>`).join(" ")}</td>
+      <td style="max-width:140px;white-space:normal">${escapeHtml((r.wrongWords || []).join(", ") || "")}</td>
+    </tr>`;
+  }).join("");
+
+  const recordsSection = `
+    <div class="section page-break">
+      <div class="section-heading">Lesson Records (${sorted.length} total)</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr>
+            <th>Date</th><th>Substep</th><th>Page</th><th>Half</th>
+            <th>Correct</th><th>Missed</th><th>sec/15w</th><th>WCPM</th>
+            <th>Flags</th><th>Missed Words</th>
+          </tr></thead>
+          <tbody>${recordsRows || '<tr><td colspan="10" style="color:#94a3b8;padding:12px">No records saved yet.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // 6. Footer
+  const footerHtml = `
+    <div class="report-footer">
+      <div>
+        <div>Teach Today · Wilson Reading Structured Literacy</div>
+        <div style="margin-top:2px">Generated ${new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}</div>
+      </div>
+      <div class="sig-area">
+        <div class="sig-line">Educator Signature / Date</div>
+      </div>
+    </div>`;
+
+  document.getElementById("report").innerHTML =
+    headerHtml + decodingSection + encodingSection + patternsSection + recordsSection + footerHtml;
+}
+
+buildReport();
+</script>
+</body>
+</html>
