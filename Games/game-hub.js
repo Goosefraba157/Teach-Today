@@ -4,6 +4,7 @@
   const HUB_KEY = "teachTodayGameHub.v1";
   const CURSIVE_KEY = "wilsonCursiveStrokeLab.v1";
   const TEACH_KEY = "dyslexiaInstructionEngine.v2";
+  const DECODE_DASH_GAME_ID = "decodeDash";
 
   const seedNames = [
     "Angel", "Emma", "Ariana", "Mia", "Emmanuel", "Juan", "Sofia",
@@ -46,6 +47,10 @@
     render();
     saveHub();
   }
+
+  // Decode Dash scores are written directly into hub by the game itself.
+  // This function is a no-op placeholder kept for symmetry; scores already live in hub.games.
+  function mergeDecodeDashPlayers() {}
 
   function bindEvents() {
     dom.studentSearch.addEventListener("input", renderStudentGrid);
@@ -108,7 +113,7 @@
     dom.studentInitials.textContent = initials(student.name);
     dom.totalPoints.textContent = total;
     dom.gamesPlayed.textContent = Object.values(totals).filter((value) => value > 0).length;
-    dom.cursivePoints.textContent = totals.syllableSlice || 0;
+    dom.cursivePoints.textContent = (totals.syllableSlice || 0) + (totals.decodeDash || 0);
     dom.rankLabel.textContent = rank.label;
     dom.sparkFill.style.width = `${rank.progress}%`;
     renderGames(student, totals);
@@ -139,6 +144,16 @@
         playable: true
       },
       {
+        id: "decodeDash",
+        title: "Decode Dash",
+        copy: "Run through the track, collect the closing sound, and close the syllable — Wilson style.",
+        href: `Decode%20Dash/index.html?student=${studentParam}`,
+        points: totals.decodeDash || 0,
+        status: "Ready",
+        art: ["sh", "i", "p", "✓"],
+        playable: true
+      },
+      {
         id: "word",
         title: "Word Builder",
         copy: "Coming next: build words from sounds and race your best score.",
@@ -146,16 +161,6 @@
         points: 0,
         status: "Soon",
         art: ["w", "o", "r", "d"],
-        playable: false
-      },
-      {
-        id: "sound",
-        title: "Sound Sprint",
-        copy: "Coming next: quick sound-symbol rounds with bonus streaks.",
-        href: "#",
-        points: 0,
-        status: "Soon",
-        art: ["s", "p", "r", "n"],
         playable: false
       }
     ];

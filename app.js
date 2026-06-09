@@ -1957,8 +1957,10 @@ function stopLiveTimer(card, stopMic = true) {
   card.querySelector(".mic-toggle").classList.remove("active");
   setRecordingStatus(card, "Stopped");
   if (stopMic) {
-    stopAudioRecording(true);
-    setTimeout(() => showAudioPlayerInCard(card), 400);
+    stopAudioRecording(true).then((blob) => {
+      showAudioPlayerInCard(card);
+      if (blob) transcribeSessionIfKeySet(card, blob);
+    });
   }
   if (stopMic && activeRecognition) {
     try {
@@ -2111,7 +2113,7 @@ async function startAudioRecording(card) {
 }
 
 function stopAudioRecording(save = true) {
-  if (!activeMediaRecorder) return;
+  if (!activeMediaRecorder) return Promise.resolve(null);
   const recorder = activeMediaRecorder;
   const chunks = activeAudioChunks;
   activeMediaRecorder = null;
@@ -2119,14 +2121,17 @@ function stopAudioRecording(save = true) {
   recorder.stream?.getTracks().forEach((t) => t.stop());
   if (!save) {
     try { recorder.stop(); } catch (_) {}
-    return;
+    return Promise.resolve(null);
   }
-  recorder.onstop = () => {
-    const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-    window._lastAudioBlob = blob;
-    window._lastAudioUrl = URL.createObjectURL(blob);
-  };
-  try { recorder.stop(); } catch (_) {}
+  return new Promise((resolve) => {
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      window._lastAudioBlob = blob;
+      window._lastAudioUrl = URL.createObjectURL(blob);
+      resolve(blob);
+    };
+    try { recorder.stop(); } catch (_) { resolve(null); }
+  });
 }
 
 function showAudioPlayerInCard(card) {
@@ -2139,6 +2144,101 @@ function showAudioPlayerInCard(card) {
   div.innerHTML = `<span style="font-size:12px;color:#555;">Session recording:</span><audio controls src="${url}" style="height:32px;flex:1;min-width:180px;"></audio>`;
   card.querySelector(".live-notes-label")?.before(div);
 }
+
+// ── OpenAI Transcription ─────────────────────────────────────────────────────
+function getOpenAIKey() {
+  return localStorage.getItem("teachToday.openaiKey") || "";
+}
+
+// Column-reading order: student reads col1 top→bottom, col2, col3
+// CSS grid is 3 cols, DOM order is row-by-row → remap indices
+const COLUMN_READ_ORDER = [0, 3, 6, 9, 12, 1, 4, 7, 10, 13, 2, 5, 8, 11, 14];
+
+async function transcribeSessionIfKeySet(card, blob) {
+  const key = getOpenAIKey();
+  if (!key || !blob) return;
+  const activeHalf = activeChartHalf(card);
+  const cells = [...card.querySelectorAll(`.chart-cell[data-word][data-section="${activeHalf}"]`)];
+  if (!cells.length) return;
+
+  // Build word list in column-reading order
+  const wordsInReadingOrder = COLUMN_READ_ORDER
+    .filter((i) => i < cells.length)
+    .map((i) => cells[i]?.dataset.word || "");
+
+  setRecordingStatus(card, "Transcribing…", "live");
+
+  try {
+    // Convert blob to base64
+    const arrayBuffer = await blob.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+    const base64 = btoa(binary);
+    const fmt = blob.type.includes("ogg") ? "ogg" : "webm";
+
+    const systemPrompt = `You are helping a Wilson Reading teacher score a student's oral reading.
+The student is reading words aloud one at a time for a decoding assessment.
+Your job is to transcribe EXACTLY what the student says — including all errors, mispronunciations, and sound substitutions.
+Do NOT correct words to standard spelling. If the student says "wunning" write "wunning". If they say "est-ab-lish" write "establish".
+If a word is inaudible or skipped, return null for that entry.`;
+
+    const userPrompt = `The student is reading these ${wordsInReadingOrder.length} words in order (column by column, top to bottom):
+${wordsInReadingOrder.map((w, i) => `${i + 1}. ${w}`).join("\n")}
+
+Listen carefully and return a JSON array — one object per word, in the same order:
+[{"word": "target_word", "said": "what_student_said_or_null"}, ...]
+Return only the JSON array, nothing else.`;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+      body: JSON.stringify({
+        model: "gpt-4o-audio-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "input_audio", input_audio: { data: base64, format: fmt } },
+              { type: "text", text: userPrompt }
+            ]
+          }
+        ],
+        response_format: { type: "text" }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || "";
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error("No JSON in response");
+    const results = JSON.parse(jsonMatch[0]);
+
+    // Fill "said..." inputs — map reading order back to DOM cells
+    results.forEach((item, readingIndex) => {
+      const domIndex = COLUMN_READ_ORDER[readingIndex];
+      const cell = cells[domIndex];
+      if (!cell || item.said == null) return;
+      const input = cell.querySelector(".said-input");
+      if (input && !input.dataset.edited) {
+        input.value = item.said;
+        updateLiveScore(card);
+      }
+    });
+
+    setRecordingStatus(card, "Transcribed ✓");
+  } catch (err) {
+    setRecordingStatus(card, `Transcription failed: ${err.message}`, "error");
+    console.error("Transcription error:", err);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function saveLiveRecord(card, options = {}) {
   const group = activeGroup();

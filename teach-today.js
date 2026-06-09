@@ -7383,6 +7383,25 @@ function ttBind() {
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   document.getElementById("ttFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
+  // OpenAI key setup
+  const openAIKeyInput = document.getElementById("ttOpenAIKey");
+  const openAIKeySave = document.getElementById("ttOpenAISave");
+  const openAIKeyStatus = document.getElementById("ttOpenAIKeyStatus");
+  if (openAIKeyInput) {
+    const saved = localStorage.getItem("teachToday.openaiKey") || "";
+    openAIKeyInput.value = saved;
+    if (openAIKeyStatus) openAIKeyStatus.textContent = saved ? "Key saved — transcription is active." : "";
+  }
+  openAIKeySave?.addEventListener("click", () => {
+    const val = openAIKeyInput?.value.trim() || "";
+    if (val && !val.startsWith("sk-")) {
+      if (openAIKeyStatus) openAIKeyStatus.textContent = "That doesn't look like an OpenAI key (should start with sk-).";
+      return;
+    }
+    localStorage.setItem("teachToday.openaiKey", val);
+    if (openAIKeyStatus) openAIKeyStatus.textContent = val ? "Key saved — transcription is active." : "Key cleared.";
+  });
+
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
