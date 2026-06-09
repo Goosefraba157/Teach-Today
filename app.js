@@ -2365,6 +2365,7 @@ function saveLiveRecord(card, options = {}) {
     recommendation,
     ...lessonMeta
   };
+  let pendingAudioUpload = null;
 
   // Save audio recording if one was captured
   if (window._lastAudioBlob) {
@@ -2378,11 +2379,9 @@ function saveLiveRecord(card, options = {}) {
     const fileName = `${safeName(student)}_${safeName(lesson.substep)}_lesson${lessonNum}_${dateStr}_${timeStr}.${ext}`;
     record.audioRecordingId = record.id;
     record.audioFileName = fileName;
+    record.audioUploadStatus = "queued";
     saveAudioBlob(record.id, blob).catch((err) => console.warn("Audio save failed:", err));
-    // Upload to Firebase Storage for cross-device access
-    if (typeof window.ttUploadAudioToStorage === "function") {
-      window.ttUploadAudioToStorage(record.id, blob).catch(() => {});
-    }
+    pendingAudioUpload = { id: record.id, blob };
     window._lastAudioBlob = null;
   }
 
@@ -2405,6 +2404,10 @@ function saveLiveRecord(card, options = {}) {
     decision: recommendation
   });
   saveState();
+  // Upload after saveState so the returned cloud URL can be attached to this record.
+  if (pendingAudioUpload && typeof window.ttUploadAudioToStorage === "function") {
+    window.ttUploadAudioToStorage(pendingAudioUpload.id, pendingAudioUpload.blob).catch(() => {});
+  }
   card.dataset.lastSavedSignature = liveDataSignature(card);
   syncActiveStudentUi(group);
   setRecordingStatus(card, "Saved");

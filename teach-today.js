@@ -4880,24 +4880,55 @@ async function ttFirebaseSdk() {
 }
 
 // Upload one audio blob to Firebase Storage; saves the download URL back into the record
+function ttPatchAudioRecord(recordId, patch, options = {}) {
+  const record = (appState.masterRecords || []).find((item) => item.id === recordId);
+  if (!record) return null;
+  Object.assign(record, patch);
+  saveState();
+  if (options.sync !== false && ttFirebaseUser) ttQueueFirebaseSync();
+  return record;
+}
+
 async function ttUploadAudioToStorage(recordId, blob) {
-  if (!ttFirebaseUser || !blob) return null;
+  if (!ttFirebaseUser) {
+    ttPatchAudioRecord(recordId, {
+      audioUploadStatus: "local-only",
+      audioUploadMessage: "Sign in to Sync on the original recording device to upload this audio."
+    }, { sync: false });
+    return null;
+  }
+  if (!blob) {
+    ttPatchAudioRecord(recordId, {
+      audioUploadStatus: "missing-local-file",
+      audioUploadMessage: "The local audio file was not found on this device."
+    });
+    return null;
+  }
   try {
+    ttPatchAudioRecord(recordId, {
+      audioUploadStatus: "uploading",
+      audioUploadMessage: "Uploading audio to Firebase Storage."
+    }, { sync: false });
     const { firebaseStorage, ref, uploadBytes, getDownloadURL } = await ttFirebaseSdk();
     const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
     const path = `users/${ttFirebaseUser.uid}/recordings/${recordId}.${ext}`;
     const storageRef = ref(firebaseStorage, path);
     await uploadBytes(storageRef, blob);
     const url = await getDownloadURL(storageRef);
-    const record = (appState.masterRecords || []).find((r) => r.id === recordId);
-    if (record) {
-      record.audioUrl = url;
-      saveState();
-      ttQueueFirebaseSync();
-    }
+    ttPatchAudioRecord(recordId, {
+      audioUrl: url,
+      audioUploadStatus: "cloud-ready",
+      audioUploadMessage: "Audio uploaded and ready on synced devices.",
+      audioUploadedAt: new Date().toISOString()
+    }, { sync: false });
+    await ttFirebaseSyncWrite("Saved recording audio link to Firebase.");
     return url;
   } catch (err) {
     console.warn("Audio upload to Firebase Storage failed:", err);
+    ttPatchAudioRecord(recordId, {
+      audioUploadStatus: "failed",
+      audioUploadMessage: `Firebase Storage upload failed: ${err?.code || err?.message || "unknown error"}`
+    });
     return null;
   }
 }

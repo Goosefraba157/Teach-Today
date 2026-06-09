@@ -938,6 +938,16 @@ function chartingWordTypeSelect(record) {
   </select>`;
 }
 
+function audioCloudLabel(record, fromCloud = false) {
+  if (fromCloud || record.audioUrl) return "Cloud ready";
+  const status = record.audioUploadStatus || "local-only";
+  if (status === "queued") return "Waiting to upload";
+  if (status === "uploading") return "Uploading";
+  if (status === "failed") return "Upload failed";
+  if (status === "missing-local-file") return "Local file missing";
+  return "Local only";
+}
+
 function openAudioDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("teachToday_audio", 1);
@@ -1048,13 +1058,14 @@ async function renderRecordingsSection(records) {
       card.innerHTML = `
         <div class="recording-card-meta">
           <strong>${escapeHtml(fileName)}</strong>
-          <span>${escapeHtml(metaText)} · File not found in this browser</span>
+          <span>${escapeHtml(metaText)} · ${escapeHtml(audioCloudLabel(record))}</span>
+          ${record.audioUploadMessage ? `<span>${escapeHtml(record.audioUploadMessage)}</span>` : ""}
         </div>`;
       container.appendChild(card);
       return;
     }
 
-    const cloudBadge = fromCloud ? `<span style="font-size:11px;color:#4a90e2;">☁ Cloud</span>` : "";
+    const cloudBadge = `<span style="font-size:11px;color:${fromCloud ? "#4a90e2" : "#777"};">${escapeHtml(audioCloudLabel(record, fromCloud))}</span>`;
     card.innerHTML = `
       <div class="recording-card-meta recording-card-full">
         <strong>${escapeHtml(fileName)}</strong>
