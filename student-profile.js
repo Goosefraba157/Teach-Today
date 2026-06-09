@@ -962,7 +962,7 @@ function renderRows(records) {
   records.slice().reverse().forEach((record) => {
     const row = document.createElement("tr");
     const audioCell = record.audioRecordingId
-      ? `<button class="play-audio-btn" data-recording-id="${escapeHtml(record.audioRecordingId)}" data-file-name="${escapeHtml(record.audioFileName || "recording.webm")}" title="Play session recording" style="background:none;border:1px solid #888;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:13px;">▶ Play</button>`
+      ? `<button class="play-audio-btn" data-recording-id="${escapeHtml(record.audioRecordingId)}" data-audio-url="${escapeHtml(record.audioUrl || "")}" data-file-name="${escapeHtml(record.audioFileName || "recording.webm")}" title="Play session recording" style="background:none;border:1px solid #888;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:13px;">▶ Play</button>`
       : `<span style="color:#bbb;font-size:12px;">—</span>`;
     row.innerHTML = `
       <td>${escapeHtml(record.displayDate || record.date || "")}</td>
@@ -988,19 +988,24 @@ function renderRows(records) {
   body.querySelectorAll(".play-audio-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.recordingId;
+      const audioUrl = btn.dataset.audioUrl || "";
       const fileName = btn.dataset.fileName || "recording.webm";
       // Remove any existing inline player for this row
       const existingPlayer = btn.closest("tr").querySelector(".audio-inline-player");
       if (existingPlayer) { existingPlayer.remove(); return; }
       btn.textContent = "Loading…";
       try {
-        const blob = await loadAudioBlob(id);
-        if (!blob) { btn.textContent = "Not found"; return; }
-        const url = URL.createObjectURL(blob);
+        // Use Firebase Storage URL if available, otherwise fall back to IndexedDB
+        let url = audioUrl || null;
+        if (!url) {
+          const blob = await loadAudioBlob(id);
+          if (!blob) { btn.textContent = "Not found"; return; }
+          url = URL.createObjectURL(blob);
+        }
         const container = document.createElement("div");
         container.className = "audio-inline-player";
         container.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;";
-        container.innerHTML = `<audio controls src="${url}" style="height:28px;flex:1;min-width:160px;"></audio><a href="${url}" download="${escapeHtml(fileName)}" style="font-size:11px;color:#555;white-space:nowrap;">⬇ Download</a>`;
+        container.innerHTML = `<audio controls src="${url}" style="height:28px;flex:1;min-width:160px;"></audio>${audioUrl ? "" : `<a href="${url}" download="${escapeHtml(fileName)}" style="font-size:11px;color:#555;white-space:nowrap;">⬇ Download</a>`}`;
         btn.closest("td").appendChild(container);
         btn.textContent = "▶ Play";
       } catch (err) {
@@ -1022,12 +1027,15 @@ async function renderRecordingsSection(records) {
   container.innerHTML = "<p class=\"recordings-empty\" style=\"font-size:13px;color:#888;\">Loading recordings…</p>";
 
   const cards = await Promise.all(withAudio.map(async (record) => {
+    // Use Firebase Storage URL if available, otherwise load from IndexedDB
+    if (record.audioUrl) return { record, url: record.audioUrl, fromCloud: true };
     const blob = await loadAudioBlob(record.audioRecordingId).catch(() => null);
-    return { record, blob };
+    const url = blob ? URL.createObjectURL(blob) : null;
+    return { record, url, fromCloud: false };
   }));
 
   container.innerHTML = "";
-  cards.forEach(({ record, blob }) => {
+  cards.forEach(({ record, url, fromCloud }) => {
     const card = document.createElement("div");
     card.className = "recording-card";
     const fileName = record.audioFileName || "recording.webm";
@@ -1036,7 +1044,7 @@ async function renderRecordingsSection(records) {
     const half = record.chartHalf ? ` · ${titleCase(record.chartHalf)} half` : "";
     const metaText = `${dateLabel} · Substep ${substep}${half}`;
 
-    if (!blob) {
+    if (!url) {
       card.innerHTML = `
         <div class="recording-card-meta">
           <strong>${escapeHtml(fileName)}</strong>
@@ -1046,15 +1054,15 @@ async function renderRecordingsSection(records) {
       return;
     }
 
-    const url = URL.createObjectURL(blob);
+    const cloudBadge = fromCloud ? `<span style="font-size:11px;color:#4a90e2;">☁ Cloud</span>` : "";
     card.innerHTML = `
       <div class="recording-card-meta recording-card-full">
         <strong>${escapeHtml(fileName)}</strong>
-        <span>${escapeHtml(metaText)}</span>
+        <span>${escapeHtml(metaText)} ${cloudBadge}</span>
         <audio controls src="${url}"></audio>
       </div>
       <div class="recording-card-actions">
-        <a href="${url}" download="${escapeHtml(fileName)}">⬇ Download</a>
+        ${fromCloud ? "" : `<a href="${url}" download="${escapeHtml(fileName)}">⬇ Download</a>`}
       </div>`;
     container.appendChild(card);
   });

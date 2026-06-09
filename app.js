@@ -1688,9 +1688,19 @@ function setupLiveLesson(fragment, lesson) {
   });
   card.querySelector(".start-timer").addEventListener("click", () => startLiveTimer(card, false));
   card.querySelector(".pause-timer")?.addEventListener("click", () => pauseLiveTimer(card));
-  card.querySelector(".stop-timer").addEventListener("click", () => {
-    stopLiveTimer(card);
-    saveLiveRecordIfNeeded(card);
+  card.querySelector(".stop-timer").addEventListener("click", async () => {
+    // Stop the timer without touching the mic yet
+    stopLiveTimer(card, false);
+    // Stop speech recognition
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch (_) {}
+      activeRecognition = null;
+    }
+    // Await audio blob so it's ready before saving
+    const blob = await stopAudioRecording(true);
+    showAudioPlayerInCard(card);
+    // Always auto-save when stop is pressed
+    saveLiveRecord(card, { automatic: true });
   });
   card.querySelector(".mute-toggle")?.addEventListener("click", () => {
     if (isSpeechMuted) unmuteSpeech(card);
@@ -1927,7 +1937,7 @@ function updateLiveScore(card) {
   card.querySelector(".live-score").textContent = `${halfLabel} half: ${correct}/${total} correct, ${wrong} wrong${seconds ? ` in ${seconds} sec` : ""} - ${labels.join(", ") || "repeat"}`;
 }
 
-function startLiveTimer(card, withMic) {
+async function startLiveTimer(card, withMic) {
   stopLiveTimer(card, false);
   const startedAt = Date.now();
   const startElapsed = Number(card.dataset.elapsed || 0);
@@ -1944,7 +1954,8 @@ function startLiveTimer(card, withMic) {
     updateLiveScore(card);
   }, 250);
   activeTimers.set(card.dataset.lessonId, timer);
-  startAudioRecording(card);
+  // Await mic permission before starting speech recognition — avoids conflict
+  await startAudioRecording(card);
   startSpeechCapture(card); // always on — word-matching engine
 }
 
@@ -1968,18 +1979,13 @@ function stopLiveTimer(card, stopMic = true) {
   card.querySelector(".mic-toggle").classList.remove("active");
   setRecordingStatus(card, "Stopped");
   if (stopMic) {
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch (_) {}
+      activeRecognition = null;
+    }
     stopAudioRecording(true).then((blob) => {
       showAudioPlayerInCard(card);
-      if (blob) transcribeSessionIfKeySet(card, blob);
     });
-  }
-  if (stopMic && activeRecognition) {
-    try {
-      activeRecognition.stop();
-    } catch (error) {
-      card.querySelector(".live-notes").value += `\nMicrophone stop note: ${error.message}`;
-    }
-    activeRecognition = null;
   }
 }
 
@@ -2216,6 +2222,7 @@ async function loadAudioBlob(id) {
     req.onerror = () => reject(req.error);
   });
 }
+window.loadAudioBlob = loadAudioBlob; // exposed for Firebase Storage retroactive upload
 // ────────────────────────────────────────────────────────────────────────────
 
 async function startAudioRecording(card) {
@@ -2288,89 +2295,11 @@ function getOpenAIKey() {
 // CSS grid is 3 cols, DOM order is row-by-row → remap indices
 const COLUMN_READ_ORDER = [0, 3, 6, 9, 12, 1, 4, 7, 10, 13, 2, 5, 8, 11, 14];
 
-async function transcribeSessionIfKeySet(card, blob) {
-  const key = getOpenAIKey();
-  if (!key || !blob) return;
-  const activeHalf = activeChartHalf(card);
-  const cells = [...card.querySelectorAll(`.chart-cell[data-word][data-section="${activeHalf}"]`)];
-  if (!cells.length) return;
-
-  // Build word list in column-reading order
-  const wordsInReadingOrder = COLUMN_READ_ORDER
-    .filter((i) => i < cells.length)
-    .map((i) => cells[i]?.dataset.word || "");
-
-  setRecordingStatus(card, "Transcribing…", "live");
-
-  try {
-    // Convert blob to base64
-    const arrayBuffer = await blob.arrayBuffer();
-    const uint8 = new Uint8Array(arrayBuffer);
-    let binary = "";
-    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-    const base64 = btoa(binary);
-    const fmt = blob.type.includes("ogg") ? "ogg" : "webm";
-
-    const systemPrompt = `You are helping a Wilson Reading teacher score a student's oral reading.
-The student is reading words aloud one at a time for a decoding assessment.
-Your job is to transcribe EXACTLY what the student says — including all errors, mispronunciations, and sound substitutions.
-Do NOT correct words to standard spelling. If the student says "wunning" write "wunning". If they say "est-ab-lish" write "establish".
-If a word is inaudible or skipped, return null for that entry.`;
-
-    const userPrompt = `The student is reading these ${wordsInReadingOrder.length} words in order (column by column, top to bottom):
-${wordsInReadingOrder.map((w, i) => `${i + 1}. ${w}`).join("\n")}
-
-Listen carefully and return a JSON array — one object per word, in the same order:
-[{"word": "target_word", "said": "what_student_said_or_null"}, ...]
-Return only the JSON array, nothing else.`;
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
-      body: JSON.stringify({
-        model: "gpt-4o-audio-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "input_audio", input_audio: { data: base64, format: fmt } },
-              { type: "text", text: userPrompt }
-            ]
-          }
-        ],
-        response_format: { type: "text" }
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `API error ${res.status}`);
-    }
-
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content || "";
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON in response");
-    const results = JSON.parse(jsonMatch[0]);
-
-    // Fill "said..." inputs — map reading order back to DOM cells
-    results.forEach((item, readingIndex) => {
-      const domIndex = COLUMN_READ_ORDER[readingIndex];
-      const cell = cells[domIndex];
-      if (!cell || item.said == null) return;
-      const input = cell.querySelector(".said-input");
-      if (input && !input.dataset.edited) {
-        input.value = item.said;
-        updateLiveScore(card);
-      }
-    });
-
-    setRecordingStatus(card, "Transcribed ✓");
-  } catch (err) {
-    setRecordingStatus(card, `Transcription failed: ${err.message}`, "error");
-    console.error("Transcription error:", err);
-  }
+// "Said" inputs are filled in real-time by startSpeechCapture() using the
+// browser's free Web Speech API. This function is intentionally a no-op —
+// no paid transcription service is used.
+function transcribeSessionIfKeySet(card, blob) {
+  // no-op: browser SpeechRecognition handles live word capture for free
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2450,6 +2379,10 @@ function saveLiveRecord(card, options = {}) {
     record.audioRecordingId = record.id;
     record.audioFileName = fileName;
     saveAudioBlob(record.id, blob).catch((err) => console.warn("Audio save failed:", err));
+    // Upload to Firebase Storage for cross-device access
+    if (typeof window.ttUploadAudioToStorage === "function") {
+      window.ttUploadAudioToStorage(record.id, blob).catch(() => {});
+    }
     window._lastAudioBlob = null;
   }
 

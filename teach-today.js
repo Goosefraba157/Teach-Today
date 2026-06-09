@@ -4867,15 +4867,80 @@ async function ttFirebaseSdk() {
   ttFirebaseSdkPromise = Promise.all([
     import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-firestore.js`),
-    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-auth.js`)
-  ]).then(([appModule, firestoreModule, authModule]) => {
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-auth.js`),
+    import(`https://www.gstatic.com/firebasejs/${ttFirebaseSdkVersion}/firebase-storage.js`)
+  ]).then(([appModule, firestoreModule, authModule, storageModule]) => {
     const firebaseApp = appModule.initializeApp(ttFirebaseConfig);
     const firestoreDb = firestoreModule.getFirestore(firebaseApp);
     const firebaseAuth = authModule.getAuth(firebaseApp);
-    return { ...firestoreModule, ...authModule, firestoreDb, firebaseAuth };
+    const firebaseStorage = storageModule.getStorage(firebaseApp);
+    return { ...firestoreModule, ...authModule, ...storageModule, firestoreDb, firebaseAuth, firebaseStorage };
   });
   return ttFirebaseSdkPromise;
 }
+
+// Upload one audio blob to Firebase Storage; saves the download URL back into the record
+async function ttUploadAudioToStorage(recordId, blob) {
+  if (!ttFirebaseUser || !blob) return null;
+  try {
+    const { firebaseStorage, ref, uploadBytes, getDownloadURL } = await ttFirebaseSdk();
+    const ext = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
+    const path = `users/${ttFirebaseUser.uid}/recordings/${recordId}.${ext}`;
+    const storageRef = ref(firebaseStorage, path);
+    await uploadBytes(storageRef, blob);
+    const url = await getDownloadURL(storageRef);
+    const record = (appState.masterRecords || []).find((r) => r.id === recordId);
+    if (record) {
+      record.audioUrl = url;
+      saveState();
+      ttQueueFirebaseSync();
+    }
+    return url;
+  } catch (err) {
+    console.warn("Audio upload to Firebase Storage failed:", err);
+    return null;
+  }
+}
+window.ttUploadAudioToStorage = ttUploadAudioToStorage;
+
+// On sign-in, upload any recordings that are in IndexedDB but never reached Firebase Storage
+async function ttUploadPendingAudioRecordings() {
+  if (!ttFirebaseUser) return;
+  const pending = (appState.masterRecords || []).filter((r) => r.audioRecordingId && !r.audioUrl);
+  if (!pending.length) return;
+  console.log(`[Teach Today] Uploading ${pending.length} pending recording(s) to Firebase Storage…`);
+  for (const record of pending) {
+    const blob = await window.loadAudioBlob?.(record.audioRecordingId).catch(() => null);
+    if (blob) await ttUploadAudioToStorage(record.audioRecordingId, blob).catch(() => {});
+  }
+}
+
+// ── Audio → cloud sync folder ────────────────────────────────────────────────
+// Saves audio files into the same local folder used for JSON backups.
+// If that folder lives inside iCloud Drive, Dropbox, or Google Drive,
+// the files sync to other devices automatically — no extra cost.
+async function ttSaveAudioToSyncFolder(recordId, blob, fileName) {
+  try {
+    const handle = await ttCloudSyncGetValue(ttCloudSyncHandleKey);
+    if (!handle) return; // sync folder not connected
+    const hasPermission = await ttCloudSyncPermission(handle, true, false);
+    if (!hasPermission) return;
+    const fileHandle = await handle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    // Mark the record with the filename so the student profile can find it
+    const record = (appState.masterRecords || []).find((r) => r.id === recordId);
+    if (record) {
+      record.audioSyncFile = fileName;
+      saveState();
+      ttQueueFirebaseSync();
+    }
+  } catch (err) {
+    console.warn("Audio save to sync folder failed:", err);
+  }
+}
+window.ttSaveAudioToSyncFolder = ttSaveAudioToSyncFolder;
 
 async function ttFirebaseReadPayload() {
   if (!ttFirebaseUser) return null;
@@ -5042,6 +5107,7 @@ async function ttInitFirebaseSync() {
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
         await ttFirebaseRestoreIfNewer();
         ttQueueFirebaseSync();
+        ttUploadPendingAudioRecordings(); // upload any recordings that didn't make it to Storage yet
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
       } else {
         localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
@@ -7537,9 +7603,16 @@ function ttBind() {
   });
   ttById("section4").querySelector(".start-timer").addEventListener("click", () => startLiveTimer(ttChartCard, false));
   ttById("section4").querySelector(".pause-timer").addEventListener("click", () => pauseLiveTimer(ttChartCard));
-  ttById("section4").querySelector(".stop-timer").addEventListener("click", () => {
-    stopLiveTimer(ttChartCard);
-    saveLiveRecordIfNeeded(ttChartCard);
+  ttById("section4").querySelector(".stop-timer").addEventListener("click", async () => {
+    stopLiveTimer(ttChartCard, false);
+    if (typeof activeRecognition !== "undefined" && activeRecognition) {
+      try { activeRecognition.stop(); } catch (_) {}
+      // eslint-disable-next-line no-global-assign
+      activeRecognition = null;
+    }
+    const blob = await stopAudioRecording(true);
+    showAudioPlayerInCard(ttChartCard);
+    saveLiveRecord(ttChartCard, { automatic: true });
   });
   ttById("section4").querySelector(".mute-toggle")?.addEventListener("click", () => {
     if (isSpeechMuted) unmuteSpeech(ttChartCard);
