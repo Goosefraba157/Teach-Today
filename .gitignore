@@ -1,3 +1,28 @@
-.codex/
+# Private student data – keep off GitHub
+sofia-carbajal-chart-data.js
+*-chart-data.js
+
+# macOS
 .DS_Store
-node_modules/
+
+# Local backup files
+Teach Today Local BackUps/
+
+# Temp / codex work
+.codex_work
+.tmp-*
+outputs/
+
+# Local PDF resources (large, proprietary)
+Readers in PDF form/
+Dictation Books in PDF form/
+Wilson Useful Resources/
+Wilson Additional Useful Resources/
+Sounds for Section 1/
+Phrases From Dictation Book PDFs/
+Sentences from Dictation Books/
+Lessons Created/
+
+# Presentation scratch files
+wilson-7-1-presentation/scratch/
+wilson-7-1-decoding-sections/scratch/

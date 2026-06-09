@@ -7,7 +7,12 @@ function byId(id) {
 
 function state() {
   try {
-    return JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (typeof window.mergeSofiaCarbajalChartData === "function") {
+      window.mergeSofiaCarbajalChartData(data);
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+    return data;
   } catch {
     return {};
   }
@@ -76,6 +81,7 @@ function render() {
   });
 
   renderTrend(records);
+  renderDictationTrend(dictationMisses);
   renderProfileStudentButtons(data, group, student);
   renderComparisonTables(data, group);
   renderChips(byId("missedWords"), commonWrongWords(records).slice(0, 20), "No missed words saved yet.");
@@ -89,6 +95,7 @@ function render() {
   renderChartingSheet(records);
   renderRows(records);
   renderDictationRows(dictationMisses);
+  renderRecordingsSection(records);
 }
 
 function dateKeyLocal(value) {
@@ -608,57 +615,225 @@ function severityRank(level) {
   return { risk: 0, watch: 1, info: 2 }[level] ?? 3;
 }
 
+function formatDateShort(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
+function trendDelta(n, unit = "", lowerIsBetter = false) {
+  if (n === 0) return `<span class="growth-flat">±0${unit}</span>`;
+  const improving = lowerIsBetter ? n < 0 : n > 0;
+  const sign = n > 0 ? "+" : "";
+  return `<span class="${improving ? "growth-up" : "growth-down"}">${sign}${n}${unit}</span>`;
+}
+
 function renderTrend(records) {
-  const recent = records.slice(-12);
   const chart = byId("trendChart");
-  if (recent.length < 2) {
-    chart.innerHTML = "<p>Save two records to show trends.</p>";
+  if (records.length < 2) {
+    chart.innerHTML = "<p>Save two or more records to show progress over time.</p>";
     return;
   }
-  const width = 720;
-  const height = 260;
-  const pad = 34;
-  const plotWidth = width - pad * 2;
-  const plotHeight = height - pad * 2;
-  const maxWcpm = Math.max(30, ...recent.map(wcpmForRecord));
-  const maxSeconds = Math.max(60, ...recent.map((record) => Number(record.seconds || 0)));
-  const coordsFor = (valueFor, maxValue, invert = false) => recent.map((record, index) => {
-    const raw = Math.min(valueFor(record), maxValue);
-    const x = pad + (index * plotWidth) / Math.max(recent.length - 1, 1);
-    const y = invert
-      ? pad + (raw / maxValue) * plotHeight
-      : height - pad - (raw / maxValue) * plotHeight;
-    return { x, y, value: valueFor(record) };
+
+  const sorted = records.slice().sort((a, b) =>
+    new Date(a.date || a.displayDate || 0) - new Date(b.date || b.displayDate || 0)
+  );
+  const first = sorted[0];
+  const last = sorted.at(-1);
+
+  // Growth summary
+  const firstCorrect = Number(first.correct || 0);
+  const lastCorrect = Number(last.correct || 0);
+  const firstSec = Number(first.seconds || 0);
+  const lastSec = Number(last.seconds || 0);
+  const firstWcpm = wcpmForRecord(first);
+  const lastWcpm = wcpmForRecord(last);
+  const summaryHtml = `
+    <div class="growth-summary">
+      <div class="growth-range">${escapeHtml(formatDateShort(first.date || first.displayDate))} → ${escapeHtml(formatDateShort(last.date || last.displayDate))}<span class="growth-count">${sorted.length} records</span></div>
+      <div class="growth-stats">
+        <div class="growth-stat"><span class="gs-label">Correct/15</span><span class="gs-val">${firstCorrect}</span><span class="gs-arrow">→</span><span class="gs-val">${lastCorrect}</span>${trendDelta(lastCorrect - firstCorrect)}</div>
+        ${firstSec && lastSec ? `<div class="growth-stat"><span class="gs-label">sec/15w</span><span class="gs-val">${firstSec}</span><span class="gs-arrow">→</span><span class="gs-val">${lastSec}</span>${trendDelta(lastSec - firstSec, " sec", true)}</div>` : ""}
+        ${firstWcpm && lastWcpm ? `<div class="growth-stat"><span class="gs-label">WCPM</span><span class="gs-val">${firstWcpm}</span><span class="gs-arrow">→</span><span class="gs-val">${lastWcpm}</span>${trendDelta(lastWcpm - firstWcpm)}</div>` : ""}
+      </div>
+    </div>
+  `;
+
+  // Chart geometry
+  const PAD_L = 38, PAD_R = 24, PAD_T = 28, PAD_B = 66;
+  const H = 270;
+  const MIN_SPACING = 46;
+  const baseW = 700 - PAD_L - PAD_R;
+  const spacing = sorted.length > 1 ? Math.max(MIN_SPACING, Math.floor(baseW / (sorted.length - 1))) : baseW;
+  const W = PAD_L + spacing * Math.max(sorted.length - 1, 1) + PAD_R + 16;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const maxWcpm = Math.max(30, ...sorted.map(wcpmForRecord));
+  const maxSec = Math.max(60, ...sorted.map((r) => Number(r.seconds || 0)));
+
+  const xAt = (i) => PAD_L + (sorted.length > 1 ? (i / (sorted.length - 1)) * plotW : plotW / 2);
+  const yAcc = (v) => PAD_T + plotH - (Math.min(Math.max(v, 0), 15) / 15) * plotH;
+  const yWcpm = (v) => PAD_T + plotH - (Math.min(Math.max(v, 0), maxWcpm) / maxWcpm) * plotH;
+  const ySec = (v) => v > 0 ? PAD_T + (Math.min(v, maxSec) / maxSec) * plotH : null;
+
+  const accPts = sorted.map((r, i) => ({ x: xAt(i), y: yAcc(Number(r.correct || 0)), v: Number(r.correct || 0) }));
+  const wcpmPts = sorted.map((r, i) => {
+    const v = wcpmForRecord(r);
+    return { x: xAt(i), y: v > 0 ? yWcpm(v) : null, v };
   });
-  const accuracy = coordsFor((record) => Number(record.correct || 0), 15);
-  const wcpm = coordsFor(wcpmForRecord, maxWcpm);
-  const seconds = coordsFor((record) => Number(record.seconds || 0), maxSeconds, true);
-  const points = (coords) => coords.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-  const labels = (coords, className, offset) => coords.map((point) => (
-    `<text x="${point.x.toFixed(1)}" y="${Math.max(12, point.y + offset).toFixed(1)}" class="${className}">${point.value}</text>`
-  )).join("");
+  const secPts = sorted.map((r, i) => {
+    const v = Number(r.seconds || 0);
+    return { x: xAt(i), y: ySec(v), v };
+  });
+
+  const polylineStr = (pts) => pts.filter((p) => p.y !== null).map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  // Grid lines at meaningful accuracy thresholds
+  const gridValues = [0, 5, 10, 12, 15];
+  const gridSvg = gridValues.map((v) => {
+    const y = yAcc(v).toFixed(1);
+    const isThresh = v === 12;
+    return `<line x1="${PAD_L}" y1="${y}" x2="${(W - PAD_R).toFixed(1)}" y2="${y}" class="${isThresh ? "threshold-line" : "grid-line"}"></line>
+      <text x="${(PAD_L - 5).toFixed(1)}" y="${(yAcc(v) + 4).toFixed(1)}" class="y-label">${v}</text>
+      ${isThresh ? `<text x="${(W - PAD_R + 3).toFixed(1)}" y="${(yAcc(v) + 4).toFixed(1)}" class="threshold-tag">goal</text>` : ""}`;
+  }).join("");
+
+  // Substep change markers
+  const substepSvg = sorted.map((r, i) => {
+    if (i === 0 || !r.substep || r.substep === sorted[i - 1].substep) return "";
+    const x = xAt(i).toFixed(1);
+    return `<line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${(H - PAD_B).toFixed(1)}" class="substep-marker"></line>
+      <text x="${x}" y="${(PAD_T - 6).toFixed(1)}" class="substep-label">${escapeHtml(r.substep || "")}</text>`;
+  }).join("");
+
+  // Date labels rotated at bottom
+  const dateSvg = sorted.map((r, i) => {
+    const d = new Date(r.date || r.displayDate || "");
+    if (Number.isNaN(d.getTime())) return "";
+    const label = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const cx = xAt(i).toFixed(1);
+    const cy = (H - PAD_B + 14).toFixed(1);
+    return `<text x="${cx}" y="${cy}" class="date-label" transform="rotate(-40 ${cx} ${cy})">${escapeHtml(label)}</text>`;
+  }).join("");
+
+  // Dots with tooltips
+  const dotsSvg = (pts, cls, tipFn) => pts.map((p, i) => {
+    if (p.y === null) return "";
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" class="trend-dot ${cls}"><title>${escapeHtml(tipFn(sorted[i]))}</title></circle>`;
+  }).join("");
+
+  const svgHtml = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Student progress over time" style="display:block">
+    ${gridSvg}
+    <line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${(H - PAD_B).toFixed(1)}" class="axis"></line>
+    <line x1="${PAD_L}" y1="${(H - PAD_B).toFixed(1)}" x2="${(W - PAD_R).toFixed(1)}" y2="${(H - PAD_B).toFixed(1)}" class="axis"></line>
+    ${substepSvg}
+    ${secPts.filter((p) => p.y !== null).length >= 2 ? `<polyline points="${polylineStr(secPts)}" class="trend-line seconds-line"></polyline>` : ""}
+    ${wcpmPts.filter((p) => p.y !== null).length >= 2 ? `<polyline points="${polylineStr(wcpmPts)}" class="trend-line wcpm-line"></polyline>` : ""}
+    <polyline points="${polylineStr(accPts)}" class="trend-line accuracy-line"></polyline>
+    ${dotsSvg(secPts, "seconds-dot", (r) => `${shortDate(r.date || r.displayDate)}: ${r.seconds || "--"} sec/15w`)}
+    ${dotsSvg(wcpmPts, "wcpm-dot", (r) => `${shortDate(r.date || r.displayDate)}: ${wcpmForRecord(r)} WCPM`)}
+    ${dotsSvg(accPts, "accuracy-dot", (r) => `${shortDate(r.date || r.displayDate)}: ${r.correct || 0}/15 correct`)}
+    ${dateSvg}
+  </svg>`;
+
   chart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Student performance trend">
-      <text x="${pad}" y="16" class="axis-label">15 correct</text>
-      <text x="${width - pad - 70}" y="16" class="axis-label">${maxWcpm} WCPM</text>
-      <text x="${width - pad - 86}" y="32" class="axis-label">${maxSeconds} sec/15w</text>
-      <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" class="axis"></line>
-      <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" class="axis"></line>
-      <polyline points="${points(accuracy)}" class="trend-line accuracy-line"></polyline>
-      <polyline points="${points(wcpm)}" class="trend-line wcpm-line"></polyline>
-      <polyline points="${points(seconds)}" class="trend-line seconds-line"></polyline>
-      ${labels(accuracy, "point-label accuracy-label", -10)}
-      ${labels(wcpm, "point-label wcpm-label", 16)}
-      ${labels(seconds, "point-label seconds-label", 30)}
-    </svg>
-    <div class="legend"><span><i style="background:#0f766e"></i>Accuracy</span><span><i style="background:#2563eb"></i>WCPM</span><span><i style="background:#f59e0b"></i>sec/15w</span></div>
+    ${summaryHtml}
+    <div class="trend-scroll">${svgHtml}</div>
+    <div class="legend">
+      <span><i style="background:#0f766e"></i>Correct/15</span>
+      <span><i style="background:#2563eb"></i>WCPM</span>
+      <span><i style="background:#f59e0b"></i>sec/15w (lower = faster)</span>
+      <span><span class="legend-threshold-line"></span>12/15 goal</span>
+    </div>
+  `;
+}
+
+function renderDictationTrend(misses) {
+  const container = byId("dictationTrendChart");
+  if (!container) return;
+  if (!misses.length) {
+    container.innerHTML = "<p>No dictation records saved for this student yet.</p>";
+    return;
+  }
+
+  // Group by session date
+  const byDate = new Map();
+  misses.forEach((miss) => {
+    const key = dateKeyLocal(miss.date);
+    if (!key) return;
+    if (!byDate.has(key)) byDate.set(key, { key, count: 0 });
+    byDate.get(key).count++;
+  });
+
+  const dates = [...byDate.values()].sort((a, b) => a.key.localeCompare(b.key));
+  if (dates.length < 2) {
+    container.innerHTML = "<p>Need misses on two or more dates to show trends.</p>";
+    return;
+  }
+
+  const first = dates[0];
+  const last = dates.at(-1);
+  const countDelta = last.count - first.count;
+  const summaryHtml = `
+    <div class="growth-summary">
+      <div class="growth-range">${escapeHtml(formatDateShort(first.key + "T12:00:00"))} → ${escapeHtml(formatDateShort(last.key + "T12:00:00"))}<span class="growth-count">${dates.length} sessions</span></div>
+      <div class="growth-stats">
+        <div class="growth-stat"><span class="gs-label">Misses/session</span><span class="gs-val">${first.count}</span><span class="gs-arrow">→</span><span class="gs-val">${last.count}</span>${trendDelta(countDelta, "", true)}</div>
+      </div>
+    </div>
+  `;
+
+  // Bar chart geometry
+  const PAD_L = 38, PAD_R = 20, PAD_T = 20, PAD_B = 64;
+  const H = 180;
+  const MIN_BAR_W = 38;
+  const barW = Math.max(MIN_BAR_W, Math.floor((660 - PAD_L - PAD_R) / dates.length));
+  const W = Math.max(660, PAD_L + dates.length * barW + PAD_R + 16);
+  const plotH = H - PAD_T - PAD_B;
+  const maxCount = Math.max(...dates.map((d) => d.count), 1);
+
+  // Y-axis grid
+  const gridStep = maxCount <= 4 ? 1 : maxCount <= 10 ? 2 : 5;
+  const gridSvg = Array.from({ length: Math.floor(maxCount / gridStep) + 1 }, (_, k) => k * gridStep).map((v) => {
+    const y = (PAD_T + plotH - (v / maxCount) * plotH).toFixed(1);
+    return `<line x1="${PAD_L}" y1="${y}" x2="${(W - PAD_R).toFixed(1)}" y2="${y}" class="grid-line"></line>
+      <text x="${(PAD_L - 5).toFixed(1)}" y="${(Number(y) + 4).toFixed(1)}" class="y-label">${v}</text>`;
+  }).join("");
+
+  const barsSvg = dates.map((d, i) => {
+    const barH = Math.max(2, (d.count / maxCount) * plotH);
+    const bx = (PAD_L + i * barW + 3).toFixed(1);
+    const by = (PAD_T + plotH - barH).toFixed(1);
+    const bw = (barW - 6).toFixed(1);
+    const cx = (PAD_L + i * barW + barW / 2).toFixed(1);
+    const labelDate = shortDate(d.key + "T12:00:00");
+    const cy = (H - PAD_B + 14).toFixed(1);
+    return `<rect x="${bx}" y="${by}" width="${bw}" height="${barH.toFixed(1)}" class="dictation-bar" rx="3">
+        <title>${escapeHtml(labelDate)}: ${d.count} miss${d.count === 1 ? "" : "es"}</title>
+      </rect>
+      <text x="${cx}" y="${(Number(by) - 4).toFixed(1)}" class="bar-count">${d.count}</text>
+      <text x="${cx}" y="${cy}" class="date-label" transform="rotate(-40 ${cx} ${cy})">${escapeHtml(labelDate)}</text>`;
+  }).join("");
+
+  const svgHtml = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Dictation misses over time" style="display:block">
+    ${gridSvg}
+    <line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${(H - PAD_B).toFixed(1)}" class="axis"></line>
+    <line x1="${PAD_L}" y1="${(H - PAD_B).toFixed(1)}" x2="${(W - PAD_R).toFixed(1)}" y2="${(H - PAD_B).toFixed(1)}" class="axis"></line>
+    ${barsSvg}
+  </svg>`;
+
+  container.innerHTML = `
+    ${summaryHtml}
+    <div class="trend-scroll">${svgHtml}</div>
   `;
 }
 
 function renderChartingSheet(records) {
   const table = byId("chartingSheet");
   if (!table) return;
-  const chartRecords = records.slice(-12);
+  const chartRecords = records;
   if (!chartRecords.length) {
     table.innerHTML = "<tbody><tr><td class=\"sheet-empty\">No Section 4 charting records saved yet.</td></tr></tbody>";
     return;
@@ -669,7 +844,7 @@ function renderChartingSheet(records) {
     { label: "Substep", value: (record) => record.substep || "" },
     { label: "Concept", value: (record) => record.concept || record.title || record.focus || "" },
     { label: "Page #", value: (record) => record.wordlistPage || "" },
-    { label: "R or N", value: () => chartingWordTypeSelect(), html: true }
+    { label: "R or N", value: (record) => chartingWordTypeSelect(record), html: true }
   ];
   const scoreRows = Array.from({ length: 16 }, (_, index) => 15 - index);
 
@@ -755,11 +930,30 @@ function chartingWordType(record) {
   return titleCase(record.chartHalf || "");
 }
 
-function chartingWordTypeSelect() {
+function chartingWordTypeSelect(record) {
+  const selected = chartingWordType(record);
   return `<select class="charting-type-select" aria-label="Real or nonsense charting type">
-    <option selected>Real</option>
-    <option>Nonsense</option>
+    <option ${selected === "Real" ? "selected" : ""}>Real</option>
+    <option ${selected === "Nonsense" ? "selected" : ""}>Nonsense</option>
   </select>`;
+}
+
+function openAudioDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("teachToday_audio", 1);
+    req.onupgradeneeded = (e) => e.target.result.createObjectStore("recordings");
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function loadAudioBlob(id) {
+  const db = await openAudioDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("recordings", "readonly");
+    const req = tx.objectStore("recordings").get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 function renderRows(records) {
@@ -767,6 +961,9 @@ function renderRows(records) {
   body.innerHTML = "";
   records.slice().reverse().forEach((record) => {
     const row = document.createElement("tr");
+    const audioCell = record.audioRecordingId
+      ? `<button class="play-audio-btn" data-recording-id="${escapeHtml(record.audioRecordingId)}" data-file-name="${escapeHtml(record.audioFileName || "recording.webm")}" title="Play session recording" style="background:none;border:1px solid #888;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:13px;">▶ Play</button>`
+      : `<span style="color:#bbb;font-size:12px;">—</span>`;
     row.innerHTML = `
       <td>${escapeHtml(record.displayDate || record.date || "")}</td>
       <td>${escapeHtml(record.substep || "")}</td>
@@ -779,12 +976,88 @@ function renderRows(records) {
       <td>${record.accuracy ? "accuracy " : ""}${record.fluency ? "fluency " : ""}${record.automaticity ? "automaticity" : ""}</td>
       <td>${escapeHtml((record.wrongWords || []).join(", ") || "none")}</td>
       <td>${escapeHtml(record.notes || "")}</td>
+      <td>${audioCell}</td>
     `;
     body.appendChild(row);
   });
   if (!records.length) {
-    body.innerHTML = "<tr><td colspan=\"11\">No records saved for this student yet.</td></tr>";
+    body.innerHTML = "<tr><td colspan=\"12\">No records saved for this student yet.</td></tr>";
   }
+
+  // Wire up play buttons
+  body.querySelectorAll(".play-audio-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.recordingId;
+      const fileName = btn.dataset.fileName || "recording.webm";
+      // Remove any existing inline player for this row
+      const existingPlayer = btn.closest("tr").querySelector(".audio-inline-player");
+      if (existingPlayer) { existingPlayer.remove(); return; }
+      btn.textContent = "Loading…";
+      try {
+        const blob = await loadAudioBlob(id);
+        if (!blob) { btn.textContent = "Not found"; return; }
+        const url = URL.createObjectURL(blob);
+        const container = document.createElement("div");
+        container.className = "audio-inline-player";
+        container.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;";
+        container.innerHTML = `<audio controls src="${url}" style="height:28px;flex:1;min-width:160px;"></audio><a href="${url}" download="${escapeHtml(fileName)}" style="font-size:11px;color:#555;white-space:nowrap;">⬇ Download</a>`;
+        btn.closest("td").appendChild(container);
+        btn.textContent = "▶ Play";
+      } catch (err) {
+        btn.textContent = "Error";
+        console.error("Audio load failed:", err);
+      }
+    });
+  });
+}
+
+async function renderRecordingsSection(records) {
+  const container = byId("recordingsList");
+  if (!container) return;
+  const withAudio = records.slice().reverse().filter((r) => r.audioRecordingId);
+  if (!withAudio.length) {
+    container.innerHTML = "<p class=\"recordings-empty\">No recordings saved for this student yet.</p>";
+    return;
+  }
+  container.innerHTML = "<p class=\"recordings-empty\" style=\"font-size:13px;color:#888;\">Loading recordings…</p>";
+
+  const cards = await Promise.all(withAudio.map(async (record) => {
+    const blob = await loadAudioBlob(record.audioRecordingId).catch(() => null);
+    return { record, blob };
+  }));
+
+  container.innerHTML = "";
+  cards.forEach(({ record, blob }) => {
+    const card = document.createElement("div");
+    card.className = "recording-card";
+    const fileName = record.audioFileName || "recording.webm";
+    const dateLabel = record.displayDate || record.date?.slice(0, 10) || "Unknown date";
+    const substep = record.substep || "";
+    const half = record.chartHalf ? ` · ${titleCase(record.chartHalf)} half` : "";
+    const metaText = `${dateLabel} · Substep ${substep}${half}`;
+
+    if (!blob) {
+      card.innerHTML = `
+        <div class="recording-card-meta">
+          <strong>${escapeHtml(fileName)}</strong>
+          <span>${escapeHtml(metaText)} · File not found in this browser</span>
+        </div>`;
+      container.appendChild(card);
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    card.innerHTML = `
+      <div class="recording-card-meta recording-card-full">
+        <strong>${escapeHtml(fileName)}</strong>
+        <span>${escapeHtml(metaText)}</span>
+        <audio controls src="${url}"></audio>
+      </div>
+      <div class="recording-card-actions">
+        <a href="${url}" download="${escapeHtml(fileName)}">⬇ Download</a>
+      </div>`;
+    container.appendChild(card);
+  });
 }
 
 function renderDictationRows(misses) {
@@ -846,7 +1119,11 @@ function shortDate(value) {
   return date.toLocaleDateString([], { month: "numeric", day: "numeric" });
 }
 
-byId("printProfile").addEventListener("click", () => window.print());
+byId("printProfile").addEventListener("click", () => {
+  const { group, student } = selectedContext();
+  const url = `StudentReport.html?group=${encodeURIComponent(group.id || "")}&student=${encodeURIComponent(student)}`;
+  window.open(url, "_blank");
+});
 byId("backTeach").addEventListener("click", () => {
   const { group } = selectedContext();
   location.href = `TeachToday.html?group=${encodeURIComponent(group.id || "")}`;

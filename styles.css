@@ -58,6 +58,23 @@ textarea:focus-visible {
   color: #f8fafc;
 }
 
+.brand-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: #fff;
+}
+
 .brand-block h1,
 .topbar h2,
 .section-heading h3,
@@ -67,7 +84,7 @@ textarea:focus-visible {
 }
 
 .brand-block h1 {
-  font-size: 30px;
+  font-size: 26px;
   line-height: 1.05;
 }
 
@@ -149,6 +166,13 @@ textarea {
   color: var(--ink);
   background: #fff;
   font-weight: 800;
+}
+
+.action-link {
+  display: inline-grid;
+  place-items: center;
+  min-height: 42px;
+  text-decoration: none;
 }
 
 .sidebar .ghost-button {
@@ -1323,4 +1347,54 @@ textarea {
     box-shadow: none;
     break-inside: avoid;
   }
+}
+
+/* ── Speech word-matching indicators ────────────────────────────────────────── */
+.word-skipped {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.word-skipped::after {
+  content: "skipped?";
+  display: block;
+  font-size: 10px;
+  color: #f97316;
+  text-align: center;
+  margin-top: 2px;
+}
+.word-uncertain .score-toggle {
+  background: #fef9c3;
+  border-radius: 4px;
+}
+.word-uncertain .score-one.ok {
+  background: #fbbf24;
+  color: #1c1917;
+}
+.word-uncertain .score-one.ok::after {
+  content: " ?";
+}
+.mute-toggle.active {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+/* word-mismatch: heard something different — check this word */
+.word-mismatch {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-radius: 6px;
+  background: #fff7ed;
+}
+.word-mismatch .score-one.ok {
+  background: #fdba74;
+  color: #431407;
+}
+
+/* word-current: the next word the tracker is listening for */
+.word-current {
+  outline: 2px dashed #3b82f6;
+  outline-offset: 3px;
+  border-radius: 6px;
 }

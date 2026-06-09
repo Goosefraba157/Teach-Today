@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Syllable Slice</title>
+    <link rel="stylesheet" href="syllable-slice.css">
+  </head>
+  <body>
+    <main class="slice-app" aria-label="Syllable Slice game">
+      <header class="topbar">
+        <a class="icon-link" href="../index.html" aria-label="Back to Game Quest">‹</a>
+        <div class="player-chip">
+          <span id="playerInitials">--</span>
+          <div>
+            <p>Now slicing</p>
+            <strong id="playerName">Player</strong>
+          </div>
+        </div>
+        <div class="score-chip">
+          <p>Total</p>
+          <strong id="totalPoints">0</strong>
+        </div>
+      </header>
+
+      <section class="arena" aria-label="Current round">
+        <div class="round-hud">
+          <div>
+            <p class="mini-label" id="roundLevel">Reader 3.1</p>
+            <h1 id="prompt">Separate the word.</h1>
+          </div>
+          <div class="timer-shell" aria-label="Time left">
+            <span id="timerFill"></span>
+          </div>
+        </div>
+
+        <div class="word-stage" id="wordStage">
+          <div class="word-track" id="wordTrack" aria-label="Word slicer"></div>
+          <div class="slice-bank" id="sliceBank" aria-label="Slice markers"></div>
+        </div>
+
+        <div class="action-row">
+          <button class="ghost-btn" id="clearBtn" type="button">Clear</button>
+          <button class="primary-btn" id="checkBtn" type="button">Slice</button>
+        </div>
+      </section>
+
+      <section class="stat-strip" aria-label="Game stats">
+        <article>
+          <strong id="streakCount">0</strong>
+          <span>Streak</span>
+        </article>
+        <article>
+          <strong id="roundPoints">+0</strong>
+          <span>Last round</span>
+        </article>
+        <article>
+          <strong id="milestoneLabel">250</strong>
+          <span>Next milestone</span>
+        </article>
+      </section>
+
+      <section class="milestone-road" aria-label="Milestone progress">
+        <div class="road-fill" id="roadFill"></div>
+        <div class="road-dots" id="roadDots"></div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script src="../../reader-wordlists.js"></script>
+    <script src="syllable-slice.js"></script>
+  </body>
+</html>

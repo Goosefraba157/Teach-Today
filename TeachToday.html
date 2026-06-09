@@ -11,7 +11,8 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
-    <link rel="stylesheet" href="teach-today.css">
+    <link rel="stylesheet" href="app-nav.css">
+    <link rel="stylesheet" href="teach-today.css?v=section7-hfw-arrows-1">
   </head>
   <body>
     <div class="compat-shell" aria-hidden="true">
@@ -30,7 +31,7 @@
       <input id="selectedGroupName">
       <select id="substepSelect"></select>
       <select id="meetingDays"><option value="1">1</option></select>
-      <select id="readerLevel"><option value="AB">AB</option><option value="A">A</option><option value="B">B</option></select>
+      <select id="readerLevel"><option value="AB">AB</option><option value="A">A</option><option value="B">B</option><option value="N">N</option></select>
       <select id="ttStudent"></select>
       <textarea id="teacherNote"></textarea>
       <button id="advanceBtn" type="button"></button>
@@ -63,38 +64,97 @@
     </div>
 
     <header class="teach-bar">
-      <div class="brand-block">
-        <img class="app-logo" src="assets/morrocoy-logo.png" alt="">
-        <div>
-          <p>Teach Today</p>
-          <h1 id="ttTitle">Ready</h1>
-          <strong id="ttLessonFile" class="lesson-file-name">Lesson loading...</strong>
-          <p id="ttSaveStatus" class="save-status">Lesson not saved yet</p>
+      <!-- Row 1: Context — logo, group, lesson info, sync -->
+      <div class="context-bar">
+        <div class="brand-block">
+          <img class="app-logo" src="assets/morrocoy-logo.png" alt="">
+          <em class="brand-label">Teach Today</em>
+        </div>
+        <div class="ctx-sep"></div>
+        <select id="ttGroup" title="Active group" class="group-select"></select>
+        <div class="lesson-meta">
+          <strong id="ttTitle" class="lesson-title">Ready</strong>
+          <strong id="ttLessonFile" class="lesson-file-name"></strong>
+          <span id="ttSaveStatus" class="save-status">Not saved</span>
+        </div>
+        <div class="ctx-spacer"></div>
+        <button id="ttFirebaseSignIn" type="button" title="Sign in to sync across devices" class="firebase-sign-in-btn">☁ Sync</button>
+        <button id="ttFirebaseSignOut" type="button" title="Sign out of cloud sync" class="firebase-sign-out-btn" hidden>Sign out</button>
+        <span id="ttFirebaseUserBadge" class="firebase-user-badge" hidden></span>
+      </div>
+
+      <!-- Row 2: Action ribbon — Word-style grouped buttons -->
+      <div class="action-ribbon">
+        <div class="ribbon-group">
+          <span class="ribbon-label">Lesson</span>
+          <div class="ribbon-buttons">
+            <button id="ttHome" type="button" title="Home dashboard">Home</button>
+            <button id="ttRefresh" type="button" title="New lesson">New</button>
+            <button id="ttWrapJump" type="button" title="Wrap up lesson">End</button>
+            <button id="ttSaveLesson" type="button" title="Save lesson">Save</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">View</span>
+          <div class="ribbon-buttons">
+            <button id="ttPresent" type="button" title="Presentation mode">Present</button>
+            <button id="ttDisplayToggle" type="button" title="Student display window">Display</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">Export</span>
+          <div class="ribbon-buttons">
+            <button id="ttPdfPlan" type="button" title="Export PDF lesson plan">PDF</button>
+            <button id="ttWilsonPlan" type="button" title="Wilson lesson plan">Wilson LP</button>
+            <button id="ttWilsonFillablePlan" type="button" title="Fillable Wilson PDF">Fillable</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">Reference</span>
+          <div class="ribbon-buttons">
+            <button id="ttRibbonReaders" type="button" title="Reader PDFs">Readers</button>
+            <button id="ttRibbonDictation" type="button" title="Dictation PDFs">Dictation</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">Data</span>
+          <div class="ribbon-buttons">
+            <button id="ttSavedToggle" type="button" title="Saved lessons">History</button>
+            <button id="ttDataToggle" type="button" title="Data center &amp; records">Records</button>
+            <button id="ttProfile" type="button" title="Student profile">Profile</button>
+          </div>
+        </div>
+        <div class="ribbon-sep ribbon-sep-students"></div>
+        <div class="ribbon-group ribbon-students" aria-label="Students">
+          <span class="ribbon-label">Students</span>
+          <div class="ribbon-buttons ribbon-students-buttons">
+            <div id="ttFrontStudents" class="front-students" aria-label="Students"></div>
+            <button id="ttAddRosterStudent" type="button" title="Add student from roster">+</button>
+            <button id="ttAttendance" type="button">Attend</button>
+          </div>
         </div>
       </div>
-      <div class="bar-actions">
-        <select id="ttGroup"></select>
-        <button id="ttPresent" type="button" title="Present">Present</button>
-        <button id="ttSaveLesson" type="button" title="Save Lesson">Save</button>
-        <button id="ttPdfPlan" type="button" title="PDF Plan">PDF</button>
-        <button id="ttWilsonPlan" type="button" title="Wilson LP">Wilson</button>
-        <button id="ttRefresh" type="button" title="New lesson">New</button>
-        <button id="ttSavedToggle" type="button" title="Saved lessons">Saved</button>
-        <button id="ttDataToggle" type="button" title="Data Center">Data</button>
-        <button id="ttProfile" type="button" title="Student profile">Profile</button>
-      </div>
-      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs"></div>
-      <section class="student-roster-bar" aria-label="Lesson students">
+      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs" hidden></div>
+      <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
+      <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Student display controls">
         <div>
-          <p>Students</p>
-          <div id="ttFrontStudents" class="front-students" aria-label="Students"></div>
+          <p>Student Display</p>
+          <strong id="ttDisplayStatus">Not opened yet</strong>
         </div>
-        <div class="student-roster-actions">
-          <button id="ttAddRosterStudent" type="button" title="Add student from roster">+</button>
-          <button id="ttAttendance" type="button">Attendance</button>
+        <div class="student-display-actions">
+          <button type="button" data-display-mode="private">Privacy</button>
+          <button type="button" data-display-mode="poster">Poster</button>
+          <button type="button" data-display-mode="hfw">HFW</button>
+          <button type="button" data-display-mode="passage">Passage</button>
+          <button type="button" data-display-mode="game">Game</button>
+          <button id="ttDisplayProjector" class="secondary" type="button">Projector</button>
+          <button id="ttDisplayOpen" class="secondary" type="button">Open window</button>
         </div>
       </section>
-      <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
       <section id="ttGroupSnapshot" class="group-snapshot" aria-label="Last class snapshot"></section>
       <section id="ttRosterPicker" class="roster-picker-panel" hidden>
         <div>
@@ -110,22 +170,150 @@
         <button id="ttRosterAddNew" type="button">Add new</button>
         <button id="ttRosterClose" class="secondary" type="button">Close</button>
       </section>
+
+      <!-- ── Reference dropdown panel ── -->
+      <section id="ttReferencePanel" class="ribbon-dropdown-panel reference-panel" hidden aria-label="Reference PDFs">
+        <div class="ref-panel-col">
+          <p class="ref-panel-label">Readers</p>
+          <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
+          <a id="ttRibbonCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current charting page</a>
+        </div>
+        <div class="ref-panel-sep"></div>
+        <div class="ref-panel-col">
+          <p class="ref-panel-label">Dictation</p>
+          <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
+          <a id="ttRibbonCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current substep start</a>
+        </div>
+      </section>
+
+      <!-- ── History dropdown panel (moved from teach-flow) ── -->
+      <section id="ttSavedPanel" class="ribbon-dropdown-panel saved-panel" hidden>
+        <div class="ribbon-dropdown-head">
+          <span class="ribbon-dropdown-title">✓ Saved Lessons</span>
+          <p class="ribbon-dropdown-sub">Saved in this app on this device/browser</p>
+          <button id="ttSavedClose" class="ribbon-dropdown-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div id="ttSavedLessons" class="saved-lessons ribbon-dropdown-scroll"></div>
+      </section>
+
+      <!-- ── Records dropdown panel (moved from teach-flow) ── -->
+      <section id="ttDataPanel" class="ribbon-dropdown-panel data-panel" hidden>
+        <div class="ribbon-dropdown-head">
+          <span class="ribbon-dropdown-title">↧ Records &amp; Data</span>
+          <p class="ribbon-dropdown-sub">Protect your records and move data between devices</p>
+          <button id="ttDataClose" class="ribbon-dropdown-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="data-status-grid">
+          <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
+          <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
+          <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
+          <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
+          <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
+        </div>
+        <div class="data-actions">
+          <button id="ttBackupData" type="button">Save backup file</button>
+          <button id="ttConnectCloudSync" type="button">Choose local folder</button>
+          <button id="ttSyncCloudNow" type="button">Save local file now</button>
+          <button id="ttFirebaseSyncNow" type="button">Firebase + local sync now</button>
+          <button id="ttRestoreData" type="button">Restore backup</button>
+          <button id="ttExportCsv" type="button">Export spreadsheet</button>
+        </div>
+        <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
+        <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
+        <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
+      </section>
     </header>
 
     <aside class="presentation-dock" aria-label="Presentation controls">
       <button id="ttExitPresent" type="button" title="Exit presentation">×</button>
       <img src="assets/morrocoy-logo.png" alt="">
       <button id="ttDockNew" type="button" title="New lesson">New</button>
-      <button id="ttDockSaved" type="button" title="Saved lessons">Saved</button>
-      <button id="ttDockData" type="button" title="Data Center">Files</button>
-      <button id="ttDockProfile" type="button" title="Student profile">Data</button>
+      <button id="ttDockSaved" type="button" title="Saved lessons">History</button>
+      <button id="ttDockData" type="button" title="Data Center">Records</button>
+      <button id="ttDockProfile" type="button" title="Student profile">Profile</button>
+      <button id="ttDockDisplay" type="button" title="Student display">Display</button>
       <button id="ttLaserToggle" type="button" title="Laser pointer">Laser</button>
       <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
+      <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Student display controls">
+        <button type="button" data-display-mode="private">Privacy</button>
+        <button type="button" data-display-mode="poster">Poster</button>
+        <button type="button" data-display-mode="hfw">HFW</button>
+        <button type="button" data-display-mode="passage">Passage</button>
+        <button type="button" data-display-mode="game">Game</button>
+        <button id="ttPresentDisplayProjector" type="button">Projector</button>
+        <button id="ttPresentDisplayOpen" type="button">Open</button>
+      </div>
     </aside>
 
     <canvas id="ttLaserCanvas" class="laser-canvas" aria-hidden="true"></canvas>
     <canvas id="ttNotesCanvas" class="notes-canvas" aria-hidden="true"></canvas>
+
+    <section id="ttLessonLaunch" class="lesson-launch" hidden aria-live="polite" aria-label="Lesson opening">
+      <div class="lesson-launch-card">
+        <span class="lesson-launch-kicker">Lesson ready</span>
+        <strong id="ttLaunchGroup">Group</strong>
+        <p id="ttLaunchMeta">Preparing the teaching view</p>
+        <div class="lesson-launch-details" aria-label="Lesson setup">
+          <span id="ttLaunchSubstep">Substep --</span>
+          <span id="ttLaunchLevel">Reader --</span>
+          <span id="ttLaunchWordlist">Wordlist p. --</span>
+          <span id="ttLaunchSentence">Sentences p. --</span>
+        </div>
+        <div class="lesson-launch-track" aria-hidden="true"><span></span></div>
+      </div>
+    </section>
+
+    <section id="ttHomeScreen" class="home-screen" hidden>
+      <header class="home-head">
+        <div>
+          <p class="eyebrow">Home</p>
+          <h2>Plan Today</h2>
+          <span>Pick a group, glance at the last lesson, then build today’s lesson fast.</span>
+        </div>
+        <div class="home-support-actions" aria-label="Reference PDFs">
+          <span>Reference</span>
+          <div class="home-support-grid">
+            <details class="home-reference-menu">
+              <summary>Readers</summary>
+              <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Browse all</a>
+              <a id="ttCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Current charting page</a>
+            </details>
+            <details class="home-reference-menu">
+              <summary>Dictation</summary>
+              <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Browse all</a>
+              <a id="ttCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Current substep start</a>
+            </details>
+          </div>
+        </div>
+        <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
+      </header>
+      <div id="ttHomeGroups" class="home-groups"></div>
+      <section id="ttQuickPlanner" class="quick-planner" hidden>
+        <div class="planner-head">
+          <div>
+            <p class="eyebrow">Lesson builder</p>
+            <h2 id="ttPlannerTitle">Select a group</h2>
+            <span id="ttPlannerLastLesson"></span>
+          </div>
+          <div class="planner-actions">
+            <button id="ttPlannerUseDefaults" type="button">Use smart defaults</button>
+            <button id="ttPlannerBuild" type="button">Build lesson</button>
+            <button id="ttPlannerOpen" type="button">Start teaching</button>
+          </div>
+        </div>
+        <div class="planner-core">
+          <label>Substep<select id="ttPlannerSubstep"></select></label>
+          <label>Reader level<select id="ttPlannerLevel"></select></label>
+          <label>Wordlist page<select id="ttPlannerWordlist"></select></label>
+          <label>Sentence page<select id="ttPlannerSentence"></select></label>
+        </div>
+        <div class="planner-workspace">
+          <div id="ttPlannerSections" class="planner-sections"></div>
+          <aside id="ttPlannerPreview" class="planner-preview" aria-label="Lesson preview"></aside>
+        </div>
+      </section>
+    </section>
 
     <section id="ttWhiteboard" class="whiteboard-overlay" hidden aria-label="Section 2 whiteboard">
       <header class="whiteboard-topbar">
@@ -196,43 +384,27 @@
               <option value="AB">AB</option>
               <option value="A">A</option>
               <option value="B">B</option>
+              <option value="N">N</option>
             </select>
           </label>
         </div>
         <div class="overview-grid">
-          <div><span>Wordlist</span><strong id="ttWordlistPage"></strong></div>
+          <div class="overview-page-card">
+            <div class="overview-page-head">
+              <span>Wordlist</span>
+              <div class="overview-page-actions">
+                <button id="ttRerollEncodingWords" class="overview-mini-action" type="button" title="New Section 6-8 words for this same charting page">↻ 6-8 words</button>
+                <label class="overview-page-select">
+                  Page
+                  <select id="ttWordlistPageSelect" aria-label="Reader charting page"></select>
+                </label>
+              </div>
+            </div>
+            <strong id="ttWordlistPage"></strong>
+          </div>
           <div><span>Sentences</span><strong id="ttSentencePage"></strong></div>
           <div><span>Passage</span><strong id="ttPassagePage"></strong></div>
         </div>
-      </section>
-
-      <section id="ttSavedPanel" class="teach-card saved-panel" hidden>
-        <div class="section-head"><span>✓</span><h2>Saved Lessons</h2></div>
-        <p class="mini-label">Saved in this app on this device/browser</p>
-        <div id="ttSavedLessons" class="saved-lessons"></div>
-      </section>
-
-      <section id="ttDataPanel" class="teach-card data-panel" hidden>
-        <div class="section-head"><span>↧</span><h2>Data Center</h2></div>
-        <p class="mini-label">Use this to protect iPad records and move data between devices</p>
-        <div class="data-status-grid">
-          <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
-          <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
-          <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
-          <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
-          <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
-        </div>
-        <div class="data-actions">
-          <button id="ttBackupData" type="button">Save backup file</button>
-          <button id="ttConnectCloudSync" type="button">Choose local folder</button>
-          <button id="ttSyncCloudNow" type="button">Save local file now</button>
-          <button id="ttFirebaseSyncNow" type="button">Firebase + local sync now</button>
-          <button id="ttRestoreData" type="button">Restore backup</button>
-          <button id="ttExportCsv" type="button">Export spreadsheet</button>
-        </div>
-        <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
-        <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
-        <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
       </section>
 
       <section id="section1" class="teach-card">
@@ -276,9 +448,14 @@
               <button id="ttOpenWhiteboard" class="small-action whiteboard-open" type="button">Whiteboard</button>
             </div>
           </div>
-          <div id="ttSection2Display" class="section2-display">
-            <span>Tap a word</span>
+          <div class="section2-card-stage">
+            <button id="ttSection2Prev" class="card-arrow section2-arrow" type="button" aria-label="Previous Section 2 word">‹</button>
+            <div id="ttSection2Display" class="section2-display">
+              <span>Tap a word</span>
+            </div>
+            <button id="ttSection2Next" class="card-arrow section2-arrow" type="button" aria-label="Next Section 2 word">›</button>
           </div>
+          <p id="ttSection2Count" class="card-count section2-count">0 of 0</p>
           <div id="ttSection2Editor" class="section2-editor" hidden>
             <label>
               Correct card split
@@ -419,10 +596,15 @@
         </label>
         <p class="mini-label">Tap a word to show it large for the student</p>
         <div id="ttPart7Hfw" class="word-row hfw-click-row"></div>
-        <div id="ttHfwDisplay" class="hfw-display" aria-live="polite">
-          <strong>Tap HFW</strong>
-          <span id="ttHfwSubstep"></span>
+        <div class="hfw-display-stage">
+          <button id="ttHfwPrev" class="card-arrow hfw-arrow" type="button" aria-label="Previous high-frequency word">‹</button>
+          <div id="ttHfwDisplay" class="hfw-display" aria-live="polite">
+            <strong>Tap HFW</strong>
+            <span id="ttHfwSubstep"></span>
+          </div>
+          <button id="ttHfwNext" class="card-arrow hfw-arrow" type="button" aria-label="Next high-frequency word">›</button>
         </div>
+        <p id="ttHfwCount" class="card-count hfw-count">0 of 0</p>
         <p class="teaching-note">Dictate one word at a time. Students segment syllables, tap sounds in each syllable, then spell with magnetic journal tiles or write on syllable cards.</p>
         <a class="next-link" href="#section8">Next: Section 8</a>
       </section>
@@ -444,9 +626,140 @@
       <section id="section10" class="teach-card">
         <div class="section-head"><span>10</span><h2>Comprehension / Wrap-Up</h2></div>
         <p id="ttWrap"></p>
-        <button id="ttBackTop" type="button">Back to top</button>
+        <a class="next-link" href="#ttWrapUpPanel">Finish lesson</a>
+      </section>
+
+      <section id="ttWrapUpPanel" class="teach-card wrap-up-card">
+        <div class="section-head section-head-with-actions">
+          <div><span>✓</span><h2>Lesson Wrap-Up</h2></div>
+          <button id="ttWrapRefresh" class="section-refresh secondary" type="button">Refresh summary</button>
+        </div>
+        <div id="ttWrapUpSummary" class="wrap-up-summary"></div>
+        <div class="wrap-up-grid">
+          <article>
+            <p class="mini-label">Attendance</p>
+            <div id="ttWrapAttendance" class="wrap-attendance"></div>
+          </article>
+          <article>
+            <p class="mini-label">Student data saved today</p>
+            <div id="ttWrapStudentData" class="wrap-student-data"></div>
+          </article>
+        </div>
+        <label class="notes-label wrap-note-label">
+          Final teacher note
+          <textarea id="ttWrapNote" rows="4" placeholder="What should future-you remember before the next lesson?"></textarea>
+        </label>
+        <div id="ttWrapRecommendation" class="wrap-recommendation"></div>
+        <div class="wrap-actions">
+          <button id="ttCompleteLesson" type="button">Complete lesson</button>
+          <button id="ttWrapSavePdf" type="button">Save + PDF</button>
+          <button id="ttWrapProfile" type="button">Student Profile</button>
+          <button id="ttWrapNextLesson" type="button">Start next lesson</button>
+          <button id="ttBackTop" type="button">↑ Top</button>
+          <button id="ttWrapHome" type="button">← Home</button>
+        </div>
       </section>
     </main>
+
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="ttLoginScreen" class="tt-login-screen">
+      <div class="tt-login-bg-rings" aria-hidden="true"></div>
+      <div class="tt-login-card">
+        <div class="tt-login-brand">
+          <div class="tt-login-logo-wrap">
+            <img src="assets/morrocoy-logo.png" alt="" class="tt-login-logo">
+          </div>
+          <h1 class="tt-login-app-name">Teach Today</h1>
+          <p class="tt-login-tagline">Wilson Reading lesson planner</p>
+        </div>
+        <div class="tt-login-divider"></div>
+        <div class="tt-login-actions">
+          <button id="ttLoginSignIn" type="button" class="tt-login-google-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M17.64 9.2c0-.637-.057-1.25-.164-1.84H9v3.48h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908C16.658 14.148 17.64 11.84 17.64 9.2z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+          <button id="ttLoginContinue" type="button" class="tt-login-continue-btn">
+            Continue without signing in
+          </button>
+        </div>
+        <p class="tt-login-sync-note">Sign in to sync your groups and records across devices.</p>
+      </div>
+    </div>
+
+    <!-- ===== NEW GROUP MODAL ===== -->
+    <div id="ttNewGroupModal" class="tt-modal-overlay" hidden>
+      <div class="tt-modal-backdrop"></div>
+      <div class="tt-modal-card" role="dialog" aria-modal="true" aria-label="Create a new group">
+        <div class="tt-modal-head">
+          <h2>Create a New Group</h2>
+          <button id="ttNewGroupClose" type="button" class="tt-modal-close" aria-label="Close">×</button>
+        </div>
+        <div class="tt-modal-body">
+          <div class="tt-form-row">
+            <label for="ttNgName">Group name *</label>
+            <input id="ttNgName" type="text" placeholder="e.g. Blue Group" autocomplete="off" autocorrect="off">
+          </div>
+          <div class="tt-form-row">
+            <label for="ttNgTime">Time slot <span class="tt-optional">(optional)</span></label>
+            <input id="ttNgTime" type="text" placeholder="e.g. 9:00 – 10:00" autocomplete="off">
+          </div>
+          <div class="tt-form-row tt-form-row-half">
+            <div>
+              <label for="ttNgSubstep">Starting substep</label>
+              <select id="ttNgSubstep"></select>
+            </div>
+            <div>
+              <label for="ttNgLevel">Reader level</label>
+              <select id="ttNgLevel">
+                <option value="AB">AB</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="N">N</option>
+              </select>
+            </div>
+          </div>
+          <div class="tt-form-divider"></div>
+          <p class="tt-form-label-head">Students</p>
+          <div class="tt-student-adder">
+            <div class="tt-student-adder-row">
+              <select id="ttNgRoster" class="tt-ng-roster-select" aria-label="Pick from roster"></select>
+              <button id="ttNgAddFromRoster" type="button" class="tt-ng-add-btn">+ Add</button>
+            </div>
+            <div class="tt-student-adder-or">or type a new name</div>
+            <div class="tt-student-adder-row">
+              <input id="ttNgNewStudent" type="text" placeholder="Student first name" autocomplete="off" autocorrect="off" autocapitalize="words">
+              <button id="ttNgAddNew" type="button" class="tt-ng-add-btn">+ Add</button>
+            </div>
+          </div>
+          <div id="ttNgStudentTags" class="tt-ng-student-tags"></div>
+        </div>
+        <div class="tt-modal-footer">
+          <button id="ttNewGroupCancel" type="button" class="tt-modal-cancel">Cancel</button>
+          <button id="ttNewGroupCreate" type="button" class="tt-modal-create">Create Group →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ONBOARDING TOUR ===== -->
+    <div id="ttOnboarding" class="tt-onboarding-overlay" hidden>
+      <div class="tt-onboarding-backdrop"></div>
+      <div class="tt-onboarding-card" role="dialog" aria-modal="true" aria-label="Getting started tour">
+        <button id="ttOnboardingClose" type="button" class="tt-onboarding-close" aria-label="Close tour">×</button>
+        <div id="ttOnboardingIcon" class="tt-onboarding-icon" aria-hidden="true"></div>
+        <h2 id="ttOnboardingTitle" class="tt-onboarding-title"></h2>
+        <p id="ttOnboardingBody" class="tt-onboarding-body"></p>
+        <div id="ttOnboardingDots" class="tt-onboarding-dots" aria-hidden="true"></div>
+        <div class="tt-onboarding-footer">
+          <button id="ttOnboardingSkip" type="button" class="tt-onboarding-skip">Skip tour</button>
+          <button id="ttOnboardingNext" type="button" class="tt-onboarding-next">Next →</button>
+        </div>
+      </div>
+    </div>
 
     <script src="reader-wordlists.js"></script>
     <script src="reader-chart-index.js"></script>
@@ -457,11 +770,14 @@
     <script src="dictation-phrase-index.js"></script>
     <script src="dictation-sentence-index.js"></script>
     <script src="sample-blue-group-data.js"></script>
+    <script src="sofia-carbajal-chart-data.js"></script>
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js"></script>
-    <script src="teach-today.js"></script>
+    <script src="teach-today.js?v=section7-hfw-arrows-1"></script>
     <script src="pwa-register.js"></script>
+    <script src="onboarding.js"></script>
+    <script src="add-group.js"></script>
   </body>
 </html>

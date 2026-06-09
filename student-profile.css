@@ -23,31 +23,52 @@ body {
 }
 
 button {
-  min-height: 44px;
+  min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 9px 12px;
+  padding: 6px 12px;
   background: #fff;
   color: var(--ink);
   font: inherit;
   font-weight: 900;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.96);
 }
 
 .profile-header {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--line);
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
+  /* position/backdrop set by .tt-page-header in app-nav.css */
+  align-items: center;
 }
 
-.profile-header p,
+.profile-student-info {
+  min-width: 0;
+}
+
+.profile-student-info p {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.profile-header h1,
+.section-title h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+#studentMeta {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .section-title p {
   margin: 0 0 4px;
   color: var(--muted);
@@ -56,26 +77,10 @@ button {
   text-transform: uppercase;
 }
 
-.profile-header h1,
-.section-title h2 {
-  margin: 0;
-}
-
-#studentMeta {
-  color: var(--muted);
-  font-weight: 800;
-}
-
 .header-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-#backTeach {
-  border-color: var(--teal);
-  background: var(--teal);
-  color: #fff;
 }
 
 .profile-shell {
@@ -112,10 +117,11 @@ button {
 
 .compare-controls button,
 .profile-student-buttons button {
-  min-height: 38px;
+  min-height: 30px;
   border-radius: 999px;
-  padding: 6px 11px;
-  font-size: 13px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .compare-controls button.active,
@@ -515,6 +521,163 @@ button {
   display: block;
 }
 
+/* Scrollable chart container for time-series with many records */
+.trend-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 10px;
+}
+
+.trend-scroll svg {
+  min-height: unset;
+  width: auto;
+  max-width: none;
+}
+
+/* Chart grid and threshold */
+.grid-line {
+  stroke: #e2e8f0;
+  stroke-width: 1;
+}
+
+.threshold-line {
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+
+.threshold-tag {
+  font-size: 9px;
+  fill: #94a3b8;
+  dominant-baseline: middle;
+}
+
+/* Y-axis value labels */
+.y-label {
+  font-size: 10px;
+  fill: #94a3b8;
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+/* X-axis date labels */
+.date-label {
+  font-size: 10px;
+  fill: #64748b;
+  text-anchor: end;
+}
+
+/* Substep change markers */
+.substep-marker {
+  stroke: var(--teal);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.45;
+}
+
+.substep-label {
+  font-size: 8px;
+  fill: var(--teal);
+  text-anchor: middle;
+  opacity: 0.8;
+}
+
+/* Data point dots */
+.trend-dot {
+  stroke: white;
+  stroke-width: 1.5;
+}
+
+.accuracy-dot  { fill: #0f766e; }
+.wcpm-dot      { fill: #2563eb; }
+.seconds-dot   { fill: #d97706; }
+
+/* Legend threshold indicator */
+.legend-threshold-line {
+  display: inline-block;
+  width: 20px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #94a3b8 0 6px, transparent 6px 9px);
+  vertical-align: middle;
+}
+
+/* Dictation bar chart */
+.dictation-bar {
+  fill: #f87171;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.dictation-bar:hover { opacity: 1; }
+
+.bar-count {
+  font-size: 10px;
+  fill: #64748b;
+  text-anchor: middle;
+  font-weight: 700;
+}
+
+/* Growth summary banner */
+.growth-summary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.growth-range {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.growth-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.growth-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.growth-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.gs-label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.gs-val {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.gs-arrow {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.growth-up   { color: #0f766e; font-weight: 700; }
+.growth-down { color: #dc2626; font-weight: 700; }
+.growth-flat { color: #94a3b8; font-weight: 600; }
+
 .axis {
   stroke: #cbd5e1;
   stroke-width: 1.5;
@@ -522,7 +685,7 @@ button {
 
 .trend-line {
   fill: none;
-  stroke-width: 4;
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -1007,4 +1170,61 @@ tbody tr {
   .two-column {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Session Recordings ─────────────────────────────────────────────────── */
+.recordings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.recordings-empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.recording-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.recording-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recording-card-meta strong {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+  word-break: break-all;
+}
+.recording-card-meta span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.recording-card audio {
+  width: 100%;
+  height: 30px;
+  margin-top: 6px;
+}
+.recording-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.recording-card-actions a {
+  font-size: 12px;
+  color: var(--teal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.recording-card-actions a:hover { text-decoration: underline; }
+.recording-card-full {
+  grid-column: 1 / -1;
 }

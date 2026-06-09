@@ -11,18 +11,28 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css">
     <link rel="stylesheet" href="student-profile.css">
   </head>
   <body>
-    <header class="profile-header">
-      <div>
-        <p>Student profile</p>
+    <header class="profile-header tt-page-header">
+      <div class="tt-brand">
+        <img src="assets/morrocoy-logo.png" alt="" class="tt-logo">
+        <div class="tt-brand-text">
+          <em>Teach Today</em>
+          <strong>Student Profile</strong>
+        </div>
+      </div>
+      <div class="tt-header-sep"></div>
+      <div class="profile-student-info">
+        <p>Viewing</p>
         <h1 id="studentName">Student</h1>
         <span id="studentMeta"></span>
       </div>
+      <div class="tt-header-spacer"></div>
       <div class="header-actions">
-        <button id="printProfile" type="button">Print</button>
-        <button id="backTeach" type="button">Back to Teach Today</button>
+        <button id="printProfile" type="button" class="tt-btn">Print</button>
+        <button id="backTeach" type="button" class="tt-btn tt-btn-back">← Teach Today</button>
       </div>
     </header>
 
@@ -149,6 +159,14 @@
         <div id="trendChart" class="chart-wrap"></div>
       </section>
 
+      <section class="profile-card">
+        <div class="section-title">
+          <h2>Dictation Over Time</h2>
+          <p>Spelling misses per session date</p>
+        </div>
+        <div id="dictationTrendChart" class="chart-wrap"></div>
+      </section>
+
       <section class="two-column">
         <article class="profile-card">
           <div class="section-title">
@@ -201,6 +219,16 @@
         </div>
       </section>
 
+      <section class="profile-card" id="recordingsSection">
+        <div class="section-title">
+          <h2>Session Recordings</h2>
+          <p>Audio captured during Section 4 charting</p>
+        </div>
+        <div id="recordingsList" class="recordings-list">
+          <p class="recordings-empty">No recordings saved for this student yet.</p>
+        </div>
+      </section>
+
       <section class="profile-card">
         <div class="section-title">
           <h2>Lesson Records</h2>
@@ -221,6 +249,7 @@
                 <th>Flags</th>
                 <th>Wrong words</th>
                 <th>Notes</th>
+                <th>Recording</th>
               </tr>
             </thead>
             <tbody id="recordRows"></tbody>
@@ -249,6 +278,7 @@
       </section>
     </main>
 
+    <script src="sofia-carbajal-chart-data.js"></script>
     <script src="student-profile.js"></script>
     <script src="pwa-register.js"></script>
   </body>
