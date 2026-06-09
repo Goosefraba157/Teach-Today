@@ -8,10 +8,6 @@ let ttSection2Index = 0;
 let ttSection2Word = "";
 let ttHfwDeck = [];
 let ttHfwIndex = 0;
-let ttLaserEnabled = false;
-let ttLaserDrawing = false;
-let ttLaserLastPoint = null;
-let ttLaserFadeId = null;
 let ttNotesEnabled = false;
 let ttNotesDrawing = false;
 let ttNotesLastPoint = null;
@@ -34,8 +30,6 @@ let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real
 let ttPlannerHomeScrollPositions = {};
 let ttLessonLaunchTimer = null;
 let ttPresentationMenuTimer = null;
-let ttPresentationLogoTapCount = 0;
-let ttPresentationLogoTapTimer = null;
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
@@ -996,12 +990,12 @@ function ttOpenTeachFlow(options = {}) {
   const fromHome = document.body.classList.contains("home-mode");
   const useTransition = options.transition !== false && fromHome && !ttReduceMotion() && launch;
   const targetId = options.targetId || "";
-  const openAsPresentation = options.presentation !== false && !options.legacyFullLesson;
+  const openAsPresentation = options.presentation === true;
   const revealFlow = () => {
     if (home) home.hidden = true;
     if (flow) flow.hidden = false;
     document.body.classList.remove("home-mode", "lesson-home-exit");
-    document.body.classList.toggle("legacy-full-lesson-mode", Boolean(options.legacyFullLesson));
+    document.body.classList.remove("legacy-full-lesson-mode");
     document.body.classList.add("lesson-flow-enter");
     ttRender();
     if (openAsPresentation) ttTogglePresentation(true);
@@ -7094,28 +7088,17 @@ function ttSetPresentationMenu(open, { hold = false } = {}) {
   if (open && !hold) ttSchedulePresentationMenuClose();
 }
 
-function ttOpenLegacyFullLesson() {
-  ttSetPresentationMenu(false);
-  document.body.classList.add("legacy-full-lesson-mode");
-  ttTogglePresentation(false);
-}
-
 function ttHandlePresentationLogoClick() {
   if (!document.body.classList.contains("presentation-mode")) return;
-  ttPresentationLogoTapCount += 1;
-  if (ttPresentationLogoTapTimer) clearTimeout(ttPresentationLogoTapTimer);
-  ttPresentationLogoTapTimer = setTimeout(() => {
-    ttPresentationLogoTapCount = 0;
-    ttPresentationLogoTapTimer = null;
-  }, 2400);
-  if (ttPresentationLogoTapCount >= 5) {
-    ttPresentationLogoTapCount = 0;
-    if (ttPresentationLogoTapTimer) clearTimeout(ttPresentationLogoTapTimer);
-    ttPresentationLogoTapTimer = null;
-    ttOpenLegacyFullLesson();
-    return;
-  }
   ttSetPresentationMenu(true);
+}
+
+function ttHandlePresentationMenuOutsidePointer(event) {
+  if (!document.body.classList.contains("present-menu-open")) return;
+  const menu = document.querySelector(".teach-bar");
+  const logo = ttById("ttPresentMenuLogo");
+  if (menu?.contains(event.target) || logo?.contains(event.target)) return;
+  ttSetPresentationMenu(false);
 }
 
 async function ttTogglePresentation(force = null, options = {}) {
@@ -7145,43 +7128,21 @@ async function ttTogglePresentation(force = null, options = {}) {
   }
 }
 
-function ttDockClick(targetId) {
-  const target = ttById(targetId);
-  if (target) target.click();
-}
-
-function ttToggleLaser(force = null) {
-  ttLaserEnabled = force ?? !ttLaserEnabled;
-  if (ttLaserEnabled && ttNotesEnabled) ttToggleNotes(false, false);
-  document.body.classList.toggle("laser-mode", ttLaserEnabled);
-  ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
-  if (ttLaserEnabled) {
-    ttResizeLaserCanvas();
-    ttStartLaserFade();
-  } else {
-    ttLaserDrawing = false;
-    ttLaserLastPoint = null;
-    ttClearLaserCanvas();
-  }
-}
-
 function ttToggleNotes(force = null, clearWhenOff = true) {
   ttNotesEnabled = force ?? !ttNotesEnabled;
-  if (ttNotesEnabled && ttLaserEnabled) ttToggleLaser(false);
   document.body.classList.toggle("notes-mode", ttNotesEnabled);
   ttById("ttNotesToggle")?.classList.toggle("active", ttNotesEnabled);
   if (ttNotesEnabled) {
-    ttResizeCanvas("ttNotesCanvas");
+    ttResizeNotesCanvas();
   } else {
     ttNotesDrawing = false;
     ttNotesLastPoint = null;
     if (clearWhenOff) ttClearCanvas("ttNotesCanvas");
-    ttToggleLaser(true);
   }
 }
 
-function ttResizeLaserCanvas() {
-  ttResizeCanvas("ttLaserCanvas");
+function ttResizeNotesCanvas() {
+  ttResizeCanvas("ttNotesCanvas");
 }
 
 function ttResizeCanvas(canvasId) {
@@ -7201,66 +7162,9 @@ function ttResizeCanvas(canvasId) {
   ctx.lineJoin = "round";
 }
 
-function ttLaserPoint(event) {
+function ttCanvasPoint(event) {
   const touch = event.touches?.[0] || event.changedTouches?.[0] || event;
   return { x: touch.clientX, y: touch.clientY };
-}
-
-function ttLaserStart(event) {
-  if (!ttLaserEnabled) return;
-  if (event.touches?.length > 1) {
-    ttLaserLastPoint = null;
-    return;
-  }
-  if (ttIsInteractiveTarget(event.target)) return;
-  ttResizeLaserCanvas();
-  ttLaserDrawing = true;
-  ttLaserLastPoint = ttLaserPoint(event);
-  ttDrawLaserDot(ttLaserLastPoint);
-}
-
-function ttLaserMove(event) {
-  if (!ttLaserEnabled) return;
-  if (event.touches?.length > 1) {
-    ttLaserLastPoint = null;
-    return;
-  }
-  if (ttIsInteractiveTarget(event.target)) {
-    ttLaserLastPoint = null;
-    return;
-  }
-  if (event.pointerType === "touch" || event.type.startsWith("touch")) event.preventDefault();
-  const point = ttLaserPoint(event);
-  if (ttLaserLastPoint) ttDrawLaserLine(ttLaserLastPoint, point);
-  else ttDrawLaserDot(point);
-  ttLaserLastPoint = point;
-}
-
-function ttLaserEnd(event) {
-  if (!ttLaserEnabled) return;
-  if (!ttLaserDrawing && ttIsInteractiveTarget(event.target)) return;
-  ttLaserDrawing = false;
-  ttLaserLastPoint = null;
-}
-
-function ttIsInteractiveTarget(target) {
-  return Boolean(target?.closest?.("button, a, input, select, textarea, label, summary, details, .presentation-dock, .quick-jump"));
-}
-
-function ttDrawLaserLine(from, to) {
-  ttDrawLine("ttLaserCanvas", from, to, {
-    stroke: "rgba(220, 38, 38, 0.86)",
-    shadow: "rgba(220, 38, 38, 0.55)",
-    width: 10
-  });
-}
-
-function ttDrawLaserDot(point) {
-  ttDrawDot("ttLaserCanvas", point, {
-    fill: "rgba(220, 38, 38, 0.9)",
-    shadow: "rgba(220, 38, 38, 0.55)",
-    radius: 5
-  });
 }
 
 function ttDrawLine(canvasId, from, to, options) {
@@ -7295,27 +7199,6 @@ function ttDrawDot(canvasId, point, options) {
   ctx.restore();
 }
 
-function ttStartLaserFade() {
-  if (ttLaserFadeId) return;
-  const fade = () => {
-    const canvas = ttById("ttLaserCanvas");
-    const ctx = canvas?.getContext("2d");
-    if (ctx && ttLaserEnabled) {
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.fillStyle = "rgba(0, 0, 0, 0.045)";
-      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-      ctx.restore();
-    }
-    ttLaserFadeId = requestAnimationFrame(fade);
-  };
-  ttLaserFadeId = requestAnimationFrame(fade);
-}
-
-function ttClearLaserCanvas() {
-  ttClearCanvas("ttLaserCanvas");
-}
-
 function ttClearCanvas(canvasId) {
   const canvas = ttById(canvasId);
   const ctx = canvas?.getContext("2d");
@@ -7325,9 +7208,9 @@ function ttClearCanvas(canvasId) {
 function ttNotesStart(event) {
   if (!ttNotesEnabled) return;
   event.preventDefault();
-  ttResizeCanvas("ttNotesCanvas");
+  ttResizeNotesCanvas();
   ttNotesDrawing = true;
-  ttNotesLastPoint = ttLaserPoint(event);
+  ttNotesLastPoint = ttCanvasPoint(event);
   ttDrawDot("ttNotesCanvas", ttNotesLastPoint, {
     fill: "rgba(220, 38, 38, 0.9)",
     shadow: "rgba(220, 38, 38, 0.45)",
@@ -7338,7 +7221,7 @@ function ttNotesStart(event) {
 function ttNotesMove(event) {
   if (!ttNotesEnabled || !ttNotesDrawing) return;
   event.preventDefault();
-  const point = ttLaserPoint(event);
+  const point = ttCanvasPoint(event);
   ttDrawLine("ttNotesCanvas", ttNotesLastPoint, point, {
     stroke: "rgba(220, 38, 38, 0.82)",
     shadow: "rgba(220, 38, 38, 0.45)",
@@ -7357,7 +7240,6 @@ function ttNotesEnd(event) {
 function ttOpenWhiteboard() {
   const board = ttById("ttWhiteboard");
   if (!board) return;
-  if (ttLaserEnabled) ttToggleLaser(false);
   if (ttNotesEnabled) ttToggleNotes(false, false);
   board.hidden = false;
   document.body.classList.add("whiteboard-mode");
@@ -7841,6 +7723,7 @@ function ttBind() {
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
   ttById("ttPresentMenuLogo")?.addEventListener("click", () => ttHandlePresentationLogoClick());
+  document.addEventListener("pointerdown", ttHandlePresentationMenuOutsidePointer, true);
   document.querySelector(".teach-bar .brand-block")?.addEventListener("click", () => ttHandlePresentationLogoClick());
   document.querySelector(".teach-bar")?.addEventListener("pointerenter", () => {
     if (document.body.classList.contains("present-menu-open")) ttSetPresentationMenu(true, { hold: true });
@@ -7871,7 +7754,6 @@ function ttBind() {
     button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
-  ttById("ttLaserToggle").addEventListener("click", () => ttToggleLaser());
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.addEventListener("keydown", (event) => {
@@ -7879,13 +7761,6 @@ function ttBind() {
       ttSetPresentationMenu(false);
     }
   });
-  document.addEventListener("pointerdown", ttLaserStart);
-  document.addEventListener("pointermove", ttLaserMove);
-  document.addEventListener("pointerup", ttLaserEnd);
-  document.addEventListener("pointercancel", ttLaserEnd);
-  document.addEventListener("touchstart", ttLaserStart, { passive: false });
-  document.addEventListener("touchmove", ttLaserMove, { passive: false });
-  document.addEventListener("touchend", ttLaserEnd, { passive: false });
   const notesCanvas = ttById("ttNotesCanvas");
   notesCanvas.addEventListener("pointerdown", ttNotesStart);
   notesCanvas.addEventListener("pointermove", ttNotesMove);
@@ -7895,12 +7770,8 @@ function ttBind() {
   notesCanvas.addEventListener("touchmove", ttNotesMove, { passive: false });
   notesCanvas.addEventListener("touchend", ttNotesEnd, { passive: false });
   window.addEventListener("resize", () => {
-    if (ttLaserEnabled) {
-      ttResizeLaserCanvas();
-      ttClearLaserCanvas();
-    }
     if (ttNotesEnabled) {
-      ttResizeCanvas("ttNotesCanvas");
+      ttResizeNotesCanvas();
       ttClearCanvas("ttNotesCanvas");
     }
     if (!ttById("ttWhiteboard")?.hidden) {
@@ -8158,4 +8029,3 @@ ttInitConnectionMonitor();
 ttBind();
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
-ttToggleLaser(true);
