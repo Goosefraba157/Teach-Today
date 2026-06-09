@@ -424,6 +424,70 @@ function ttRenderDataCenter() {
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
 }
 
+function ttShowConnectionNotice(message, title = "Cloud connection issue") {
+  if (ttWorkOffline) return;
+  const panel = ttById("ttConnectionNotice");
+  if (!panel) return;
+  ttById("ttConnectionTitle").textContent = title;
+  ttById("ttConnectionMessage").textContent = message;
+  panel.hidden = false;
+}
+
+function ttHideConnectionNotice() {
+  const panel = ttById("ttConnectionNotice");
+  if (panel) panel.hidden = true;
+}
+
+function ttSetWorkOffline(value) {
+  ttWorkOffline = Boolean(value);
+  localStorage.setItem("teachToday.workOffline", ttWorkOffline ? "true" : "false");
+  if (ttWorkOffline) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Working offline. Local browser storage is still saving.");
+    localStorage.setItem("teachToday.driveStatus", "Working offline. Google Drive audio uploads are paused.");
+    ttHideConnectionNotice();
+    ttRenderDataCenter();
+    return;
+  }
+  ttRetryCloudConnections();
+}
+
+async function ttRetryCloudConnections() {
+  ttWorkOffline = false;
+  localStorage.setItem("teachToday.workOffline", "false");
+  if (!navigator.onLine) {
+    ttShowConnectionNotice("This device is offline. Keep working locally or try again when the internet is back.", "Offline mode available");
+    return;
+  }
+  localStorage.setItem("teachToday.firebaseSyncStatus", "Retrying cloud sync...");
+  localStorage.setItem("teachToday.driveStatus", "Retrying Google Drive audio...");
+  ttRenderDataCenter();
+  try {
+    await ttFirebaseSyncWrite("Saved to Firebase after reconnect.");
+    if (ttDriveAccessToken) await ttUploadPendingAudioToDrive();
+    else localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission. Click Google Drive audio in Records.");
+    const firebaseStatus = localStorage.getItem("teachToday.firebaseSyncStatus") || "";
+    const driveStatus = localStorage.getItem("teachToday.driveStatus") || "";
+    const stillBlocked = /could not|failed|offline/i.test(`${firebaseStatus} ${driveStatus}`);
+    if (!stillBlocked) ttHideConnectionNotice();
+  } catch (err) {
+    ttShowConnectionNotice(`Cloud retry failed: ${err?.message || "unknown error"}`);
+  } finally {
+    ttRenderDataCenter();
+  }
+}
+
+function ttInitConnectionMonitor() {
+  window.addEventListener("offline", () => {
+    ttShowConnectionNotice("This device is offline. Teach Today will keep saving locally.", "You are offline");
+  });
+  window.addEventListener("online", () => {
+    if (!ttWorkOffline) ttRetryCloudConnections();
+  });
+  if (!navigator.onLine) {
+    ttShowConnectionNotice("This device is offline. Teach Today will keep saving locally.", "You are offline");
+  }
+}
+
 function formatDateTime(date) {
   return `${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
@@ -4963,6 +5027,7 @@ let ttFirebasePending = false;
 let ttFirebaseUser = null; // set after Google sign-in
 let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
+let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
 
 // Returns the Firestore doc path: per-user when signed in, legacy path as fallback
 function ttFirebaseDocPath() {
@@ -5068,6 +5133,21 @@ function ttDriveHeaders(contentType = "application/json") {
   const headers = { Authorization: `Bearer ${ttDriveAccessToken}` };
   if (contentType) headers["Content-Type"] = contentType;
   return headers;
+}
+
+function ttFriendlyDriveError(err) {
+  const message = String(err?.message || err || "unknown error");
+  const apiEnableUrl = "https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=506415947825";
+  if (message.includes("SERVICE_DISABLED") || message.includes("has not been used in project")) {
+    return `Google Drive API is not enabled yet. Enable it here: ${apiEnableUrl}`;
+  }
+  if (message.includes("PERMISSION_DENIED")) {
+    return "Google Drive permission was denied. Open Records and connect Google Drive audio again.";
+  }
+  if (message.includes("401") || message.includes("invalid_token")) {
+    return "Google Drive permission expired. Open Records and connect Google Drive audio again.";
+  }
+  return message.length > 180 ? `${message.slice(0, 180)}...` : message;
 }
 
 async function ttEnsureDrivePermission() {
@@ -5181,11 +5261,13 @@ async function ttUploadAudioToDrive(recordId, blob, fileName) {
     return file.id;
   } catch (err) {
     console.warn("Audio upload to Google Drive failed:", err);
+    const friendlyError = ttFriendlyDriveError(err);
     ttPatchAudioRecord(recordId, {
       driveUploadStatus: "failed",
-      driveUploadMessage: `Google Drive upload failed: ${err?.message || "unknown error"}`
+      driveUploadMessage: `Google Drive upload failed: ${friendlyError}`
     });
-    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${err?.message || "unknown error"}`);
+    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${friendlyError}`);
+    ttShowConnectionNotice(`Google Drive audio could not upload: ${friendlyError}`);
     ttRenderDataCenter();
     return null;
   }
@@ -5331,6 +5413,7 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     const detail = error?.code || error?.message || "unknown error";
     console.warn("Teach Today Firebase sync failed:", error);
     localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase could not save (${detail}).`);
+    ttShowConnectionNotice(`Firebase could not save right now (${detail}). You can keep trying or work offline.`);
   } finally {
     ttFirebaseBusy = false;
     ttRenderDataCenter();
@@ -5430,6 +5513,9 @@ async function ttInitFirebaseSync() {
         await ttFirebaseRestoreIfNewer();
         ttQueueFirebaseSync();
         ttUploadPendingAudioRecordings(); // upload any recordings that didn't make it to Storage yet
+        if (!ttDriveAccessToken) {
+          localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission for this browser session. Click Google Drive audio in Records.");
+        }
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
       } else {
         localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
@@ -7813,10 +7899,12 @@ function ttBind() {
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
   ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {
-    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${err?.message || "unknown error"}`);
+    localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${ttFriendlyDriveError(err)}`);
     ttRenderDataCenter();
   }));
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
+  ttById("ttConnectionRetry")?.addEventListener("click", () => ttRetryCloudConnections());
+  ttById("ttConnectionOffline")?.addEventListener("click", () => ttSetWorkOffline(true));
   document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   document.getElementById("ttFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   // OpenAI key setup
@@ -7996,6 +8084,7 @@ const ttLoadedPlan = ttLoadPlanFromUrl();
 ttLoadedPlan || ttLoadDraftLesson() || ttBuildLesson();
 ttInitCloudSync();
 ttInitFirebaseSync();
+ttInitConnectionMonitor();
 ttBind();
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();

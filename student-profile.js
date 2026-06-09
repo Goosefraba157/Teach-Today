@@ -996,6 +996,45 @@ function audioCloudLabel(record, fromCloud = false) {
   return "Local only";
 }
 
+function audioPlayerMarkup(url, fileName = "recording.webm", allowDownload = false) {
+  return `
+    <div class="audio-player-wrap">
+      <audio controls src="${url}"></audio>
+      <label class="audio-speed-control">
+        <span>Speed</span>
+        <select>
+          <option value="1">1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+      </label>
+      ${allowDownload ? `<a href="${url}" download="${escapeHtml(fileName)}">Download</a>` : ""}
+    </div>`;
+}
+
+function wireAudioSpeedControls(root = document) {
+  root.querySelectorAll(".audio-speed-control select").forEach((select) => {
+    if (select.dataset.bound === "true") return;
+    select.dataset.bound = "true";
+    select.addEventListener("change", () => {
+      const audio = select.closest(".audio-player-wrap")?.querySelector("audio");
+      if (audio) audio.playbackRate = Number(select.value) || 1;
+    });
+  });
+}
+
+async function loadRecordAudio(record) {
+  if (record.audioUrl) return { url: record.audioUrl, source: "firebase", downloadable: false };
+  const blob = record.audioRecordingId ? await loadAudioBlob(record.audioRecordingId).catch(() => null) : null;
+  if (blob) return { url: URL.createObjectURL(blob), source: "local", downloadable: true };
+  const syncedFile = await loadAudioSyncFile(record.audioSyncFile || record.audioFileName).catch(() => null);
+  if (syncedFile) return { url: URL.createObjectURL(syncedFile), source: "sync-folder", downloadable: true };
+  const driveBlob = record.driveFileId ? await loadDriveAudioFile(record.driveFileId).catch(() => null) : null;
+  if (driveBlob) return { url: URL.createObjectURL(driveBlob), source: "drive", downloadable: false };
+  return null;
+}
+
 function openAudioDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("teachToday_audio", 1);
@@ -1050,7 +1089,8 @@ function renderRows(records) {
   body.innerHTML = "";
   records.slice().reverse().forEach((record) => {
     const row = document.createElement("tr");
-    const audioCell = record.audioRecordingId
+    const hasRecording = record.audioRecordingId || record.driveFileId;
+    const audioCell = hasRecording
       ? `<button class="play-audio-btn" data-recording-id="${escapeHtml(record.audioRecordingId)}" data-audio-url="${escapeHtml(record.audioUrl || "")}" data-file-name="${escapeHtml(record.audioFileName || "recording.webm")}" title="Play session recording" style="background:none;border:1px solid #888;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:13px;">▶ Play</button>`
       : `<span style="color:#bbb;font-size:12px;">—</span>`;
     row.innerHTML = `
@@ -1068,41 +1108,30 @@ function renderRows(records) {
       <td>${audioCell}</td>
     `;
     body.appendChild(row);
-  });
-  if (!records.length) {
-    body.innerHTML = "<tr><td colspan=\"12\">No records saved for this student yet.</td></tr>";
-  }
-
-  // Wire up play buttons
-  body.querySelectorAll(".play-audio-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.recordingId;
-      const audioUrl = btn.dataset.audioUrl || "";
-      const fileName = btn.dataset.fileName || "recording.webm";
-      // Remove any existing inline player for this row
+    row.querySelector(".play-audio-btn")?.addEventListener("click", async (event) => {
+      const btn = event.currentTarget;
+      const fileName = record.audioFileName || "recording.webm";
       const existingPlayer = btn.closest("tr").querySelector(".audio-inline-player");
       if (existingPlayer) { existingPlayer.remove(); return; }
-      btn.textContent = "Loading…";
+      btn.textContent = "Loading...";
       try {
-        // Use Firebase Storage URL if available, otherwise fall back to IndexedDB
-        let url = audioUrl || null;
-        if (!url) {
-          const blob = await loadAudioBlob(id);
-          if (!blob) { btn.textContent = "Not found"; return; }
-          url = URL.createObjectURL(blob);
-        }
+        const loaded = await loadRecordAudio(record);
+        if (!loaded) { btn.textContent = "Not found"; return; }
         const container = document.createElement("div");
         container.className = "audio-inline-player";
-        container.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;";
-        container.innerHTML = `<audio controls src="${url}" style="height:28px;flex:1;min-width:160px;"></audio>${audioUrl ? "" : `<a href="${url}" download="${escapeHtml(fileName)}" style="font-size:11px;color:#555;white-space:nowrap;">⬇ Download</a>`}`;
+        container.innerHTML = audioPlayerMarkup(loaded.url, fileName, loaded.downloadable);
         btn.closest("td").appendChild(container);
-        btn.textContent = "▶ Play";
+        wireAudioSpeedControls(container);
+        btn.textContent = "Play";
       } catch (err) {
         btn.textContent = "Error";
         console.error("Audio load failed:", err);
       }
     });
   });
+  if (!records.length) {
+    body.innerHTML = "<tr><td colspan=\"12\">No records saved for this student yet.</td></tr>";
+  }
 }
 
 async function renderRecordingsSection(records) {
@@ -1157,13 +1186,12 @@ async function renderRecordingsSection(records) {
       <div class="recording-card-meta recording-card-full">
         <strong>${escapeHtml(fileName)}</strong>
         <span>${escapeHtml(metaText)} ${cloudBadge}</span>
-        <audio controls src="${url}"></audio>
+        ${audioPlayerMarkup(url, fileName, !fromCloud)}
       </div>
-      <div class="recording-card-actions">
-        ${fromCloud ? "" : `<a href="${url}" download="${escapeHtml(fileName)}">⬇ Download</a>`}
-      </div>`;
+      <div class="recording-card-actions"></div>`;
     container.appendChild(card);
   });
+  wireAudioSpeedControls(container);
 
   container.querySelectorAll(".drive-audio-btn").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -1175,12 +1203,10 @@ async function renderRecordingsSection(records) {
           return;
         }
         const url = URL.createObjectURL(blob);
-        const audio = document.createElement("audio");
-        audio.controls = true;
-        audio.src = url;
-        audio.style.width = "100%";
-        audio.style.marginTop = "6px";
-        button.replaceWith(audio);
+        const player = document.createElement("div");
+        player.innerHTML = audioPlayerMarkup(url, "recording.webm", false);
+        button.replaceWith(player.firstElementChild);
+        wireAudioSpeedControls(container);
       } catch (err) {
         button.textContent = "Drive file not found";
         console.warn("Google Drive audio load failed:", err);

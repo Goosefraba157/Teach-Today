@@ -54,6 +54,58 @@ button:hover:not(:disabled) {
   display: none;
 }
 
+.connection-notice {
+  position: sticky;
+  top: 112px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px auto 0;
+  max-width: min(1120px, calc(100vw - 28px));
+  padding: 10px 14px;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  background: #fffbeb;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.connection-notice[hidden] {
+  display: none;
+}
+
+.connection-notice strong {
+  display: block;
+  color: #92400e;
+  font-size: 14px;
+}
+
+.connection-notice p {
+  margin: 2px 0 0;
+  color: #6b4f16;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.connection-actions button:first-child {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.connection-actions button:last-child {
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
 /* ═══════════════════════════════════════════════════════
    TEACH BAR — Word-style ribbon header
    Row 1: context  (logo · group · lesson info · sync)
