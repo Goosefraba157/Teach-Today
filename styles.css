@@ -1348,3 +1348,34 @@ textarea {
     break-inside: avoid;
   }
 }
+
+/* ── Speech word-matching indicators ────────────────────────────────────────── */
+.word-skipped {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.word-skipped::after {
+  content: "skipped?";
+  display: block;
+  font-size: 10px;
+  color: #f97316;
+  text-align: center;
+  margin-top: 2px;
+}
+.word-uncertain .score-toggle {
+  background: #fef9c3;
+  border-radius: 4px;
+}
+.word-uncertain .score-one.ok {
+  background: #fbbf24;
+  color: #1c1917;
+}
+.word-uncertain .score-one.ok::after {
+  content: " ?";
+}
+.mute-toggle.active {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}

@@ -7458,6 +7458,7 @@ function ttBind() {
     ttFillSection3Cards(ttLesson);
   });
   ttById("ttBackTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  ttById("ttWrapHome")?.addEventListener("click", () => ttById("ttHome")?.click());
   ttById("ttWrapRefresh")?.addEventListener("click", () => ttRenderWrapUpPanel(ttActiveGroup(), ttLesson));
   ttById("ttCompleteLesson")?.addEventListener("click", () => ttCompleteLessonWrapUp());
   ttById("ttWrapSavePdf")?.addEventListener("click", () => {
@@ -7497,7 +7498,10 @@ function ttBind() {
     stopLiveTimer(ttChartCard);
     saveLiveRecordIfNeeded(ttChartCard);
   });
-  ttById("section4").querySelector(".mic-toggle").addEventListener("click", () => startLiveTimer(ttChartCard, true));
+  ttById("section4").querySelector(".mute-toggle")?.addEventListener("click", () => {
+    if (isSpeechMuted) unmuteSpeech(ttChartCard);
+    else muteSpeech(ttChartCard, 8);
+  });
   ttById("section4").querySelector(".save-live-record").addEventListener("click", () => saveLiveRecord(ttChartCard));
 }
 

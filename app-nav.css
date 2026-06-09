@@ -107,23 +107,25 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 7px 13px;
+  padding: 5px 12px;
   background: #fff;
   color: #334155;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
+  transition: filter 0.1s, background 0.1s, border-color 0.1s;
 }
 
 .tt-page-header .tt-btn:hover {
   border-color: #c7d2dc;
   background: #f8fafc;
+  filter: brightness(0.97);
 }
 
 .tt-page-header .tt-btn-primary {

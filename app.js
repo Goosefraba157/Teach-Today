@@ -169,6 +169,10 @@ let activeTimers = new Map();
 let activeRecognition = null;
 let activeMediaRecorder = null;
 let activeAudioChunks = [];
+const speechPositions = new Map(); // lessonId → current reading position
+let isSpeechMuted = false;
+let muteCountdownInterval = null;
+let mutedCard = null;
 
 function defaultRosterStudents() {
   return [
@@ -1688,7 +1692,10 @@ function setupLiveLesson(fragment, lesson) {
     stopLiveTimer(card);
     saveLiveRecordIfNeeded(card);
   });
-  card.querySelector(".mic-toggle").addEventListener("click", () => startLiveTimer(card, true));
+  card.querySelector(".mute-toggle")?.addEventListener("click", () => {
+    if (isSpeechMuted) unmuteSpeech(card);
+    else muteSpeech(card, 8);
+  });
   card.querySelector(".save-live-record").addEventListener("click", () => saveLiveRecord(card));
 }
 
@@ -1824,8 +1831,11 @@ function resetLiveCharting(card) {
   card.dataset.startElapsed = "0";
   card.dataset.lastSavedSignature = "";
   card.querySelector(".live-timer").textContent = "0 sec";
+  speechPositions.set(card.dataset.lessonId, 0);
+  if (isSpeechMuted && mutedCard === card) unmuteSpeech(card);
   card.querySelectorAll(".chart-cell[data-word]").forEach((cell) => {
     cell.dataset.correct = "true";
+    cell.classList.remove("word-skipped", "word-uncertain");
     const score = cell.querySelector(".score-one");
     if (score) {
       score.classList.add("active", "ok");
@@ -1933,8 +1943,8 @@ function startLiveTimer(card, withMic) {
     updateLiveScore(card);
   }, 250);
   activeTimers.set(card.dataset.lessonId, timer);
-  startAudioRecording(card); // updates status to "Recording" on success or "Mic blocked" on failure
-  if (withMic) startSpeechCapture(card);
+  startAudioRecording(card);
+  startSpeechCapture(card); // always on — word-matching engine
 }
 
 function stopLiveTimer(card, stopMic = true) {
@@ -2004,56 +2014,160 @@ function pauseLiveTimer(card) {
   }
 }
 
+// ── Phonetic word-matching helpers ──────────────────────────────────────────
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function isPhoneticMatch(heard, expected) {
+  const h = heard.toLowerCase().replace(/[^a-z]/g, "");
+  const e = expected.toLowerCase().replace(/[^a-z]/g, "");
+  if (h === e) return true;
+  const threshold = e.length <= 3 ? 0 : e.length <= 5 ? 1 : 2;
+  return levenshtein(h, e) <= threshold;
+}
+
+function speechCells(card) {
+  const half = activeChartHalf(card);
+  return [...card.querySelectorAll(`.chart-cell[data-word][data-section="${half}"]`)];
+}
+
+function processHeardWord(heard, confidence, card) {
+  if (isSpeechMuted) return;
+  const cells = speechCells(card);
+  const lessonId = card.dataset.lessonId;
+  let pos = speechPositions.get(lessonId) || 0;
+  if (pos >= cells.length) return;
+
+  const LOOK_AHEAD = 3;
+  for (let offset = 0; offset < LOOK_AHEAD && pos + offset < cells.length; offset++) {
+    const domIdx = COLUMN_READ_ORDER[pos + offset];
+    const cell = cells[domIdx];
+    if (!cell) continue;
+    const expected = cell.dataset.word || "";
+
+    if (isPhoneticMatch(heard, expected)) {
+      // Mark any skipped positions
+      for (let skip = 0; skip < offset; skip++) {
+        const skipCell = cells[COLUMN_READ_ORDER[pos + skip]];
+        if (skipCell) skipCell.classList.add("word-skipped");
+      }
+      // Fill "said..." if different from expected (possible error or autocorrect)
+      const input = cell.querySelector(".said-input");
+      if (input && !input.dataset.edited) {
+        const heardClean = heard.toLowerCase().replace(/[^a-z]/g, "");
+        const expClean = expected.toLowerCase().replace(/[^a-z]/g, "");
+        if (heardClean !== expClean) input.value = heard;
+      }
+      // Flag low confidence — likely autocorrected
+      if (confidence > 0 && confidence < 0.75) {
+        cell.classList.add("word-uncertain");
+      }
+      pos = pos + offset + 1;
+      speechPositions.set(lessonId, pos);
+      // Update status to show progress
+      setRecordingStatus(card, `Listening… ${pos}/${cells.length}`, "live");
+      return;
+    }
+  }
+  // No match in look-ahead → teacher speech or noise, discard silently
+}
+
 function startSpeechCapture(card) {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    card.querySelector(".live-notes").value += "\nMicrophone speech capture is not supported in this browser.";
-    setRecordingStatus(card, "Mic blocked", "error");
+    setRecordingStatus(card, "Speech not supported in this browser", "error");
     return;
   }
   if (activeRecognition) {
-    try {
-      activeRecognition.stop();
-    } catch (error) {
-      card.querySelector(".live-notes").value += `\nMicrophone stop note: ${error.message}`;
-    }
+    try { activeRecognition.stop(); } catch (_) {}
+  }
+
+  // Reset position when starting fresh (not resuming)
+  if (!card.classList.contains("is-timing")) {
+    speechPositions.set(card.dataset.lessonId, 0);
   }
 
   const recognition = new SpeechRecognition();
   recognition.continuous = true;
-  recognition.interimResults = true;
+  recognition.interimResults = false; // final results only for accuracy
+  recognition.maxAlternatives = 2;
   recognition.lang = "en-US";
+
   recognition.onresult = (event) => {
-    const transcript = Array.from(event.results)
-      .map((result) => result[0]?.transcript || "")
-      .join(" ")
-      .trim();
-    fillSaidWords(card, transcript);
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (!event.results[i].isFinal) continue;
+      const result = event.results[i];
+      const confidence = result[0]?.confidence || 0;
+      const words = (result[0]?.transcript || "").trim().split(/\s+/).filter(Boolean);
+      words.forEach((word) => processHeardWord(word, confidence, card));
+    }
   };
+
   recognition.onerror = (event) => {
-    card.querySelector(".live-notes").value += `\nMicrophone note: ${event.error}`;
-    setRecordingStatus(card, "Mic blocked", "error");
+    if (event.error === "no-speech") return; // normal, ignore
+    if (event.error === "not-allowed") setRecordingStatus(card, "Mic blocked — check browser permissions", "error");
   };
+
+  // Auto-restart when recognition times out (common on mobile/iPad)
+  recognition.onend = () => {
+    if (activeTimers.has(card.dataset.lessonId) && activeRecognition === recognition) {
+      try { recognition.start(); } catch (_) {}
+    }
+  };
+
   try {
     recognition.start();
-    setRecordingStatus(card, "Recording", "live");
     activeRecognition = recognition;
   } catch (error) {
-    card.querySelector(".live-notes").value += `\nMicrophone note: ${error.message}`;
-    setRecordingStatus(card, "Mic blocked", "error");
+    setRecordingStatus(card, "Mic blocked — check browser permissions", "error");
   }
 }
 
-function fillSaidWords(card, transcript) {
-  const spoken = transcript.split(/\s+/).filter(Boolean);
-  const cells = scoredChartCells(card);
-  cells.forEach((cell, index) => {
-    const input = cell.querySelector(".said-input");
-    if (spoken[index] && !input.dataset.edited) {
-      input.value = spoken[index];
+function muteSpeech(card, seconds = 8) {
+  clearInterval(muteCountdownInterval);
+  isSpeechMuted = true;
+  mutedCard = card;
+  let remaining = seconds;
+  const btn = card.querySelector(".mute-toggle");
+  const updateMuteUi = () => {
+    setRecordingStatus(card, `Muted (${remaining}s) — tap to unmute`, "error");
+    if (btn) { btn.textContent = `Unmute (${remaining}s)`; btn.classList.add("active"); }
+  };
+  updateMuteUi();
+  muteCountdownInterval = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      unmuteSpeech(card);
+    } else {
+      updateMuteUi();
     }
-  });
+  }, 1000);
 }
+
+function unmuteSpeech(card) {
+  clearInterval(muteCountdownInterval);
+  isSpeechMuted = false;
+  mutedCard = null;
+  const btn = card.querySelector(".mute-toggle");
+  if (btn) { btn.textContent = "Mute"; btn.classList.remove("active"); }
+  const pos = speechPositions.get(card.dataset.lessonId) || 0;
+  const total = speechCells(card).length;
+  setRecordingStatus(card, `Listening… ${pos}/${total}`, "live");
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 // ── Audio IndexedDB helpers ──────────────────────────────────────────────────
 function openAudioDB() {
