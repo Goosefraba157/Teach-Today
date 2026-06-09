@@ -58,6 +58,23 @@ textarea:focus-visible {
   color: #f8fafc;
 }
 
+.brand-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: #fff;
+}
+
 .brand-block h1,
 .topbar h2,
 .section-heading h3,
@@ -67,7 +84,7 @@ textarea:focus-visible {
 }
 
 .brand-block h1 {
-  font-size: 30px;
+  font-size: 26px;
   line-height: 1.05;
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-06-08-section7-hfw-arrows-1";
+const CACHE_NAME = "teach-today-offline-v2026-06-08-student-report-1";
 
 const APP_SHELL = [
   "./",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./ReferencePdfs.html",
   "./StudentDisplay.html",
   "./StudentProfile.html",
+  "./StudentReport.html",
   "./index.html",
   "./teach-today.css",
   "./student-display.css",

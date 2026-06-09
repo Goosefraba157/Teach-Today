@@ -959,13 +959,21 @@ function ttRenderHomeScreen() {
   ttEnsurePlannerDraft(ttPlannerGroup());
   const list = ttById("ttHomeGroups");
   if (list) {
-    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("");
+    const addCard = `<button type="button" class="home-group-card home-group-add-card" id="ttHomeAddGroup" title="Create a new group" aria-label="Create a new group">
+      <span class="home-group-add-icon">+</span>
+      <strong>New Group</strong>
+      <em>Create a teaching group</em>
+    </button>`;
+    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("") + addCard;
     list.querySelectorAll("[data-home-group]").forEach((button) => {
       button.addEventListener("click", () => {
         ttPlannerGroupId = button.dataset.homeGroup;
         ttPlannerDraft = {};
         ttRenderHomeScreen();
       });
+    });
+    list.querySelector("#ttHomeAddGroup")?.addEventListener("click", () => {
+      if (typeof ttOpenNewGroupModal === "function") ttOpenNewGroupModal();
     });
   }
   ttRenderPlannerPanel();

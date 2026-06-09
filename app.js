@@ -167,6 +167,8 @@ const storageKey = "dyslexiaInstructionEngine.v2";
 let appState = loadState();
 let activeTimers = new Map();
 let activeRecognition = null;
+let activeMediaRecorder = null;
+let activeAudioChunks = [];
 
 function defaultRosterStudents() {
   return [
@@ -1923,7 +1925,7 @@ function startLiveTimer(card, withMic) {
   card.classList.add("is-timing");
   card.querySelector(".start-timer").classList.add("active");
   card.querySelector(".mic-toggle").classList.toggle("active", withMic);
-  setRecordingStatus(card, withMic ? "Recording" : "Timing", "live");
+  setRecordingStatus(card, "Timing", "live");
   const timer = setInterval(() => {
     const elapsed = startElapsed + Math.round((Date.now() - startedAt) / 1000);
     card.dataset.elapsed = String(elapsed);
@@ -1931,6 +1933,7 @@ function startLiveTimer(card, withMic) {
     updateLiveScore(card);
   }, 250);
   activeTimers.set(card.dataset.lessonId, timer);
+  startAudioRecording(card); // updates status to "Recording" on success or "Mic blocked" on failure
   if (withMic) startSpeechCapture(card);
 }
 
@@ -1953,6 +1956,10 @@ function stopLiveTimer(card, stopMic = true) {
   card.querySelector(".pause-timer")?.classList.remove("active");
   card.querySelector(".mic-toggle").classList.remove("active");
   setRecordingStatus(card, "Stopped");
+  if (stopMic) {
+    stopAudioRecording(true);
+    setTimeout(() => showAudioPlayerInCard(card), 400);
+  }
   if (stopMic && activeRecognition) {
     try {
       activeRecognition.stop();
@@ -1982,6 +1989,9 @@ function pauseLiveTimer(card) {
   card.querySelector(".pause-timer")?.classList.add("active");
   card.querySelector(".mic-toggle").classList.remove("active");
   setRecordingStatus(card, "Paused");
+  if (activeMediaRecorder && activeMediaRecorder.state === "recording") {
+    try { activeMediaRecorder.pause(); } catch (_) {}
+  }
   if (activeRecognition) {
     try {
       activeRecognition.stop();
@@ -2041,6 +2051,93 @@ function fillSaidWords(card, transcript) {
       input.value = spoken[index];
     }
   });
+}
+
+// ── Audio IndexedDB helpers ──────────────────────────────────────────────────
+function openAudioDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("teachToday_audio", 1);
+    req.onupgradeneeded = (e) => e.target.result.createObjectStore("recordings");
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveAudioBlob(id, blob) {
+  const db = await openAudioDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("recordings", "readwrite");
+    tx.objectStore("recordings").put(blob, id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadAudioBlob(id) {
+  const db = await openAudioDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("recordings", "readonly");
+    const req = tx.objectStore("recordings").get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+// ────────────────────────────────────────────────────────────────────────────
+
+async function startAudioRecording(card) {
+  // Resume a paused recorder instead of starting fresh
+  if (activeMediaRecorder && activeMediaRecorder.state === "paused") {
+    try { activeMediaRecorder.resume(); } catch (_) {}
+    return;
+  }
+  stopAudioRecording(false);
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setRecordingStatus(card, "No mic support", "error");
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    activeAudioChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+    const recorder = new MediaRecorder(stream, { mimeType });
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) activeAudioChunks.push(e.data); };
+    recorder.start(1000);
+    activeMediaRecorder = recorder;
+    card._audioStream = stream;
+    setRecordingStatus(card, "Recording", "live");
+  } catch (err) {
+    const msg = err.name === "NotAllowedError" ? "Mic blocked — check browser permissions" : `Mic error: ${err.message}`;
+    setRecordingStatus(card, msg, "error");
+    console.warn("Audio recording not available:", err.message);
+  }
+}
+
+function stopAudioRecording(save = true) {
+  if (!activeMediaRecorder) return;
+  const recorder = activeMediaRecorder;
+  const chunks = activeAudioChunks;
+  activeMediaRecorder = null;
+  activeAudioChunks = [];
+  recorder.stream?.getTracks().forEach((t) => t.stop());
+  if (!save) {
+    try { recorder.stop(); } catch (_) {}
+    return;
+  }
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+    window._lastAudioBlob = blob;
+    window._lastAudioUrl = URL.createObjectURL(blob);
+  };
+  try { recorder.stop(); } catch (_) {}
+}
+
+function showAudioPlayerInCard(card) {
+  card.querySelector(".audio-playback")?.remove();
+  const url = window._lastAudioUrl;
+  if (!url) return;
+  const div = document.createElement("div");
+  div.className = "audio-playback";
+  div.style.cssText = "margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+  div.innerHTML = `<span style="font-size:12px;color:#555;">Session recording:</span><audio controls src="${url}" style="height:32px;flex:1;min-width:180px;"></audio>`;
+  card.querySelector(".live-notes-label")?.before(div);
 }
 
 function saveLiveRecord(card, options = {}) {
@@ -2105,6 +2202,22 @@ function saveLiveRecord(card, options = {}) {
     recommendation,
     ...lessonMeta
   };
+
+  // Save audio recording if one was captured
+  if (window._lastAudioBlob) {
+    const blob = window._lastAudioBlob;
+    const ext = blob.type.includes("ogg") ? "ogg" : "webm";
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, "-");
+    const lessonNum = (group.history?.length || 0) + 1;
+    const safeName = (str) => String(str || "").replace(/[^a-zA-Z0-9_.-]/g, "_");
+    const fileName = `${safeName(student)}_${safeName(lesson.substep)}_lesson${lessonNum}_${dateStr}_${timeStr}.${ext}`;
+    record.audioRecordingId = record.id;
+    record.audioFileName = fileName;
+    saveAudioBlob(record.id, blob).catch((err) => console.warn("Audio save failed:", err));
+    window._lastAudioBlob = null;
+  }
 
   appState.masterRecords ||= [];
   appState.masterRecords.push(record);

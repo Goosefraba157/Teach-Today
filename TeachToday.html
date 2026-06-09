@@ -11,6 +11,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css">
     <link rel="stylesheet" href="teach-today.css?v=section7-hfw-arrows-1">
   </head>
   <body>
@@ -63,44 +64,73 @@
     </div>
 
     <header class="teach-bar">
-      <div class="brand-block">
-        <img class="app-logo" src="assets/morrocoy-logo.png" alt="">
-        <div>
-          <p>Teach Today</p>
-          <h1 id="ttTitle">Ready</h1>
-          <strong id="ttLessonFile" class="lesson-file-name">Lesson loading...</strong>
-          <p id="ttSaveStatus" class="save-status">Lesson not saved yet</p>
+      <!-- Row 1: Context — logo, group, lesson info, sync -->
+      <div class="context-bar">
+        <div class="brand-block">
+          <img class="app-logo" src="assets/morrocoy-logo.png" alt="">
+          <em class="brand-label">Teach Today</em>
         </div>
-      </div>
-      <div class="bar-actions">
-        <select id="ttGroup"></select>
-        <button id="ttHome" type="button" title="Home dashboard">Home</button>
-        <button id="ttPresent" type="button" title="Present">Present</button>
-        <button id="ttDisplayToggle" type="button" title="Student display">Display</button>
-        <button id="ttSaveLesson" type="button" title="Save Lesson">Save</button>
-        <button id="ttPdfPlan" type="button" title="PDF Plan">PDF</button>
-        <button id="ttWilsonPlan" type="button" title="Wilson LP">Wilson</button>
-        <button id="ttWilsonFillablePlan" type="button" title="Fillable Wilson PDF">Fillable</button>
-        <button id="ttWrapJump" type="button" title="Wrap up lesson">Wrap</button>
-        <button id="ttRefresh" type="button" title="New lesson">New</button>
-        <button id="ttSavedToggle" type="button" title="Saved lessons">Saved</button>
-        <button id="ttDataToggle" type="button" title="Data Center">Data</button>
-        <button id="ttProfile" type="button" title="Student profile">Profile</button>
-        <button id="ttFirebaseSignIn" type="button" title="Sign in to sync across devices" class="firebase-sign-in-btn">☁ Sign in</button>
+        <div class="ctx-sep"></div>
+        <select id="ttGroup" title="Active group" class="group-select"></select>
+        <div class="lesson-meta">
+          <strong id="ttTitle" class="lesson-title">Ready</strong>
+          <strong id="ttLessonFile" class="lesson-file-name"></strong>
+          <span id="ttSaveStatus" class="save-status">Not saved</span>
+        </div>
+        <div class="ctx-spacer"></div>
+        <button id="ttFirebaseSignIn" type="button" title="Sign in to sync across devices" class="firebase-sign-in-btn">☁ Sync</button>
         <button id="ttFirebaseSignOut" type="button" title="Sign out of cloud sync" class="firebase-sign-out-btn" hidden>Sign out</button>
         <span id="ttFirebaseUserBadge" class="firebase-user-badge" hidden></span>
       </div>
-      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs"></div>
-      <section class="student-roster-bar" aria-label="Lesson students">
-        <div>
-          <p>Students</p>
-          <div id="ttFrontStudents" class="front-students" aria-label="Students"></div>
+
+      <!-- Row 2: Action ribbon — Word-style grouped buttons -->
+      <div class="action-ribbon">
+        <div class="ribbon-group">
+          <span class="ribbon-label">Lesson</span>
+          <div class="ribbon-buttons">
+            <button id="ttHome" type="button" title="Home dashboard">Home</button>
+            <button id="ttRefresh" type="button" title="New lesson">New</button>
+            <button id="ttWrapJump" type="button" title="Wrap up lesson">End</button>
+            <button id="ttSaveLesson" type="button" title="Save lesson">Save</button>
+          </div>
         </div>
-        <div class="student-roster-actions">
-          <button id="ttAddRosterStudent" type="button" title="Add student from roster">+</button>
-          <button id="ttAttendance" type="button">Attendance</button>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">View</span>
+          <div class="ribbon-buttons">
+            <button id="ttPresent" type="button" title="Presentation mode">Present</button>
+            <button id="ttDisplayToggle" type="button" title="Student display window">Display</button>
+          </div>
         </div>
-      </section>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">Export</span>
+          <div class="ribbon-buttons">
+            <button id="ttPdfPlan" type="button" title="Export PDF lesson plan">PDF</button>
+            <button id="ttWilsonPlan" type="button" title="Wilson lesson plan">Wilson LP</button>
+            <button id="ttWilsonFillablePlan" type="button" title="Fillable Wilson PDF">Fillable</button>
+          </div>
+        </div>
+        <div class="ribbon-sep"></div>
+        <div class="ribbon-group">
+          <span class="ribbon-label">Data</span>
+          <div class="ribbon-buttons">
+            <button id="ttSavedToggle" type="button" title="Saved lessons">History</button>
+            <button id="ttDataToggle" type="button" title="Data center &amp; records">Records</button>
+            <button id="ttProfile" type="button" title="Student profile">Profile</button>
+          </div>
+        </div>
+        <div class="ribbon-sep ribbon-sep-students"></div>
+        <div class="ribbon-group ribbon-students" aria-label="Students">
+          <span class="ribbon-label">Students</span>
+          <div class="ribbon-buttons ribbon-students-buttons">
+            <div id="ttFrontStudents" class="front-students" aria-label="Students"></div>
+            <button id="ttAddRosterStudent" type="button" title="Add student from roster">+</button>
+            <button id="ttAttendance" type="button">Attend</button>
+          </div>
+        </div>
+      </div>
+      <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs" hidden></div>
       <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
       <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Student display controls">
         <div>
@@ -599,6 +629,106 @@
       </section>
     </main>
 
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="ttLoginScreen" class="tt-login-screen">
+      <div class="tt-login-bg-rings" aria-hidden="true"></div>
+      <div class="tt-login-card">
+        <div class="tt-login-brand">
+          <div class="tt-login-logo-wrap">
+            <img src="assets/morrocoy-logo.png" alt="" class="tt-login-logo">
+          </div>
+          <h1 class="tt-login-app-name">Teach Today</h1>
+          <p class="tt-login-tagline">Wilson Reading lesson planner</p>
+        </div>
+        <div class="tt-login-divider"></div>
+        <div class="tt-login-actions">
+          <button id="ttLoginSignIn" type="button" class="tt-login-google-btn">
+            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M17.64 9.2c0-.637-.057-1.25-.164-1.84H9v3.48h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908C16.658 14.148 17.64 11.84 17.64 9.2z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+          <button id="ttLoginContinue" type="button" class="tt-login-continue-btn">
+            Continue without signing in
+          </button>
+        </div>
+        <p class="tt-login-sync-note">Sign in to sync your groups and records across devices.</p>
+      </div>
+    </div>
+
+    <!-- ===== NEW GROUP MODAL ===== -->
+    <div id="ttNewGroupModal" class="tt-modal-overlay" hidden>
+      <div class="tt-modal-backdrop"></div>
+      <div class="tt-modal-card" role="dialog" aria-modal="true" aria-label="Create a new group">
+        <div class="tt-modal-head">
+          <h2>Create a New Group</h2>
+          <button id="ttNewGroupClose" type="button" class="tt-modal-close" aria-label="Close">×</button>
+        </div>
+        <div class="tt-modal-body">
+          <div class="tt-form-row">
+            <label for="ttNgName">Group name *</label>
+            <input id="ttNgName" type="text" placeholder="e.g. Blue Group" autocomplete="off" autocorrect="off">
+          </div>
+          <div class="tt-form-row">
+            <label for="ttNgTime">Time slot <span class="tt-optional">(optional)</span></label>
+            <input id="ttNgTime" type="text" placeholder="e.g. 9:00 – 10:00" autocomplete="off">
+          </div>
+          <div class="tt-form-row tt-form-row-half">
+            <div>
+              <label for="ttNgSubstep">Starting substep</label>
+              <select id="ttNgSubstep"></select>
+            </div>
+            <div>
+              <label for="ttNgLevel">Reader level</label>
+              <select id="ttNgLevel">
+                <option value="AB">AB</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="N">N</option>
+              </select>
+            </div>
+          </div>
+          <div class="tt-form-divider"></div>
+          <p class="tt-form-label-head">Students</p>
+          <div class="tt-student-adder">
+            <div class="tt-student-adder-row">
+              <select id="ttNgRoster" class="tt-ng-roster-select" aria-label="Pick from roster"></select>
+              <button id="ttNgAddFromRoster" type="button" class="tt-ng-add-btn">+ Add</button>
+            </div>
+            <div class="tt-student-adder-or">or type a new name</div>
+            <div class="tt-student-adder-row">
+              <input id="ttNgNewStudent" type="text" placeholder="Student first name" autocomplete="off" autocorrect="off" autocapitalize="words">
+              <button id="ttNgAddNew" type="button" class="tt-ng-add-btn">+ Add</button>
+            </div>
+          </div>
+          <div id="ttNgStudentTags" class="tt-ng-student-tags"></div>
+        </div>
+        <div class="tt-modal-footer">
+          <button id="ttNewGroupCancel" type="button" class="tt-modal-cancel">Cancel</button>
+          <button id="ttNewGroupCreate" type="button" class="tt-modal-create">Create Group →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ONBOARDING TOUR ===== -->
+    <div id="ttOnboarding" class="tt-onboarding-overlay" hidden>
+      <div class="tt-onboarding-backdrop"></div>
+      <div class="tt-onboarding-card" role="dialog" aria-modal="true" aria-label="Getting started tour">
+        <button id="ttOnboardingClose" type="button" class="tt-onboarding-close" aria-label="Close tour">×</button>
+        <div id="ttOnboardingIcon" class="tt-onboarding-icon" aria-hidden="true"></div>
+        <h2 id="ttOnboardingTitle" class="tt-onboarding-title"></h2>
+        <p id="ttOnboardingBody" class="tt-onboarding-body"></p>
+        <div id="ttOnboardingDots" class="tt-onboarding-dots" aria-hidden="true"></div>
+        <div class="tt-onboarding-footer">
+          <button id="ttOnboardingSkip" type="button" class="tt-onboarding-skip">Skip tour</button>
+          <button id="ttOnboardingNext" type="button" class="tt-onboarding-next">Next →</button>
+        </div>
+      </div>
+    </div>
+
     <script src="reader-wordlists.js"></script>
     <script src="reader-chart-index.js"></script>
     <script src="reader-sentences.js"></script>
@@ -615,5 +745,7 @@
     <script src="app.js"></script>
     <script src="teach-today.js?v=section7-hfw-arrows-1"></script>
     <script src="pwa-register.js"></script>
+    <script src="onboarding.js"></script>
+    <script src="add-group.js"></script>
   </body>
 </html>

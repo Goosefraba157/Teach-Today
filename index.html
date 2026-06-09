@@ -4,14 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dyslexia Instruction Engine</title>
+    <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand-block">
-          <p class="eyebrow">Teacher command center</p>
-          <h1>Dyslexia Instruction Engine</h1>
+          <img src="assets/morrocoy-logo.png" alt="" class="sidebar-logo">
+          <div>
+            <p class="eyebrow">Teacher command center</p>
+            <h1>Dyslexia Instruction Engine</h1>
+          </div>
         </div>
 
         <section class="quick-create" aria-label="Create group">
@@ -36,9 +40,10 @@
             <h2 id="activeGroupTitle">Ready-to-teach weekly plan</h2>
           </div>
           <div class="topbar-actions">
+            <a href="TeachToday.html" class="ghost-button action-link">Teach Today ↗</a>
             <a href="Games/index.html" class="ghost-button action-link">Game hub</a>
             <button id="printBtn" type="button" class="ghost-button">Print</button>
-            <button id="exportRecordsBtn" type="button" class="ghost-button">Export records</button>
+            <button id="exportRecordsBtn" type="button" class="ghost-button">Export</button>
             <button id="generateBtn" type="button" class="primary-button">Generate week</button>
           </div>
         </header>
