@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
-    <link rel="stylesheet" href="teach-today.css?v=present-menu-2">
+    <link rel="stylesheet" href="teach-today.css?v=game-hub-1">
   </head>
   <body>
     <div class="app-shell">
@@ -252,6 +252,7 @@
           <span class="ribbon-label">Lesson</span>
           <div class="ribbon-buttons">
             <button id="ttHome" type="button" title="Home dashboard">Home</button>
+            <button id="ttGameHub" type="button" title="Student game hub" onclick="window.location.href='Games/index.html'">Games</button>
             <button id="ttRefresh" type="button" title="New lesson">New</button>
             <button id="ttWrapJump" type="button" title="Wrap up lesson">End</button>
             <button id="ttSaveLesson" type="button" title="Save lesson">Save</button>
@@ -388,6 +389,11 @@
             </details>
           </div>
         </div>
+        <a class="home-game-hub-link" href="Games/index.html" aria-label="Open student game hub">
+          <span>Student games</span>
+          <strong>Game Quest</strong>
+          <em>Cursive, syllables, and decoding</em>
+        </a>
         <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
       </header>
       <div id="ttHomeGroups" class="home-groups"></div>

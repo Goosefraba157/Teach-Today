@@ -139,6 +139,16 @@
         playable: true
       },
       {
+        id: "decodeDash",
+        title: "Decode Dash",
+        copy: "Run, jump, and grab the right sound tile to finish Wilson 1.3 words.",
+        href: `Decode%20Dash/index.html?student=${studentParam}`,
+        points: totals.decodeDash || 0,
+        status: "Ready",
+        art: ["d", "a", "sh", "✓"],
+        playable: true
+      },
+      {
         id: "word",
         title: "Word Builder",
         copy: "Coming next: build words from sounds and race your best score.",

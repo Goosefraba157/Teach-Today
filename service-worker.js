@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-06-09-connection-audio-1";
+const CACHE_NAME = "teach-today-offline-v2026-06-09-game-hub-1";
 
 const APP_SHELL = [
   "./",
@@ -32,6 +32,16 @@ const APP_SHELL = [
   "./pwa-register.js",
   "./manifest.webmanifest",
   "./assets/morrocoy-logo.png",
+  "./Games/index.html",
+  "./Games/game-hub.css",
+  "./Games/game-hub.js",
+  "./Games/Cursive%20Tracing%20WIlson/index.html",
+  "./Games/Cursive%20Tracing%20WIlson/cursive-tracing.css",
+  "./Games/Cursive%20Tracing%20WIlson/cursive-tracing.js",
+  "./Games/Syllable%20Slice/index.html",
+  "./Games/Syllable%20Slice/syllable-slice.css",
+  "./Games/Syllable%20Slice/syllable-slice.js",
+  "./Games/Decode%20Dash/index.html",
   "./Sounds%20for%20Section%201/1.1.png",
   "./Sounds%20for%20Section%201/1.2%20-%201.3.png",
   "./Sounds%20for%20Section%201/1.4.png",

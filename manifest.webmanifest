@@ -26,6 +26,11 @@
       "name": "Student Profiles",
       "short_name": "Profiles",
       "url": "./StudentProfile.html"
+    },
+    {
+      "name": "Game Quest",
+      "short_name": "Games",
+      "url": "./Games/index.html"
     }
   ]
 }
