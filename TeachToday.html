@@ -332,6 +332,7 @@
             <button id="ttPlannerOpen" type="button">Start teaching</button>
           </div>
         </div>
+        <div id="ttPlannerModePicker" class="planner-mode-picker-wrap"></div>
         <div class="planner-core">
           <label>Substep<select id="ttPlannerSubstep"></select></label>
           <label>Reader level<select id="ttPlannerLevel"></select></label>
@@ -383,6 +384,27 @@
           <section><h3>Suffixes</h3><div id="ttWbSuffixes" class="wb-card-tray"></div></section>
           <section><h3>Latin bases</h3><div id="ttWbLatin" class="wb-card-tray"></div></section>
         </aside>
+      </div>
+    </section>
+
+    <!-- ===== EXPORT VIEWER OVERLAY ===== -->
+    <section id="ttExportViewer" class="export-viewer-overlay" hidden aria-label="Export preview">
+      <header class="export-viewer-topbar">
+        <div class="export-viewer-brand">
+          <img src="assets/morrocoy-logo.png" alt="">
+          <div class="export-viewer-title">
+            <p>Teach Today Export</p>
+            <h1 id="ttExportViewerTitle">Export</h1>
+          </div>
+        </div>
+        <div class="export-viewer-actions">
+          <button id="ttExportViewerPrint" type="button" title="Print this export">Print</button>
+          <button id="ttExportViewerDownload" type="button" title="Download file">Download</button>
+          <button id="ttExportViewerClose" type="button" title="Close and return to lesson">✕ Close</button>
+        </div>
+      </header>
+      <div class="export-viewer-frame-wrap">
+        <iframe id="ttExportViewerFrame" class="export-viewer-frame" title="Export preview"></iframe>
       </div>
     </section>
 
@@ -817,7 +839,7 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
-    <script src="teach-today.js?v=scroll-fix-present-menu-2"></script>
+    <script src="teach-today.js?v=section2b-labels-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>
