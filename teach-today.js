@@ -146,9 +146,37 @@ function ttRender() {
       sec.hidden = false; // CSS handles part1/part2 via body class
     }
   }
-  // In Part 2, relabel Section 2 heading to "§2B" so teachers see it's the Day 2 words
-  const sec2NumEl = document.querySelector("#section2 .section-head span");
-  if (sec2NumEl) sec2NumEl.textContent = lessonTypeKey === "part2" ? "2B" : "2";
+  // In Part 2, physically move #section2 to after #section1b so it appears as §2B in flow
+  const sec1El  = ttById("section1");
+  const sec2El  = ttById("section2");
+  const sec3El  = ttById("section3");
+  const sec5El  = ttById("section5");
+  const sec1bEl = ttById("section1b");
+  if (sec2El && sec3El && sec5El) {
+    if (lessonTypeKey === "part2") {
+      // §1b sits right after §5 in the HTML; place §2 after §1b (it becomes §2B)
+      if (sec1bEl) sec1bEl.insertAdjacentElement("afterend", sec2El);
+      else sec5El.insertAdjacentElement("afterend", sec2El);
+      sec2El.querySelector(".section-head span").textContent = "2B";
+      const nl2b = sec2El.querySelector(".next-link");
+      if (nl2b) { nl2b.href = "#section6"; nl2b.textContent = "Next: Section 6"; }
+      // §1's "Next" should go to §1b (the repeat) in Part 2
+      if (sec1El) {
+        const nl1 = sec1El.querySelector(".next-link");
+        if (nl1) { nl1.href = "#section1b"; nl1.textContent = "Next: Section 1 (Encoding Day)"; }
+      }
+    } else {
+      sec3El.insertAdjacentElement("beforebegin", sec2El);
+      sec2El.querySelector(".section-head span").textContent = "2";
+      const nl2 = sec2El.querySelector(".next-link");
+      if (nl2) { nl2.href = "#section3"; nl2.textContent = "Next: Section 3"; }
+      // Restore §1's "Next" link
+      if (sec1El) {
+        const nl1 = sec1El.querySelector(".next-link");
+        if (nl1) { nl1.href = "#section2"; nl1.textContent = "Next: Section 2"; }
+      }
+    }
+  }
 
   ttById("ttTitle").textContent = `${group.name} - ${lesson.substep}`;
   ttById("ttLessonFile").textContent = plan?.title || ttLessonFileName(group, lesson);
@@ -1884,7 +1912,7 @@ function ttPlannerScheduleBarHtml(lessonType) {
     secsHtml = [sec(1,"3m"), div, sec(2,"5m"), div, sec(3,"5m"), div, sec(4,"10m"), div, sec(5,"5m"), div, sec("9","≤17m",true), sec("10","≤17m",true)].join("");
   } else if (lessonType === "part2") {
     label = "Part 2 · Encoding Day · 45 min";
-    secsHtml = [sec(1,"3m"), div, sec("2B","5m"), div, sec(6,"3m"), div, sec(7,"10m"), div, sec(8,"20m"), div, sec("9","if time",true), sec("10","if time",true)].join("");
+    secsHtml = [sec("1↺","3m"), div, sec("2B","5m"), div, sec(6,"3m"), div, sec(7,"10m"), div, sec(8,"20m"), div, sec("9","if time",true), sec("10","if time",true)].join("");
   } else if (lessonType === "full45") {
     label = "Quick 1:1 · 45 min";
     secsHtml = [sec(1,"3m"), div, sec(2,"5m"), div, sec(3,"5m"), div, sec(4,"5m"), div, sec(5,"3m"), div, sec(6,"3m"), div, sec(7,"7m"), div, sec(8,"10m"), div, sec("9","if time",true)].join("");
@@ -2916,7 +2944,7 @@ function ttRerollEncodingSectionsAction() {
 function ttFillSounds(skill, lesson) {
   const photo = ttSection1PhotoForSubstep(skill.id);
   const smallCardHtml = ttSection1SmallCardView(skill, lesson);
-  ttById("ttSounds").innerHTML = `
+  const soundsHtml = `
     <div class="section1-view-actions" role="toolbar" aria-label="Section 1 view controls">
       <button type="button" class="${ttSection1View === "photo" ? "active" : ""}" data-section1-view="photo">Photo View</button>
       <button type="button" class="${ttSection1View === "cards" ? "active" : ""}" data-section1-view="cards">Small Card View</button>
@@ -2937,6 +2965,10 @@ function ttFillSounds(skill, lesson) {
       ${smallCardHtml}
     </section>
   `;
+  ttById("ttSounds").innerHTML = soundsHtml;
+  // Also fill the §1 repeat card shown in Part 2 after §5
+  const soundsB = ttById("ttSoundsB");
+  if (soundsB) soundsB.innerHTML = soundsHtml;
   ttBindSection1Controls();
 }
 

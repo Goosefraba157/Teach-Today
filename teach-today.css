@@ -2945,6 +2945,9 @@ body.lesson-type-part2 #section4,
 body.lesson-type-part2 #section5 {
   display: none !important;
 }
+/* §1b repeat only shows in Part 2 */
+#section1b { display: none !important; }
+body.lesson-type-part2 #section1b { display: block !important; }
 
 /* Planner section timing badge */
 .planner-sec-time {
