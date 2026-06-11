@@ -639,11 +639,31 @@
         <a class="next-link" href="#section6">Next: Section 6</a>
       </section>
 
-      <!-- Part 2 (Encoding Day) repeats §1 at the start of the encoding sequence -->
+      <!-- Group lesson: §1 repeat opens the Encoding portion (after §5) -->
       <section id="section1b" class="teach-card">
         <div class="section-head"><span>1</span><h2>Sounds Quick Drill</h2></div>
         <div id="ttSoundsB" class="sound-grid"></div>
-        <a class="next-link" href="#section2">Next: Section 2B</a>
+        <a class="next-link" href="#section2b">Next: Section 2B</a>
+      </section>
+
+      <!-- Group lesson: §2B — Day 2 concepts, distinct words from §2 above -->
+      <section id="section2b" class="teach-card">
+        <div class="section-head section-head-with-actions">
+          <div><span>2B</span><h2>Concepts · Day 2</h2></div>
+          <button class="section-refresh" data-refresh-section="2b" type="button" title="New Section 2B set">↻ New set</button>
+        </div>
+        <span id="ttSection2bRef" class="section-ref-pill"></span>
+        <div class="section2-picker">
+          <article>
+            <h3>Review words (Day 2)</h3>
+            <div id="ttReviewWordsB2" class="word-row"></div>
+          </article>
+          <article>
+            <h3>Current words (Day 2)</h3>
+            <div id="ttCurrentWordsB2" class="word-row"></div>
+          </article>
+        </div>
+        <a class="next-link" href="#section6">Next: Section 6</a>
       </section>
 
       <section id="section6" class="teach-card">
@@ -846,7 +866,7 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
-    <script src="teach-today.js?v=section1b-repeat-1"></script>
+    <script src="teach-today.js?v=unified-group-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>

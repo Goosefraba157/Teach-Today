@@ -131,9 +131,11 @@ function ttRender() {
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   ttEnsureSection4PageIntegrity(lesson, skill);
   const plan = ttCurrentPlan();
-  // Apply lesson-type class so CSS can show/hide sections (part1/part2)
-  const lessonTypeKey = lesson.lessonType || "full";
-  document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
+  // Apply lesson-type class so CSS can show/hide sections
+  const rawKey = lesson.lessonType || "full";
+  // Normalize legacy part1/part2 to unified "group"
+  const lessonTypeKey = (rawKey === "part1" || rawKey === "part2") ? "group" : rawKey;
+  document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-group", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
   document.body.classList.add(`lesson-type-${lessonTypeKey}`);
   // For flash mode, show/hide individual sections based on selection
   for (let i = 1; i <= 10; i++) {
@@ -146,34 +148,16 @@ function ttRender() {
       sec.hidden = false; // CSS handles part1/part2 via body class
     }
   }
-  // In Part 2, physically move #section2 to after #section1b so it appears as §2B in flow
-  const sec1El  = ttById("section1");
-  const sec2El  = ttById("section2");
-  const sec3El  = ttById("section3");
-  const sec5El  = ttById("section5");
-  const sec1bEl = ttById("section1b");
-  if (sec2El && sec3El && sec5El) {
-    if (lessonTypeKey === "part2") {
-      // §1b sits right after §5 in the HTML; place §2 after §1b (it becomes §2B)
-      if (sec1bEl) sec1bEl.insertAdjacentElement("afterend", sec2El);
-      else sec5El.insertAdjacentElement("afterend", sec2El);
-      sec2El.querySelector(".section-head span").textContent = "2B";
-      const nl2b = sec2El.querySelector(".next-link");
-      if (nl2b) { nl2b.href = "#section6"; nl2b.textContent = "Next: Section 6"; }
-      // §1's "Next" should go to §1b (the repeat) in Part 2
-      if (sec1El) {
-        const nl1 = sec1El.querySelector(".next-link");
-        if (nl1) { nl1.href = "#section1b"; nl1.textContent = "Next: Section 1 (Encoding Day)"; }
-      }
-    } else {
-      sec3El.insertAdjacentElement("beforebegin", sec2El);
-      sec2El.querySelector(".section-head span").textContent = "2";
-      const nl2 = sec2El.querySelector(".next-link");
-      if (nl2) { nl2.href = "#section3"; nl2.textContent = "Next: Section 3"; }
-      // Restore §1's "Next" link
-      if (sec1El) {
-        const nl1 = sec1El.querySelector(".next-link");
-        if (nl1) { nl1.href = "#section2"; nl1.textContent = "Next: Section 2"; }
+  // In group mode, §2 stays at its position (Day 1 words); §2b (static HTML after §1b) shows Day 2 words
+  // Update §1's "Next" link: in group mode it goes to §1b (the encoding-day repeat)
+  const sec1El = ttById("section1");
+  if (sec1El) {
+    const nl1 = sec1El.querySelector(".next-link");
+    if (nl1) {
+      if (lessonTypeKey === "group") {
+        nl1.href = "#section2"; nl1.textContent = "Next: Section 2";
+      } else {
+        nl1.href = "#section2"; nl1.textContent = "Next: Section 2";
       }
     }
   }
@@ -198,15 +182,18 @@ function ttRender() {
   ttFillSectionRefs(lesson);
   ttFillSounds(skill, lesson);
   ttEnsureSection2MissIndexes(lesson, group, skill);
-  const isPart2Lesson = (lesson.lessonType === "part2");
-  ttFillWordRow(ttById("ttReviewWords"), (isPart2Lesson && lesson.sectionTwoReviewWordsB2?.length ? lesson.sectionTwoReviewWordsB2 : lesson.sectionTwoReviewWords) || [], {
+  // §2 always shows Day 1 words; §2b (group mode only) shows Day 2 words separately
+  ttFillWordRow(ttById("ttReviewWords"), lesson.sectionTwoReviewWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("review", word)
   });
-  ttFillWordRow(ttById("ttCurrentWords"), (isPart2Lesson && lesson.sectionTwoCurrentWordsB2?.length ? lesson.sectionTwoCurrentWordsB2 : lesson.sectionTwoCurrentWords) || [], {
+  ttFillWordRow(ttById("ttCurrentWords"), lesson.sectionTwoCurrentWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("current", word)
   });
+  // §2b — Day 2 words (only visible in group mode via CSS)
+  ttFillWordRow(ttById("ttReviewWordsB2"), lesson.sectionTwoReviewWordsB2 || []);
+  ttFillWordRow(ttById("ttCurrentWordsB2"), lesson.sectionTwoCurrentWordsB2 || []);
   ttFillWordRow(ttById("ttLastMissedWords"), lesson.sectionTwoLastMissedWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("lastMisses", word)
@@ -1131,8 +1118,9 @@ function ttOpenTeachFlow(options = {}) {
     if (flow) flow.hidden = false;
     document.body.classList.remove("home-mode", "lesson-home-exit");
     document.body.classList.remove("legacy-full-lesson-mode");
-    document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
-    document.body.classList.add(`lesson-type-${ttLesson?.lessonType || "full"}`);
+    document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-group", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
+    const _ltRaw = ttLesson?.lessonType || "full";
+    document.body.classList.add(`lesson-type-${(_ltRaw === "part1" || _ltRaw === "part2") ? "group" : _ltRaw}`);
     document.body.classList.add("lesson-flow-enter");
     ttRender();
     if (openAsPresentation) ttTogglePresentation(true);
@@ -1299,8 +1287,11 @@ function ttRenderModePicker() {
   const container = ttById("ttPlannerModePicker");
   if (!container) return;
   const draft = ttPlannerDraft;
-  const lt = draft.lessonType || "full";
-  const isGroup = lt === "part1" || lt === "part2";
+  // Treat legacy part1/part2 as unified "group"
+  const rawLt = draft.lessonType || "full";
+  const lt = (rawLt === "part1" || rawLt === "part2") ? "group" : rawLt;
+  if (rawLt === "part1" || rawLt === "part2") draft.lessonType = "group";
+  const isGroup = lt === "group";
   const isFlash = lt === "flash";
 
   const modeBtn = (value, icon, headline, sub, color) => {
@@ -1323,18 +1314,7 @@ function ttRenderModePicker() {
     ${modeBtn("flash",  "🎮", "Flash",  "Build your own",  "#e11d48")}
   </div>`;
 
-  if (isGroup) {
-    html += `<div class="mode-subpick-row">
-      <button type="button" class="mode-subpick-btn${lt === "part1" ? " active" : ""}" data-mode-pick="part1">
-        <strong>Part 1 · Decoding Day</strong>
-        <em>§1 · §2 · §3 · §4 · §5 · then §9/10</em>
-      </button>
-      <button type="button" class="mode-subpick-btn${lt === "part2" ? " active" : ""}" data-mode-pick="part2">
-        <strong>Part 2 · Encoding Day</strong>
-        <em>§1 · §2B · §6 · §7 · §8 · then §9/10</em>
-      </button>
-    </div>`;
-  }
+  // No sub-picker — group mode shows the full two-day flow in one unified lesson
 
   if (isFlash) {
     const secs = TT_LESSON_SECTIONS;
@@ -1384,11 +1364,7 @@ function ttRenderModePicker() {
       if (!group) return;
       ttEnsurePlannerDraft(group);
       const val = btn.dataset.modePick;
-      if (val === "group") {
-        if (!isGroup) ttPlannerDraft.lessonType = "part1";
-      } else {
-        ttPlannerDraft.lessonType = val;
-      }
+      ttPlannerDraft.lessonType = val; // "group" is now a first-class type
       if (val === "flash") {
         ttPlannerDraft.flashSections ||= ["1", "2", "3", "5"];
       }
@@ -1872,10 +1848,9 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   );
 
   let rows = [];
-  if (lessonType === "part1") {
-    rows = [row2Decoding, row3];
-  } else if (lessonType === "part2") {
-    rows = [row2Encoding, row6, row7, row8];
+  if (lessonType === "group" || lessonType === "part1" || lessonType === "part2") {
+    // Unified 45+45 group lesson: Day 1 pickers (§2, §3) + Day 2 pickers (§2B, §6, §7, §8)
+    rows = [row2Decoding, row3, row2Encoding, row6, row7, row8];
   } else if (lessonType === "flash") {
     // Only show pickers for selected sections that have plannable content
     const flashSet = new Set(ttPlannerDraft.flashSections || []);
@@ -1907,12 +1882,15 @@ function ttPlannerScheduleBarHtml(lessonType) {
   let label = "";
   let secsHtml = "";
 
-  if (lessonType === "part1") {
-    label = "Part 1 · Decoding Day · 45 min";
-    secsHtml = [sec(1,"3m"), div, sec(2,"5m"), div, sec(3,"5m"), div, sec(4,"10m"), div, sec(5,"5m"), div, sec("9","≤17m",true), sec("10","≤17m",true)].join("");
-  } else if (lessonType === "part2") {
-    label = "Part 2 · Encoding Day · 45 min";
-    secsHtml = [sec("1↺","3m"), div, sec("2B","5m"), div, sec(6,"3m"), div, sec(7,"10m"), div, sec(8,"20m"), div, sec("9","if time",true), sec("10","if time",true)].join("");
+  if (lessonType === "group" || lessonType === "part1" || lessonType === "part2") {
+    label = "Group Lesson · 45+45 min";
+    // Full two-day flow: Decoding Day §1-5, then Encoding Day §1↺, §2B, §6-8
+    secsHtml = [
+      sec(1,"3m"), div, sec(2,"5m"), div, sec(3,"5m"), div, sec(4,"10m"), div, sec(5,"5m"),
+      div, sec("1↺","3m"), div, sec("2B","5m"),
+      div, sec(6,"3m"), div, sec(7,"10m"), div, sec(8,"20m"),
+      div, sec("9","if time",true), sec("10","if time",true)
+    ].join("");
   } else if (lessonType === "full45") {
     label = "Quick 1:1 · 45 min";
     secsHtml = [sec(1,"3m"), div, sec(2,"5m"), div, sec(3,"5m"), div, sec(4,"5m"), div, sec(5,"3m"), div, sec(6,"3m"), div, sec(7,"7m"), div, sec(8,"10m"), div, sec("9","if time",true)].join("");
@@ -2572,23 +2550,23 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
   const lessonTypeLabel = {
     full:   "Full Lesson · 60 min",
     full45: "Quick 1:1 · 45 min",
-    part1:  "Part 1 · Decoding Day · 45 min",
-    part2:  "Part 2 · Encoding Day · 45 min",
+    group:  "Group Lesson · 45+45 min",
+    part1:  "Group Lesson · 45+45 min",
+    part2:  "Group Lesson · 45+45 min",
     flash:  "Flash Lesson · custom"
   };
-  const currentLessonType = ttPlannerDraft.lessonType || "full";
-  const isPart1 = currentLessonType === "part1";
-  const isPart2 = currentLessonType === "part2";
+  const rawLessonType = ttPlannerDraft.lessonType || "full";
+  const currentLessonType = (rawLessonType === "part1" || rawLessonType === "part2") ? "group" : rawLessonType;
+  const isGroup = currentLessonType === "group";
   const isFlash = currentLessonType === "flash";
   const flashSet = isFlash ? new Set(ttPlannerDraft.flashSections || []) : null;
 
-  const block2Label = isPart2 ? "§2B · Teach & Review (Day 2)" : "Teach & Review";
-  const sec2ReviewWords = isPart2
-    ? (activeLesson.sectionTwoReviewWordsB2 || ttPlannerSelected("section2ReviewB2") || [])
-    : (activeLesson.sectionTwoReviewWords || []);
-  const sec2CurrentWords = isPart2
-    ? (activeLesson.sectionTwoCurrentWordsB2 || ttPlannerSelected("section2CurrentB2") || [])
-    : (activeLesson.sectionTwoCurrentWords || []);
+  // Day 1 words always come from the standard §2 fields
+  const sec2ReviewWords = activeLesson.sectionTwoReviewWords || [];
+  const sec2CurrentWords = activeLesson.sectionTwoCurrentWords || [];
+  // Day 2 words from §2b fields (only shown in group mode)
+  const sec2bReviewWords = activeLesson.sectionTwoReviewWordsB2 || ttPlannerSelected("section2ReviewB2") || [];
+  const sec2bCurrentWords = activeLesson.sectionTwoCurrentWordsB2 || ttPlannerSelected("section2CurrentB2") || [];
 
   preview.innerHTML = `
     <div class="planner-preview-paper">
@@ -2598,27 +2576,29 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
         <em>Reader ${escapeHtml(activeLesson.reader)}, wordlist p. ${escapeHtml(activeLesson.wordlistPageNumber || "--")} · sentences p. ${escapeHtml(activeLesson.sentencePageNumber || "--")}</em>
         <button class="preview-open-btn" type="button">Start teaching</button>
       </header>
-      ${ttPlannerPreviewBlock("2", block2Label, [
+      ${ttPlannerPreviewBlock("2", "Teach & Review", [
         ["Review", sec2ReviewWords],
         ["Current", sec2CurrentWords],
-        ...(isPart2 ? [] : [
-          ["Last Misses", activeLesson.sectionTwoLastMissedWords || []],
-          ["Priority", activeLesson.sectionTwoPriorityMissedWords || []]
-        ])
+        ["Last Misses", activeLesson.sectionTwoLastMissedWords || []],
+        ["Priority", activeLesson.sectionTwoPriorityMissedWords || []]
       ], prevWordSet)}
-      ${(isPart1 || (!isPart2 && (!isFlash || flashSet.has("3")))) ? ttPlannerPreviewBlock("3", "Word Cards", [
+      ${(!isFlash || flashSet.has("3")) ? ttPlannerPreviewBlock("3", "Word Cards", [
         ["Review", activeLesson.sectionThreeReviewWords || section3ReviewCards(activeLesson)],
         ["Current", activeLesson.sectionThreeCurrentWords || section3CurrentCards(activeLesson)]
       ], prevWordSet) : ""}
-      ${(!isPart1 && (!isFlash || flashSet.has("6"))) ? ttPlannerPreviewBlock("6", "Quick Drill", [
+      ${isGroup ? ttPlannerPreviewBlock("2B", "Concepts · Day 2", [
+        ["Review", sec2bReviewWords],
+        ["Current", sec2bCurrentWords]
+      ], prevWordSet) : ""}
+      ${(!isFlash || flashSet.has("6")) ? ttPlannerPreviewBlock("6", "Quick Drill", [
         ["Targets", (activeLesson.reverseDrillOverride || []).map((item) => item.value).slice(0, 20)]
       ], prevWordSet) : ""}
-      ${(!isPart1 && (!isFlash || flashSet.has("7"))) ? ttPlannerPreviewBlock("7", "Spelling", [
+      ${(!isFlash || flashSet.has("7")) ? ttPlannerPreviewBlock("7", "Spelling", [
         ["Review", sectionSeven.review || []],
         ["Nonsense", sectionSeven.nonsense || []],
         ["Current", sectionSeven.current || []]
       ], prevWordSet) : ""}
-      ${(!isPart1 && (!isFlash || flashSet.has("8"))) ? ttPlannerPreviewBlock("8", "Dictation", [
+      ${(!isFlash || flashSet.has("8")) ? ttPlannerPreviewBlock("8", "Dictation", [
         ["Sounds", block("sounds")],
         ["Elements", block("word elements")],
         ["Real", block("real words")],

@@ -2939,15 +2939,16 @@ body.lesson-type-part1 #section7,
 body.lesson-type-part1 #section8 {
   display: none !important;
 }
-/* Part 2 (Encoding Day): sections 1, 2, 6, 7, 8, then 9/10. Hide 3, 4, 5. */
+/* §1b and §2b only show in Group (45+45) mode */
+#section1b, #section2b { display: none !important; }
+body.lesson-type-group #section1b,
+body.lesson-type-group #section2b { display: block !important; }
+/* Legacy part2 support */
 body.lesson-type-part2 #section3,
 body.lesson-type-part2 #section4,
-body.lesson-type-part2 #section5 {
-  display: none !important;
-}
-/* §1b repeat only shows in Part 2 */
-#section1b { display: none !important; }
-body.lesson-type-part2 #section1b { display: block !important; }
+body.lesson-type-part2 #section5 { display: none !important; }
+body.lesson-type-part2 #section1b,
+body.lesson-type-part2 #section2b { display: block !important; }
 
 /* Planner section timing badge */
 .planner-sec-time {
