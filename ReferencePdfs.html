@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#0f766e">
     <title>Teach Today PDF Reference</title>
     <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css">
+    <script src="app-nav.js" defer></script>
     <style>
       :root {
         --ink: #0f172a;
@@ -198,11 +200,18 @@
       document.title = `Teach Today ${activeSet.title}`;
       document.getElementById("pageTitle").textContent = activeSet.title;
       document.getElementById(activeSet.tab).classList.add("active");
+      function pdfViewerHref(href, title) {
+        const params = new URLSearchParams();
+        params.set("file", href);
+        params.set("title", title);
+        return `PdfViewer.html?${params.toString()}`;
+      }
+
       document.getElementById("pdfGrid").innerHTML = activeSet.items.map(([title, detail, href]) => `
         <article class="pdf-card">
           <strong>${title}</strong>
           <span>${detail}</span>
-          <a href="${href}" target="_blank" rel="noopener">Open PDF</a>
+          <a href="${pdfViewerHref(href, title)}">Open PDF</a>
         </article>
       `).join("");
     </script>

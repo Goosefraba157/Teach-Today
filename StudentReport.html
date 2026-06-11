@@ -181,6 +181,8 @@
     .page-break { page-break-before: always; break-before: page; margin-top: 32px; }
     .page-break-after { page-break-after: always; break-after: page; }
   </style>
+<link rel="stylesheet" href="app-nav.css">
+<script src="app-nav.js" defer></script>
 </head>
 <body>
 
@@ -196,7 +198,7 @@
   <div class="toolbar-spacer"></div>
   <div class="toolbar-actions">
     <span class="toolbar-hint">Save as PDF from print dialog</span>
-    <button class="btn-secondary" onclick="history.back()">← Back</button>
+    <button class="btn-secondary" data-tt-app-back type="button">← Back</button>
     <button class="btn-primary" onclick="window.print()">Print / Save PDF</button>
   </div>
 </div>

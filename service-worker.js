@@ -1,13 +1,18 @@
-const CACHE_NAME = "teach-today-offline-v2026-06-09-game-hub-1";
+const CACHE_NAME = "teach-today-offline-v2026-06-11-present-menu-ribbon-1";
 
 const APP_SHELL = [
   "./",
   "./TeachToday.html",
+  "./PdfViewer.html",
   "./ReferencePdfs.html",
   "./StudentDisplay.html",
   "./StudentProfile.html",
   "./StudentReport.html",
+  "./command-center.html",
   "./index.html",
+  "./syllable-sprint.html",
+  "./app-nav.css",
+  "./app-nav.js",
   "./teach-today.css",
   "./student-display.css",
   "./student-profile.css",

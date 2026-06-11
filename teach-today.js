@@ -30,11 +30,20 @@ let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real
 let ttPlannerHomeScrollPositions = {};
 let ttLessonLaunchTimer = null;
 let ttPresentationMenuTimer = null;
+let ttPaceGuideTimer = null;
+let ttPaceGuideState = {
+  running: false,
+  lessonStartedAt: 0,
+  sectionStartedAt: 0,
+  activeSectionId: ""
+};
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
 const ttStudentDisplayChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayStudentDisplay.v1") : null;
 let ttStudentDisplayScreens = [];
+const ttPaceGuideLessonMs = 50 * 60 * 1000;
+const ttPaceGuideSectionMs = 5 * 60 * 1000;
 
 function ttById(id) {
   return document.getElementById(id);
@@ -811,6 +820,64 @@ function ttRenderAttendancePanel(group) {
   });
 }
 
+function ttSetAttendancePanel(open = true, options = {}) {
+  const panel = ttById("ttAttendancePanel");
+  const button = ttById("ttAttendance");
+  if (!panel) return;
+  if (open) ttCloseSmallDropdownMenus("ttAttendance");
+  panel.hidden = !open;
+  button?.classList.toggle("active", open);
+  button?.setAttribute("aria-expanded", String(open));
+  if (!panel.hidden) {
+    ttRenderAttendancePanel(ttActiveGroup());
+    if (options.focus) panel.querySelector("button")?.focus({ preventScroll: true });
+  }
+}
+
+function ttSmallDropdownButtonIds() {
+  return [
+    "ttAttendance",
+    "ttRibbonReaders",
+    "ttRibbonDictation",
+    "ttHomeReaders",
+    "ttHomeDictation"
+  ];
+}
+
+function ttDropdownMenuForButton(button) {
+  return button?.closest(".ref-menu-wrap")?.querySelector(".reference-menu, .attendance-panel");
+}
+
+function ttCloseSmallDropdownMenus(exceptId = "") {
+  ttSmallDropdownButtonIds().forEach((buttonId) => {
+    if (buttonId === exceptId) return;
+    const button = ttById(buttonId);
+    const menu = ttDropdownMenuForButton(button);
+    if (menu) menu.hidden = true;
+    button?.classList.remove("active");
+    button?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function ttToggleSmallDropdown(trigger, options = {}) {
+  const button = ttById(trigger);
+  const menu = ttDropdownMenuForButton(button);
+  if (!button || !menu) return;
+  const isOpen = !menu.hidden;
+  ttById("ttSavedPanel") && (ttById("ttSavedPanel").hidden = true);
+  ttById("ttSavedToggle")?.classList.remove("active");
+  ttById("ttDataPanel") && (ttById("ttDataPanel").hidden = true);
+  ttById("ttDataToggle")?.classList.remove("active");
+  ttCloseSmallDropdownMenus(trigger);
+  if (trigger === "ttAttendance") {
+    ttSetAttendancePanel(isOpen ? false : true, options);
+    return;
+  }
+  menu.hidden = isOpen;
+  button.classList.toggle("active", !isOpen);
+  button.setAttribute("aria-expanded", String(!isOpen));
+}
+
 function ttAddStudentFromRoster() {
   ttToggleRosterPicker(true);
 }
@@ -988,9 +1055,11 @@ function ttOpenTeachFlow(options = {}) {
   const flow = document.querySelector(".teach-flow");
   const launch = ttById("ttLessonLaunch");
   const fromHome = document.body.classList.contains("home-mode");
-  const useTransition = options.transition !== false && fromHome && !ttReduceMotion() && launch;
+  const forceLaunch = options.forceLaunch === true;
+  const useTransition = options.transition !== false && (fromHome || forceLaunch) && !ttReduceMotion() && launch;
   const targetId = options.targetId || "";
   const openAsPresentation = options.presentation === true;
+  const afterOpen = typeof options.afterOpen === "function" ? options.afterOpen : null;
   const revealFlow = () => {
     if (home) home.hidden = true;
     if (flow) flow.hidden = false;
@@ -1011,6 +1080,7 @@ function ttOpenTeachFlow(options = {}) {
       launch?.setAttribute("hidden", "");
       document.body.classList.remove("lesson-launching", "lesson-flow-enter");
       ttLessonLaunchTimer = null;
+      afterOpen?.();
     }, useTransition ? 520 : 0);
   };
 
@@ -1209,10 +1279,22 @@ function ttReferencePdfHref(type) {
   if (type === "reader") {
     const reader = Number(context.skill.reader || String(context.skill.id || "").split(".")[0]);
     if (!reader || !context.wordlist) return "";
-    return `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf#page=${context.wordlist + 2}`;
+    return ttPdfViewerHref(
+      `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf`,
+      context.wordlist + 2,
+      `Reader ${reader}, p. ${context.wordlist}`
+    );
   }
   const entry = ttDictationBookStartPages[context.skill.id];
-  return entry ? `${entry.file}#page=${entry.page}` : "";
+  return entry ? ttPdfViewerHref(entry.file, entry.page, `Dictation ${context.skill.id} start`) : "";
+}
+
+function ttPdfViewerHref(file, page = "", title = "") {
+  const params = new URLSearchParams();
+  params.set("file", file);
+  if (page) params.set("page", String(page));
+  if (title) params.set("title", title);
+  return `PdfViewer.html?${params.toString()}`;
 }
 
 function ttSetReferenceLink(id, href, fallbackHref, label) {
@@ -4254,6 +4336,20 @@ function ttSaveCurrentLesson(options = {}) {
   ttRenderSavedLessons(group);
 }
 
+function ttStartCurrentLesson() {
+  if (!ttLesson) ttBuildLesson();
+  ttSaveCurrentLesson({ render: false });
+  ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
+  ttOpenTeachFlow({
+    forceLaunch: true,
+    presentation: document.body.classList.contains("presentation-mode"),
+    afterOpen: () => {
+      ttStartPaceGuide();
+      ttSetAttendancePanel(true, { scroll: true, focus: true });
+    }
+  });
+}
+
 function ttNewLesson() {
   ttSection2Word = "";
   ttLesson = ttBuildLesson();
@@ -7101,6 +7197,84 @@ function ttHandlePresentationMenuOutsidePointer(event) {
   ttSetPresentationMenu(false);
 }
 
+function ttPaceGuideSectionIds() {
+  return Array.from({ length: 10 }, (_, index) => `section${index + 1}`);
+}
+
+function ttCurrentPaceSectionId() {
+  const viewportAnchor = Math.min(window.innerHeight * 0.38, 230);
+  let current = "";
+  let bestDistance = Number.POSITIVE_INFINITY;
+  ttPaceGuideSectionIds().forEach((id) => {
+    const section = ttById(id);
+    if (!section) return;
+    const rect = section.getBoundingClientRect();
+    const isNearView = rect.bottom > 80 && rect.top < window.innerHeight * 0.78;
+    if (!isNearView) return;
+    const distance = Math.abs(rect.top - viewportAnchor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      current = id;
+    }
+  });
+  return current || ttPaceGuideState.activeSectionId || "section1";
+}
+
+function ttSetPaceGuideLine(line, progressLeft) {
+  const fill = line?.querySelector("i");
+  if (!line || !fill) return;
+  const clamped = Math.max(0, Math.min(1, progressLeft));
+  fill.style.width = `${Math.max(4, clamped * 100)}%`;
+  line.classList.toggle("is-dot", clamped <= 0.04);
+}
+
+function ttUpdatePaceGuideSection() {
+  if (!ttPaceGuideState.running) return;
+  const sectionId = ttCurrentPaceSectionId();
+  if (sectionId && sectionId !== ttPaceGuideState.activeSectionId) {
+    ttPaceGuideState.activeSectionId = sectionId;
+    ttPaceGuideState.sectionStartedAt = Date.now();
+  }
+}
+
+function ttUpdatePaceGuide() {
+  if (!ttPaceGuideState.running) return;
+  ttUpdatePaceGuideSection();
+  const guide = ttById("ttPaceGuide");
+  if (!guide) return;
+  const now = Date.now();
+  const lessonLeft = 1 - ((now - ttPaceGuideState.lessonStartedAt) / ttPaceGuideLessonMs);
+  const sectionLeft = 1 - ((now - ttPaceGuideState.sectionStartedAt) / ttPaceGuideSectionMs);
+  ttSetPaceGuideLine(guide.querySelector(".pace-line-lesson"), lessonLeft);
+  ttSetPaceGuideLine(guide.querySelector(".pace-line-section"), sectionLeft);
+}
+
+function ttStartPaceGuide() {
+  const guide = ttById("ttPaceGuide");
+  if (!guide) return;
+  const now = Date.now();
+  ttPaceGuideState = {
+    running: true,
+    lessonStartedAt: now,
+    sectionStartedAt: now,
+    activeSectionId: ttCurrentPaceSectionId()
+  };
+  guide.hidden = false;
+  if (ttPaceGuideTimer) clearInterval(ttPaceGuideTimer);
+  ttUpdatePaceGuide();
+  ttPaceGuideTimer = setInterval(ttUpdatePaceGuide, 1000);
+}
+
+function ttStopPaceGuide() {
+  ttPaceGuideState.running = false;
+  if (ttPaceGuideTimer) {
+    clearInterval(ttPaceGuideTimer);
+    ttPaceGuideTimer = null;
+  }
+  const guide = ttById("ttPaceGuide");
+  if (guide) guide.hidden = true;
+}
+
 async function ttTogglePresentation(force = null, options = {}) {
   const shouldPresent = force ?? !document.body.classList.contains("presentation-mode");
   document.body.classList.toggle("presentation-mode", shouldPresent);
@@ -7641,6 +7815,7 @@ function ttBind() {
 
   ttById("ttHome")?.addEventListener("click", () => {
     if (!document.body.classList.contains("home-mode")) ttRememberScroll();
+    ttStopPaceGuide();
     ttShowHomeScreen();
   });
   ttById("ttHomeOpenCurrent")?.addEventListener("click", () => ttOpenTeachFlow());
@@ -7700,6 +7875,7 @@ function ttBind() {
     ttSetWordlistPageIndex(event.target.value);
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
+  ttById("ttStartLesson")?.addEventListener("click", () => ttStartCurrentLesson());
   ttById("ttSaveLesson").addEventListener("click", () => ttSaveCurrentLesson());
   ttById("ttPdfPlan").addEventListener("click", () => ttOpenPdfLessonPlan());
   ttById("ttWilsonPlan").addEventListener("click", () => ttOpenWilsonLessonPlan());
@@ -7717,9 +7893,7 @@ function ttBind() {
     if (event.key === "Enter") ttAddNewRosterStudent();
   });
   ttById("ttAttendance").addEventListener("click", () => {
-    const panel = ttById("ttAttendancePanel");
-    panel.hidden = !panel.hidden;
-    if (!panel.hidden) ttRenderAttendancePanel(ttActiveGroup());
+    ttToggleSmallDropdown("ttAttendance", { focus: true });
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
   ttById("ttPresentMenuLogo")?.addEventListener("click", () => ttHandlePresentationLogoClick());
@@ -7779,6 +7953,7 @@ function ttBind() {
     }
   });
   window.addEventListener("scroll", () => {
+    ttUpdatePaceGuideSection();
     clearTimeout(scrollSaveTimer);
     scrollSaveTimer = setTimeout(() => {
       if (document.body.classList.contains("home-mode")) ttRememberHomeScroll();
@@ -7791,9 +7966,7 @@ function ttBind() {
     // Close other ribbon panels first
     ttById("ttDataPanel").hidden = true;
     ttById("ttDataToggle").classList.remove("active");
-    ttById("ttReferencePanel").hidden = true;
-    ttById("ttRibbonReaders").classList.remove("active");
-    ttById("ttRibbonDictation").classList.remove("active");
+    ttCloseSmallDropdownMenus();
     panel.hidden = isOpen;
     ttById("ttSavedToggle").classList.toggle("active", !isOpen);
     if (!panel.hidden) ttRenderSavedLessons(ttActiveGroup());
@@ -7808,9 +7981,7 @@ function ttBind() {
     // Close other ribbon panels first
     ttById("ttSavedPanel").hidden = true;
     ttById("ttSavedToggle").classList.remove("active");
-    ttById("ttReferencePanel").hidden = true;
-    ttById("ttRibbonReaders").classList.remove("active");
-    ttById("ttRibbonDictation").classList.remove("active");
+    ttCloseSmallDropdownMenus();
     panel.hidden = isOpen;
     ttById("ttDataToggle").classList.toggle("active", !isOpen);
     if (!panel.hidden) ttRenderDataCenter();
@@ -7819,22 +7990,18 @@ function ttBind() {
     ttById("ttDataPanel").hidden = true;
     ttById("ttDataToggle").classList.remove("active");
   });
-  // Reference panel (Readers / Dictation)
-  function ttToggleReferencePanel(trigger) {
-    const panel = ttById("ttReferencePanel");
-    const isOpen = !panel.hidden;
-    // Close other ribbon panels
-    ttById("ttSavedPanel").hidden = true;
-    ttById("ttSavedToggle").classList.remove("active");
-    ttById("ttDataPanel").hidden = true;
-    ttById("ttDataToggle").classList.remove("active");
-    ttById("ttRibbonReaders").classList.remove("active");
-    ttById("ttRibbonDictation").classList.remove("active");
-    panel.hidden = isOpen;
-    if (!isOpen) ttById(trigger).classList.add("active");
-  }
-  ttById("ttRibbonReaders")?.addEventListener("click", () => ttToggleReferencePanel("ttRibbonReaders"));
-  ttById("ttRibbonDictation")?.addEventListener("click", () => ttToggleReferencePanel("ttRibbonDictation"));
+
+  ttById("ttRibbonReaders")?.addEventListener("click", () => ttToggleSmallDropdown("ttRibbonReaders"));
+  ttById("ttRibbonDictation")?.addEventListener("click", () => ttToggleSmallDropdown("ttRibbonDictation"));
+  ttById("ttHomeReaders")?.addEventListener("click", () => ttToggleSmallDropdown("ttHomeReaders"));
+  ttById("ttHomeDictation")?.addEventListener("click", () => ttToggleSmallDropdown("ttHomeDictation"));
+  document.addEventListener("pointerdown", (event) => {
+    if (event.target.closest(".ref-menu-wrap")) return;
+    ttCloseSmallDropdownMenus();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") ttCloseSmallDropdownMenus();
+  });
   ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
@@ -8018,7 +8185,7 @@ function ttOpenStudentProfile() {
   const student = group.activeStudent || group.students[0] || "";
   if (!student) return;
   const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&student=${encodeURIComponent(student)}`;
-  window.open(url, "_blank");
+  location.href = url;
 }
 
 const ttLoadedPlan = ttLoadPlanFromUrl();

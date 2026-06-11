@@ -13,6 +13,7 @@
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
     <link rel="stylesheet" href="teach-today.css?v=game-hub-1">
+    <script src="app-nav.js" defer></script>
   </head>
   <body>
     <div class="compat-shell" aria-hidden="true">
@@ -89,9 +90,14 @@
           <span class="ribbon-label">Lesson</span>
           <div class="ribbon-buttons">
             <button id="ttHome" type="button" title="Home dashboard">Home</button>
+            <button id="ttStartLesson" type="button" title="Save today's lesson and start teaching">Start</button>
             <button id="ttGameHub" type="button" title="Student game hub" onclick="window.location.href='Games/index.html'">Games</button>
             <button id="ttRefresh" type="button" title="New lesson">New</button>
             <button id="ttWrapJump" type="button" title="Wrap up lesson">End</button>
+            <span class="ref-menu-wrap attendance-menu-wrap">
+              <button id="ttAttendance" type="button" title="Confirm attendance" aria-haspopup="menu" aria-expanded="false" aria-controls="ttAttendancePanel">Attend</button>
+              <div id="ttAttendancePanel" class="attendance-panel" role="menu" hidden></div>
+            </span>
             <button id="ttSaveLesson" type="button" title="Save lesson">Save</button>
           </div>
         </div>
@@ -116,8 +122,22 @@
         <div class="ribbon-group">
           <span class="ribbon-label">Reference</span>
           <div class="ribbon-buttons">
-            <button id="ttRibbonReaders" type="button" title="Reader PDFs">Readers</button>
-            <button id="ttRibbonDictation" type="button" title="Dictation PDFs">Dictation</button>
+            <span class="ref-menu-wrap">
+              <button id="ttRibbonReaders" type="button" title="Reader PDFs" aria-haspopup="menu" aria-expanded="false" aria-controls="ttRibbonReadersMenu">Readers</button>
+              <div id="ttRibbonReadersMenu" class="reference-menu" role="menu" hidden>
+                <p class="ref-panel-label">Readers</p>
+                <a href="ReferencePdfs.html?set=readers" class="ref-panel-link" role="menuitem">Browse all</a>
+                <a id="ttRibbonCurrentReaderPdf" href="ReferencePdfs.html?set=readers" class="ref-panel-link ref-panel-current" role="menuitem">Current charting page</a>
+              </div>
+            </span>
+            <span class="ref-menu-wrap">
+              <button id="ttRibbonDictation" type="button" title="Dictation PDFs" aria-haspopup="menu" aria-expanded="false" aria-controls="ttRibbonDictationMenu">Dictation</button>
+              <div id="ttRibbonDictationMenu" class="reference-menu reference-menu-right" role="menu" hidden>
+                <p class="ref-panel-label">Dictation</p>
+                <a href="ReferencePdfs.html?set=dictation" class="ref-panel-link" role="menuitem">Browse all</a>
+                <a id="ttRibbonCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" class="ref-panel-link ref-panel-current" role="menuitem">Current substep start</a>
+              </div>
+            </span>
           </div>
         </div>
         <div class="ribbon-sep"></div>
@@ -135,12 +155,10 @@
           <div class="ribbon-buttons ribbon-students-buttons">
             <div id="ttFrontStudents" class="front-students" aria-label="Students"></div>
             <button id="ttAddRosterStudent" type="button" title="Add student from roster">+</button>
-            <button id="ttAttendance" type="button">Attend</button>
           </div>
         </div>
       </div>
       <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs" hidden></div>
-      <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
       <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Student display controls">
         <div>
           <p>Student Display</p>
@@ -170,21 +188,6 @@
         <input id="ttNewRosterGrade" type="text" placeholder="Grade">
         <button id="ttRosterAddNew" type="button">Add new</button>
         <button id="ttRosterClose" class="secondary" type="button">Close</button>
-      </section>
-
-      <!-- ── Reference dropdown panel ── -->
-      <section id="ttReferencePanel" class="ribbon-dropdown-panel reference-panel" hidden aria-label="Reference PDFs">
-        <div class="ref-panel-col">
-          <p class="ref-panel-label">Readers</p>
-          <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
-          <a id="ttRibbonCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current charting page</a>
-        </div>
-        <div class="ref-panel-sep"></div>
-        <div class="ref-panel-col">
-          <p class="ref-panel-label">Dictation</p>
-          <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link">Browse all</a>
-          <a id="ttRibbonCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener" class="ref-panel-link ref-panel-current">Current substep start</a>
-        </div>
       </section>
 
       <!-- ── History dropdown panel (moved from teach-flow) ── -->
@@ -239,7 +242,7 @@
     </section>
 
     <button id="ttPresentMenuLogo" class="present-menu-logo" type="button" title="Lesson menu" aria-label="Open lesson menu">
-      <img src="assets/morrocoy-logo.png" alt="">
+      <span>Menu</span>
     </button>
 
     <aside class="presentation-dock" aria-label="Presentation controls">
@@ -259,6 +262,11 @@
     </aside>
 
     <canvas id="ttNotesCanvas" class="notes-canvas" aria-hidden="true"></canvas>
+
+    <div id="ttPaceGuide" class="pace-guide" hidden aria-hidden="true">
+      <span class="pace-line pace-line-lesson"><i></i></span>
+      <span class="pace-line pace-line-section"><i></i></span>
+    </div>
 
     <section id="ttLessonLaunch" class="lesson-launch" hidden aria-live="polite" aria-label="Lesson opening">
       <div class="lesson-launch-card">
@@ -285,16 +293,22 @@
         <div class="home-support-actions" aria-label="Reference PDFs">
           <span>Reference</span>
           <div class="home-support-grid">
-            <details class="home-reference-menu">
-              <summary>Readers</summary>
-              <a href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Browse all</a>
-              <a id="ttCurrentReaderPdf" href="ReferencePdfs.html?set=readers" target="_blank" rel="noopener">Current charting page</a>
-            </details>
-            <details class="home-reference-menu">
-              <summary>Dictation</summary>
-              <a href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Browse all</a>
-              <a id="ttCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" target="_blank" rel="noopener">Current substep start</a>
-            </details>
+            <span class="ref-menu-wrap home-reference-menu">
+              <button id="ttHomeReaders" class="home-reference-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="ttHomeReadersMenu">Readers</button>
+              <div id="ttHomeReadersMenu" class="reference-menu home-reference-popover" role="menu" hidden>
+                <p class="ref-panel-label">Readers</p>
+                <a href="ReferencePdfs.html?set=readers" class="ref-panel-link" role="menuitem">Browse all</a>
+                <a id="ttCurrentReaderPdf" href="ReferencePdfs.html?set=readers" class="ref-panel-link ref-panel-current" role="menuitem">Current charting page</a>
+              </div>
+            </span>
+            <span class="ref-menu-wrap home-reference-menu">
+              <button id="ttHomeDictation" class="home-reference-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="ttHomeDictationMenu">Dictation</button>
+              <div id="ttHomeDictationMenu" class="reference-menu home-reference-popover reference-menu-right" role="menu" hidden>
+                <p class="ref-panel-label">Dictation</p>
+                <a href="ReferencePdfs.html?set=dictation" class="ref-panel-link" role="menuitem">Browse all</a>
+                <a id="ttCurrentDictationPdf" href="ReferencePdfs.html?set=dictation" class="ref-panel-link ref-panel-current" role="menuitem">Current substep start</a>
+              </div>
+            </span>
           </div>
         </div>
         <a class="home-game-hub-link" href="Games/index.html" aria-label="Open student game hub">

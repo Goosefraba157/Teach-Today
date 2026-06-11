@@ -1277,7 +1277,7 @@ function shortDate(value) {
 byId("printProfile").addEventListener("click", () => {
   const { group, student } = selectedContext();
   const url = `StudentReport.html?group=${encodeURIComponent(group.id || "")}&student=${encodeURIComponent(student)}`;
-  window.open(url, "_blank");
+  location.href = url;
 });
 byId("backTeach").addEventListener("click", () => {
   const { group } = selectedContext();
