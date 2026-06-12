@@ -39,6 +39,7 @@ let ttPaceGuideState = {
 };
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
+let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
 const ttStudentDisplayChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayStudentDisplay.v1") : null;
 let ttStudentDisplayScreens = [];
@@ -46,7 +47,8 @@ const ttPaceGuideLessonMsFull = 60 * 60 * 1000;
 const ttPaceGuideLessonMsPart = 45 * 60 * 1000;
 function ttPaceGuideLessonMs() {
   const lt = ttLesson?.lessonType || "full";
-  return (lt === "part1" || lt === "part2" || lt === "full45" || lt === "flash") ? ttPaceGuideLessonMsPart : ttPaceGuideLessonMsFull;
+  if (lt === "group" || lt === "part1" || lt === "part2") return ttPaceGuideLessonMsPart * 2; // 90 min total
+  return (lt === "full45" || lt === "flash") ? ttPaceGuideLessonMsPart : ttPaceGuideLessonMsFull;
 }
 
 // Section definitions — id, display name, minutes, color, which picker(s) it needs
@@ -137,6 +139,9 @@ function ttRender() {
   const lessonTypeKey = (rawKey === "part1" || rawKey === "part2") ? "group" : rawKey;
   document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-group", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
   document.body.classList.add(`lesson-type-${lessonTypeKey}`);
+  // Restore the active group day (if any) after lesson type class swap
+  document.body.classList.remove("group-day-1", "group-day-2");
+  if (lessonTypeKey === "group" && ttGroupDay) document.body.classList.add(`group-day-${ttGroupDay}`);
   // For flash mode, show/hide individual sections based on selection
   for (let i = 1; i <= 10; i++) {
     const sec = ttById(`section${i}`);
@@ -214,6 +219,7 @@ function ttRender() {
   ttById("ttWrap").textContent = "Ask one comprehension question, note the hardest word, and decide whether the next lesson should repeat, warm up, or advance.";
   ttSetupChart(lesson);
   ttRenderHomeScreen();
+  ttInitSectionCompletion();
   ttSyncStudentDisplay();
 }
 
@@ -285,6 +291,101 @@ function ttSyncStudentDisplay() {
   localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
   if (ttStudentDisplayWindow && !ttStudentDisplayWindow.closed) ttSendStudentDisplay(payload);
   else ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
+}
+
+function ttShowGroupDayPicker(group, callback) {
+  document.getElementById("ttGroupDayPickerModal")?.remove();
+  const last = group.lastGroupDay;
+  const lastAt = group.lastGroupDayAt ? new Date(group.lastGroupDayAt) : null;
+  let reminderText = "No previous day on record";
+  if (last && lastAt) {
+    const diff = Date.now() - lastAt.getTime();
+    const days = Math.floor(diff / 86400000);
+    const when = days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
+    reminderText = `Last taught: Day ${last} · ${when}`;
+  }
+  const modal = document.createElement("div");
+  modal.id = "ttGroupDayPickerModal";
+  modal.className = "gdp-backdrop";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="gdp-card">
+      <h2 class="gdp-title">Which day are you teaching?</h2>
+      <p class="gdp-reminder">${reminderText}</p>
+      <div class="gdp-btns">
+        <button class="gdp-btn" data-gdp-day="1" type="button">
+          <strong>Day 1</strong>
+          <span>§1–5 + §9/10</span>
+        </button>
+        <button class="gdp-btn" data-gdp-day="2" type="button">
+          <strong>Day 2</strong>
+          <span>§1↺ · §2B · §6–8 + §9/10</span>
+        </button>
+      </div>
+      <button class="gdp-skip" type="button">Show full lesson (no filter)</button>
+    </div>`;
+  const close = (day) => { modal.remove(); callback(day); };
+  modal.addEventListener("click", (e) => {
+    const dayBtn = e.target.closest("[data-gdp-day]");
+    if (dayBtn) {
+      const day = dayBtn.dataset.gdpDay;
+      group.lastGroupDay = day;
+      group.lastGroupDayAt = new Date().toISOString();
+      saveState();
+      close(day);
+      return;
+    }
+    if (e.target.closest(".gdp-skip") || !e.target.closest(".gdp-card")) close(null);
+  });
+  document.body.appendChild(modal);
+  modal.querySelector("[data-gdp-day]")?.focus();
+}
+
+function ttSetGroupDay(day) {
+  // Toggle: clicking the already-active day clears the selection (show full lesson)
+  ttGroupDay = ttGroupDay === day ? null : day;
+  document.body.classList.remove("group-day-1", "group-day-2");
+  if (ttGroupDay) document.body.classList.add(`group-day-${ttGroupDay}`);
+  // Update all day-toggle button states (ribbon + dock)
+  document.querySelectorAll("[data-group-day]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.groupDay === ttGroupDay);
+  });
+  // Scroll to top of the visible section flow
+  document.querySelector(".teach-flow")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ttInitSectionCompletion() {
+  if (document.body.classList.contains("home-mode")) return;
+  const completed = ttLesson?.completedSections || {};
+  document.querySelectorAll(".teach-card[id^='section']").forEach((card) => {
+    const sectionId = card.id;
+    let btn = card.querySelector(".section-done-btn");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.sectionDone = sectionId;
+      const head = card.querySelector(".section-head");
+      if (head) head.appendChild(btn);
+    }
+    const state = completed[sectionId] || null;
+    btn.textContent = state === "done" ? "✓ Done" : state === "skipped" ? "Skipped" : "Mark done";
+    btn.className = `section-done-btn${state === "done" ? " done" : state === "skipped" ? " skipped" : ""}`;
+    card.classList.toggle("section-completed", state === "done");
+    card.classList.toggle("section-skipped", state === "skipped");
+  });
+}
+
+function ttToggleSectionDone(sectionId) {
+  if (!ttLesson) return;
+  ttLesson.completedSections ||= {};
+  const current = ttLesson.completedSections[sectionId] || null;
+  const next = current === null ? "done" : current === "done" ? "skipped" : null;
+  if (next === null) delete ttLesson.completedSections[sectionId];
+  else ttLesson.completedSections[sectionId] = next;
+  ttSaveDraftLesson({ status: false });
+  saveState();
+  ttInitSectionCompletion();
 }
 
 function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode) {
@@ -1069,6 +1170,8 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   ttTogglePresentation(false);
   ttById("ttLessonLaunch")?.setAttribute("hidden", "");
   document.body.classList.remove("lesson-launching", "lesson-home-exit", "lesson-flow-enter", "legacy-full-lesson-mode");
+  document.body.classList.remove("group-day-1", "group-day-2");
+  ttGroupDay = null;
   ttPlannerGroupId = groupId;
   const home = ttById("ttHomeScreen");
   const flow = document.querySelector(".teach-flow");
@@ -2429,7 +2532,15 @@ function ttBuildPlannerLesson(options = {}) {
   ttApplyPlannerSelectionsToLesson(group, skill);
   ttSaveDraftLesson({ status: false });
   saveState();
-  ttOpenTeachFlow(options.openOptions || {});
+  const lessonTypeForPicker = (ttLesson?.lessonType === "part1" || ttLesson?.lessonType === "part2") ? "group" : (ttLesson?.lessonType || "full");
+  if (lessonTypeForPicker === "group") {
+    ttShowGroupDayPicker(group, (day) => {
+      if (day) ttSetGroupDay(day);
+      ttOpenTeachFlow(options.openOptions || {});
+    });
+  } else {
+    ttOpenTeachFlow(options.openOptions || {});
+  }
 }
 
 function ttOpenPlannerPreviewSection(sectionNumber) {
@@ -4821,6 +4932,13 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
   const part7Review = sectionSeven.review;
   const part7Current = sectionSeven.current;
   const part7Hfw = lesson.sectionSevenHfwWords || hfwWordsForSubstep(skill.id, lesson);
+  // For group 45+45 lessons, §2B (Day 2 decoding concepts) has its own review/current words.
+  // The PDF template has two dedicated boxes at the top-right of page 2:
+  //   '1 Review Words'   rect=[265,739,412,774]  — §2B review words
+  //   'Dict Current Words' rect=[414,740,573,775] — §2B current words
+  const isGroupLesson = (lesson.lessonType === "group" || lesson.lessonType === "part1" || lesson.lessonType === "part2");
+  const section2bReview = isGroupLesson ? (lesson.sectionTwoReviewWordsB2 || []) : [];
+  const section2bCurrent = isGroupLesson ? (lesson.sectionTwoCurrentWordsB2 || []) : [];
   const section3Review = lesson.sectionThreeReviewWords || section3ReviewCards(lesson);
   const section3Current = lesson.sectionThreeCurrentWords || section3CurrentCards(lesson);
   const wordElements = dictationBlock("word elements");
@@ -4863,6 +4981,8 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "6 QD CONSONANTS": ttJoinWords(section6ByGroup(/consonants|digraphs/i)),
     "6 QD WELDED": ttJoinWords(section6ByGroup(/welded|glued/i)),
     "6 QD WORD ELEMENTS": ttJoinWords(section6ByGroup(/pfx|sfx|element/i)),
+    "1 Review Words": ttJoinLines(section2bReview),
+    "Dict Current Words": ttJoinLines(section2bCurrent),
     "7 TR REVIEW CONCEPTS": `Review spelling patterns from ${priorSubstep(skill.id)}.`,
     "7 TR Review Words": ttJoinLines(part7Review),
     "7 TR CURRENT CONCEPTS": concept,
@@ -5025,6 +5145,9 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
   const part7Current = sectionSeven.current;
   const dictationPlan = ttActiveDictationPlan(lesson, skill);
   const section6Targets = targetSoundItemsForLesson(lesson, skill).map((item) => item.value);
+  const isGroupLesson = (lesson.lessonType === "group" || lesson.lessonType === "part1" || lesson.lessonType === "part2");
+  const section2bReview = isGroupLesson ? (lesson.sectionTwoReviewWordsB2 || []) : [];
+  const section2bCurrent = isGroupLesson ? (lesson.sectionTwoCurrentWordsB2 || []) : [];
   const students = (group.students || []).map((student) => `<span>${escapeHtml(student)}</span>`).join("");
   const teacherNotes = [
     "Charting goal: 12+/15 accurate. Automaticity: 12+/15 under 35 sec. Fluency: 14+/15.",
@@ -5338,6 +5461,14 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
     </section>
 
     <section class="page page-two">
+      ${isGroupLesson && (section2bReview.length || section2bCurrent.length) ? ttPlanSection("2B", "Teach & Review Concepts · Day 2", `${lesson.substep} Day 2 decoding`, `
+        <div class="note"><strong>Day 2 — Encoding day opener:</strong> Briefly revisit decoding concepts before moving into spelling. Use these words to bridge from Day 1.</div>
+        <div class="grid2">
+          <div>${ttPlanLabel("Review words (Day 2)")}${ttPlanChips(section2bReview, "purple")}</div>
+          <div>${ttPlanLabel("Current words (Day 2)")}${ttPlanChips(section2bCurrent, "green")}</div>
+        </div>
+      `, "#7c3aed") : ""}
+
       ${ttPlanSection("6", "Quick Drill in Reverse", `${lesson.substep} reverse drill`, `
         <div class="note">Dictate sounds and elements. Students repeat the sound/element and write it. Prioritize today’s target words and known trouble spots.</div>
         ${ttPlanLabel("Today's quick targets")}${ttPlanChips(section6Targets, "green")}
@@ -8231,6 +8362,16 @@ function ttBind() {
     ttToggleSmallDropdown("ttAttendance", { focus: true });
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
+  // Day 1 / Day 2 toggle — works in both teach bar and presentation dock
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-group-day]");
+    if (btn) ttSetGroupDay(btn.dataset.groupDay);
+  });
+  // Section done/skip tracking
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-section-done]");
+    if (btn) ttToggleSectionDone(btn.dataset.sectionDone);
+  });
   ttById("ttPresentMenuLogo")?.addEventListener("click", () => ttHandlePresentationLogoClick());
   document.addEventListener("pointerdown", ttHandlePresentationMenuOutsidePointer, true);
   document.querySelector(".teach-bar .brand-block")?.addEventListener("click", () => ttHandlePresentationLogoClick());

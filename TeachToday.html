@@ -109,6 +109,14 @@
             <button id="ttDisplayToggle" type="button" title="Student display window">Display</button>
           </div>
         </div>
+        <div class="ribbon-sep group-day-sep"></div>
+        <div class="ribbon-group group-day-ribbon-group">
+          <span class="ribbon-label">Group Day</span>
+          <div class="ribbon-buttons">
+            <button id="ttDay1Btn" type="button" title="Day 1 — Decoding (§1–5 + §9/10)" data-group-day="1">Day 1</button>
+            <button id="ttDay2Btn" type="button" title="Day 2 — Encoding (§1↺ + §2B + §6–8 + §9/10)" data-group-day="2">Day 2</button>
+          </div>
+        </div>
         <div class="ribbon-sep"></div>
         <div class="ribbon-group">
           <span class="ribbon-label">Export</span>
@@ -247,6 +255,8 @@
 
     <aside class="presentation-dock" aria-label="Presentation controls">
       <button id="ttExitPresent" type="button" title="Exit presentation">×</button>
+      <button id="ttDockDay1" type="button" title="Day 1 — Decoding" data-group-day="1" class="dock-day-btn">Day 1</button>
+      <button id="ttDockDay2" type="button" title="Day 2 — Encoding" data-group-day="2" class="dock-day-btn">Day 2</button>
       <button id="ttDockDisplay" type="button" title="Student display">Display</button>
       <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
@@ -866,7 +876,7 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
-    <script src="teach-today.js?v=unified-group-1"></script>
+    <script src="teach-today.js?v=day-picker-section-done-4"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>

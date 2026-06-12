@@ -2943,6 +2943,37 @@ body.lesson-type-part1 #section8 {
 #section1b, #section2b { display: none !important; }
 body.lesson-type-group #section1b,
 body.lesson-type-group #section2b { display: block !important; }
+
+/* ── Group Day 1/Day 2 toggle visibility ────────────────────────────────── */
+/* Day toggle buttons only show in group lesson mode */
+.group-day-sep,
+.group-day-ribbon-group,
+.dock-day-btn { display: none !important; }
+body.lesson-type-group .group-day-sep,
+body.lesson-type-group .group-day-ribbon-group { display: flex !important; }
+body.lesson-type-group .dock-day-btn { display: block !important; }
+
+/* Active day button highlight */
+[data-group-day].active {
+  background: var(--mode-color, #7c3aed) !important;
+  color: #fff !important;
+  border-color: var(--mode-color, #7c3aed) !important;
+}
+
+/* Day 1 (Decoding): show §1–5 + §9/10 only */
+body.lesson-type-group.group-day-1 #section1b,
+body.lesson-type-group.group-day-1 #section2b,
+body.lesson-type-group.group-day-1 #section6,
+body.lesson-type-group.group-day-1 #section7,
+body.lesson-type-group.group-day-1 #section8 { display: none !important; }
+
+/* Day 2 (Encoding): show §1b §2b §6–8 + §9/10 only */
+body.lesson-type-group.group-day-2 #section1,
+body.lesson-type-group.group-day-2 #section2,
+body.lesson-type-group.group-day-2 #section3,
+body.lesson-type-group.group-day-2 #section4,
+body.lesson-type-group.group-day-2 #section5 { display: none !important; }
+
 /* Legacy part2 support */
 body.lesson-type-part2 #section3,
 body.lesson-type-part2 #section4,
@@ -6257,7 +6288,7 @@ body.home-mode .home-screen {
 
 .planner-pickers-wrap {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   background: color-mix(in srgb, var(--ps-color) 12%, #e5e7eb);
 }
@@ -6709,16 +6740,22 @@ body.home-mode .home-screen {
 /* ============================================================
    SECTION 8 REAL WORD SLOTS
    ============================================================ */
+/* s8-real-slots: full-width in planner grid, then 5-up internally */
+.planner-pickers-wrap > .s8-real-slots {
+  grid-column: 1 / -1;
+}
+
 .s8-real-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: color-mix(in srgb, #6366f1 12%, #e5e7eb);
   width: 100%;
 }
 
 .s8-real-slot {
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
+  border: none;
+  border-radius: 0;
   background: #fff;
   overflow: hidden;
 }
@@ -6726,10 +6763,11 @@ body.home-mode .home-screen {
 .s8-slot-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px 6px;
+  gap: 6px;
+  padding: 6px 10px 5px;
   background: #f8fafc;
   border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
 }
 
 .s8-slot-num {
@@ -6772,8 +6810,8 @@ body.home-mode .home-screen {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
-  padding: 7px 12px 5px;
+  gap: 4px;
+  padding: 6px 10px 5px;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -6804,18 +6842,18 @@ body.home-mode .home-screen {
 .s8-slot-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  padding: 8px 12px 10px;
+  gap: 4px;
+  padding: 7px 10px 8px;
 }
 
 .s8-slot-chips button {
-  font-size: 13px !important;
-  padding: 3px 10px !important;
-  border-radius: 14px !important;
+  font-size: 12px !important;
+  padding: 3px 8px !important;
+  border-radius: 12px !important;
   border: 1.5px solid #e2e8f0 !important;
   background: #f8fafc !important;
   color: #334155 !important;
-  min-height: 28px !important;
+  min-height: 26px !important;
   font-weight: 400 !important;
 }
 
@@ -6835,7 +6873,7 @@ body.home-mode .home-screen {
 .s8-slot-custom-row {
   display: flex;
   gap: 4px;
-  padding: 0 12px 10px;
+  padding: 0 10px 8px;
 }
 
 .s8-slot-custom-row input {
@@ -6872,17 +6910,18 @@ body.home-mode .home-screen {
 }
 
 .s8-slots-header {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 0 4px;
+  padding: 6px 12px 5px;
   font-size: 11px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 8px;
 }
 
 .s8-slots-badge {
@@ -7394,4 +7433,120 @@ body.home-mode .home-screen {
 
 .tt-onboarding-next:active {
   transform: translateY(0);
+}
+
+/* ── Group Day Picker Modal ─────────────────────────────────────────────── */
+.gdp-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+.gdp-card {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+.gdp-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #111);
+}
+.gdp-reminder {
+  font-size: .88rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--surface-alt, #f5f5f5);
+  border-radius: 8px;
+}
+.gdp-btns {
+  display: flex;
+  gap: 12px;
+}
+.gdp-btn {
+  flex: 1;
+  border: 2px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  padding: 18px 12px;
+  cursor: pointer;
+  background: var(--surface, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color .15s, background .15s, transform .1s;
+}
+.gdp-btn strong {
+  font-size: 1.1rem;
+  color: var(--text-primary, #111);
+}
+.gdp-btn span {
+  font-size: .78rem;
+  color: var(--text-secondary, #666);
+}
+.gdp-btn:hover, .gdp-btn:focus-visible {
+  border-color: var(--mode-color, #7c3aed);
+  background: color-mix(in srgb, var(--mode-color, #7c3aed) 8%, transparent);
+  outline: none;
+}
+.gdp-btn:active { transform: scale(.97); }
+.gdp-skip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: .82rem;
+  color: var(--text-secondary, #888);
+  text-decoration: underline;
+  padding: 4px;
+}
+.gdp-skip:hover { color: var(--text-primary, #333); }
+
+/* ── Section Completion Tracking ────────────────────────────────────────── */
+.section-done-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border, #ddd);
+  background: transparent;
+  font-size: .78rem;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.section-done-btn:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+.section-done-btn.done {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+.section-done-btn.skipped {
+  background: var(--surface-alt, #f5f5f5);
+  border-color: var(--border, #ccc);
+  color: var(--text-secondary, #999);
+  text-decoration: line-through;
+}
+.teach-card.section-completed {
+  opacity: .55;
+  transition: opacity .2s;
+}
+.teach-card.section-skipped {
+  opacity: .4;
+  transition: opacity .2s;
 }
