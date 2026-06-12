@@ -70,6 +70,12 @@ function render(payload) {
   }
 
   if (payload.mode === "passage") {
+    const pdf = payload.passagePdf || null;
+    const pageStart = Number(pdf?.pdfPageStart || 0);
+    const pageEnd = Math.max(pageStart, Number(pdf?.pdfPageEnd || pageStart));
+    const pdfPages = pdf?.pdfPath && pageStart
+      ? Array.from({ length: pageEnd - pageStart + 1 }, (_, index) => pageStart + index)
+      : [];
     root.innerHTML = `
       <section class="display-screen">
         ${displayHeader(payload, "Controlled Passage")}
@@ -77,6 +83,9 @@ function render(payload) {
           <p class="label">${escapeHtml(payload.passageTitle || "Reader passage")}</p>
           <h2>Section 9</h2>
           <p class="passage-text">${escapeHtml(payload.passageText || "")}</p>
+          ${pdfPages.length ? `<div class="display-passage-pages">
+            ${pdfPages.map((page, index) => `<img alt="${escapeHtml(payload.passageTitle || "Reader passage")} page ${page}" src="${escapeHtml(passagePageImageSrc(pdf, page))}" data-reader-page="${escapeHtml(String((pdf.readerPageStart || 0) + index))}">`).join("")}
+          </div>` : ""}
         </article>
       </section>
     `;
@@ -103,6 +112,13 @@ function render(payload) {
       </article>
     </section>
   `;
+}
+
+function passagePageImageSrc(pdf, page) {
+  if (Number(pdf?.reader) === 1) {
+    return `Part%209%20Reading%20Passages%20from%20Readers/rendered-pages/book1-page-${String(page).padStart(2, "0")}.png`;
+  }
+  return `${encodeURI(pdf?.pdfPath || "")}#page=${encodeURIComponent(page)}`;
 }
 
 function readStoredPayload() {

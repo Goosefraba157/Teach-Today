@@ -37,6 +37,14 @@ let ttPaceGuideState = {
   sectionStartedAt: 0,
   activeSectionId: ""
 };
+let ttPassageInkState = {
+  color: "#ef4444",
+  size: 5,
+  zoom: 1,
+  strokes: [],
+  drawing: false,
+  activeStroke: null
+};
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
@@ -65,6 +73,336 @@ const TT_LESSON_SECTIONS = [
   { id: "10", name: "Story",        mins: 10, color: "#0f766e", hasPicker: false },
 ];
 const ttPaceGuideSectionMs = 5 * 60 * 1000;
+const TT_SECTION9_APPROACHES = [
+  { id: "comprehension-sos", label: "Comprehension S.O.S. - Silent/Oral" },
+  { id: "oral-fluency", label: "Oral Fluency - Repeated Reading" }
+];
+const TT_READER_PASSAGES = [
+  {
+    id: "reader1-1.3-ab-p46-cat-hat",
+    reader: 1,
+    substep: "1.3",
+    level: "AB",
+    title: "The Cat Got the Hat",
+    readerPageStart: 46,
+    readerPageEnd: 46,
+    pdfPageStart: 2,
+    pdfPageEnd: 2,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-ab-p47-cod-fish-ben",
+    reader: 1,
+    substep: "1.3",
+    level: "AB",
+    title: "Cod Fish for Ben",
+    readerPageStart: 47,
+    readerPageEnd: 47,
+    pdfPageStart: 3,
+    pdfPageEnd: 3,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-ab-p48-meg-ben-shop",
+    reader: 1,
+    substep: "1.3",
+    level: "AB",
+    title: "Meg and Ben Shop",
+    readerPageStart: 48,
+    readerPageEnd: 48,
+    pdfPageStart: 4,
+    pdfPageEnd: 4,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-ab-p49-dad-ship-job",
+    reader: 1,
+    substep: "1.3",
+    level: "AB",
+    title: "Dad and the Ship Job",
+    readerPageStart: 49,
+    readerPageEnd: 49,
+    pdfPageStart: 5,
+    pdfPageEnd: 5,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-ab-p50-tom-pal-jed",
+    reader: 1,
+    substep: "1.3",
+    level: "AB",
+    title: "Tom and His Pal, Jed",
+    readerPageStart: 50,
+    readerPageEnd: 51,
+    pdfPageStart: 6,
+    pdfPageEnd: 7,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-b-p52-tick-bit-mel",
+    reader: 1,
+    substep: "1.3",
+    level: "B",
+    title: "A Tick Bit Mel",
+    readerPageStart: 52,
+    readerPageEnd: 52,
+    pdfPageStart: 8,
+    pdfPageEnd: 8,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-b-p53-bash-ted-liz",
+    reader: 1,
+    substep: "1.3",
+    level: "B",
+    title: "At the Bash with Ted and Liz",
+    readerPageStart: 53,
+    readerPageEnd: 53,
+    pdfPageStart: 9,
+    pdfPageEnd: 9,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-b-p54-win-jack",
+    reader: 1,
+    substep: "1.3",
+    level: "B",
+    title: "A Win for Jack",
+    readerPageStart: 54,
+    readerPageEnd: 54,
+    pdfPageStart: 10,
+    pdfPageEnd: 10,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-b-p55-not-so-fun-jog",
+    reader: 1,
+    substep: "1.3",
+    level: "B",
+    title: "The Not So Fun Jog",
+    readerPageStart: 55,
+    readerPageEnd: 55,
+    pdfPageStart: 11,
+    pdfPageEnd: 11,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.3-b-p56-big-job-ship",
+    reader: 1,
+    substep: "1.3",
+    level: "B",
+    title: "A Big Job on the Ship",
+    readerPageStart: 56,
+    readerPageEnd: 57,
+    pdfPageStart: 12,
+    pdfPageEnd: 13,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-ab-p72-cut-lip",
+    reader: 1,
+    substep: "1.4",
+    level: "AB",
+    title: "A Cut Lip",
+    readerPageStart: 72,
+    readerPageEnd: 72,
+    pdfPageStart: 14,
+    pdfPageEnd: 14,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-ab-p73-big-hit",
+    reader: 1,
+    substep: "1.4",
+    level: "AB",
+    title: "The Big Hit",
+    readerPageStart: 73,
+    readerPageEnd: 73,
+    pdfPageStart: 15,
+    pdfPageEnd: 15,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-ab-p74-box-deck",
+    reader: 1,
+    substep: "1.4",
+    level: "AB",
+    title: "The Box on the Deck",
+    readerPageStart: 74,
+    readerPageEnd: 75,
+    pdfPageStart: 16,
+    pdfPageEnd: 17,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-b-p76-shop-mall",
+    reader: 1,
+    substep: "1.4",
+    level: "B",
+    title: "Shop at the Mall",
+    readerPageStart: 76,
+    readerPageEnd: 77,
+    pdfPageStart: 18,
+    pdfPageEnd: 19,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-b-p78-bad-call",
+    reader: 1,
+    substep: "1.4",
+    level: "B",
+    title: "A Bad Call",
+    readerPageStart: 78,
+    readerPageEnd: 79,
+    pdfPageStart: 20,
+    pdfPageEnd: 21,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.4-b-p80-zip-pup",
+    reader: 1,
+    substep: "1.4",
+    level: "B",
+    title: "Zip the Pup",
+    readerPageStart: 80,
+    readerPageEnd: 80,
+    pdfPageStart: 22,
+    pdfPageEnd: 22,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.5-ab-p89-pam-jam",
+    reader: 1,
+    substep: "1.5",
+    level: "AB",
+    title: "Pam and the Jam",
+    readerPageStart: 89,
+    readerPageEnd: 89,
+    pdfPageStart: 23,
+    pdfPageEnd: 23,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.5-ab-p90-tan-duck",
+    reader: 1,
+    substep: "1.5",
+    level: "AB",
+    title: "The Tan Duck",
+    readerPageStart: 90,
+    readerPageEnd: 90,
+    pdfPageStart: 24,
+    pdfPageEnd: 24,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.5-b-p91-chess-dan",
+    reader: 1,
+    substep: "1.5",
+    level: "B",
+    title: "Chess with Dan?",
+    readerPageStart: 91,
+    readerPageEnd: 91,
+    pdfPageStart: 25,
+    pdfPageEnd: 25,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.5-b-p92-bad-tan",
+    reader: 1,
+    substep: "1.5",
+    level: "B",
+    title: "A Bad Tan",
+    readerPageStart: 92,
+    readerPageEnd: 92,
+    pdfPageStart: 26,
+    pdfPageEnd: 26,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-ab-p109-win-nicks-fans",
+    reader: 1,
+    substep: "1.6",
+    level: "AB",
+    title: "A Win for Nick's Fans",
+    readerPageStart: 109,
+    readerPageEnd: 109,
+    pdfPageStart: 27,
+    pdfPageEnd: 27,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-ab-p110-dan-pets",
+    reader: 1,
+    substep: "1.6",
+    level: "AB",
+    title: "Dan and His Pets",
+    readerPageStart: 110,
+    readerPageEnd: 111,
+    pdfPageStart: 28,
+    pdfPageEnd: 29,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-ab-p112-shack-rot",
+    reader: 1,
+    substep: "1.6",
+    level: "AB",
+    title: "The Shack Has Rot",
+    readerPageStart: 112,
+    readerPageEnd: 113,
+    pdfPageStart: 30,
+    pdfPageEnd: 31,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-ab-p114-hot-dogs-pops",
+    reader: 1,
+    substep: "1.6",
+    level: "AB",
+    title: "Hot Dogs and Pops",
+    readerPageStart: 114,
+    readerPageEnd: 114,
+    pdfPageStart: 32,
+    pdfPageEnd: 32,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-b-p115-max-quits",
+    reader: 1,
+    substep: "1.6",
+    level: "B",
+    title: "Max Quits and Quits",
+    readerPageStart: 115,
+    readerPageEnd: 115,
+    pdfPageStart: 33,
+    pdfPageEnd: 33,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-b-p116-beds-kids",
+    reader: 1,
+    substep: "1.6",
+    level: "B",
+    title: "Beds for the Kids",
+    readerPageStart: 116,
+    readerPageEnd: 117,
+    pdfPageStart: 34,
+    pdfPageEnd: 35,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader1-1.6-b-p118-job-bill",
+    reader: 1,
+    substep: "1.6",
+    level: "B",
+    title: "On the Job with Bill",
+    readerPageStart: 118,
+    readerPageEnd: 119,
+    pdfPageStart: 36,
+    pdfPageEnd: 37,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  }
+];
 
 function ttById(id) {
   return document.getElementById(id);
@@ -78,12 +416,100 @@ function ttBuildLesson() {
   const group = ttActiveGroup();
   const skill = activeStep(group);
   ttLesson = createLesson(group, skill, 0, 1);
+  ttApplySection9StoryToLesson(ttLesson, group, skill);
   ttEnsureSection2MissIndexes(ttLesson, group, skill);
   return ttLesson;
 }
 
 function ttClone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function ttSubstepIndex(substep) {
+  return scopeMap.findIndex((item) => item.id === substep);
+}
+
+function ttSection9ApproachLabel(approachId) {
+  return TT_SECTION9_APPROACHES.find((item) => item.id === approachId)?.label || TT_SECTION9_APPROACHES[0].label;
+}
+
+function ttPassageLabel(passage) {
+  if (!passage) return "Select a story";
+  const pageLabel = passage.readerPageStart === passage.readerPageEnd
+    ? `p. ${passage.readerPageStart}`
+    : `pp. ${passage.readerPageStart}-${passage.readerPageEnd}`;
+  return `${passage.title} - ${passage.substep} ${passage.level} - ${pageLabel}`;
+}
+
+function ttPassageAvailableForSubstep(passage, currentSubstep) {
+  if (!passage) return false;
+  const currentIndex = ttSubstepIndex(currentSubstep);
+  const passageIndex = ttSubstepIndex(passage.substep);
+  if (currentIndex < 0 || passageIndex < 0) return true;
+  if ((currentSubstep === "1.1" || currentSubstep === "1.2") && passage.substep === "1.3") return true;
+  return passageIndex <= currentIndex;
+}
+
+function ttPassagesForSubstep(substep) {
+  return TT_READER_PASSAGES.filter((passage) => ttPassageAvailableForSubstep(passage, substep));
+}
+
+function ttPassageById(id) {
+  return TT_READER_PASSAGES.find((passage) => passage.id === id) || null;
+}
+
+function ttDefaultPassageFor(group, skill) {
+  const currentSubstep = skill?.id || group?.substep || "1.1";
+  const available = ttPassagesForSubstep(currentSubstep);
+  const saved = ttPassageById(group?.section9Story?.passageId);
+  if (saved && ttPassageAvailableForSubstep(saved, currentSubstep)) return saved;
+  return available[0] || saved || TT_READER_PASSAGES[0] || null;
+}
+
+function ttEnsureSection9Story(group, skill) {
+  if (!group) return null;
+  const passage = ttDefaultPassageFor(group, skill);
+  if (!passage) return null;
+  group.section9Story ||= {};
+  group.section9Story.passageId ||= passage.id;
+  group.section9Story.approach ||= "comprehension-sos";
+  group.section9Story.updatedAt ||= new Date().toISOString();
+  return { passage: ttPassageById(group.section9Story.passageId) || passage, approach: group.section9Story.approach };
+}
+
+function ttApplySection9StoryToLesson(lesson, group, skill, options = {}) {
+  if (!lesson || !group) return lesson;
+  const fallback = ttEnsureSection9Story(group, skill);
+  const passageId = options.passageId || lesson.section9Story?.passageId || fallback?.passage?.id || "";
+  const approach = options.approach || lesson.section9Story?.approach || fallback?.approach || "comprehension-sos";
+  const passage = ttPassageById(passageId) || fallback?.passage || ttDefaultPassageFor(group, skill);
+  if (!passage) return lesson;
+  lesson.section9Story = {
+    passageId: passage.id,
+    approach,
+    reader: passage.reader,
+    title: passage.title,
+    substep: passage.substep,
+    level: passage.level,
+    readerPageStart: passage.readerPageStart,
+    readerPageEnd: passage.readerPageEnd,
+    pdfPageStart: passage.pdfPageStart,
+    pdfPageEnd: passage.pdfPageEnd,
+    pdfPath: passage.pdfPath
+  };
+  lesson.passagePageNumber = passage.readerPageStart;
+  lesson.passageLevel = passage.level;
+  lesson.passage = `${ttPassageLabel(passage)}. Approach: ${ttSection9ApproachLabel(approach)}.`;
+  return lesson;
+}
+
+function ttSaveSection9StoryForGroup(group, passageId, approach) {
+  if (!group || !passageId) return;
+  group.section9Story = {
+    passageId,
+    approach: approach || group.section9Story?.approach || "comprehension-sos",
+    updatedAt: new Date().toISOString()
+  };
 }
 
 function ttDraftKey(group = ttActiveGroup()) {
@@ -215,7 +641,7 @@ function ttRender() {
   ttFillPart7(lesson, skill);
   ttFillReverse(skill, lesson);
   ttFillDictation(ttActiveDictationPlan(lesson, skill));
-  ttById("ttPassage").textContent = lesson.passage || `Use Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} for Section #9.`;
+  ttRenderSection9(lesson, group, skill);
   ttById("ttWrap").textContent = "Ask one comprehension question, note the hardest word, and decide whether the next lesson should repeat, warm up, or advance.";
   ttSetupChart(lesson);
   ttRenderHomeScreen();
@@ -229,6 +655,7 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const poster = ttSection1PhotoForSubstep(skill.id);
   const hfwWords = hfwWordsForSubstep(skill.id, lesson).filter(Boolean).slice(0, 12);
+  const passage = ttPassageById(lesson.section9Story?.passageId);
   const passageText = lesson.passage || `Use Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} for Section #9.`;
   return {
     mode,
@@ -239,12 +666,209 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
     poster,
     highFrequencyWords: hfwWords,
     notebookSentence: "Copy the sentence your teacher gives you.",
-    passageTitle: `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
+    passageTitle: passage ? ttPassageLabel(passage) : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
     passageText,
+    passagePdf: lesson.section9Story || null,
     gameUrl: "Games/index.html",
     privacyTitle: "Private teacher work",
     privacyMessage: "Keep reading, writing, or practicing while your teacher charts."
   };
+}
+
+function ttRenderSection9(lesson, group, skill) {
+  ttApplySection9StoryToLesson(lesson, group, skill);
+  const story = lesson.section9Story;
+  const summary = ttById("ttPassage");
+  const pages = ttById("ttPassagePages");
+  if (!summary || !pages || !story) return;
+  const passage = ttPassageById(story.passageId) || story;
+  const approach = story.approach || "comprehension-sos";
+  summary.innerHTML = `
+    <strong>${escapeHtml(passage.title || "Reader passage")}</strong>
+    <span>${escapeHtml(passage.substep || lesson.substep)} ${escapeHtml(passage.level || lesson.readerLevel || "AB")} · Reader ${escapeHtml(String(passage.reader || lesson.reader || ""))}, ${escapeHtml(ttReaderPageRange(passage))}</span>
+    <em>${escapeHtml(ttSection9ApproachLabel(approach))}</em>
+  `;
+  const pdfPages = ttPdfPageRange(passage);
+  pages.classList.toggle("one-page", pdfPages.length === 1);
+  pages.classList.toggle("two-page", pdfPages.length === 2);
+  pages.innerHTML = pdfPages.map((pageNumber, index) => {
+    const src = ttPassagePageImageSrc(passage, pageNumber);
+    const readerPage = (passage.readerPageStart || 0) + index;
+    return `<article class="passage-page-frame">
+      <div class="passage-page-label">Reader p. ${escapeHtml(String(readerPage))}</div>
+      <img class="passage-page-image" alt="${escapeHtml(passage.title)} page ${escapeHtml(String(readerPage))}" src="${src}">
+    </article>`;
+  }).join("");
+  pages.querySelectorAll("img").forEach((image) => {
+    image.addEventListener("load", () => ttResizePassageInk(), { once: true });
+  });
+  ttPassageInkState.strokes = ttSection9InkStore(lesson).strokes || [];
+  ttPassageInkState.zoom = ttSection9InkStore(lesson).zoom || 1;
+  ttSetupPassageInk();
+}
+
+function ttReaderPageRange(passage) {
+  if (!passage) return "p. --";
+  return passage.readerPageStart === passage.readerPageEnd
+    ? `p. ${passage.readerPageStart}`
+    : `pp. ${passage.readerPageStart}-${passage.readerPageEnd}`;
+}
+
+function ttPdfPageRange(passage) {
+  const start = Number(passage?.pdfPageStart || 1);
+  const end = Math.max(start, Number(passage?.pdfPageEnd || start));
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
+
+function ttPassagePageImageSrc(passage, pdfPageNumber) {
+  if (passage?.reader === 1) {
+    return `Part%209%20Reading%20Passages%20from%20Readers/rendered-pages/book1-page-${String(pdfPageNumber).padStart(2, "0")}.png`;
+  }
+  return `${encodeURI(passage?.pdfPath || "")}#page=${encodeURIComponent(pdfPageNumber)}`;
+}
+
+function ttSection9InkStore(lesson = ttLesson) {
+  if (!lesson) return { strokes: [], zoom: 1 };
+  lesson.section9Ink ||= {};
+  const key = lesson.section9Story?.passageId || "default";
+  lesson.section9Ink[key] ||= { strokes: [], zoom: 1 };
+  return lesson.section9Ink[key];
+}
+
+function ttSetupPassageInk() {
+  const stage = ttById("ttPassageStage");
+  const surface = ttById("ttPassageSurface");
+  const canvas = ttById("ttPassageInk");
+  if (!stage || !surface || !canvas) return;
+  const zoom = ttPassageInkState.zoom || 1;
+  surface.style.width = `${Math.max(stage.clientWidth - 24, 720) * zoom}px`;
+  canvas.onpointerdown = ttPassagePointerDown;
+  canvas.onpointermove = ttPassagePointerMove;
+  canvas.onpointerup = ttPassagePointerEnd;
+  canvas.onpointercancel = ttPassagePointerEnd;
+  canvas.onpointerleave = ttPassagePointerEnd;
+  ttResizePassageInk();
+  ttBindPassageInkTools();
+  requestAnimationFrame(ttResizePassageInk);
+}
+
+function ttBindPassageInkTools() {
+  document.querySelectorAll("[data-passage-color]").forEach((button) => {
+    button.onclick = () => {
+      ttPassageInkState.color = button.dataset.passageColor || ttPassageInkState.color;
+      document.querySelectorAll("[data-passage-color]").forEach((item) => item.classList.toggle("active", item === button));
+    };
+  });
+  const size = ttById("ttPassagePenSize");
+  if (size) {
+    size.value = String(ttPassageInkState.size || 5);
+    size.oninput = () => { ttPassageInkState.size = Number(size.value) || 5; };
+  }
+  const zoomIn = ttById("ttPassageZoomIn");
+  const zoomOut = ttById("ttPassageZoomOut");
+  if (zoomIn) zoomIn.onclick = () => ttSetPassageZoom((ttPassageInkState.zoom || 1) + 0.15);
+  if (zoomOut) zoomOut.onclick = () => ttSetPassageZoom((ttPassageInkState.zoom || 1) - 0.15);
+  const clear = ttById("ttPassageClearInk");
+  if (clear) clear.onclick = () => {
+    if (!confirm("Clear annotations for this story in this lesson?")) return;
+    ttPassageInkState.strokes = [];
+    ttSection9InkStore().strokes = [];
+    ttSaveDraftLesson({ status: false });
+    ttRedrawPassageInk();
+  };
+}
+
+function ttSetPassageZoom(value) {
+  ttPassageInkState.zoom = Math.max(0.8, Math.min(1.8, value));
+  ttSection9InkStore().zoom = ttPassageInkState.zoom;
+  ttSetupPassageInk();
+  ttSaveDraftLesson({ status: false });
+}
+
+function ttResizePassageInk() {
+  const surface = ttById("ttPassageSurface");
+  const pages = ttById("ttPassagePages");
+  const canvas = ttById("ttPassageInk");
+  if (!surface || !pages || !canvas) return;
+  const rect = pages.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  surface.style.minHeight = `${Math.max(520, rect.height)}px`;
+  canvas.style.width = `${rect.width}px`;
+  canvas.style.height = `${rect.height}px`;
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ttRedrawPassageInk();
+}
+
+function ttPassageCanvasPoint(event) {
+  const canvas = ttById("ttPassageInk");
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) / Math.max(1, rect.width),
+    y: (event.clientY - rect.top) / Math.max(1, rect.height)
+  };
+}
+
+function ttPassagePointerDown(event) {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  const canvas = ttById("ttPassageInk");
+  canvas?.setPointerCapture?.(event.pointerId);
+  const point = ttPassageCanvasPoint(event);
+  ttPassageInkState.drawing = true;
+  ttPassageInkState.activeStroke = {
+    color: ttPassageInkState.color,
+    size: ttPassageInkState.size,
+    points: [point]
+  };
+  event.preventDefault();
+}
+
+function ttPassagePointerMove(event) {
+  if (!ttPassageInkState.drawing || !ttPassageInkState.activeStroke) return;
+  ttPassageInkState.activeStroke.points.push(ttPassageCanvasPoint(event));
+  ttRedrawPassageInk(ttPassageInkState.activeStroke);
+  event.preventDefault();
+}
+
+function ttPassagePointerEnd(event) {
+  if (!ttPassageInkState.drawing || !ttPassageInkState.activeStroke) return;
+  ttPassageInkState.drawing = false;
+  if (ttPassageInkState.activeStroke.points.length > 1) {
+    ttPassageInkState.strokes.push(ttPassageInkState.activeStroke);
+    ttSection9InkStore().strokes = ttPassageInkState.strokes;
+    ttSection9InkStore().zoom = ttPassageInkState.zoom;
+    ttSaveDraftLesson({ status: false });
+  }
+  ttPassageInkState.activeStroke = null;
+  ttById("ttPassageInk")?.releasePointerCapture?.(event.pointerId);
+  ttRedrawPassageInk();
+}
+
+function ttRedrawPassageInk(extraStroke = null) {
+  const canvas = ttById("ttPassageInk");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const width = canvas.clientWidth || 1;
+  const height = canvas.clientHeight || 1;
+  ctx.clearRect(0, 0, width, height);
+  (ttPassageInkState.strokes || []).concat(extraStroke ? [extraStroke] : []).forEach((stroke) => {
+    const points = stroke.points || [];
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = stroke.color || "#ef4444";
+    ctx.lineWidth = Number(stroke.size || 5);
+    points.forEach((point, index) => {
+      const x = point.x * width;
+      const y = point.y * height;
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
 }
 
 function ttSendStudentDisplay(payload = ttStudentDisplayPayload()) {
@@ -535,7 +1159,9 @@ function ttFillSectionRefs(lesson) {
   const sentence = lesson.sentenceMeta
     ? lesson.sentenceMeta.replace("Reader ", "Reader ")
     : `Reader ${lesson.reader}, p. -- - ${lesson.readerLevel || "AB"}`;
-  const passage = `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} - ${lesson.passageLevel || lesson.readerLevel || "AB"}`;
+  const passage = lesson.section9Story?.title
+    ? `${lesson.section9Story.title} - ${lesson.section9Story.substep} ${lesson.section9Story.level}`
+    : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} - ${lesson.passageLevel || lesson.readerLevel || "AB"}`;
   const refs = {
     ttSection1Ref: lesson.substep,
     ttSection2Ref: wordlist,
@@ -1347,6 +1973,8 @@ function ttEnsurePlannerDraft(group) {
     level,
     wordlist: pageAssignment(group, skill, "wordlist", 0, level).page || "",
     sentence: pageAssignment(group, skill, "sentences", 0, level).page || "",
+    passageId: ttDefaultPassageFor(group, skill)?.id || "",
+    passageApproach: group.section9Story?.approach || "comprehension-sos",
     reviewSubsteps: [priorSubstep(skill.id)],
     lessonType: "full",
     flashSections: ["1", "2", "3", "5"]
@@ -1615,6 +2243,8 @@ function ttFillPlannerCoreSelects(group, skill, level) {
   const levelSelect = ttById("ttPlannerLevel");
   const wordlist = ttById("ttPlannerWordlist");
   const sentence = ttById("ttPlannerSentence");
+  const passageSelect = ttById("ttPlannerPassage");
+  const approachSelect = ttById("ttPlannerPassageApproach");
   if (substep) {
     substep.innerHTML = scopeMap.map((item) => `<option value="${escapeHtml(item.id)}"${item.id === draft.substep ? " selected" : ""}>${escapeHtml(item.id)} - ${escapeHtml(item.title)}</option>`).join("");
   }
@@ -1631,6 +2261,25 @@ function ttFillPlannerCoreSelects(group, skill, level) {
   if (sentence) {
     const pages = pageList(skill, "sentences", level);
     sentence.innerHTML = pages.map((page, index) => `<option value="${page}"${page === Number(draft.sentence) ? " selected" : ""}>p. ${page} (${index + 1}/${pages.length})</option>`).join("");
+  }
+  if (passageSelect) {
+    const passages = ttPassagesForSubstep(skill.id);
+    if (!passages.length) {
+      passageSelect.innerHTML = `<option value="">No stories loaded yet</option>`;
+      passageSelect.disabled = true;
+    } else {
+      const selectedId = passages.some((passage) => passage.id === draft.passageId) ? draft.passageId : passages[0].id;
+      draft.passageId = selectedId;
+      passageSelect.disabled = false;
+      passageSelect.innerHTML = passages.map((passage) => (
+        `<option value="${escapeHtml(passage.id)}"${passage.id === selectedId ? " selected" : ""}>${escapeHtml(ttPassageLabel(passage))}</option>`
+      )).join("");
+    }
+  }
+  if (approachSelect) {
+    approachSelect.innerHTML = TT_SECTION9_APPROACHES.map((approach) => (
+      `<option value="${escapeHtml(approach.id)}"${approach.id === draft.passageApproach ? " selected" : ""}>${escapeHtml(approach.label)}</option>`
+    )).join("");
   }
 }
 
@@ -1650,6 +2299,10 @@ function ttPlannerPreviewLesson(group) {
   tempGroup.pageProgress.wordlist = Math.max(0, wordPages.indexOf(selectedWordPage));
   tempGroup.pageProgress.sentences = Math.max(0, sentencePages.indexOf(selectedSentencePage));
   const lesson = createLesson(tempGroup, skill, 0, 1);
+  ttApplySection9StoryToLesson(lesson, group, skill, {
+    passageId: draft.passageId,
+    approach: draft.passageApproach
+  });
   if (selectedSentencePage) {
     const sentenceAssignment = {
       reader: skill.reader,
@@ -2528,7 +3181,12 @@ function ttBuildPlannerLesson(options = {}) {
   group.pageProgress ||= { wordlist: 0, sentences: 0, passage: 0 };
   group.pageProgress.wordlist = Math.max(0, wordPages.indexOf(selectedWordPage));
   group.pageProgress.sentences = Math.max(0, sentencePages.indexOf(selectedSentencePage));
+  ttSaveSection9StoryForGroup(group, draft.passageId, draft.passageApproach);
   ttLesson = createLesson(group, skill, 0, 1);
+  ttApplySection9StoryToLesson(ttLesson, group, skill, {
+    passageId: draft.passageId,
+    approach: draft.passageApproach
+  });
   ttApplyPlannerSelectionsToLesson(group, skill);
   ttSaveDraftLesson({ status: false });
   saveState();
@@ -2572,6 +3230,11 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
   if (draft.lessonType === "flash") {
     ttLesson.flashSections = (draft.flashSections || []).slice();
   }
+  ttSaveSection9StoryForGroup(group, draft.passageId, draft.passageApproach);
+  ttApplySection9StoryToLesson(ttLesson, group, skill, {
+    passageId: draft.passageId,
+    approach: draft.passageApproach
+  });
 
   const selected = {
     sectionTwoCurrentWords: ttPlannerSelected("section2Current"),
@@ -2718,8 +3381,9 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
         ["Sentences", block("sentences")]
       ], prevWordSet) : ""}
       ${(!isFlash || flashSet.has("9") || flashSet.has("10")) ? `<section class="preview-block-empty">
-        <h3><span>9/10</span>Passage Reading — if time</h3>
-        <p>Section 9 (preferred) or 10 with remaining time.</p>
+        <h3><span>9</span>Controlled Passage</h3>
+        <p><b>Story:</b> ${escapeHtml(activeLesson.section9Story?.title || "Select a story")}</p>
+        <p><b>Approach:</b> ${escapeHtml(ttSection9ApproachLabel(activeLesson.section9Story?.approach))}</p>
       </section>` : ""}
     </div>`;
   ttBindPlannerPreviewActions(preview);
@@ -2959,11 +3623,11 @@ function ttFillOverview(group, skill) {
   const level = group.readerLevel || "AB";
   const wordlist = pageAssignment(group, skill, "wordlist", 0, level);
   const sentence = pageAssignment(group, skill, "sentences", 0, level);
-  const passage = pageAssignment(group, skill, "passage", 0, level);
+  const story = ttEnsureSection9Story(group, skill)?.passage;
   ttFillWordlistPageSelect(group, skill, level, wordlist);
   ttById("ttWordlistPage").textContent = `${formatPage(wordlist)} - ${pagePositionLabel(wordlist, "wordlist")}`;
   ttById("ttSentencePage").textContent = sentence.page ? `${formatPage(sentence)} - ${pagePositionLabel(sentence, "sentence")}` : "No sentence page listed";
-  ttById("ttPassagePage").textContent = passage.page ? `${formatPage(passage)} - ${pagePositionLabel(passage, "passage")}` : "No passage page listed";
+  ttById("ttPassagePage").textContent = story ? ttPassageLabel(story) : "No passage story selected";
 }
 
 function ttFillWordlistPageSelect(group, skill, level, assignment) {
@@ -4227,10 +4891,15 @@ function ttRefreshSection(sectionNumber) {
     });
   }
   if (sectionNumber === "9") {
-    const fresh = createLesson(group, skill, seedIndex, 1000);
-    ttLesson.passagePageNumber = fresh.passagePageNumber;
-    ttLesson.passageLevel = fresh.passageLevel;
-    ttLesson.passage = fresh.passage;
+    const passages = ttPassagesForSubstep(skill.id);
+    if (passages.length) {
+      const currentId = ttLesson.section9Story?.passageId || group.section9Story?.passageId;
+      const currentIndex = Math.max(0, passages.findIndex((passage) => passage.id === currentId));
+      const nextPassage = passages[(currentIndex + 1) % passages.length];
+      const approach = ttLesson.section9Story?.approach || group.section9Story?.approach || "comprehension-sos";
+      ttSaveSection9StoryForGroup(group, nextPassage.id, approach);
+      ttApplySection9StoryToLesson(ttLesson, group, skill, { passageId: nextPassage.id, approach });
+    }
   }
   ttSaveDraftLesson();
   ttRender();
@@ -5494,7 +6163,10 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
         <div class="write-lines"><span></span><span></span><span></span><span></span></div>
       `, "#b45309")}
 
-      ${ttPlanSection("9", "Controlled Passage", `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} (${lesson.passageLevel || lesson.readerLevel})`, `
+      ${ttPlanSection("9", "Controlled Passage", lesson.section9Story?.title
+        ? `${lesson.section9Story.title} - Reader ${lesson.section9Story.reader || lesson.reader}, ${lesson.section9Story.substep} ${lesson.section9Story.level}, ${ttReaderPageRange(lesson.section9Story)}`
+        : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} (${lesson.passageLevel || lesson.readerLevel})`, `
+        <p class="small"><strong>${escapeHtml(ttSection9ApproachLabel(lesson.section9Story?.approach))}</strong></p>
         <p class="small">${escapeHtml(lesson.passage || "Use the assigned Reader passage page. Preview three target words before reading.")}</p>
         <div class="write-lines"><span></span><span></span></div>
       `, "#0369a1")}
@@ -8276,7 +8948,7 @@ function ttBind() {
     // Apply all planner selections then open — same as "Build lesson" but goes straight to teach flow
     ttBuildPlannerLesson();
   });
-  ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence"].forEach((id) => {
+  ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence", "ttPlannerPassage", "ttPlannerPassageApproach"].forEach((id) => {
     ttById(id)?.addEventListener("change", () => {
       const group = ttPlannerGroup();
       if (!group) return;
@@ -8286,6 +8958,7 @@ function ttBind() {
         const skill = scopeMap.find((item) => item.id === ttPlannerDraft.substep) || activeStep(group);
         ttPlannerDraft.wordlist = pageAssignment(group, skill, "wordlist", 0, ttPlannerDraft.level || group.readerLevel || "AB").page || "";
         ttPlannerDraft.sentence = pageAssignment(group, skill, "sentences", 0, ttPlannerDraft.level || group.readerLevel || "AB").page || "";
+        ttPlannerDraft.passageId = ttDefaultPassageFor(group, skill)?.id || "";
       }
       if (id === "ttPlannerLevel") {
         ttPlannerDraft.level = ttById(id).value;
@@ -8295,6 +8968,8 @@ function ttBind() {
       }
       if (id === "ttPlannerWordlist") ttPlannerDraft.wordlist = ttById(id).value;
       if (id === "ttPlannerSentence") ttPlannerDraft.sentence = ttById(id).value;
+      if (id === "ttPlannerPassage") ttPlannerDraft.passageId = ttById(id).value;
+      if (id === "ttPlannerPassageApproach") ttPlannerDraft.passageApproach = ttById(id).value;
       ttRenderPlannerPanel();
     });
   });
