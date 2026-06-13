@@ -569,5 +569,546 @@ window.section9PassageCompanions = {
         { type: "vocabulary", question: "What does 'jots' mean in the sentence about Bill's pad?" }
       ]
     }
+  },
+  "reader2-2.1-ab-p14-moth-pink-wings": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bank", meaning: "the side or slope of a hill or land near water", whyPreteach: "Students may know bank as a money place, but here it means land they run up.", reference: "paragraph 1", prompt: "What kind of bank do Jill and Hank run up?" },
+      { word: "wings", meaning: "body parts that help insects or birds fly", whyPreteach: "This word is central to picturing the moth.", reference: "paragraph 1", prompt: "What color are the moth's wings?" },
+      { word: "zips", meaning: "moves very quickly", whyPreteach: "This explains why the children cannot catch the moth.", reference: "paragraph 2", prompt: "What does the moth do when it zips away?" },
+      { word: "rest", meaning: "stop and be still for a little while", whyPreteach: "This helps students follow the moth's movement from rock to log.", reference: "paragraph 2", prompt: "Where does the moth stop to rest?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What are Jill and Hank trying to catch?" },
+        { type: "literal", question: "What color are the moth's wings?" },
+        { type: "sequence", question: "Where does the moth go after it sits on the rock?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why could Jill and Hank not catch the moth?" },
+        { type: "evidence", question: "What details show that the moth was faster than the kids?" },
+        { type: "vocabulary", question: "What does 'zips' tell you about how the moth moved?" }
+      ]
+    }
+  },
+  "reader2-2.1-ab-p16-for-win": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "rim", meaning: "the round edge of a basketball net or hoop", whyPreteach: "This helps students understand why the ball does or does not score.", reference: "paragraph 2", prompt: "What does the ball hit before it falls or misses?" },
+      { word: "sinks", meaning: "makes a shot go into the net", whyPreteach: "This sports meaning may be unfamiliar.", reference: "paragraph 2", prompt: "What happens when Tim sinks the ball?" },
+      { word: "let up", meaning: "stop trying as hard", whyPreteach: "This phrase shows Ed keeps competing.", reference: "paragraph 2", prompt: "Did Ed let up?" },
+      { word: "rank", meaning: "be judged or placed at a level", whyPreteach: "This helps students understand the friendly ending.", reference: "paragraph 3", prompt: "What does Ed mean when he says their shots rank at the top?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What was wrong with the net at first?" },
+        { type: "literal", question: "Who fixed the net?" },
+        { type: "literal", question: "Who made the long shot for the win?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Ed and Tim are enjoying a friendly competition?" },
+        { type: "evidence", question: "What details show that Ed did not give up?" },
+        { type: "vocabulary", question: "What does 'let up' mean when Ed thinks, 'Not yet'?" }
+      ]
+    }
+  },
+  "reader2-2.1-b-p18-jims-bank-job": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "dull", meaning: "boring or not interesting", whyPreteach: "This word explains Jim's attitude about his job.", reference: "paragraph 2", prompt: "Why does Jim not want to get up?" },
+      { word: "funk", meaning: "a sad or discouraged mood", whyPreteach: "This word helps students understand Jim's feelings.", reference: "paragraph 2", prompt: "What clues show Jim is in a funk?" },
+      { word: "fed up", meaning: "tired of something and frustrated with it", whyPreteach: "This phrase explains Jim's conflict about going to work.", reference: "paragraph 3", prompt: "What is Jim fed up with?" },
+      { word: "hang on", meaning: "keep going and not quit", whyPreteach: "This phrase shows Jim's responsible choice.", reference: "paragraph 3", prompt: "Why does Jim have to hang on?" },
+      { word: "bills", meaning: "money that must be paid", whyPreteach: "This explains why Jim cannot simply quit.", reference: "paragraph 3", prompt: "How do bills affect Jim's decision?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Jim work?" },
+        { type: "literal", question: "Who got the job Jim had wanted?" },
+        { type: "literal", question: "Why does Jim still have to go to work?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Jim decide to get up even though he dislikes his job?" },
+        { type: "evidence", question: "What details show Jim is discouraged at the start but more hopeful by the end?" },
+        { type: "vocabulary", question: "What does 'in a funk' mean in the passage?" }
+      ]
+    }
+  },
+  "reader2-2.1-b-p20-bad-luck-bus": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "chugs", meaning: "moves with a slow, heavy sound", whyPreteach: "This describes the bus and helps students picture the ride.", reference: "paragraph 1", prompt: "How does the bus move up the hill?" },
+      { word: "rut", meaning: "a low track or hole in the road", whyPreteach: "This explains why the bus sinks.", reference: "paragraph 2", prompt: "What does the bus sink into?" },
+      { word: "gunk", meaning: "sticky or dirty stuff", whyPreteach: "This word helps students understand Hank's messy problem.", reference: "paragraph 3", prompt: "What gets on Hank's cap?" },
+      { word: "hunk of junk", meaning: "something old, broken, or not working well", whyPreteach: "This phrase captures Hank's opinion of the bus.", reference: "paragraph 3", prompt: "Why does Hank call the bus a hunk of junk?" },
+      { word: "chuck", meaning: "throw away", whyPreteach: "This helps students understand Hank's frustrated suggestion.", reference: "paragraph 3", prompt: "What does Hank want to do with the bus?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who gets on the bus?" },
+        { type: "literal", question: "What does the bus hit in the road?" },
+        { type: "literal", question: "What gets on Hank's cap?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Hank and Meg think they should have taken a cab?" },
+        { type: "evidence", question: "Name three pieces of bad luck that happen on the bus ride." },
+        { type: "vocabulary", question: "What does 'hunk of junk' tell you about how Hank feels about the bus?" }
+      ]
+    }
+  },
+  "reader2-2.2-ab-p48-beth-grass": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "slid", meaning: "moved smoothly or slipped down", whyPreteach: "This action leads to Beth running into trouble.", reference: "paragraph 1", prompt: "What did Beth do after Mom left?" },
+      { word: "twig", meaning: "a small thin branch", whyPreteach: "This word explains what caused Beth to slip.", reference: "paragraph 1", prompt: "What did Beth's shoe hit?" },
+      { word: "wept", meaning: "cried", whyPreteach: "This word reveals Beth's feelings after the accident.", reference: "paragraph 2", prompt: "Why did Beth weep?" },
+      { word: "all was well", meaning: "the problem was fixed or okay again", whyPreteach: "This phrase signals the resolution.", reference: "paragraph 3", prompt: "What was fixed by the end?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What did Mom ask Beth to do?" },
+        { type: "literal", question: "What happened to Beth's dress?" },
+        { type: "literal", question: "Who fixed Beth's cut and dress?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why did Beth feel upset after she came back to the step?" },
+        { type: "evidence", question: "What details show that Beth should have listened to Mom?" },
+        { type: "vocabulary", question: "What does 'wept' mean in the sentence about Beth?" }
+      ]
+    }
+  },
+  "reader2-2.2-ab-p50-brad-sam-pond": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "raft", meaning: "a flat floating platform used on water", whyPreteach: "This word is central to the boys' pond activity.", reference: "paragraph 1", prompt: "What did Sam get from the shed?" },
+      { word: "still", meaning: "not moving", whyPreteach: "This helps students picture the pond before the wind.", reference: "paragraph 2", prompt: "What was the pond like before the gust?" },
+      { word: "gust", meaning: "a sudden strong bit of wind", whyPreteach: "This word explains why the raft moves quickly.", reference: "paragraph 2", prompt: "What made the raft leave land in a flash?" },
+      { word: "chill off", meaning: "cool down", whyPreteach: "This phrase explains why the boys jump into the pond.", reference: "paragraph 3", prompt: "Why did they want to jump into the pond?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where did Brad and Sam go?" },
+        { type: "literal", question: "What did Sam get from the shed?" },
+        { type: "literal", question: "What did they do when they felt hot?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why did Brad and Sam think it was a great day?" },
+        { type: "evidence", question: "What details show the pond was a fun place for them?" },
+        { type: "vocabulary", question: "What does 'gust of wind' mean in the sentence about the raft?" }
+      ]
+    }
+  },
+  "reader2-2.2-ab-p52-best-lunch": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "stiff grip", meaning: "a tight hold", whyPreteach: "This phrase explains how carefully the children hold their lunch bags.", reference: "paragraph 1", prompt: "Why are the kids holding the bags with a stiff grip?" },
+      { word: "munch", meaning: "eat with steady bites", whyPreteach: "This word appears in the central question about lunch.", reference: "paragraph 2", prompt: "What are the kids ready to munch?" },
+      { word: "whiff", meaning: "a quick smell", whyPreteach: "This helps students understand why Peg and Fred react to Hank's lunch.", reference: "paragraph 4", prompt: "What do Peg and Fred get a whiff of?" },
+      { word: "bunch", meaning: "a group", whyPreteach: "This word helps with the phrase about the best lunch.", reference: "paragraph 4", prompt: "Who is in the bunch?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who brings lunch to the bench?" },
+        { type: "literal", question: "What does Hank have in his lunch?" },
+        { type: "literal", question: "Does Hank plan to share some?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Peg and Fred think Hank has the best lunch?" },
+        { type: "evidence", question: "What details make Hank's lunch sound special?" },
+        { type: "vocabulary", question: "What does 'whiff' mean when Peg and Fred smell Hank's lunch?" }
+      ]
+    }
+  },
+  "reader2-2.2-ab-p54-stan-frog": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "whom", meaning: "a word used for a person or character receiving an action", whyPreteach: "Students may need support with this formal word in the first sentence.", reference: "paragraph 1", prompt: "Whom does Brad call Stan?" },
+      { word: "brags", meaning: "talks with too much pride", whyPreteach: "This shows Brad's confidence in Stan.", reference: "paragraph 2", prompt: "What does Brad brag about?" },
+      { word: "prods", meaning: "pokes or pushes gently", whyPreteach: "This word explains how Brad tries to make Stan jump.", reference: "paragraph 2", prompt: "What does Brad use to prod Stan?" },
+      { word: "not up to the task", meaning: "not ready or able to do something", whyPreteach: "This phrase explains why Stan does not complete the jump drill.", reference: "paragraph 3", prompt: "Was Stan ready for the jump task?" },
+      { word: "tilts", meaning: "leans or tips to one side", whyPreteach: "This word helps students picture Stan's response.", reference: "paragraph 4", prompt: "What does Stan do with his head?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of pet is Stan?" },
+        { type: "literal", question: "What does Brad want Stan to do?" },
+        { type: "literal", question: "What does Stan do instead of jumping for Brad?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Brad decide to let Stan rest?" },
+        { type: "evidence", question: "What details show Stan is more interested in bugs than in the jump drill?" },
+        { type: "vocabulary", question: "What does 'not up to the task' mean in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.2-b-p56-set-up-band": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "gig", meaning: "a job or performance for musicians", whyPreteach: "This word connects Tom's setup task to the band's show.", reference: "paragraph 1", prompt: "What is the band getting ready for?" },
+      { word: "take off", meaning: "leave quickly", whyPreteach: "This phrase explains Tom's question about the mess.", reference: "paragraph 2", prompt: "Who might have taken off and left trash?" },
+      { word: "crab", meaning: "complain", whyPreteach: "This less-common verb shows Tom's attitude about the messy job.", reference: "paragraph 3", prompt: "Did Tom crab about the mess?" },
+      { word: "mop", meaning: "clean with a mop", whyPreteach: "This word explains one of Tom's cleanup tasks.", reference: "paragraph 3", prompt: "What did Tom mop?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why did Tom go to the club?" },
+        { type: "literal", question: "What mess did Tom find at the club?" },
+        { type: "literal", question: "How did the band feel when they arrived?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What does Tom's cleanup show about his character?" },
+        { type: "evidence", question: "What details show Tom helped the band before they performed?" },
+        { type: "vocabulary", question: "What does 'gig' mean in the sentence about setting up for the band?" }
+      ]
+    }
+  },
+  "reader2-2.2-b-p58-big-grass-job": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "trim", meaning: "cut neatly", whyPreteach: "This word describes Ken's yard work.", reference: "paragraph 2", prompt: "What did Ken have to trim?" },
+      { word: "shrubs", meaning: "small bushes", whyPreteach: "Students need this word to picture the job.", reference: "paragraph 2", prompt: "What are shrubs?" },
+      { word: "vast", meaning: "very large", whyPreteach: "This word shows why the job is difficult.", reference: "paragraph 2", prompt: "Was the lot small or vast?" },
+      { word: "bliss", meaning: "great happiness", whyPreteach: "This describes Mr. Smith's feeling after the job is done.", reference: "paragraph 4", prompt: "Why was Mr. Smith full of bliss?" },
+      { word: "stiff", meaning: "sore or hard to move", whyPreteach: "This word helps students infer how hard Ken worked.", reference: "paragraph 4", prompt: "Why did Ken's legs and back feel stiff?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why did Mr. Smith call Ken?" },
+        { type: "literal", question: "What two yard jobs did Ken have to do?" },
+        { type: "literal", question: "What did Ken get for doing the job?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell the grass job was hard work?" },
+        { type: "evidence", question: "What details show both Mr. Smith and Ken were satisfied at the end?" },
+        { type: "vocabulary", question: "What does 'vast' tell you about the lot of grass?" }
+      ]
+    }
+  },
+  "reader2-2.2-b-p60-prom": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "prom", meaning: "a formal school dance or event", whyPreteach: "This word names the main event.", reference: "title and paragraph 1", prompt: "What event does Glen ask Liz to attend?" },
+      { word: "by far", meaning: "much more than the others", whyPreteach: "This phrase shows Glen's strong opinion of Liz.", reference: "paragraph 1", prompt: "What does Glen think about Liz?" },
+      { word: "rent", meaning: "pay to use something for a short time", whyPreteach: "This explains how Glen gets a tux.", reference: "paragraph 1", prompt: "Why would Glen rent a tux?" },
+      { word: "posh", meaning: "fancy or elegant", whyPreteach: "This word helps students picture Liz's dress shop.", reference: "paragraph 1", prompt: "What kind of shop did Liz visit?" },
+      { word: "last set", meaning: "the final group of songs played by a band", whyPreteach: "This phrase helps students understand the event ending.", reference: "paragraph 2", prompt: "What happened when the last set ended?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who does Glen ask to the prom?" },
+        { type: "literal", question: "What does Glen rent?" },
+        { type: "literal", question: "What did the kids have at the prom?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Glen was happy Liz said yes?" },
+        { type: "evidence", question: "What details make the prom seem special?" },
+        { type: "vocabulary", question: "What does 'posh' mean in the phrase 'posh dress shop'?" }
+      ]
+    }
+  },
+  "reader2-2.2-b-p62-track": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "champ", meaning: "champion; the winner or best competitor", whyPreteach: "This word explains Chaz's goal.", reference: "paragraph 1", prompt: "What does Chaz want to become?" },
+      { word: "100 yd. dash", meaning: "a short, fast race", whyPreteach: "This phrase sets the athletic goal.", reference: "paragraph 2", prompt: "What event does Chaz want to be best at?" },
+      { word: "slack off", meaning: "stop working hard", whyPreteach: "This phrase shows Chaz knows he must keep practicing.", reference: "paragraph 2", prompt: "Can Chaz slack off if he wants to win?" },
+      { word: "grit", meaning: "determination and toughness", whyPreteach: "This word captures Chaz's character.", reference: "paragraph 2", prompt: "What does Chaz's grit help him do?" },
+      { word: "sloth", meaning: "a lazy person in this context", whyPreteach: "This word explains what Chaz does not want to be.", reference: "paragraph 3", prompt: "Why does Chaz not want to be a sloth?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Chaz rush after class?" },
+        { type: "literal", question: "What does Chaz want to be?" },
+        { type: "literal", question: "What does Chaz do to practice?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What kind of athlete is Chaz becoming? Use a detail from the passage." },
+        { type: "evidence", question: "What details show Chaz keeps working even when he is tired?" },
+        { type: "vocabulary", question: "What does 'grit' mean in the sentence about Chaz running and running?" }
+      ]
+    }
+  },
+  "reader2-2.3-ab-p72-sid-host": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "host", meaning: "someone who welcomes and takes care of a guest", whyPreteach: "This word is central to understanding Sid's role.", reference: "title and paragraph 1", prompt: "How does Sid act like a host?" },
+      { word: "kind", meaning: "helpful and caring", whyPreteach: "This word describes Sid's behavior.", reference: "paragraph 1", prompt: "What kind things does Sid do?" },
+      { word: "punch", meaning: "a sweet drink often served to guests", whyPreteach: "Students may know punch as hit, but here it is a drink.", reference: "paragraph 1", prompt: "What does Sid offer the old man to drink?" },
+      { word: "become", meaning: "grow or change into", whyPreteach: "This word helps with the parents' realization at the end.", reference: "paragraph 3", prompt: "What had Sid become?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who is Sid kind to?" },
+        { type: "literal", question: "What snacks and drinks does Sid offer?" },
+        { type: "literal", question: "What does Sid ask the old man to do?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are Sid's dad and mom glad at the end?" },
+        { type: "evidence", question: "What details show Sid is a good host?" },
+        { type: "vocabulary", question: "What does 'host' mean in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.3-ab-p74-jack-colt": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "colt", meaning: "a young male horse", whyPreteach: "This word is needed to understand who Zest is.", reference: "title and paragraph 1", prompt: "What kind of animal is Zest?" },
+      { word: "bold", meaning: "brave or not afraid, sometimes too forward", whyPreteach: "This word helps describe Zest's behavior.", reference: "paragraph 2", prompt: "What does Zest do when he is mad?" },
+      { word: "hind legs", meaning: "back legs", whyPreteach: "This helps students picture the colt kicking.", reference: "paragraph 2", prompt: "Which legs might Zest kick with?" },
+      { word: "bolt", meaning: "run away suddenly", whyPreteach: "This action shows Zest can be wild.", reference: "paragraph 3", prompt: "What could Zest do at any time?" },
+      { word: "mild", meaning: "gentle or calmer", whyPreteach: "This word contrasts with wild and shows Zest's change.", reference: "paragraph 3", prompt: "How is Zest becoming mild?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is the colt's name?" },
+        { type: "literal", question: "What does Jack bring as a gift for Zest?" },
+        { type: "literal", question: "Does Zest kick or bolt when Jack is with him today?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Zest trusts Jack more now?" },
+        { type: "evidence", question: "What details show that Zest can be both wild and gentle?" },
+        { type: "vocabulary", question: "What does 'bolt' mean in the sentence about the colt?" }
+      ]
+    }
+  },
+  "reader2-2.3-b-p76-most-bass": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bass", meaning: "a kind of fish", whyPreteach: "Students may decode this word but need the meaning for the fishing story.", reference: "title and paragraph 1", prompt: "What kind of fish are Bob and Tom trying to get?" },
+      { word: "pelts", meaning: "thick coverings or coats made from animal skin or fur", whyPreteach: "This word explains how they block the cold wind.", reference: "paragraph 1", prompt: "Why do they put on pelts?" },
+      { word: "cast", meaning: "throw a fishing line into water", whyPreteach: "This fishing word is repeated and central to the action.", reference: "paragraphs 2 and 3", prompt: "What does Bob cast?" },
+      { word: "jolt", meaning: "a sudden strong pull or movement", whyPreteach: "This word helps students feel the fish biting.", reference: "paragraph 2", prompt: "What happened when the bass bit?" },
+      { word: "host", meaning: "the person who invited or welcomed someone", whyPreteach: "This helps students understand Tom thanking Bob.", reference: "paragraph 3", prompt: "Who is Tom's host?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who goes fishing for bass?" },
+        { type: "literal", question: "How many bass does Tom get?" },
+        { type: "literal", question: "What do they plan to fix up for lunch?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Bob say Tom should come fish there all the time?" },
+        { type: "evidence", question: "What details show Tom had better luck fishing than Bob?" },
+        { type: "vocabulary", question: "What does 'cast his rod' mean in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.3-b-p78-gift-slip-up-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bolt", meaning: "rush or run quickly", whyPreteach: "This word shows Tom's urgency to get to the shop.", reference: "paragraph 1", prompt: "Why does Tom need to bolt to the gift shop?" },
+      { word: "brass", meaning: "a yellowish metal", whyPreteach: "This describes the clock Tom wanted to buy.", reference: "paragraph 1", prompt: "What kind of clock had the shop held?" },
+      { word: "on hold", meaning: "saved for someone to pick up later", whyPreteach: "This phrase explains Tom's expectation at the shop.", reference: "paragraph 1", prompt: "What did Tom think the shop had done with the clock?" },
+      { word: "slack off", meaning: "delay or not keep up with responsibility", whyPreteach: "This phrase explains Tom's mistake.", reference: "paragraph 1", prompt: "How did Tom slack off about the gift?" },
+      { word: "staff", meaning: "the people who work at a place", whyPreteach: "This word explains who sold the clocks.", reference: "paragraph 2", prompt: "Who sold the clocks?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What gift did Tom plan to buy?" },
+        { type: "literal", question: "Why could Tom not find the clock?" },
+        { type: "literal", question: "When will the shop get more clocks?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why did Tom lose the clock that was held for him?" },
+        { type: "evidence", question: "What details show Tom waited too long?" },
+        { type: "vocabulary", question: "What does 'on hold' mean in the sentence about the brass clock?" }
+      ]
+    }
+  },
+  "reader2-2.3-b-p80-gift-slip-up-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bind", meaning: "a difficult problem or situation", whyPreteach: "This word explains Tom's trouble after the clock is gone.", reference: "paragraph 1", prompt: "Why is Tom in a bind?" },
+      { word: "sulk", meaning: "act sad or upset without trying to solve the problem", whyPreteach: "This word shows what Tom chooses not to do.", reference: "paragraph 1", prompt: "Did Tom sulk about the clocks?" },
+      { word: "rant", meaning: "complain loudly or angrily", whyPreteach: "This word contrasts with problem-solving.", reference: "paragraph 1", prompt: "Why would ranting not help Tom?" },
+      { word: "quill pen", meaning: "a fancy pen, originally made from a feather", whyPreteach: "This word helps students understand the replacement gift.", reference: "paragraph 3", prompt: "What gift does Tom choose?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why does the truck coming next week not help Tom?" },
+        { type: "literal", question: "What gift does Tom choose for Dad?" },
+        { type: "literal", question: "Where will Dad put the gift?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Tom solve his problem instead of staying upset?" },
+        { type: "evidence", question: "What details show the new gift is still a good choice for Dad?" },
+        { type: "vocabulary", question: "What does 'in some kind of bind' mean in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.4-ab-p100-at-pond": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "cramp", meaning: "a sudden tight pain in a muscle", whyPreteach: "This word explains why Ben falls while chasing Skip.", reference: "paragraph 2", prompt: "What happened to Ben's leg?" },
+      { word: "clump", meaning: "a group or bunch close together", whyPreteach: "This word helps students picture what Ben hits.", reference: "paragraph 3", prompt: "What did Ben hit his chin on?" },
+      { word: "bled", meaning: "had blood coming out", whyPreteach: "This word shows the cut was serious enough to need a pad.", reference: "paragraph 3", prompt: "What happened to Ben's lip?" },
+      { word: "text", meaning: "a written message sent on a phone", whyPreteach: "This explains why Ben has to leave.", reference: "paragraph 5", prompt: "Who sent Ben a text?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who comes to the pond with Ben?" },
+        { type: "literal", question: "Why does Ben fall?" },
+        { type: "literal", question: "What does Skip do in the pond?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Ben still want to come back even after he gets hurt?" },
+        { type: "evidence", question: "What details show Skip had fun at the pond?" },
+        { type: "vocabulary", question: "What does 'cramp' mean in the sentence about Ben's leg?" }
+      ]
+    }
+  },
+  "reader2-2.4-ab-p102-glen-gull-lunch": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "crisp", meaning: "firm and fresh with a slight crunch", whyPreteach: "This word helps students picture Glen's shrimp.", reference: "paragraph 1", prompt: "What kind of shrimp does Glen eat?" },
+      { word: "clams", meaning: "small shellfish that live in sand or mud", whyPreteach: "This word connects Dad's lunch and the gull's hunt.", reference: "paragraphs 1 and 2", prompt: "Who eats or hunts for clams?" },
+      { word: "squints", meaning: "partly closes the eyes to see better or block light", whyPreteach: "This word helps students picture the sunny beach.", reference: "paragraph 1", prompt: "Why might Dad squint in the sun?" },
+      { word: "gull", meaning: "a seabird often found near beaches", whyPreteach: "Students need this to understand the animal Glen watches.", reference: "title and paragraph 2", prompt: "What does the gull hunt for?" },
+      { word: "blast off", meaning: "take off quickly", whyPreteach: "This phrase describes the gull flying away.", reference: "paragraph 2", prompt: "When does the gull blast off?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is Glen sitting with his family?" },
+        { type: "literal", question: "What does Glen choose to eat?" },
+        { type: "literal", question: "What does the gull hunt for?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How are Dad and the gull alike in this passage?" },
+        { type: "evidence", question: "What details show Glen does not want clams for lunch?" },
+        { type: "vocabulary", question: "What does 'blast off' mean when the gull finds a clam?" }
+      ]
+    }
+  },
+  "reader2-2.4-b-p104-brads-bad-day": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "slush", meaning: "wet, partly melted snow or ice", whyPreteach: "This word starts the bad-luck chain.", reference: "paragraph 1", prompt: "What did Brad fall in?" },
+      { word: "kept his chin up", meaning: "tried to stay positive", whyPreteach: "This phrase shows Brad's attitude despite trouble.", reference: "paragraph 1", prompt: "Was Brad trying to give up or keep going?" },
+      { word: "brisk", meaning: "cool and sharp", whyPreteach: "This word helps students feel the uncomfortable weather.", reference: "paragraph 2", prompt: "What was the wind like while Brad waited?" },
+      { word: "grim", meaning: "sad, serious, or discouraged", whyPreteach: "This word describes Brad's mood at work.", reference: "paragraph 3", prompt: "Why did Brad feel grim?" },
+      { word: "trench", meaning: "a long, deep ditch or low place", whyPreteach: "This explains the bus's final problem.", reference: "paragraph 4", prompt: "What did the bus run into?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What happens to Brad by his front step?" },
+        { type: "literal", question: "Why does Brad miss the bus?" },
+        { type: "literal", question: "What happens to the bus on the way home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the title 'Brad's Bad Day' a good title?" },
+        { type: "evidence", question: "List three details that show Brad has bad luck all day." },
+        { type: "vocabulary", question: "What does 'kept his chin up' mean in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.4-b-p106-draft": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "draft", meaning: "a process where a team chooses new players", whyPreteach: "This word is central to understanding Dell's situation.", reference: "title and paragraph 1", prompt: "What does Dell hope will happen in the draft?" },
+      { word: "ranks", meaning: "positions in an order from best to lower", whyPreteach: "This explains why Dell is likely to be chosen.", reference: "paragraph 1", prompt: "Where was Dell put at the tryout?" },
+      { word: "stats", meaning: "numbers that show performance", whyPreteach: "This sports word supports comprehension of Dell's skill.", reference: "paragraph 1", prompt: "What do Dell's stats show?" },
+      { word: "on hold", meaning: "waiting because no decision has happened yet", whyPreteach: "This phrase explains Dell's waiting.", reference: "paragraph 2", prompt: "Why does Dell have to be on hold?" },
+      { word: "prank", meaning: "a trick or joke", whyPreteach: "This word explains why Dell checks the phone call.", reference: "paragraph 3", prompt: "Why does Dell check if the call is a prank?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Dell hope to get?" },
+        { type: "literal", question: "Who calls Dell?" },
+        { type: "literal", question: "Who does Dell run to tell?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Dell try to put the draft out of his mind before the call?" },
+        { type: "evidence", question: "What details show Dell has strong athletic skills?" },
+        { type: "vocabulary", question: "What does 'stats' mean in the sentence about Dell?" }
+      ]
+    }
+  },
+  "reader2-2.5-ab-p119-big-bass": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bass", meaning: "a kind of fish", whyPreteach: "This word is the goal of the fishing trip.", reference: "title and paragraph 1", prompt: "What fish do Tim and Frank want?" },
+      { word: "grubs", meaning: "small worm-like insects often used as bait", whyPreteach: "This word explains what they use to fish.", reference: "paragraph 2", prompt: "Why might they bring a pan of grubs?" },
+      { word: "shrubs", meaning: "small bushes", whyPreteach: "This setting word helps students picture the bank.", reference: "paragraph 2", prompt: "What do they go past on the bank?" },
+      { word: "splash", meaning: "the sound or movement of water being hit", whyPreteach: "This word helps students picture the big fish landing on the raft.", reference: "paragraph 3", prompt: "What made a big splash?" },
+      { word: "brag", meaning: "talk proudly about something", whyPreteach: "This shows Frank's reaction to catching the fish.", reference: "paragraph 3", prompt: "Why did Frank brag all day?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do Tim and Frank go fishing?" },
+        { type: "literal", question: "What does Tim get for bait?" },
+        { type: "literal", question: "Who catches the big bass?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Frank brag all day?" },
+        { type: "evidence", question: "What details show the bass was large and hard to get onto the raft?" },
+        { type: "vocabulary", question: "What are grubs used for in this passage?" }
+      ]
+    }
+  },
+  "reader2-2.5-ab-p120-gram-gramps": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "stress", meaning: "worry or pressure", whyPreteach: "This word explains why Pam wants a day off.", reference: "paragraph 1", prompt: "Why does Pam need help?" },
+      { word: "sprang", meaning: "moved quickly and eagerly", whyPreteach: "This word shows Gram and Gramps are happy to help.", reference: "paragraph 2", prompt: "How did they get into the van?" },
+      { word: "scrimp", meaning: "spend as little as possible", whyPreteach: "This word helps students understand how generous they were.", reference: "paragraph 3", prompt: "Did Gram and Gramps scrimp?" },
+      { word: "midst", meaning: "the middle of something happening", whyPreteach: "This word supports the sentence about the kids doing crafts.", reference: "paragraph 4", prompt: "What were the kids in the midst of?" },
+      { word: "blast", meaning: "a very fun time", whyPreteach: "This word explains the kids' final reaction.", reference: "paragraph 5", prompt: "What does it mean that they had a blast?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who takes the kids for the day?" },
+        { type: "literal", question: "Where do Gram and Gramps take the kids?" },
+        { type: "literal", question: "What do Pam and Bob do with their day off?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why did Pam and Bob ask Gram and Gramps for help?" },
+        { type: "evidence", question: "What details show the kids had a wonderful day?" },
+        { type: "vocabulary", question: "What does 'did not scrimp' mean in the paragraph about gifts and crafts?" }
+      ]
+    }
+  },
+  "reader2-2.5-b-p122-spring-job": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bliss", meaning: "great happiness", whyPreteach: "This contrasts how most people feel about spring with Clint's reaction.", reference: "paragraph 1", prompt: "Why do most people feel bliss in spring?" },
+      { word: "mulch bed", meaning: "a garden area covered with mulch", whyPreteach: "This phrase helps students understand the yard work.", reference: "paragraph 2", prompt: "What does Clint have to fix?" },
+      { word: "mold", meaning: "a fuzzy growth that can grow in damp places", whyPreteach: "This word shows why the shed needs cleaning.", reference: "paragraph 2", prompt: "What masks the shed?" },
+      { word: "filth", meaning: "very dirty material or mess", whyPreteach: "This word explains why Clint dislikes the spring job.", reference: "paragraph 2", prompt: "Why does Clint think the job is too much?" },
+      { word: "grasps", meaning: "understands", whyPreteach: "This multiple-meaning word shows Clint's change in thinking.", reference: "paragraph 3", prompt: "What does Clint grasp after everything is fresh?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why is Clint not glad that spring is coming?" },
+        { type: "literal", question: "What yard jobs does Clint do?" },
+        { type: "literal", question: "What does Clint do after he finishes?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Clint's attitude change from the start to the end?" },
+        { type: "evidence", question: "What details show the yard work was messy and stressful?" },
+        { type: "vocabulary", question: "What does 'grasps' mean in the sentence about Clint not being such a grump?" }
+      ]
+    }
+  },
+  "reader2-2.5-b-p124-help-chan": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "strict", meaning: "requiring rules or high expectations", whyPreteach: "This word helps students understand what is not causing Trent's stress.", reference: "paragraph 1", prompt: "Was Mrs. Beck's strictness the main problem?" },
+      { word: "trip him up", meaning: "confuse him or cause mistakes", whyPreteach: "This phrase explains Trent's struggle with facts.", reference: "paragraph 1", prompt: "What kept tripping Trent up?" },
+      { word: "slump", meaning: "a time of doing worse or feeling stuck", whyPreteach: "This word explains why Trent asks for help.", reference: "paragraph 2", prompt: "What class was Trent in a slump with?" },
+      { word: "dwell in the past", meaning: "keep thinking about past mistakes", whyPreteach: "This phrase shows Chan's advice.", reference: "paragraph 3", prompt: "What does Chan tell Trent not to do?" },
+      { word: "bulk", meaning: "the large amount or main part", whyPreteach: "This word explains Chan's study strategy.", reference: "paragraph 4", prompt: "How does Trent split the bulk of his work?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who does Trent ask for help?" },
+        { type: "literal", question: "Why does Trent feel stressed about class?" },
+        { type: "literal", question: "How often do Chan and Trent meet?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Chan a good person for Trent to ask for help?" },
+        { type: "evidence", question: "What details show Trent's problem gets easier once he has a strategy?" },
+        { type: "vocabulary", question: "What does 'split the bulk of his work into small chunks' mean?" }
+      ]
+    }
   }
 };

@@ -407,6 +407,306 @@ const TT_READER_PASSAGES = [
     pdfPageStart: 36,
     pdfPageEnd: 37,
     pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_1 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.1-ab-p14-moth-pink-wings",
+    reader: 2,
+    substep: "2.1",
+    level: "AB",
+    title: "The Moth with Pink Wings",
+    readerPageStart: 14,
+    readerPageEnd: 15,
+    pdfPageStart: 2,
+    pdfPageEnd: 3,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.1-ab-p16-for-win",
+    reader: 2,
+    substep: "2.1",
+    level: "AB",
+    title: "For the Win",
+    readerPageStart: 16,
+    readerPageEnd: 17,
+    pdfPageStart: 4,
+    pdfPageEnd: 5,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.1-b-p18-jims-bank-job",
+    reader: 2,
+    substep: "2.1",
+    level: "B",
+    title: "Jim's Bank Job",
+    readerPageStart: 18,
+    readerPageEnd: 19,
+    pdfPageStart: 6,
+    pdfPageEnd: 7,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.1-b-p20-bad-luck-bus",
+    reader: 2,
+    substep: "2.1",
+    level: "B",
+    title: "Bad Luck on the Bus",
+    readerPageStart: 20,
+    readerPageEnd: 21,
+    pdfPageStart: 8,
+    pdfPageEnd: 9,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-ab-p48-beth-grass",
+    reader: 2,
+    substep: "2.2",
+    level: "AB",
+    title: "Beth's Trip in the Grass",
+    readerPageStart: 48,
+    readerPageEnd: 49,
+    pdfPageStart: 10,
+    pdfPageEnd: 11,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-ab-p50-brad-sam-pond",
+    reader: 2,
+    substep: "2.2",
+    level: "AB",
+    title: "Brad and Sam at the Pond",
+    readerPageStart: 50,
+    readerPageEnd: 51,
+    pdfPageStart: 12,
+    pdfPageEnd: 13,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-ab-p52-best-lunch",
+    reader: 2,
+    substep: "2.2",
+    level: "AB",
+    title: "Who has the Best Lunch?",
+    readerPageStart: 52,
+    readerPageEnd: 53,
+    pdfPageStart: 14,
+    pdfPageEnd: 15,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-ab-p54-stan-frog",
+    reader: 2,
+    substep: "2.2",
+    level: "AB",
+    title: "Stan the Frog",
+    readerPageStart: 54,
+    readerPageEnd: 55,
+    pdfPageStart: 16,
+    pdfPageEnd: 17,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-b-p56-set-up-band",
+    reader: 2,
+    substep: "2.2",
+    level: "B",
+    title: "Set Up for the Band",
+    readerPageStart: 56,
+    readerPageEnd: 57,
+    pdfPageStart: 18,
+    pdfPageEnd: 19,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-b-p58-big-grass-job",
+    reader: 2,
+    substep: "2.2",
+    level: "B",
+    title: "The Big Grass Job",
+    readerPageStart: 58,
+    readerPageEnd: 59,
+    pdfPageStart: 20,
+    pdfPageEnd: 21,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-b-p60-prom",
+    reader: 2,
+    substep: "2.2",
+    level: "B",
+    title: "The Prom",
+    readerPageStart: 60,
+    readerPageEnd: 61,
+    pdfPageStart: 22,
+    pdfPageEnd: 23,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.2-b-p62-track",
+    reader: 2,
+    substep: "2.2",
+    level: "B",
+    title: "On the Track",
+    readerPageStart: 62,
+    readerPageEnd: 63,
+    pdfPageStart: 24,
+    pdfPageEnd: 25,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.3-ab-p72-sid-host",
+    reader: 2,
+    substep: "2.3",
+    level: "AB",
+    title: "Sid is the Best Host",
+    readerPageStart: 72,
+    readerPageEnd: 73,
+    pdfPageStart: 26,
+    pdfPageEnd: 27,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.3-ab-p74-jack-colt",
+    reader: 2,
+    substep: "2.3",
+    level: "AB",
+    title: "Jack and the Colt",
+    readerPageStart: 74,
+    readerPageEnd: 75,
+    pdfPageStart: 28,
+    pdfPageEnd: 29,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.3-b-p76-most-bass",
+    reader: 2,
+    substep: "2.3",
+    level: "B",
+    title: "Get the Most Bass",
+    readerPageStart: 76,
+    readerPageEnd: 77,
+    pdfPageStart: 30,
+    pdfPageEnd: 31,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.3-b-p78-gift-slip-up-1",
+    reader: 2,
+    substep: "2.3",
+    level: "B",
+    title: "The Gift Slip Up Part One",
+    readerPageStart: 78,
+    readerPageEnd: 79,
+    pdfPageStart: 32,
+    pdfPageEnd: 33,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.3-b-p80-gift-slip-up-2",
+    reader: 2,
+    substep: "2.3",
+    level: "B",
+    title: "The Gift Slip Up Part Two",
+    readerPageStart: 80,
+    readerPageEnd: 81,
+    pdfPageStart: 34,
+    pdfPageEnd: 35,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.4-ab-p100-at-pond",
+    reader: 2,
+    substep: "2.4",
+    level: "AB",
+    title: "At the Pond",
+    readerPageStart: 100,
+    readerPageEnd: 101,
+    pdfPageStart: 36,
+    pdfPageEnd: 37,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.4-ab-p102-glen-gull-lunch",
+    reader: 2,
+    substep: "2.4",
+    level: "AB",
+    title: "Glen and the Gull Have Lunch",
+    readerPageStart: 102,
+    readerPageEnd: 103,
+    pdfPageStart: 38,
+    pdfPageEnd: 39,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.4-b-p104-brads-bad-day",
+    reader: 2,
+    substep: "2.4",
+    level: "B",
+    title: "Brad's Bad Day",
+    readerPageStart: 104,
+    readerPageEnd: 105,
+    pdfPageStart: 40,
+    pdfPageEnd: 41,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.4-b-p106-draft",
+    reader: 2,
+    substep: "2.4",
+    level: "B",
+    title: "The Draft",
+    readerPageStart: 106,
+    readerPageEnd: 107,
+    pdfPageStart: 42,
+    pdfPageEnd: 43,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.5-ab-p119-big-bass",
+    reader: 2,
+    substep: "2.5",
+    level: "AB",
+    title: "Big Bass",
+    readerPageStart: 119,
+    readerPageEnd: 119,
+    pdfPageStart: 44,
+    pdfPageEnd: 44,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.5-ab-p120-gram-gramps",
+    reader: 2,
+    substep: "2.5",
+    level: "AB",
+    title: "The Best Gram and Gramps in the World",
+    readerPageStart: 120,
+    readerPageEnd: 121,
+    pdfPageStart: 45,
+    pdfPageEnd: 46,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.5-b-p122-spring-job",
+    reader: 2,
+    substep: "2.5",
+    level: "B",
+    title: "The Spring Job",
+    readerPageStart: 122,
+    readerPageEnd: 123,
+    pdfPageStart: 47,
+    pdfPageEnd: 48,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
+  },
+  {
+    id: "reader2-2.5-b-p124-help-chan",
+    reader: 2,
+    substep: "2.5",
+    level: "B",
+    title: "Help from Chan",
+    readerPageStart: 124,
+    readerPageEnd: 125,
+    pdfPageStart: 49,
+    pdfPageEnd: 50,
+    pdfPath: "Part 9 Reading Passages from Readers/WRS_Student_Reader_2 - Reading Passages Only.pdf"
   }
 ];
 
@@ -523,7 +823,20 @@ function ttDefaultPassageFor(group, skill) {
   const available = ttPassagesForSubstep(currentSubstep);
   const saved = ttPassageById(group?.section9Story?.passageId);
   if (saved && ttPassageAvailableForSubstep(saved, currentSubstep)) return saved;
-  return available[0] || saved || TT_READER_PASSAGES[0] || null;
+  const preferredLevel = (group?.readerLevel || "AB") === "B" ? "B" : "AB";
+  const currentIndex = ttSubstepIndex(currentSubstep);
+  const closest = available
+    .slice()
+    .sort((a, b) => {
+      const bDistance = currentIndex - ttSubstepIndex(b.substep);
+      const aDistance = currentIndex - ttSubstepIndex(a.substep);
+      if (aDistance !== bDistance) return aDistance - bDistance;
+      const aLevelScore = a.level === preferredLevel ? 0 : 1;
+      const bLevelScore = b.level === preferredLevel ? 0 : 1;
+      if (aLevelScore !== bLevelScore) return aLevelScore - bLevelScore;
+      return (a.readerPageStart || 0) - (b.readerPageStart || 0);
+    })[0];
+  return closest || available[0] || saved || TT_READER_PASSAGES[0] || null;
 }
 
 function ttEnsureSection9Story(group, skill) {
@@ -804,8 +1117,8 @@ function ttPdfPageRange(passage) {
 }
 
 function ttPassagePageImageSrc(passage, pdfPageNumber) {
-  if (passage?.reader === 1) {
-    return `Part%209%20Reading%20Passages%20from%20Readers/rendered-pages/book1-page-${String(pdfPageNumber).padStart(2, "0")}.png`;
+  if (passage?.reader && /Reading Passages Only\.pdf$/i.test(passage?.pdfPath || "")) {
+    return `Part%209%20Reading%20Passages%20from%20Readers/rendered-pages/book${encodeURIComponent(passage.reader)}-page-${String(pdfPageNumber).padStart(2, "0")}.png`;
   }
   return `${encodeURI(passage?.pdfPath || "")}#page=${encodeURIComponent(pdfPageNumber)}`;
 }

@@ -294,8 +294,8 @@
       </header>
 
       <div class="prep-layout">
-        <aside class="prep-list" aria-label="Reader 1 passages">
-          <h2>Reader 1 passages</h2>
+        <aside class="prep-list" aria-label="Passage library">
+          <h2>Passage library</h2>
           <div id="passageList"></div>
         </aside>
 
@@ -303,7 +303,7 @@
       </div>
     </main>
 
-    <script src="section9-passage-companions.js?v=section9-companion-1"></script>
+    <script src="section9-passage-companions.js?v=section9-companion-2"></script>
     <script>
       const PASSAGES = [
         { id: "reader1-1.3-ab-p46-cat-hat", title: "The Cat Got the Hat", level: "AB", substep: "1.3", pages: "p. 46" },
@@ -332,7 +332,32 @@
         { id: "reader1-1.6-ab-p114-hot-dogs-pops", title: "Hot Dogs and Pops", level: "AB", substep: "1.6", pages: "p. 114" },
         { id: "reader1-1.6-b-p115-max-quits", title: "Max Quits and Quits", level: "B", substep: "1.6", pages: "p. 115" },
         { id: "reader1-1.6-b-p116-beds-kids", title: "Beds for the Kids", level: "B", substep: "1.6", pages: "pp. 116-117" },
-        { id: "reader1-1.6-b-p118-job-bill", title: "On the Job with Bill", level: "B", substep: "1.6", pages: "pp. 118-119" }
+        { id: "reader1-1.6-b-p118-job-bill", reader: 1, title: "On the Job with Bill", level: "B", substep: "1.6", pages: "pp. 118-119" },
+        { id: "reader2-2.1-ab-p14-moth-pink-wings", reader: 2, title: "The Moth with Pink Wings", level: "AB", substep: "2.1", pages: "pp. 14-15" },
+        { id: "reader2-2.1-ab-p16-for-win", reader: 2, title: "For the Win", level: "AB", substep: "2.1", pages: "pp. 16-17" },
+        { id: "reader2-2.1-b-p18-jims-bank-job", reader: 2, title: "Jim's Bank Job", level: "B", substep: "2.1", pages: "pp. 18-19" },
+        { id: "reader2-2.1-b-p20-bad-luck-bus", reader: 2, title: "Bad Luck on the Bus", level: "B", substep: "2.1", pages: "pp. 20-21" },
+        { id: "reader2-2.2-ab-p48-beth-grass", reader: 2, title: "Beth's Trip in the Grass", level: "AB", substep: "2.2", pages: "pp. 48-49" },
+        { id: "reader2-2.2-ab-p50-brad-sam-pond", reader: 2, title: "Brad and Sam at the Pond", level: "AB", substep: "2.2", pages: "pp. 50-51" },
+        { id: "reader2-2.2-ab-p52-best-lunch", reader: 2, title: "Who has the Best Lunch?", level: "AB", substep: "2.2", pages: "pp. 52-53" },
+        { id: "reader2-2.2-ab-p54-stan-frog", reader: 2, title: "Stan the Frog", level: "AB", substep: "2.2", pages: "pp. 54-55" },
+        { id: "reader2-2.2-b-p56-set-up-band", reader: 2, title: "Set Up for the Band", level: "B", substep: "2.2", pages: "pp. 56-57" },
+        { id: "reader2-2.2-b-p58-big-grass-job", reader: 2, title: "The Big Grass Job", level: "B", substep: "2.2", pages: "pp. 58-59" },
+        { id: "reader2-2.2-b-p60-prom", reader: 2, title: "The Prom", level: "B", substep: "2.2", pages: "pp. 60-61" },
+        { id: "reader2-2.2-b-p62-track", reader: 2, title: "On the Track", level: "B", substep: "2.2", pages: "pp. 62-63" },
+        { id: "reader2-2.3-ab-p72-sid-host", reader: 2, title: "Sid is the Best Host", level: "AB", substep: "2.3", pages: "pp. 72-73" },
+        { id: "reader2-2.3-ab-p74-jack-colt", reader: 2, title: "Jack and the Colt", level: "AB", substep: "2.3", pages: "pp. 74-75" },
+        { id: "reader2-2.3-b-p76-most-bass", reader: 2, title: "Get the Most Bass", level: "B", substep: "2.3", pages: "pp. 76-77" },
+        { id: "reader2-2.3-b-p78-gift-slip-up-1", reader: 2, title: "The Gift Slip Up Part One", level: "B", substep: "2.3", pages: "pp. 78-79" },
+        { id: "reader2-2.3-b-p80-gift-slip-up-2", reader: 2, title: "The Gift Slip Up Part Two", level: "B", substep: "2.3", pages: "pp. 80-81" },
+        { id: "reader2-2.4-ab-p100-at-pond", reader: 2, title: "At the Pond", level: "AB", substep: "2.4", pages: "pp. 100-101" },
+        { id: "reader2-2.4-ab-p102-glen-gull-lunch", reader: 2, title: "Glen and the Gull Have Lunch", level: "AB", substep: "2.4", pages: "pp. 102-103" },
+        { id: "reader2-2.4-b-p104-brads-bad-day", reader: 2, title: "Brad's Bad Day", level: "B", substep: "2.4", pages: "pp. 104-105" },
+        { id: "reader2-2.4-b-p106-draft", reader: 2, title: "The Draft", level: "B", substep: "2.4", pages: "pp. 106-107" },
+        { id: "reader2-2.5-ab-p119-big-bass", reader: 2, title: "Big Bass", level: "AB", substep: "2.5", pages: "p. 119" },
+        { id: "reader2-2.5-ab-p120-gram-gramps", reader: 2, title: "The Best Gram and Gramps in the World", level: "AB", substep: "2.5", pages: "pp. 120-121" },
+        { id: "reader2-2.5-b-p122-spring-job", reader: 2, title: "The Spring Job", level: "B", substep: "2.5", pages: "pp. 122-123" },
+        { id: "reader2-2.5-b-p124-help-chan", reader: 2, title: "Help from Chan", level: "B", substep: "2.5", pages: "pp. 124-125" }
       ];
 
       let selectedId = new URLSearchParams(location.search).get("passage") || PASSAGES[0].id;
@@ -355,7 +380,7 @@
         document.getElementById("passageList").innerHTML = PASSAGES.map((passage) => `
           <button type="button" class="${passage.id === selectedId ? "active" : ""}" data-passage-id="${escapeHtml(passage.id)}">
             <strong>${escapeHtml(passage.title)}</strong>
-            <span>${escapeHtml(passage.substep)} ${escapeHtml(passage.level)} - Reader 1, ${escapeHtml(passage.pages)}</span>
+            <span>${escapeHtml(passage.substep)} ${escapeHtml(passage.level)} - Reader ${escapeHtml(passage.reader || 1)}, ${escapeHtml(passage.pages)}</span>
           </button>
         `).join("");
         document.querySelectorAll("[data-passage-id]").forEach((button) => {
@@ -377,7 +402,7 @@
           <header>
             <div>
               <h1>${escapeHtml(passage.title)}</h1>
-              <p class="prep-meta">Reader 1 - ${escapeHtml(passage.substep)} ${escapeHtml(passage.level)} - ${escapeHtml(passage.pages)}</p>
+              <p class="prep-meta">Reader ${escapeHtml(passage.reader || 1)} - ${escapeHtml(passage.substep)} ${escapeHtml(passage.level)} - ${escapeHtml(passage.pages)}</p>
             </div>
             <span class="prep-status">${escapeHtml(companion.status || "not drafted")}</span>
           </header>
@@ -415,7 +440,7 @@
         const support = (companion.questions?.support || []).map((item, index) => `${index + 1}. ${item.question || item}`);
         const stretch = (companion.questions?.stretch || []).map((item, index) => `${index + 1}. ${item.question || item}`);
         return [
-          `${passage.title} - Reader 1, ${passage.substep} ${passage.level}, ${passage.pages}`,
+          `${passage.title} - Reader ${passage.reader || 1}, ${passage.substep} ${passage.level}, ${passage.pages}`,
           "",
           "Pre-teach vocabulary:",
           ...vocab,
