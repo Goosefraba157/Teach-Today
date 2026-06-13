@@ -1110,5 +1110,553 @@ window.section9PassageCompanions = {
         { type: "vocabulary", question: "What does 'split the bulk of his work into small chunks' mean?" }
       ]
     }
+  },
+  "reader3-3.1-ab-p40-best-lunch": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bills", meaning: "papers or notices showing money that must be paid", whyPreteach: "This word explains why Mom is busy and missing lunch.", reference: "paragraph 1", prompt: "What is Mom working on?" },
+      { word: "number", meaning: "a figure used to count or calculate", whyPreteach: "Students need this to understand Mom's work.", reference: "paragraph 1", prompt: "Why does Mom check each number?" },
+      { word: "shellfish", meaning: "sea animals with shells, such as shrimp or clams", whyPreteach: "This word helps students picture the lunch Dad makes.", reference: "paragraph 2", prompt: "What does Dad put into the salad?" },
+      { word: "chitchat", meaning: "friendly casual talk", whyPreteach: "This word shows Ellen and Dad enjoy preparing lunch together.", reference: "paragraph 3", prompt: "What are Ellen and Dad doing while they fix lunch?" },
+      { word: "full", meaning: "having eaten enough", whyPreteach: "This word explains Mom's ending reaction.", reference: "paragraph 4", prompt: "How does Mom feel after lunch?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why is Mom busy at the start of the story?" },
+        { type: "literal", question: "Who helps make lunch for Mom?" },
+        { type: "literal", question: "What do they make for lunch?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Dad and Ellen decide Mom should stop and rest?" },
+        { type: "evidence", question: "What details show Ellen and Dad wanted to take care of Mom?" },
+        { type: "vocabulary", question: "What does 'chitchat' mean in the sentence about Ellen and her dad?" }
+      ]
+    }
+  },
+  "reader3-3.1-ab-p42-tennis-sunset": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "racket", meaning: "a piece of sports equipment used to hit a tennis ball", whyPreteach: "This word sets up the tennis activity.", reference: "paragraph 1", prompt: "What does Kevin bring to play tennis?" },
+      { word: "rapid", meaning: "very fast", whyPreteach: "This word describes Kevin's hurry to meet Justin.", reference: "paragraph 1", prompt: "Why does Kevin move with a rapid step?" },
+      { word: "zigzag", meaning: "move back and forth in sharp turns", whyPreteach: "This word helps students picture Kevin moving around branches.", reference: "paragraph 2", prompt: "Why does Kevin have to zigzag?" },
+      { word: "sunset", meaning: "the time when the sun goes down", whyPreteach: "This word explains when the friends must stop.", reference: "title and paragraph 3", prompt: "What tells them it is time to stop playing?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who is Kevin going to meet?" },
+        { type: "literal", question: "What number is on Kevin's tennis ball?" },
+        { type: "literal", question: "Why do Kevin and Justin stop playing?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Kevin is excited to play tennis?" },
+        { type: "evidence", question: "What details show the path to Justin was not easy?" },
+        { type: "vocabulary", question: "What does 'zigzag' mean in the sentence about the path?" }
+      ]
+    }
+  },
+  "reader3-3.1-ab-p44-chess-club": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "hold on", meaning: "wait for a moment", whyPreteach: "This phrase explains why Anton and Megan stay after class.", reference: "paragraph 1", prompt: "Why does Mr. Sanchez ask them to hold on?" },
+      { word: "club", meaning: "a group that meets for a shared activity", whyPreteach: "This word names the opportunity Mr. Sanchez offers.", reference: "paragraph 1", prompt: "What club does Mr. Sanchez run?" },
+      { word: "habits", meaning: "ways of doing things regularly", whyPreteach: "This helps students understand chess as practice, not luck.", reference: "paragraph 3", prompt: "Why would habits matter in chess?" },
+      { word: "methods", meaning: "planned ways to do something", whyPreteach: "This word explains how chess skills are learned.", reference: "paragraph 3", prompt: "What methods might chess players use?" },
+      { word: "up for the task", meaning: "ready and willing to try", whyPreteach: "This phrase shows Anton and Megan's confidence.", reference: "paragraph 3", prompt: "Are they ready to try chess club?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who asks Anton and Megan to stay after class?" },
+        { type: "literal", question: "What club does Mr. Sanchez suggest?" },
+        { type: "literal", question: "Do Anton and Megan decide they want to be included?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Mr. Sanchez think Anton and Megan might do well in chess club?" },
+        { type: "evidence", question: "What details show chess takes planning and practice?" },
+        { type: "vocabulary", question: "What does 'up for the task' mean at the end of the passage?" }
+      ]
+    }
+  },
+  "reader3-3.1-b-p46-snack-script": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "campus", meaning: "the grounds or buildings of a school", whyPreteach: "This word sets the story location.", reference: "paragraph 1", prompt: "Where is Dennis meeting Meg?" },
+      { word: "candid", meaning: "honest and direct", whyPreteach: "This word explains how Meg tells Dennis the truth.", reference: "paragraph 1", prompt: "What does Meg tell Dennis candidly?" },
+      { word: "script", meaning: "written text for a performance, video, or presentation", whyPreteach: "This word names Meg's assignment.", reference: "title and paragraph 1", prompt: "What does Meg need to finish?" },
+      { word: "submit", meaning: "turn in for review or grading", whyPreteach: "This word explains Meg's deadline.", reference: "paragraph 1", prompt: "When does Meg have to submit the script?" },
+      { word: "index", meaning: "a list that helps organize or find information", whyPreteach: "This word explains one step Dennis helps with.", reference: "paragraph 2", prompt: "What does Dennis set up first?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What snack did Dennis ask Meg to get?" },
+        { type: "literal", question: "Why can Meg not go to the snack shop?" },
+        { type: "literal", question: "What do Dennis and Meg do instead?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Dennis show he is a helpful friend?" },
+        { type: "evidence", question: "What details show Meg was under pressure to finish the script?" },
+        { type: "vocabulary", question: "What does 'submit the text' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.1-b-p48-trip-cabin": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "rustic", meaning: "simple and country-like", whyPreteach: "This word helps students picture the cabin.", reference: "paragraph 1", prompt: "What kind of cabin do Ed and Babs visit?" },
+      { word: "summit", meaning: "the top of a hill or mountain", whyPreteach: "This word explains where the cabin sits.", reference: "paragraph 1", prompt: "Where is the cabin located?" },
+      { word: "hot spring", meaning: "a natural pool of warm water", whyPreteach: "This feature is part of why the cabin is special.", reference: "paragraph 1", prompt: "What is near the cabin?" },
+      { word: "random", meaning: "unexpected or without a clear pattern", whyPreteach: "This word describes the sudden cold wind.", reference: "paragraph 3", prompt: "What random event changes their afternoon?" },
+      { word: "vivid", meaning: "bright and clear", whyPreteach: "This word helps students picture the sunset.", reference: "paragraph 4", prompt: "What was vivid about the sunset?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do Ed and Babs go?" },
+        { type: "literal", question: "What do they do first at the cabin?" },
+        { type: "literal", question: "What do they watch at six p.m.?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Ed and Babs want to come back to the cabin?" },
+        { type: "evidence", question: "What details make the cabin sound peaceful or special?" },
+        { type: "vocabulary", question: "What does 'rustic cabin' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader3-3.1-b-p50-mess-banquet": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "banquet", meaning: "a large formal meal or event", whyPreteach: "This word names the event Beth and Evan attend.", reference: "title and paragraph 1", prompt: "What event does Beth want Evan to attend?" },
+      { word: "slob", meaning: "a messy person", whyPreteach: "This word explains Beth's concern about Evan.", reference: "paragraph 1", prompt: "Why is Beth worried about Evan?" },
+      { word: "shindig", meaning: "a party or big event", whyPreteach: "This informal word refers to the banquet.", reference: "paragraph 1", prompt: "What shindig does Beth mean?" },
+      { word: "sullen", meaning: "quietly upset or gloomy", whyPreteach: "This word describes Beth after Evan spills relish.", reference: "paragraph 3", prompt: "Why is Beth sullen?" },
+      { word: "tonic", meaning: "a liquid used here to clean the stain", whyPreteach: "This word explains Evan's solution.", reference: "paragraph 4", prompt: "What does Evan splash on his top?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who does Beth ask to the banquet?" },
+        { type: "literal", question: "What gets on Evan's new top?" },
+        { type: "literal", question: "How does Evan fix the spot?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Beth upset even though Evan is not?" },
+        { type: "evidence", question: "What details show Evan handles the mess calmly?" },
+        { type: "vocabulary", question: "What does 'sullen' mean in the sentence about Beth?" }
+      ]
+    }
+  },
+  "reader3-3.2-ab-p86-running-contest": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "contest", meaning: "a competition", whyPreteach: "This word identifies the event Ted wants to win.", reference: "title and paragraph 1", prompt: "What kind of contest is Ted entering?" },
+      { word: "invest", meaning: "put time or effort into something for a future result", whyPreteach: "This word explains Ted's training.", reference: "paragraph 1", prompt: "How has Ted invested in his skills?" },
+      { word: "signal", meaning: "a sign that tells someone to start", whyPreteach: "This word supports the race sequence.", reference: "paragraph 2", prompt: "What should Ted do at the signal?" },
+      { word: "panic", meaning: "feel sudden fear or worry", whyPreteach: "This word shows Ted stays calm while behind.", reference: "paragraph 3", prompt: "Does Ted panic when he is in fifth place?" },
+      { word: "credit", meaning: "recognition or praise for something done well", whyPreteach: "This word explains Ted's feeling after the win.", reference: "paragraph 4", prompt: "Why does Ted want credit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Ted want to win?" },
+        { type: "literal", question: "Who does Ted have to pass?" },
+        { type: "literal", question: "What does Ted win at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Ted show persistence during the race?" },
+        { type: "evidence", question: "What details show Ted earned the medal?" },
+        { type: "vocabulary", question: "What does 'invest in his skills' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader3-3.2-ab-p88-picnic-chipmunk": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "windmill", meaning: "a structure with blades moved by wind", whyPreteach: "This word helps students picture the picnic setting.", reference: "paragraph 1", prompt: "Where are Kendrick and Brit going for the picnic?" },
+      { word: "sunblock", meaning: "lotion that helps protect skin from the sun", whyPreteach: "This word explains what Brit brings.", reference: "paragraph 1", prompt: "Why would they need sunblock?" },
+      { word: "splendid", meaning: "very good or wonderful", whyPreteach: "This word describes their lunch.", reference: "paragraph 3", prompt: "What kind of lunch do they have?" },
+      { word: "intent", meaning: "focused on a plan", whyPreteach: "This word explains the chipmunk's behavior.", reference: "paragraph 4", prompt: "What is the chipmunk intent on doing?" },
+      { word: "chomp and crunch", meaning: "bite and chew noisily", whyPreteach: "This phrase helps students picture the chipmunk eating.", reference: "paragraph 4", prompt: "What does the chipmunk do to the pretzel?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who goes on a picnic?" },
+        { type: "literal", question: "What does Brit bring?" },
+        { type: "literal", question: "What food does the chipmunk eat?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Kendrick say it was a picnic for three?" },
+        { type: "evidence", question: "What details show the chipmunk wanted some of their food?" },
+        { type: "vocabulary", question: "What does 'intent on his plan' mean in the chipmunk paragraph?" }
+      ]
+    }
+  },
+  "reader3-3.2-ab-p90-down-six-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "seventh grade", meaning: "a school grade level, usually middle school", whyPreteach: "This helps students understand who is on the trip.", reference: "paragraph 1", prompt: "Who is taking the class trip?" },
+      { word: "attend", meaning: "go to an event", whyPreteach: "This word explains the class trip purpose.", reference: "paragraph 1", prompt: "What game will the children attend?" },
+      { word: "impress", meaning: "make someone think highly of something", whyPreteach: "This word explains the kids' reaction to the new bus.", reference: "paragraph 1", prompt: "Does the new bus impress the kids?" },
+      { word: "inning", meaning: "a section of a baseball game", whyPreteach: "Students need this word to follow the game situation.", reference: "paragraph 3", prompt: "When are the Wildcats down by six?" },
+      { word: "missteps", meaning: "mistakes", whyPreteach: "This word explains why the game goes poorly.", reference: "paragraph 3", prompt: "What happens in the next inning?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is the class going?" },
+        { type: "literal", question: "What team are they watching?" },
+        { type: "literal", question: "How far behind are the Wildcats?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do the fans start to panic?" },
+        { type: "evidence", question: "What details show the class is excited before the game gets tense?" },
+        { type: "vocabulary", question: "What does 'missteps' mean in the sentence about the next inning?" }
+      ]
+    }
+  },
+  "reader3-3.2-ab-p92-down-six-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "at bat", meaning: "taking a turn to hit in baseball", whyPreteach: "This phrase sets up the comeback.", reference: "paragraph 1", prompt: "Who is at bat in the last inning?" },
+      { word: "solid hit", meaning: "a strong, successful hit", whyPreteach: "This word helps students understand the first good play.", reference: "paragraph 1", prompt: "What kind of hit starts the comeback?" },
+      { word: "base", meaning: "a safe spot runners try to reach in baseball", whyPreteach: "This word is needed for the sequence of scoring.", reference: "paragraphs 1 and 3", prompt: "Why does getting on base matter?" },
+      { word: "pinch-hit", meaning: "bat in place of another player", whyPreteach: "This baseball term explains Big Ed's role.", reference: "paragraph 4", prompt: "What does Big Ed come in to do?" },
+      { word: "grand slam", meaning: "a home run that scores four runs", whyPreteach: "This phrase explains why the game ends as a big win.", reference: "paragraph 4", prompt: "Why is a grand slam such a big hit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What inning is it at the start of Part Two?" },
+        { type: "literal", question: "Who comes in to pinch-hit?" },
+        { type: "literal", question: "What kind of hit wins the game?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Big Ed's hit so exciting for the kids in the stands?" },
+        { type: "evidence", question: "What details show the Wildcats make a comeback?" },
+        { type: "vocabulary", question: "What does 'grand slam' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.2-b-p94-travel-tropics": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "tropics", meaning: "warm regions of Earth near the equator", whyPreteach: "This word is the main topic of the passage.", reference: "title and paragraph 1", prompt: "What kind of place are the tropics?" },
+      { word: "enlist", meaning: "sign up or join in", whyPreteach: "This word is used persuasively to invite a visit.", reference: "paragraph 1", prompt: "What does the writer want you to enlist for?" },
+      { word: "crimson", meaning: "deep red", whyPreteach: "This word helps students picture the sun.", reference: "paragraph 2", prompt: "What color is the sun described as?" },
+      { word: "tranquil", meaning: "peaceful and calm", whyPreteach: "This word describes the land of the tropics.", reference: "paragraph 3", prompt: "What might a tranquil place feel like?" },
+      { word: "enchant", meaning: "delight or strongly please", whyPreteach: "This word helps students understand the author's persuasion.", reference: "paragraph 4", prompt: "What might enchant someone about the tropics?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What place is the passage trying to convince you to visit?" },
+        { type: "literal", question: "What items are a must in the tropics?" },
+        { type: "literal", question: "What problem does the writer mention about the tropics?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Is this passage mostly telling a story or trying to persuade you? How do you know?" },
+        { type: "evidence", question: "What details make the tropics sound beautiful?" },
+        { type: "vocabulary", question: "What does 'tranquil land' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.2-b-p96-common-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "common", meaning: "a public area in a town", whyPreteach: "This word names the place that needs repair.", reference: "title and paragraph 1", prompt: "What place did the squall damage?" },
+      { word: "squall", meaning: "a sudden strong storm or burst of wind", whyPreteach: "This word explains what caused the mess.", reference: "paragraph 1", prompt: "What hit the town common?" },
+      { word: "bid", meaning: "an offer stating the cost to do a job", whyPreteach: "This word explains Mr. Griffin's first task.", reference: "paragraph 1", prompt: "Why must Mr. Griffin submit a bid?" },
+      { word: "complex", meaning: "not simple; having many parts", whyPreteach: "This word describes the repair job.", reference: "paragraph 2", prompt: "Why is the common job complex?" },
+      { word: "profit", meaning: "money left after costs are paid", whyPreteach: "This word explains the business side of the repair.", reference: "paragraph 3", prompt: "What does Mr. Griffin hope to make?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What damaged the town common?" },
+        { type: "literal", question: "Who does the town boss call?" },
+        { type: "literal", question: "What must Mr. Griffin submit?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the town boss choose Mr. Griffin for this job?" },
+        { type: "evidence", question: "What details show this repair will cost a lot?" },
+        { type: "vocabulary", question: "What does 'complex job' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.2-b-p98-common-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "staff", meaning: "the people who work for a person or business", whyPreteach: "This word identifies Mr. Griffin's helpers.", reference: "paragraph 1", prompt: "Who assists Mr. Griffin?" },
+      { word: "shifts", meaning: "scheduled turns working", whyPreteach: "This word explains how the team organizes the cleanup.", reference: "paragraph 2", prompt: "How do the workers pick up trash?" },
+      { word: "install", meaning: "put something in place so it can be used", whyPreteach: "This word explains the repair to the swing set.", reference: "paragraph 2", prompt: "What do they install under the swing set?" },
+      { word: "attach", meaning: "connect or fasten", whyPreteach: "This word is needed to understand adding new swings.", reference: "paragraph 2", prompt: "What do they attach?" },
+      { word: "contrast", meaning: "a clear difference between two things", whyPreteach: "This word shows how much the common changed.", reference: "paragraph 3", prompt: "What contrast does the town boss see?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who helps Mr. Griffin with the common?" },
+        { type: "literal", question: "What do they do with fallen branches?" },
+        { type: "literal", question: "How does the town boss feel at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the town boss say Mr. Griffin impresses him?" },
+        { type: "evidence", question: "What details show the common was restored?" },
+        { type: "vocabulary", question: "What does 'contrast' mean when the town boss sees the finished job?" }
+      ]
+    }
+  },
+  "reader3-3.3-ab-p110-craft-class": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "instructs", meaning: "teaches or gives directions", whyPreteach: "This word describes Mrs. Waters' role.", reference: "paragraph 1", prompt: "What does Mrs. Waters instruct?" },
+      { word: "nonstop", meaning: "without stopping", whyPreteach: "This word shows how popular the class is.", reference: "paragraph 1", prompt: "What is nonstop in town?" },
+      { word: "objects", meaning: "things or items", whyPreteach: "This broad word describes the craft materials.", reference: "paragraph 2", prompt: "What objects can the kids choose?" },
+      { word: "construct", meaning: "build or make", whyPreteach: "This word explains the puppet project.", reference: "paragraph 4", prompt: "What will the children construct?" },
+      { word: "scraps", meaning: "small leftover pieces", whyPreteach: "This word helps students understand craft supplies.", reference: "paragraph 4", prompt: "What scraps does Alex collect?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who teaches the craft class?" },
+        { type: "literal", question: "What project will the children make?" },
+        { type: "literal", question: "What materials do Nelson and Alex collect?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Mrs. Waters' class so popular?" },
+        { type: "evidence", question: "What details show the children are excited about the puppet project?" },
+        { type: "vocabulary", question: "What does 'construct their very own puppet' mean?" }
+      ]
+    }
+  },
+  "reader3-3.3-ab-p112-trash-suspect": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "rubbish", meaning: "trash or garbage", whyPreteach: "This word appears with the trash truck and mess.", reference: "paragraph 1", prompt: "What kind of truck is coming?" },
+      { word: "suspect", meaning: "a person or animal thought to have caused a problem", whyPreteach: "This word drives the mystery.", reference: "title and paragraph 2", prompt: "Who is Mrs. Griffin trying to find?" },
+      { word: "facts", meaning: "true information", whyPreteach: "This word explains what Mrs. Griffin wants before deciding.", reference: "paragraph 2", prompt: "Why does she want the facts?" },
+      { word: "conflict", meaning: "a problem or trouble between forces or people", whyPreteach: "This word describes the situation.", reference: "paragraph 4", prompt: "What kind of conflict happened at the trash can?" },
+      { word: "admit", meaning: "say something is true", whyPreteach: "This word explains Mrs. Griffin's surprise at the ending.", reference: "paragraph 5", prompt: "What does Mrs. Griffin admit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Mrs. Griffin find when she goes outside?" },
+        { type: "literal", question: "Who does Mrs. Griffin ask about the trash?" },
+        { type: "literal", question: "Who is the suspect?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Mrs. Griffin think she needs to investigate?" },
+        { type: "evidence", question: "What clues make the ending surprising?" },
+        { type: "vocabulary", question: "What does 'suspect' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.3-ab-p114-collect-bugs": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "talent", meaning: "a natural or learned skill", whyPreteach: "This word shows why Ross asks Mr. Wong for help.", reference: "paragraph 1", prompt: "What talent does Mr. Wong have?" },
+      { word: "trend", meaning: "something many people are interested in for a time", whyPreteach: "This word explains Ross's new interest.", reference: "paragraph 1", prompt: "What new trend is Ross interested in?" },
+      { word: "subject", meaning: "a topic or area of study", whyPreteach: "This word frames bug collecting as knowledge.", reference: "paragraph 1", prompt: "What subject does Mr. Wong know about?" },
+      { word: "panels", meaning: "flat sections or frames", whyPreteach: "This word helps students picture bugs displayed in glass.", reference: "paragraph 3", prompt: "Where are some bugs displayed?" },
+      { word: "insect hunt", meaning: "a search for insects", whyPreteach: "This phrase explains the collecting method.", reference: "paragraph 4", prompt: "What tools does Ross need for an insect hunt?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who helps Ross learn about collecting bugs?" },
+        { type: "literal", question: "What does Mr. Wong have in his closet?" },
+        { type: "literal", question: "What tools does Mr. Wong say Ross should bring?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Ross think Mr. Wong is the right person to teach him?" },
+        { type: "evidence", question: "What details show Mr. Wong knows a lot about insects?" },
+        { type: "vocabulary", question: "What does 'subject' mean in the sentence about insects?" }
+      ]
+    }
+  },
+  "reader3-3.3-b-p116-dunlop-bills": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "assist", meaning: "help", whyPreteach: "This word describes Fred's role.", reference: "paragraph 1", prompt: "How does Fred assist his mom?" },
+      { word: "subtract", meaning: "take away an amount", whyPreteach: "This math word explains Mrs. Dunlop's money problem.", reference: "paragraph 2", prompt: "What does Mrs. Dunlop forget to subtract?" },
+      { word: "impact", meaning: "effect or result", whyPreteach: "This word explains the consequence of not tracking money.", reference: "paragraph 2", prompt: "What is the impact of not writing anything down?" },
+      { word: "object", meaning: "disagree or say no", whyPreteach: "This multiple-meaning word describes accepting help.", reference: "paragraph 3", prompt: "Does Mrs. Dunlop object to Fred's help?" },
+      { word: "intact", meaning: "complete and in order", whyPreteach: "This word shows the bills are fixed and organized.", reference: "paragraph 3", prompt: "What does it mean that the bills are intact?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who helps Mrs. Dunlop with her bills?" },
+        { type: "literal", question: "What bad habit caused the money problem?" },
+        { type: "literal", question: "What does Fred do to fix the mess?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Mrs. Dunlop say she does not intend to let this happen again?" },
+        { type: "evidence", question: "What details show Fred is careful with the bills?" },
+        { type: "vocabulary", question: "What does 'impact' mean in the sentence about spending more cash than she has?" }
+      ]
+    }
+  },
+  "reader3-3.3-b-p118-alans-lab": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "relishes", meaning: "enjoys a lot", whyPreteach: "This word contrasts Alan's real feelings with what others think.", reference: "paragraph 1", prompt: "How does Alan feel about his hands-on work?" },
+      { word: "toxins", meaning: "harmful or poisonous substances", whyPreteach: "This word explains what the lab checks for.", reference: "paragraph 2", prompt: "What does the staff inspect the water for?" },
+      { word: "methods", meaning: "planned ways to do work", whyPreteach: "This word explains the lab's careful process.", reference: "paragraph 2", prompt: "Why does the lab insist on the best methods?" },
+      { word: "flasks", meaning: "science containers used in a lab", whyPreteach: "This word helps students picture Alan's lab work.", reference: "paragraph 3", prompt: "Where does Alan put the water?" },
+      { word: "attest", meaning: "show or state that something is true", whyPreteach: "This word explains why Alan repeats the test.", reference: "paragraph 3", prompt: "Why does Alan test the water over and over?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Alan collect each month?" },
+        { type: "literal", question: "Where does Alan test the water?" },
+        { type: "literal", question: "What do the water tests show this month?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Alan's job important to the public?" },
+        { type: "evidence", question: "What details show Alan's lab work must be exact?" },
+        { type: "vocabulary", question: "What does 'relishes' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader3-3.4-ab-p136-atlantic": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "vast", meaning: "very large", whyPreteach: "This word describes the size of the Atlantic.", reference: "paragraph 1", prompt: "How big is the Atlantic?" },
+      { word: "subtropics", meaning: "warm regions near the tropics", whyPreteach: "This word explains why some Atlantic water is hot.", reference: "paragraph 1", prompt: "Where is some of the Atlantic hot?" },
+      { word: "transatlantic", meaning: "across the Atlantic Ocean", whyPreteach: "This word explains the kind of trips affected by wind.", reference: "paragraph 1", prompt: "What kind of trips can Atlantic winds affect?" },
+      { word: "vanish", meaning: "disappear", whyPreteach: "This word explains the risk to fish.", reference: "paragraph 2", prompt: "What may happen to wild fish?" },
+      { word: "imprison", meaning: "trap or hold in", whyPreteach: "This word explains how nets harm mammals.", reference: "paragraph 3", prompt: "How can fishing nets hurt mammals?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What ocean is the passage about?" },
+        { type: "literal", question: "What are two problems in the Atlantic?" },
+        { type: "literal", question: "What can people do to help?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the author ask readers to help the Atlantic today?" },
+        { type: "evidence", question: "What details show human actions are affecting the Atlantic?" },
+        { type: "vocabulary", question: "What does 'imprison' mean in the sentence about fishing nets?" }
+      ]
+    }
+  },
+  "reader3-3.4-ab-p138-hamilton": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "attends", meaning: "goes to regularly", whyPreteach: "This word introduces Hamilton's school setting.", reference: "paragraph 1", prompt: "Where does Hamilton attend class?" },
+      { word: "accomplish", meaning: "complete or achieve", whyPreteach: "This word explains why Hamilton stays in Wisconsin.", reference: "paragraph 2", prompt: "What does Hamilton have to accomplish?" },
+      { word: "inhabit", meaning: "live in a place", whyPreteach: "This word is important to the wildcat work.", reference: "paragraph 3", prompt: "What spots do the wildcats inhabit?" },
+      { word: "product", meaning: "something made or sold", whyPreteach: "This word explains why Hamilton opposes selling fur.", reference: "paragraph 3", prompt: "What product does Hamilton not want sold?" },
+      { word: "discredit", meaning: "take away trust or respect", whyPreteach: "This word shows Hamilton's strong reputation.", reference: "paragraph 4", prompt: "Why can no one discredit Hamilton?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is Hamilton from?" },
+        { type: "literal", question: "Who visits Hamilton every six months?" },
+        { type: "literal", question: "What animal does Hamilton want to help?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Hamilton stay in Wisconsin even though he misses Manhattan?" },
+        { type: "evidence", question: "What details show Hamilton cares about wildcats and mammals?" },
+        { type: "vocabulary", question: "What does 'inhabit' mean in the sentence about wildcats?" }
+      ]
+    }
+  },
+  "reader3-3.4-b-p140-fossil-exhibit": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "exhibit", meaning: "a display people can visit and learn from", whyPreteach: "This word is central to Ingrid's trip.", reference: "title and paragraph 1", prompt: "What exhibit does Ingrid visit?" },
+      { word: "ecstatic", meaning: "extremely happy and excited", whyPreteach: "This word describes Ingrid's feeling.", reference: "paragraph 1", prompt: "How does Ingrid feel about the exhibit?" },
+      { word: "admonish", meaning: "scold or warn", whyPreteach: "This word explains the boss's kind reaction.", reference: "paragraph 2", prompt: "Did Ingrid's boss admonish her?" },
+      { word: "kinesthetic", meaning: "related to touch and movement", whyPreteach: "This word explains the hands-on fossil exhibit.", reference: "paragraph 3", prompt: "What can Ingrid do at the kinesthetic exhibit?" },
+      { word: "recommend", meaning: "suggest something because it is good", whyPreteach: "This word explains what Ingrid does after visiting.", reference: "paragraph 4", prompt: "Who does Ingrid recommend the exhibit to?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is Ingrid going?" },
+        { type: "literal", question: "Why does Ingrid take the day off from work?" },
+        { type: "literal", question: "What does Ingrid recommend the next day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Ingrid so excited about the fossil exhibit?" },
+        { type: "evidence", question: "What details show the exhibit was worth Ingrid's time?" },
+        { type: "vocabulary", question: "What does 'kinesthetic' mean in the sentence about the fossil exhibit?" }
+      ]
+    }
+  },
+  "reader3-3.5-ab-p156-rafting-trip": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "buzzing", meaning: "talking with excitement", whyPreteach: "This word shows how the friends feel before the trip.", reference: "paragraph 1", prompt: "What are the friends buzzing about?" },
+      { word: "rafting", meaning: "traveling on water in a raft", whyPreteach: "This word is the main activity.", reference: "title and paragraph 4", prompt: "When will the friends go rafting?" },
+      { word: "rapids", meaning: "fast, rough parts of a river", whyPreteach: "This word explains the exciting part of the trip.", reference: "paragraph 4", prompt: "What happens when the rafts crash into the rapids?" },
+      { word: "drift", meaning: "move slowly with the water or air", whyPreteach: "This word contrasts with the rough rapids.", reference: "paragraph 5", prompt: "Where will they drift after the rapids?" },
+      { word: "unwinding", meaning: "relaxing after activity", whyPreteach: "This word explains the calm ending of the trip.", reference: "paragraph 5", prompt: "How will they feel as the sun sets?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who is planning the rafting trip?" },
+        { type: "literal", question: "What will they do when they first get to camp?" },
+        { type: "literal", question: "When will they set off on the rafting trip?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are the friends so excited even though people may spill out of the rafts?" },
+        { type: "evidence", question: "What details show the trip will have both excitement and rest?" },
+        { type: "vocabulary", question: "What are 'rapids' in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.5-ab-p158-walking-talking": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "insist", meaning: "say firmly that something should happen", whyPreteach: "This word explains why Angus and Jazmin walk instead of taking the bus.", reference: "paragraph 1", prompt: "What do Angus and Jazmin insist on doing?" },
+      { word: "topic", meaning: "the subject being discussed", whyPreteach: "This word helps students understand their daily conversations.", reference: "paragraph 2", prompt: "What new topic do they talk about today?" },
+      { word: "subject", meaning: "an area of school learning", whyPreteach: "This word appears at the ending about schoolwork.", reference: "paragraph 4", prompt: "What subjects do they need to get to work on?" },
+      { word: "landed", meaning: "arrived", whyPreteach: "This multiple-meaning word explains reaching school.", reference: "paragraph 4", prompt: "Where have they landed?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How do Angus and Jazmin get to school?" },
+        { type: "literal", question: "What does Angus want to do when school gets out?" },
+        { type: "literal", question: "Where do they arrive at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Angus and Jazmin prefer walking to school?" },
+        { type: "evidence", question: "What details show Angus and Jazmin are close friends?" },
+        { type: "vocabulary", question: "What does 'topic' mean in the sentence about their chat?" }
+      ]
+    }
+  },
+  "reader3-3.5-b-p160-invest-spend": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "solvent", meaning: "having enough money to pay what is owed", whyPreteach: "This word is central to Ellen's money problem.", reference: "paragraph 1", prompt: "Why does Ellen need to get solvent?" },
+      { word: "funds", meaning: "money available to use", whyPreteach: "This word appears in Ellen's financial plan.", reference: "paragraph 1", prompt: "What are Ellen's funds?" },
+      { word: "assets", meaning: "things of value that someone owns", whyPreteach: "This word helps students understand money planning.", reference: "paragraph 1", prompt: "Why would assets matter?" },
+      { word: "bankrupt", meaning: "unable to pay debts", whyPreteach: "This word explains the serious risk if Ellen keeps spending.", reference: "paragraph 1", prompt: "What could happen if Ellen does not stop overspending?" },
+      { word: "mindset", meaning: "a way of thinking", whyPreteach: "This word explains the change Frank wants Ellen to make.", reference: "paragraph 2", prompt: "What mindset does Ellen need to shift?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What problem does Ellen have with money?" },
+        { type: "literal", question: "Who helps Ellen with a plan?" },
+        { type: "literal", question: "What does Mrs. Rush recommend Ellen do with most of her money?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Ellen ecstatic after leaving the bank?" },
+        { type: "evidence", question: "What details show Ellen's spending habit was becoming serious?" },
+        { type: "vocabulary", question: "What does 'bankrupt' mean in this passage?" }
+      ]
+    }
+  },
+  "reader3-3.5-b-p162-passing-bill": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bill", meaning: "a proposed law that may be voted on", whyPreteach: "This meaning is different from a money bill and is central to the passage.", reference: "title and paragraph 1", prompt: "What kind of bill is Congress working on?" },
+      { word: "Congress", meaning: "the group of lawmakers who make federal laws", whyPreteach: "This word identifies who works on the bill.", reference: "paragraph 1", prompt: "Who works to pass the bill?" },
+      { word: "aspect", meaning: "one part or feature of something", whyPreteach: "This word explains how carefully the bill is inspected.", reference: "paragraph 1", prompt: "What does it mean to inspect every aspect?" },
+      { word: "transcript", meaning: "a written record", whyPreteach: "This word explains how the bill becomes public to read.", reference: "paragraph 2", prompt: "Why is the bill put into a transcript?" },
+      { word: "cast their ballot", meaning: "vote", whyPreteach: "This phrase explains the final step.", reference: "paragraph 3", prompt: "What does Congress do when they cast their ballot?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What group works on passing a bill?" },
+        { type: "literal", question: "What does Congress check before a vote?" },
+        { type: "literal", question: "What happens if most people in Congress vote yes?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does passing a bill take a long time?" },
+        { type: "evidence", question: "What details show that many people review a bill before it passes?" },
+        { type: "vocabulary", question: "What does 'cast their ballot' mean in the last paragraph?" }
+      ]
+    }
   }
 };

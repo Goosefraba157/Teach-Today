@@ -303,7 +303,7 @@
       </div>
     </main>
 
-    <script src="section9-passage-companions.js?v=section9-companion-2"></script>
+    <script src="section9-passage-companions.js?v=section9-companion-3"></script>
     <script>
       const PASSAGES = [
         { id: "reader1-1.3-ab-p46-cat-hat", title: "The Cat Got the Hat", level: "AB", substep: "1.3", pages: "p. 46" },
@@ -357,7 +357,32 @@
         { id: "reader2-2.5-ab-p119-big-bass", reader: 2, title: "Big Bass", level: "AB", substep: "2.5", pages: "p. 119" },
         { id: "reader2-2.5-ab-p120-gram-gramps", reader: 2, title: "The Best Gram and Gramps in the World", level: "AB", substep: "2.5", pages: "pp. 120-121" },
         { id: "reader2-2.5-b-p122-spring-job", reader: 2, title: "The Spring Job", level: "B", substep: "2.5", pages: "pp. 122-123" },
-        { id: "reader2-2.5-b-p124-help-chan", reader: 2, title: "Help from Chan", level: "B", substep: "2.5", pages: "pp. 124-125" }
+        { id: "reader2-2.5-b-p124-help-chan", reader: 2, title: "Help from Chan", level: "B", substep: "2.5", pages: "pp. 124-125" },
+        { id: "reader3-3.1-ab-p40-best-lunch", reader: 3, title: "The Best Lunch", level: "AB", substep: "3.1", pages: "pp. 40-41" },
+        { id: "reader3-3.1-ab-p42-tennis-sunset", reader: 3, title: "Tennis Until Sunset", level: "AB", substep: "3.1", pages: "pp. 42-43" },
+        { id: "reader3-3.1-ab-p44-chess-club", reader: 3, title: "Chess Club?", level: "AB", substep: "3.1", pages: "pp. 44-45" },
+        { id: "reader3-3.1-b-p46-snack-script", reader: 3, title: "Snack or Script?", level: "B", substep: "3.1", pages: "pp. 46-47" },
+        { id: "reader3-3.1-b-p48-trip-cabin", reader: 3, title: "A Trip to the Cabin", level: "B", substep: "3.1", pages: "pp. 48-49" },
+        { id: "reader3-3.1-b-p50-mess-banquet", reader: 3, title: "A Mess at the Banquet", level: "B", substep: "3.1", pages: "pp. 50-51" },
+        { id: "reader3-3.2-ab-p86-running-contest", reader: 3, title: "The Running Contest", level: "AB", substep: "3.2", pages: "pp. 86-87" },
+        { id: "reader3-3.2-ab-p88-picnic-chipmunk", reader: 3, title: "A Picnic with a Chipmunk", level: "AB", substep: "3.2", pages: "pp. 88-89" },
+        { id: "reader3-3.2-ab-p90-down-six-1", reader: 3, title: "Down by Six Part One", level: "AB", substep: "3.2", pages: "pp. 90-91" },
+        { id: "reader3-3.2-ab-p92-down-six-2", reader: 3, title: "Down by Six Part Two", level: "AB", substep: "3.2", pages: "pp. 92-93" },
+        { id: "reader3-3.2-b-p94-travel-tropics", reader: 3, title: "Travel to the Tropics", level: "B", substep: "3.2", pages: "pp. 94-95" },
+        { id: "reader3-3.2-b-p96-common-1", reader: 3, title: "Problems at the Common Part One", level: "B", substep: "3.2", pages: "pp. 96-97" },
+        { id: "reader3-3.2-b-p98-common-2", reader: 3, title: "Problems at the Common Part Two", level: "B", substep: "3.2", pages: "p. 98" },
+        { id: "reader3-3.3-ab-p110-craft-class", reader: 3, title: "Craft Class", level: "AB", substep: "3.3", pages: "pp. 110-111" },
+        { id: "reader3-3.3-ab-p112-trash-suspect", reader: 3, title: "The Trash Can Suspect", level: "AB", substep: "3.3", pages: "pp. 112-113" },
+        { id: "reader3-3.3-ab-p114-collect-bugs", reader: 3, title: "Collect Some Bugs", level: "AB", substep: "3.3", pages: "pp. 114-115" },
+        { id: "reader3-3.3-b-p116-dunlop-bills", reader: 3, title: "Mrs. Dunlop and Her Bills", level: "B", substep: "3.3", pages: "pp. 116-117" },
+        { id: "reader3-3.3-b-p118-alans-lab", reader: 3, title: "Alan's Work in the Lab", level: "B", substep: "3.3", pages: "p. 118" },
+        { id: "reader3-3.4-ab-p136-atlantic", reader: 3, title: "The Atlantic", level: "AB", substep: "3.4", pages: "pp. 136-137" },
+        { id: "reader3-3.4-ab-p138-hamilton", reader: 3, title: "The Fantastic Hamilton", level: "AB", substep: "3.4", pages: "pp. 138-139" },
+        { id: "reader3-3.4-b-p140-fossil-exhibit", reader: 3, title: "The Fossil Exhibit", level: "B", substep: "3.4", pages: "pp. 140-141" },
+        { id: "reader3-3.5-ab-p156-rafting-trip", reader: 3, title: "The Rafting Trip", level: "AB", substep: "3.5", pages: "pp. 156-157" },
+        { id: "reader3-3.5-ab-p158-walking-talking", reader: 3, title: "Walking and Talking", level: "AB", substep: "3.5", pages: "pp. 158-159" },
+        { id: "reader3-3.5-b-p160-invest-spend", reader: 3, title: "Invest More, Spend Less", level: "B", substep: "3.5", pages: "pp. 160-161" },
+        { id: "reader3-3.5-b-p162-passing-bill", reader: 3, title: "Passing a Bill", level: "B", substep: "3.5", pages: "p. 162" }
       ];
 
       let selectedId = new URLSearchParams(location.search).get("passage") || PASSAGES[0].id;
