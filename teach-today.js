@@ -40,11 +40,17 @@ let ttPaceGuideState = {
 let ttPassageInkState = {
   color: "#ef4444",
   size: 5,
+  mode: "pen",
   zoom: 1,
   strokes: [],
   drawing: false,
   activeStroke: null
 };
+let ttPassagePointerMap = new Map();
+let ttPassagePinchState = null;
+let ttPassageZoomSaveTimer = null;
+let ttPassageGestureListenersBound = false;
+let ttPassageStageActive = false;
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
@@ -458,6 +464,60 @@ function ttPassageById(id) {
   return TT_READER_PASSAGES.find((passage) => passage.id === id) || null;
 }
 
+function ttSection9CompanionFor(passageOrId) {
+  const id = typeof passageOrId === "string"
+    ? passageOrId
+    : passageOrId?.id || passageOrId?.passageId || "";
+  return id ? window.section9PassageCompanions?.[id] || null : null;
+}
+
+function ttSection9QuestionList(questions = []) {
+  return (questions || [])
+    .slice(0, 4)
+    .map((item) => `<li><strong>${escapeHtml(item.type || "question")}:</strong> ${escapeHtml(item.question || item)}</li>`)
+    .join("");
+}
+
+function ttSection9CompanionHtml(passage) {
+  const companion = ttSection9CompanionFor(passage);
+  if (!companion) {
+    return `<div class="passage-companion passage-companion-empty">
+      <strong>Passage prep</strong>
+      <span>Vocabulary and two-level questions are not drafted for this passage yet.</span>
+    </div>`;
+  }
+  const vocabulary = (companion.vocabulary || []).slice(0, 6);
+  const support = companion.questions?.support || [];
+  const stretch = companion.questions?.stretch || [];
+  return `<div class="passage-companion">
+    <div class="passage-companion-head">
+      <div>
+        <span>Teacher prep</span>
+        <strong>Pre-teach vocabulary and questions</strong>
+      </div>
+      <a class="passage-companion-link" href="Section9PassagePrep.html?passage=${encodeURIComponent(passage.id)}">Review library</a>
+      <em>${escapeHtml(companion.status || "draft")}</em>
+    </div>
+    <div class="passage-vocab-list">
+      ${vocabulary.map((item) => `<article>
+        <strong>${escapeHtml(item.word)}</strong>
+        <span>${escapeHtml(item.meaning)}</span>
+        <small>${escapeHtml(item.prompt || item.whyPreteach || "")}</small>
+      </article>`).join("")}
+    </div>
+    <div class="passage-question-grid">
+      <article>
+        <strong>Support questions</strong>
+        <ol>${ttSection9QuestionList(support)}</ol>
+      </article>
+      <article>
+        <strong>Stretch questions</strong>
+        <ol>${ttSection9QuestionList(stretch)}</ol>
+      </article>
+    </div>
+  </div>`;
+}
+
 function ttDefaultPassageFor(group, skill) {
   const currentSubstep = skill?.id || group?.substep || "1.1";
   const available = ttPassagesForSubstep(currentSubstep);
@@ -683,11 +743,19 @@ function ttRenderSection9(lesson, group, skill) {
   if (!summary || !pages || !story) return;
   const passage = ttPassageById(story.passageId) || story;
   const approach = story.approach || "comprehension-sos";
+  const availablePassages = ttPassagesForSubstep(lesson.substep || skill.id);
   summary.innerHTML = `
-    <strong>${escapeHtml(passage.title || "Reader passage")}</strong>
+    <label class="passage-story-select">
+      <span>Story</span>
+      <select id="ttSection9PassageSelect" aria-label="Section 9 story">
+        ${availablePassages.map((item) => `<option value="${escapeHtml(item.id)}"${item.id === passage.id ? " selected" : ""}>${escapeHtml(ttPassageLabel(item))}</option>`).join("")}
+      </select>
+    </label>
     <span>${escapeHtml(passage.substep || lesson.substep)} ${escapeHtml(passage.level || lesson.readerLevel || "AB")} · Reader ${escapeHtml(String(passage.reader || lesson.reader || ""))}, ${escapeHtml(ttReaderPageRange(passage))}</span>
     <em>${escapeHtml(ttSection9ApproachLabel(approach))}</em>
+    ${ttSection9CompanionHtml(passage)}
   `;
+  ttBindSection9StorySelect(group, skill);
   const pdfPages = ttPdfPageRange(passage);
   pages.classList.toggle("one-page", pdfPages.length === 1);
   pages.classList.toggle("two-page", pdfPages.length === 2);
@@ -705,6 +773,21 @@ function ttRenderSection9(lesson, group, skill) {
   ttPassageInkState.strokes = ttSection9InkStore(lesson).strokes || [];
   ttPassageInkState.zoom = ttSection9InkStore(lesson).zoom || 1;
   ttSetupPassageInk();
+}
+
+function ttBindSection9StorySelect(group, skill) {
+  const select = ttById("ttSection9PassageSelect");
+  if (!select) return;
+  select.onchange = () => {
+    const passageId = select.value;
+    const approach = ttLesson?.section9Story?.approach || group.section9Story?.approach || "comprehension-sos";
+    ttSaveSection9StoryForGroup(group, passageId, approach);
+    if (ttPlannerDraft?.groupId === group.id) ttPlannerDraft.passageId = passageId;
+    ttApplySection9StoryToLesson(ttLesson, group, skill, { passageId, approach });
+    ttSaveDraftLesson({ status: false });
+    saveState();
+    ttRender();
+  };
 }
 
 function ttReaderPageRange(passage) {
@@ -742,18 +825,55 @@ function ttSetupPassageInk() {
   if (!stage || !surface || !canvas) return;
   const zoom = ttPassageInkState.zoom || 1;
   surface.style.width = `${Math.max(stage.clientWidth - 24, 720) * zoom}px`;
+  surface.style.setProperty("--passage-zoom", String(zoom));
   canvas.onpointerdown = ttPassagePointerDown;
   canvas.onpointermove = ttPassagePointerMove;
   canvas.onpointerup = ttPassagePointerEnd;
   canvas.onpointercancel = ttPassagePointerEnd;
   canvas.onpointerleave = ttPassagePointerEnd;
+  canvas.ontouchstart = ttPassageTouchStart;
+  canvas.ontouchmove = ttPassageTouchMove;
+  canvas.ontouchend = ttPassageTouchEnd;
+  canvas.ontouchcancel = ttPassageTouchEnd;
+  canvas.ondblclick = ttPassageDoubleClickZoom;
+  stage.onmouseenter = () => { ttPassageStageActive = true; };
+  stage.onmouseleave = () => { ttPassageStageActive = false; };
+  stage.onpointerenter = () => { ttPassageStageActive = true; };
+  stage.onpointerleave = () => { ttPassageStageActive = false; };
+  stage.onwheel = null;
+  stage.ongesturestart = null;
+  stage.ongesturechange = null;
+  stage.ongestureend = null;
+  ttBindPassageGestureListeners();
   ttResizePassageInk();
   ttBindPassageInkTools();
   requestAnimationFrame(ttResizePassageInk);
 }
 
+function ttBindPassageGestureListeners() {
+  if (ttPassageGestureListenersBound) return;
+  ttPassageGestureListenersBound = true;
+  document.addEventListener("wheel", ttPassageGlobalWheelZoom, { capture: true, passive: false });
+  window.addEventListener("gesturestart", ttPassageGlobalGestureStart, { capture: true, passive: false });
+  window.addEventListener("gesturechange", ttPassageGlobalGestureChange, { capture: true, passive: false });
+  window.addEventListener("gestureend", ttPassageGlobalGestureEnd, { capture: true, passive: false });
+}
+
 function ttBindPassageInkTools() {
+  document.querySelectorAll("[data-passage-mode]").forEach((button) => {
+    button.classList.toggle("active", (button.dataset.passageMode || "pen") === (ttPassageInkState.mode || "pen"));
+    button.onclick = () => {
+      ttPassageInkState.mode = button.dataset.passageMode || "pen";
+      document.querySelectorAll("[data-passage-mode]").forEach((item) => item.classList.toggle("active", item === button));
+      const size = ttById("ttPassagePenSize");
+      if (ttPassageInkState.mode === "highlight" && size && Number(size.value) < 10) {
+        ttPassageInkState.size = 12;
+        size.value = "12";
+      }
+    };
+  });
   document.querySelectorAll("[data-passage-color]").forEach((button) => {
+    button.classList.toggle("active", (button.dataset.passageColor || "") === ttPassageInkState.color);
     button.onclick = () => {
       ttPassageInkState.color = button.dataset.passageColor || ttPassageInkState.color;
       document.querySelectorAll("[data-passage-color]").forEach((item) => item.classList.toggle("active", item === button));
@@ -768,21 +888,89 @@ function ttBindPassageInkTools() {
   const zoomOut = ttById("ttPassageZoomOut");
   if (zoomIn) zoomIn.onclick = () => ttSetPassageZoom((ttPassageInkState.zoom || 1) + 0.15);
   if (zoomOut) zoomOut.onclick = () => ttSetPassageZoom((ttPassageInkState.zoom || 1) - 0.15);
+  const undo = ttById("ttPassageUndoInk");
+  if (undo) undo.onclick = () => ttUndoPassageInk();
   const clear = ttById("ttPassageClearInk");
   if (clear) clear.onclick = () => {
-    if (!confirm("Clear annotations for this story in this lesson?")) return;
-    ttPassageInkState.strokes = [];
-    ttSection9InkStore().strokes = [];
-    ttSaveDraftLesson({ status: false });
-    ttRedrawPassageInk();
+    ttClearPassageInk();
   };
 }
 
+function ttFinalizeActivePassageStroke() {
+  if (!ttPassageInkState.drawing || !ttPassageInkState.activeStroke) return;
+  if (ttPassageInkState.activeStroke.points.length > 1) {
+    ttPassageInkState.strokes.push(ttPassageInkState.activeStroke);
+    ttPersistPassageInk();
+  }
+  ttPassageInkState.drawing = false;
+  ttPassageInkState.activeStroke = null;
+}
+
+function ttPersistPassageInk(options = {}) {
+  const store = ttSection9InkStore();
+  store.strokes = ttPassageInkState.strokes || [];
+  store.zoom = ttPassageInkState.zoom || 1;
+  if (options.save !== false) {
+    ttSaveDraftLesson({ status: false });
+    saveState();
+  }
+}
+
+function ttUndoPassageInk() {
+  if (!ttPassageInkState.strokes?.length) return;
+  ttPassageInkState.strokes.pop();
+  ttPersistPassageInk();
+  ttRedrawPassageInk();
+}
+
+function ttClearPassageInk(options = {}) {
+  ttPassageInkState.strokes = [];
+  ttPassageInkState.activeStroke = null;
+  ttPassageInkState.drawing = false;
+  if (options.allStories && ttLesson) {
+    ttLesson.section9Ink = {};
+  } else {
+    ttSection9InkStore().strokes = [];
+  }
+  ttPersistPassageInk({ save: options.save !== false });
+  ttRedrawPassageInk();
+}
+
 function ttSetPassageZoom(value) {
-  ttPassageInkState.zoom = Math.max(0.8, Math.min(1.8, value));
+  ttSetPassageZoomAt(value);
+}
+
+function ttSetPassageZoomAt(value, anchor = null, options = {}) {
+  const stage = ttById("ttPassageStage");
+  const surface = ttById("ttPassageSurface");
+  const previousZoom = ttPassageInkState.zoom || 1;
+  const nextZoom = Math.max(0.65, Math.min(2.8, value));
+  if (!stage || !surface || Math.abs(nextZoom - previousZoom) < 0.001) return;
+  const stageRect = stage.getBoundingClientRect();
+  const anchorElement = ttById("ttPassagePages") || surface;
+  const anchorRect = anchorElement.getBoundingClientRect();
+  const anchorX = anchor?.clientX ?? (stageRect.left + stageRect.width / 2);
+  const anchorWidth = Math.max(1, anchorElement.scrollWidth || anchorElement.offsetWidth);
+  const ratioX = (anchorX - anchorRect.left) / anchorWidth;
+  ttPassageInkState.zoom = nextZoom;
   ttSection9InkStore().zoom = ttPassageInkState.zoom;
   ttSetupPassageInk();
-  ttSaveDraftLesson({ status: false });
+  requestAnimationFrame(() => {
+    const newAnchorWidth = Math.max(1, anchorElement.scrollWidth || anchorElement.offsetWidth);
+    const nextAnchorRect = anchorElement.getBoundingClientRect();
+    const desiredScrollX = (ratioX * newAnchorWidth) - (anchorX - nextAnchorRect.left);
+    stage.scrollLeft += desiredScrollX;
+    ttResizePassageInk();
+  });
+  if (options.save !== false) ttPersistPassageInk();
+}
+
+function ttSchedulePassageZoomPersist() {
+  clearTimeout(ttPassageZoomSaveTimer);
+  ttPassageZoomSaveTimer = setTimeout(() => {
+    ttPassageZoomSaveTimer = null;
+    ttPersistPassageInk();
+  }, 220);
 }
 
 function ttResizePassageInk() {
@@ -811,21 +999,88 @@ function ttPassageCanvasPoint(event) {
   };
 }
 
+function ttPassagePointerSnapshot(event) {
+  return { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY, pointerType: event.pointerType };
+}
+
+function ttSafePassagePointerCapture(method, pointerId) {
+  const canvas = ttById("ttPassageInk");
+  try {
+    canvas?.[method]?.(pointerId);
+  } catch (err) {
+    // Some browsers reject capture for synthetic or interrupted touch pointers.
+  }
+}
+
+function ttTouchSnapshots(touches = []) {
+  return Array.from(touches).slice(0, 2).map((touch, index) => ({
+    pointerId: touch.identifier ?? index,
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    pointerType: "touch"
+  }));
+}
+
+function ttPassagePinchDistance(points) {
+  const [a, b] = points;
+  if (!a || !b) return 0;
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+function ttPassagePinchCenter(points) {
+  const [a, b] = points;
+  return {
+    clientX: ((a?.clientX || 0) + (b?.clientX || 0)) / 2,
+    clientY: ((a?.clientY || 0) + (b?.clientY || 0)) / 2
+  };
+}
+
+function ttStartPassagePinch() {
+  const points = [...ttPassagePointerMap.values()];
+  if (points.length < 2) return;
+  ttFinalizeActivePassageStroke();
+  ttPassagePinchState = {
+    distance: ttPassagePinchDistance(points),
+    zoom: ttPassageInkState.zoom || 1
+  };
+}
+
+function ttUpdatePassagePinch(event) {
+  ttPassagePointerMap.set(event.pointerId, ttPassagePointerSnapshot(event));
+  const points = [...ttPassagePointerMap.values()];
+  if (points.length < 2 || !ttPassagePinchState?.distance) return false;
+  const distance = ttPassagePinchDistance(points);
+  const center = ttPassagePinchCenter(points);
+  ttSetPassageZoomAt(ttPassagePinchState.zoom * (distance / ttPassagePinchState.distance), center, { save: false });
+  return true;
+}
+
 function ttPassagePointerDown(event) {
   if (event.pointerType === "mouse" && event.button !== 0) return;
-  const canvas = ttById("ttPassageInk");
-  canvas?.setPointerCapture?.(event.pointerId);
+  ttSafePassagePointerCapture("setPointerCapture", event.pointerId);
+  ttPassagePointerMap.set(event.pointerId, ttPassagePointerSnapshot(event));
+  if (ttPassagePointerMap.size >= 2) {
+    ttStartPassagePinch();
+    event.preventDefault();
+    return;
+  }
   const point = ttPassageCanvasPoint(event);
   ttPassageInkState.drawing = true;
   ttPassageInkState.activeStroke = {
     color: ttPassageInkState.color,
     size: ttPassageInkState.size,
+    mode: ttPassageInkState.mode || "pen",
     points: [point]
   };
   event.preventDefault();
 }
 
 function ttPassagePointerMove(event) {
+  if (ttPassagePointerMap.has(event.pointerId)) ttPassagePointerMap.set(event.pointerId, ttPassagePointerSnapshot(event));
+  if (ttPassagePointerMap.size >= 2) {
+    if (ttUpdatePassagePinch(event)) event.preventDefault();
+    return;
+  }
   if (!ttPassageInkState.drawing || !ttPassageInkState.activeStroke) return;
   ttPassageInkState.activeStroke.points.push(ttPassageCanvasPoint(event));
   ttRedrawPassageInk(ttPassageInkState.activeStroke);
@@ -833,17 +1088,120 @@ function ttPassagePointerMove(event) {
 }
 
 function ttPassagePointerEnd(event) {
+  ttSafePassagePointerCapture("releasePointerCapture", event.pointerId);
+  ttPassagePointerMap.delete(event.pointerId);
+  if (ttPassagePointerMap.size < 2 && ttPassagePinchState) {
+    ttPassagePinchState = null;
+    ttPersistPassageInk();
+  }
+  if (ttPassagePointerMap.size >= 1 && !ttPassageInkState.drawing) {
+    event.preventDefault();
+    return;
+  }
   if (!ttPassageInkState.drawing || !ttPassageInkState.activeStroke) return;
   ttPassageInkState.drawing = false;
   if (ttPassageInkState.activeStroke.points.length > 1) {
     ttPassageInkState.strokes.push(ttPassageInkState.activeStroke);
-    ttSection9InkStore().strokes = ttPassageInkState.strokes;
-    ttSection9InkStore().zoom = ttPassageInkState.zoom;
-    ttSaveDraftLesson({ status: false });
+    ttPersistPassageInk();
   }
   ttPassageInkState.activeStroke = null;
-  ttById("ttPassageInk")?.releasePointerCapture?.(event.pointerId);
   ttRedrawPassageInk();
+}
+
+function ttPassageTouchStart(event) {
+  if ((event.touches || []).length < 2) return;
+  event.preventDefault();
+  ttFinalizeActivePassageStroke();
+  ttPassagePointerMap.clear();
+  const points = ttTouchSnapshots(event.touches);
+  ttPassagePinchState = {
+    distance: ttPassagePinchDistance(points),
+    zoom: ttPassageInkState.zoom || 1
+  };
+}
+
+function ttPassageTouchMove(event) {
+  if ((event.touches || []).length < 2 || !ttPassagePinchState?.distance) return;
+  event.preventDefault();
+  const points = ttTouchSnapshots(event.touches);
+  const distance = ttPassagePinchDistance(points);
+  const center = ttPassagePinchCenter(points);
+  ttSetPassageZoomAt(ttPassagePinchState.zoom * (distance / ttPassagePinchState.distance), center, { save: false });
+}
+
+function ttPassageTouchEnd(event) {
+  if (!ttPassagePinchState || (event.touches || []).length >= 2) return;
+  event?.preventDefault?.();
+  ttPassagePinchState = null;
+  ttPersistPassageInk();
+}
+
+function ttPassageEventInStage(event) {
+  const stage = ttById("ttPassageStage");
+  if (!stage) return false;
+  const path = event.composedPath?.() || [];
+  if (path.includes(stage)) return true;
+  return ttPassageStageActive;
+}
+
+function ttPassageGlobalWheelZoom(event) {
+  if (!ttPassageEventInStage(event)) return;
+  ttPassageWheelZoom(event);
+}
+
+function ttPassageWheelZoom(event) {
+  const isZoomGesture = event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+  if (!isZoomGesture) return;
+  event.preventDefault();
+  ttFinalizeActivePassageStroke();
+  const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+  const multiplier = Math.exp(-delta * 0.0018);
+  ttSetPassageZoomAt((ttPassageInkState.zoom || 1) * multiplier, event, { save: false });
+  ttSchedulePassageZoomPersist();
+}
+
+function ttPassageGlobalGestureStart(event) {
+  if (!ttPassageEventInStage(event)) return;
+  ttPassageGestureStart(event);
+}
+
+function ttPassageGlobalGestureChange(event) {
+  if (!ttPassageEventInStage(event)) return;
+  ttPassageGestureChange(event);
+}
+
+function ttPassageGlobalGestureEnd(event) {
+  if (!ttPassageEventInStage(event)) return;
+  ttPassageGestureEnd(event);
+}
+
+function ttPassageDoubleClickZoom(event) {
+  event.preventDefault();
+  ttFinalizeActivePassageStroke();
+  const current = ttPassageInkState.zoom || 1;
+  const next = event.shiftKey ? current / 1.35 : current * 1.35;
+  ttSetPassageZoomAt(next, event);
+}
+
+function ttPassageGestureStart(event) {
+  event.preventDefault();
+  ttFinalizeActivePassageStroke();
+  ttPassagePinchState = {
+    distance: 1,
+    zoom: ttPassageInkState.zoom || 1
+  };
+}
+
+function ttPassageGestureChange(event) {
+  if (!ttPassagePinchState) ttPassageGestureStart(event);
+  event.preventDefault();
+  ttSetPassageZoomAt(ttPassagePinchState.zoom * (event.scale || 1), event, { save: false });
+}
+
+function ttPassageGestureEnd(event) {
+  event?.preventDefault?.();
+  ttPassagePinchState = null;
+  ttPersistPassageInk();
 }
 
 function ttRedrawPassageInk(extraStroke = null) {
@@ -856,11 +1214,17 @@ function ttRedrawPassageInk(extraStroke = null) {
   (ttPassageInkState.strokes || []).concat(extraStroke ? [extraStroke] : []).forEach((stroke) => {
     const points = stroke.points || [];
     if (points.length < 2) return;
+    ctx.save();
     ctx.beginPath();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = stroke.color || "#ef4444";
     ctx.lineWidth = Number(stroke.size || 5);
+    if (stroke.mode === "highlight") {
+      ctx.globalAlpha = 0.28;
+      ctx.globalCompositeOperation = "multiply";
+      ctx.lineWidth = Math.max(8, Number(stroke.size || 12));
+    }
     points.forEach((point, index) => {
       const x = point.x * width;
       const y = point.y * height;
@@ -868,6 +1232,7 @@ function ttRedrawPassageInk(extraStroke = null) {
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
+    ctx.restore();
   });
 }
 
@@ -1007,6 +1372,7 @@ function ttToggleSectionDone(sectionId) {
   const next = current === null ? "done" : current === "done" ? "skipped" : null;
   if (next === null) delete ttLesson.completedSections[sectionId];
   else ttLesson.completedSections[sectionId] = next;
+  if (sectionId === "section9" && next === "done") ttClearPassageInk({ save: false, allStories: true });
   ttSaveDraftLesson({ status: false });
   saveState();
   ttInitSectionCompletion();
@@ -5597,6 +5963,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
   const dictationBlock = (label) => dictationPlan.find((item) => item.label.toLowerCase().includes(label))?.values || [];
   const section6Targets = targetSoundItemsForLesson(lesson, skill);
   const section6ByGroup = (pattern) => section6Targets.filter((item) => pattern.test(item.group || "")).map((item) => item.value);
+  const section9 = ttWilsonSection9PlanData(lesson, skill);
   const sectionSeven = ttSectionSevenSetsForLesson(lesson, skill);
   const part7Review = sectionSeven.review;
   const part7Current = sectionSeven.current;
@@ -5666,10 +6033,10 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "8 WWD HIGH FREQUENCY WORD PHRASES 2": phrases[1] || "",
     "8 WWD HIGH FREQUENCY WORD PHRASES 3": phrases[2] || "",
     "8 WWD SENTENCES": ttJoinLines(sentences),
-    "9 CTP DEVELOP ORAL EXPRESSIVE LANGUAGE SKILLS WITH RETELL": "",
-    "9 CTP Source Student Reader Text": "",
-    "9 CTP Vocabulary": "",
-    "9 CTP Follow Up ?": "",
+    "9 CTP DEVELOP ORAL EXPRESSIVE LANGUAGE SKILLS WITH RETELL": section9.retell,
+    "9 CTP Source Student Reader Text": section9.source,
+    "9 CTP Vocabulary": section9.vocabulary,
+    "9 CTP Follow Up ?": section9.followUp,
     "10 LRF Sources": "",
     "10 LRF Title": "",
     "10 LRF Pages": "",
@@ -5681,9 +6048,43 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     level === "A" ? "4 WR Student Reader A Check" : level === "B" ? "4 WR Student Reader B Check" : "4 WR Student Reader AB Check",
     "4 WR Student Reader Real",
     lesson.chartHalf === "top" ? "4 WR Charting Page Top Check" : "4 WR Charting Page Bottom Check",
-    level === "B" ? "5 SR Student Reader B" : "5 SR Student Reader AB"
+    level === "B" ? "5 SR Student Reader B" : "5 SR Student Reader AB",
+    ...section9.checks
   ];
   return { text, checks };
+}
+
+function ttWilsonSection9PlanData(lesson, skill) {
+  const story = lesson.section9Story || null;
+  const companion = ttSection9CompanionFor(story?.passageId || story);
+  const pageRange = story ? ttReaderPageRange(story) : `p. ${lesson.passagePageNumber || "--"}`;
+  const level = (story?.level || lesson.passageLevel || lesson.readerLevel || "AB") === "B" ? "B" : "AB";
+  const approach = story?.approach || "comprehension-sos";
+  const vocabulary = (companion?.vocabulary || [])
+    .slice(0, 6)
+    .map((item) => [item.word, item.meaning].filter(Boolean).join(": "));
+  const supportQuestions = companion?.questions?.support || [];
+  const stretchQuestions = companion?.questions?.stretch || [];
+  const followUp = [
+    supportQuestions.length ? `Support: ${supportQuestions.slice(0, 3).map((item) => item.question || item).join(" | ")}` : "",
+    stretchQuestions.length ? `Stretch: ${stretchQuestions.slice(0, 3).map((item) => item.question || item).join(" | ")}` : ""
+  ].filter(Boolean);
+  const checks = [
+    "9 CTP Source Student Reader Check",
+    level === "B" ? "9 CTP Source Student Reader B Check" : "9 CTP Source Student Reader AB Check",
+    approach === "oral-fluency" ? "9 CTP Oral Fluency Repeated Reading" : "9 CTP Comp SOS Silent Oral"
+  ];
+  return {
+    retell: story?.title || "Assigned Student Reader passage",
+    source: pageRange,
+    vocabulary: vocabulary.join("\n"),
+    followUp: followUp.length ? followUp.join("\n") : [
+      "What was this passage mostly about?",
+      "What happened first, next, and last?",
+      "What detail from the passage helped you understand the story?"
+    ].join("\n"),
+    checks
+  };
 }
 
 function ttSetPdfTextField(form, name, value) {
@@ -5818,6 +6219,10 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
   const section2bReview = isGroupLesson ? (lesson.sectionTwoReviewWordsB2 || []) : [];
   const section2bCurrent = isGroupLesson ? (lesson.sectionTwoCurrentWordsB2 || []) : [];
   const students = (group.students || []).map((student) => `<span>${escapeHtml(student)}</span>`).join("");
+  const section9Companion = ttSection9CompanionFor(lesson.section9Story?.passageId || lesson.section9Story);
+  const section9Vocab = (section9Companion?.vocabulary || []).slice(0, 6);
+  const section9Support = (section9Companion?.questions?.support || []).slice(0, 3);
+  const section9Stretch = (section9Companion?.questions?.stretch || []).slice(0, 3);
   const teacherNotes = [
     "Charting goal: 12+/15 accurate. Automaticity: 12+/15 under 35 sec. Fluency: 14+/15.",
     "Use AB by default for elementary. Drop to A for support or move to B for challenge.",
@@ -6168,6 +6573,24 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
         : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} (${lesson.passageLevel || lesson.readerLevel})`, `
         <p class="small"><strong>${escapeHtml(ttSection9ApproachLabel(lesson.section9Story?.approach))}</strong></p>
         <p class="small">${escapeHtml(lesson.passage || "Use the assigned Reader passage page. Preview three target words before reading.")}</p>
+        ${ttPlanLabel("Pre-teach vocabulary")}
+        <ul class="sentence-list">${section9Vocab.length
+          ? section9Vocab.map((item) => `<li><strong>${escapeHtml(item.word)}</strong>: ${escapeHtml(item.meaning || item.whyPreteach || "")}</li>`).join("")
+          : "<li>Draft passage vocabulary after reading the selected passage.</li>"}</ul>
+        <div class="grid2">
+          <div>
+            ${ttPlanLabel("Support questions")}
+            <ol class="sentence-list">${section9Support.length
+              ? section9Support.map((item) => `<li>${escapeHtml(item.question || item)}</li>`).join("")
+              : "<li>What was this passage mostly about?</li><li>What happened first, next, and last?</li><li>Show where you found your answer.</li>"}</ol>
+          </div>
+          <div>
+            ${ttPlanLabel("Stretch questions")}
+            <ol class="sentence-list">${section9Stretch.length
+              ? section9Stretch.map((item) => `<li>${escapeHtml(item.question || item)}</li>`).join("")
+              : "<li>What detail helped you understand the story?</li><li>What can you infer from the passage?</li><li>What does a key word mean in context?</li>"}</ol>
+          </div>
+        </div>
         <div class="write-lines"><span></span><span></span></div>
       `, "#0369a1")}
 
@@ -9345,5 +9768,6 @@ ttInitCloudSync();
 ttInitFirebaseSync();
 ttInitConnectionMonitor();
 ttBind();
+window.addEventListener("beforeunload", ttFinalizeActivePassageStroke);
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();

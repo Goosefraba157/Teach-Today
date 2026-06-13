@@ -1,10 +1,11 @@
-const CACHE_NAME = "teach-today-offline-v2026-06-12-section9-page-images-1";
+const CACHE_NAME = "teach-today-offline-v2026-06-13-section9-companion-1";
 
 const APP_SHELL = [
   "./",
   "./TeachToday.html",
   "./PdfViewer.html",
   "./ReferencePdfs.html",
+  "./Section9PassagePrep.html",
   "./StudentDisplay.html",
   "./StudentProfile.html",
   "./StudentReport.html",
@@ -31,6 +32,7 @@ const APP_SHELL = [
   "./dictation-sentence-index.js",
   "./sample-blue-group-data.js",
   "./sofia-carbajal-chart-data.js",
+  "./section9-passage-companions.js",
   "./wilson-lp-template.js",
   "./wilson-hfw-data.js",
   "./vendor/pdf-lib.min.js",

@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
-    <link rel="stylesheet" href="teach-today.css?v=game-hub-1">
+    <link rel="stylesheet" href="teach-today.css?v=section9-companion-1">
     <script src="app-nav.js" defer></script>
   </head>
   <body>
@@ -723,19 +723,28 @@
         <div class="section-head section-head-with-actions"><div><span>9</span><h2>Controlled Passage</h2></div><button class="section-refresh" data-refresh-section="9" type="button" title="New passage reference">↻ New page</button></div>
         <span id="ttSection9Ref" class="section-ref-pill"></span>
         <div id="ttPassage" class="passage-summary"></div>
-        <div class="passage-tools" aria-label="Passage annotation tools">
-          <div class="passage-tool-group" role="group" aria-label="Pen colors">
-            <button type="button" class="passage-color active" data-passage-color="#ef4444" style="--ink:#ef4444" aria-label="Red pen"></button>
-            <button type="button" class="passage-color" data-passage-color="#2563eb" style="--ink:#2563eb" aria-label="Blue pen"></button>
-            <button type="button" class="passage-color" data-passage-color="#16a34a" style="--ink:#16a34a" aria-label="Green pen"></button>
-            <button type="button" class="passage-color" data-passage-color="#0f172a" style="--ink:#0f172a" aria-label="Black pen"></button>
+        <div id="ttPassageStage" class="passage-stage" aria-label="Section 9 reading passage" title="Pinch to zoom. Scroll normally to move around.">
+          <div class="passage-tools" aria-label="Passage annotation tools">
+            <div class="passage-tool-group" role="group" aria-label="Ink modes">
+              <button id="ttPassagePenMode" type="button" class="passage-tool-toggle active" data-passage-mode="pen" title="Pen">Pen</button>
+              <button id="ttPassageHighlightMode" type="button" class="passage-tool-toggle" data-passage-mode="highlight" title="Highlighter">Hi</button>
+            </div>
+            <div class="passage-tool-group passage-color-row" role="group" aria-label="Ink colors">
+              <button type="button" class="passage-color active" data-passage-color="#ef4444" style="--ink:#ef4444" aria-label="Red"></button>
+              <button type="button" class="passage-color" data-passage-color="#f97316" style="--ink:#f97316" aria-label="Orange"></button>
+              <button type="button" class="passage-color" data-passage-color="#facc15" style="--ink:#facc15" aria-label="Yellow"></button>
+              <button type="button" class="passage-color" data-passage-color="#16a34a" style="--ink:#16a34a" aria-label="Green"></button>
+              <button type="button" class="passage-color" data-passage-color="#14b8a6" style="--ink:#14b8a6" aria-label="Teal"></button>
+              <button type="button" class="passage-color" data-passage-color="#2563eb" style="--ink:#2563eb" aria-label="Blue"></button>
+              <button type="button" class="passage-color" data-passage-color="#7c3aed" style="--ink:#7c3aed" aria-label="Purple"></button>
+              <button type="button" class="passage-color" data-passage-color="#0f172a" style="--ink:#0f172a" aria-label="Black"></button>
+            </div>
+            <label class="passage-pen-size">Size <input id="ttPassagePenSize" type="range" min="1" max="24" value="5"></label>
+            <button id="ttPassageUndoInk" type="button" title="Undo last mark">Undo</button>
+            <button id="ttPassageZoomOut" type="button" title="Zoom out">-</button>
+            <button id="ttPassageZoomIn" type="button" title="Zoom in">+</button>
+            <button id="ttPassageClearInk" type="button" title="Clear ink">Clear</button>
           </div>
-          <label class="passage-pen-size">Pen <input id="ttPassagePenSize" type="range" min="2" max="18" value="5"></label>
-          <button id="ttPassageZoomOut" type="button">-</button>
-          <button id="ttPassageZoomIn" type="button">+</button>
-          <button id="ttPassageClearInk" type="button">Clear ink</button>
-        </div>
-        <div id="ttPassageStage" class="passage-stage" aria-label="Section 9 reading passage">
           <div id="ttPassageSurface" class="passage-surface">
             <div id="ttPassagePages" class="passage-pages"></div>
             <canvas id="ttPassageInk" class="passage-ink"></canvas>
@@ -896,7 +905,8 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
-    <script src="teach-today.js?v=section9-page-images-1"></script>
+    <script src="section9-passage-companions.js?v=section9-companion-1"></script>
+    <script src="teach-today.js?v=section9-companion-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>
