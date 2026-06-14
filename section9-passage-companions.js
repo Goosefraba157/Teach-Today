@@ -2318,5 +2318,687 @@ window.section9PassageCompanions = {
         { type: "vocabulary", question: "What does 'at his own expense' mean in the sentence about mending busted objects?" }
       ]
     }
+  },
+  "reader5-5.1-ab-p10-wades-first-ride": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "jet plane", meaning: "a fast airplane with jet engines", whyPreteach: "This phrase names Wade's new experience.", reference: "paragraph 1", prompt: "What will Wade ride for the first time?" },
+      { word: "drop-off lane", meaning: "a place where cars stop briefly to let people out", whyPreteach: "This phrase helps students picture the airport arrival.", reference: "paragraph 4", prompt: "Where does the family get the bags from the van?" },
+      { word: "several", meaning: "more than two but not many", whyPreteach: "This word describes how many bags they bring.", reference: "paragraph 4", prompt: "How many bags do they get from the van?" },
+      { word: "gate", meaning: "the airport area where passengers wait to board a plane", whyPreteach: "This airport word is needed for the sequence.", reference: "paragraphs 4 and 5", prompt: "Where will Dad meet Mom and Wade?" },
+      { word: "take off", meaning: "leave the ground and begin flying", whyPreteach: "This phrase names the exciting moment Wade is waiting for.", reference: "paragraph 5", prompt: "What will the plane do before they are in the sky?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What new thing is Wade going to try?" },
+        { type: "literal", question: "Who goes on the trip with Wade?" },
+        { type: "literal", question: "Where does Dad go after dropping off the bags?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Wade is excited about the trip?" },
+        { type: "evidence", question: "What details show the airport is busy?" },
+        { type: "vocabulary", question: "What does 'take off' mean in the last paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.1-ab-p12-acting-class-maxim": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "admire", meaning: "look up to or think highly of", whyPreteach: "This word explains Maxim's big dream.", reference: "paragraph 1", prompt: "What does Maxim want the world to do someday?" },
+      { word: "acting lessons", meaning: "classes that teach how to act", whyPreteach: "This phrase names the new class Maxim will attend.", reference: "paragraph 1", prompt: "What lessons does Maxim's dad get for him?" },
+      { word: "pro", meaning: "a professional or expert", whyPreteach: "This word explains why Miss Flo can help Maxim.", reference: "paragraph 1", prompt: "Why is it important to work with a pro?" },
+      { word: "methods", meaning: "planned ways of doing something", whyPreteach: "This word describes what Maxim will learn about acting.", reference: "paragraph 1", prompt: "What acting methods might Maxim learn?" },
+      { word: "attending", meaning: "going to or taking part in", whyPreteach: "This word helps students understand who else is in the class.", reference: "paragraph 3", prompt: "Who will be attending class with Maxim?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What grade is Maxim in?" },
+        { type: "literal", question: "Who teaches the acting class?" },
+        { type: "literal", question: "How many other kids are in the class?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Maxim hurry to finish his chores and math?" },
+        { type: "evidence", question: "What details show Maxim is not shy?" },
+        { type: "vocabulary", question: "What does 'pro' mean in the sentence about Miss Flo?" }
+      ]
+    }
+  },
+  "reader5-5.1-b-p14-jades-hidden-job": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "hush-hush", meaning: "secret or private", whyPreteach: "This word describes Jade's hidden work.", reference: "paragraph 1", prompt: "What does Jade keep hush-hush?" },
+      { word: "probe", meaning: "try to find out information", whyPreteach: "This word explains what others do when Jade will not tell.", reference: "paragraph 2", prompt: "What do people try to probe?" },
+      { word: "distrust", meaning: "lack of trust", whyPreteach: "This word helps explain why Jade hides job facts.", reference: "paragraph 2", prompt: "Why does Jade hide facts about her job?" },
+      { word: "tactics", meaning: "planned actions used to reach a goal", whyPreteach: "This word is one of the clues about Jade's job.", reference: "paragraph 2", prompt: "What kind of tactics does Jade mention?" },
+      { word: "vanishing acts", meaning: "ways of disappearing or making something disappear", whyPreteach: "This phrase helps students infer the spy idea.", reference: "paragraph 2", prompt: "What might vanishing acts tell us about Jade's work?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Jade refuse to tell people?" },
+        { type: "literal", question: "What three hints does Jade give?" },
+        { type: "literal", question: "What job does the narrator guess Jade has?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Jade need to keep her job secret?" },
+        { type: "evidence", question: "What clues support the idea that Jade may be a spy?" },
+        { type: "vocabulary", question: "What does 'hush-hush' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.1-b-p16-jakes-great-food-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "fixings", meaning: "ingredients or supplies needed to make food", whyPreteach: "This word explains what Jake bought for breakfast.", reference: "paragraph 1", prompt: "What did Jake buy the day before?" },
+      { word: "sly", meaning: "secretive or clever", whyPreteach: "This word shows Jake is trying to surprise his family.", reference: "paragraph 1", prompt: "How was Jake sly with the food?" },
+      { word: "goodwill", meaning: "kindness or a friendly helpful act", whyPreteach: "This word explains why Jake is cooking.", reference: "paragraph 1", prompt: "What act of goodwill is Jake planning?" },
+      { word: "spry", meaning: "quick and active", whyPreteach: "This word explains what Jake is trying not to be while others sleep.", reference: "paragraph 2", prompt: "Why should Jake not be quick and spry?" },
+      { word: "pry out", meaning: "pull or carefully take out", whyPreteach: "This phrase describes Jake trying to get pots quietly.", reference: "paragraph 3", prompt: "What is Jake about to pry out?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Jake plan to make for everyone?" },
+        { type: "literal", question: "Why does Jake move quietly down the hall?" },
+        { type: "literal", question: "Who comes into the kitchen and scares Jake?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Jake want to keep his plan quiet?" },
+        { type: "evidence", question: "What details show Jake is trying to be careful?" },
+        { type: "vocabulary", question: "What does 'goodwill' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.1-b-p18-jakes-great-food-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "assist", meaning: "help", whyPreteach: "This word explains Montel's role.", reference: "paragraph 1", prompt: "How does Montel assist his dad?" },
+      { word: "conspire", meaning: "secretly plan together", whyPreteach: "This word keeps the surprise feeling of the breakfast plan.", reference: "paragraph 1", prompt: "What do Jake and Montel conspire to do?" },
+      { word: "skillet", meaning: "a pan used for cooking", whyPreteach: "This word helps students understand the kitchen actions.", reference: "paragraph 1", prompt: "What does Jake mix hash in?" },
+      { word: "clan", meaning: "family or group of relatives", whyPreteach: "This word refers to the rest of the family.", reference: "paragraph 2", prompt: "Who is the clan Jake wants to wake?" },
+      { word: "pulling it all off", meaning: "successfully doing something difficult", whyPreteach: "This phrase explains the successful surprise breakfast.", reference: "paragraph 3", prompt: "What did Jake and Montel pull off?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What foods do Jake and Montel make?" },
+        { type: "literal", question: "What fruit does Jake put on the plate?" },
+        { type: "literal", question: "How does the family react when they see the food?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Jake thank Montel at the end?" },
+        { type: "evidence", question: "What details show Jake and Montel worked as a team?" },
+        { type: "vocabulary", question: "What does 'pulling it all off' mean in the last sentence?" }
+      ]
+    }
+  },
+  "reader5-5.2-ab-p42-move-states": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "Azores", meaning: "a group of islands in the mid-Atlantic", whyPreteach: "This place name explains where Bruno comes from.", reference: "paragraph 1", prompt: "Where is Bruno from?" },
+      { word: "States", meaning: "the United States", whyPreteach: "This word explains Bruno's new home.", reference: "title and paragraph 1", prompt: "Where does Bruno move?" },
+      { word: "volcanic landscape", meaning: "land shaped by volcanoes", whyPreteach: "This phrase gives background about where Bruno learned to bake.", reference: "paragraph 2", prompt: "Where did Bruno and Irene learn to bake?" },
+      { word: "spent", meaning: "very tired", whyPreteach: "This word describes Bruno after a full workday.", reference: "paragraph 5", prompt: "How does Bruno feel by the end of the day?" },
+      { word: "customs", meaning: "traditions or familiar ways of doing things", whyPreteach: "This word explains what Bruno is proud to share.", reference: "paragraph 5", prompt: "What customs can Bruno share with new friends?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of shop does Bruno open?" },
+        { type: "literal", question: "What do Bruno and Irene bake before sunrise?" },
+        { type: "literal", question: "What does Bruno do after the day is over?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Bruno's heart full of pride at the end?" },
+        { type: "evidence", question: "What details show Bruno works hard at the bake shop?" },
+        { type: "vocabulary", question: "What does 'spent' mean in the sentence about the end of the day?" }
+      ]
+    }
+  },
+  "reader5-5.2-ab-p44-attic-mess-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "requested", meaning: "asked for", whyPreteach: "This word explains what Mike's dad already asked him to do.", reference: "paragraph 1", prompt: "What had Dad requested from Mike?" },
+      { word: "restrict", meaning: "limit or not allow", whyPreteach: "This word explains the possible consequence.", reference: "paragraph 1", prompt: "How could Dad restrict Mike?" },
+      { word: "declare", meaning: "say clearly or firmly", whyPreteach: "This word shows Dad's serious response.", reference: "paragraph 2", prompt: "What does Dad declare?" },
+      { word: "desire", meaning: "want strongly", whyPreteach: "This word describes Mike's wish to go to the game.", reference: "paragraph 2", prompt: "What does Mike desire?" },
+      { word: "own that mess", meaning: "accept responsibility for the mess", whyPreteach: "This phrase is central to Dad's lesson.", reference: "paragraph 2", prompt: "What does Dad mean when he says Mike has to own that mess?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Mike want to go at seven o'clock?" },
+        { type: "literal", question: "What chore does Dad say Mike must do first?" },
+        { type: "literal", question: "What time does Mike check on the clock?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Mike's heart sink when Mom mentions the attic?" },
+        { type: "evidence", question: "What details show Dad is firm but fair?" },
+        { type: "vocabulary", question: "What does 'own that mess' mean in Dad's sentence?" }
+      ]
+    }
+  },
+  "reader5-5.2-ab-p46-attic-mess-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "debate", meaning: "argue or discuss different sides", whyPreteach: "This word explains what Mike cannot do with Dad's decision.", reference: "paragraph 1", prompt: "Why can Mike not debate the chore?" },
+      { word: "regret", meaning: "feel sorry about something", whyPreteach: "This word shows Mike understands his mistake.", reference: "paragraph 1", prompt: "What does Mike regret?" },
+      { word: "to blame", meaning: "responsible for something wrong", whyPreteach: "This phrase explains Mike's lesson.", reference: "paragraph 1", prompt: "Who is to blame for the attic mess?" },
+      { word: "address", meaning: "deal with or work on", whyPreteach: "This multiple-meaning word describes the final repair task.", reference: "paragraph 2", prompt: "What final item does Mike address?" },
+      { word: "professing", meaning: "saying clearly or strongly", whyPreteach: "This word describes Mike's promise at the end.", reference: "paragraph 4", prompt: "What does Mike profess as he runs to the game?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Mike move into a trash can first?" },
+        { type: "literal", question: "What does Mike scrub?" },
+        { type: "literal", question: "What lesson does Mike learn?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Mike's attitude change while cleaning the attic?" },
+        { type: "evidence", question: "What details show Dad helps Mike instead of just punishing him?" },
+        { type: "vocabulary", question: "What does 'to blame' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.2-b-p48-ivan-debate-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "debate", meaning: "a formal discussion with different viewpoints", whyPreteach: "This word names the class event.", reference: "title and paragraph 1", prompt: "What class is Ivan in?" },
+      { word: "profile", meaning: "a short report about a person", whyPreteach: "This word explains the students' assignment.", reference: "paragraph 1", prompt: "What will students write for each guest?" },
+      { word: "Congress", meaning: "the group of lawmakers who help make national laws", whyPreteach: "This word identifies the guests.", reference: "paragraph 1", prompt: "Who will visit the class?" },
+      { word: "vocal", meaning: "willing to speak up often", whyPreteach: "This word explains Ivan's challenge.", reference: "paragraph 2", prompt: "How is Ivan vocal in class?" },
+      { word: "blatant protest", meaning: "an obvious and forceful objection", whyPreteach: "This phrase explains what Ivan must avoid at the event.", reference: "paragraph 2", prompt: "Why would a blatant protest be impolite?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What important visit is the class preparing for?" },
+        { type: "literal", question: "What does Mrs. Russell expect Ivan to do while guests speak?" },
+        { type: "literal", question: "What do students begin to draft?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Ivan have trouble staying silent during the debate?" },
+        { type: "evidence", question: "What details show the class wants to impress Mrs. Russell?" },
+        { type: "vocabulary", question: "What does 'vocal' mean in the sentence about Ivan?" }
+      ]
+    }
+  },
+  "reader5-5.2-b-p50-ivan-debate-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "conflict", meaning: "a struggle or disagreement", whyPreteach: "This word describes Ivan's feelings during the debate.", reference: "paragraph 1", prompt: "What conflict does Ivan feel in his heart?" },
+      { word: "panel", meaning: "a group of people gathered to discuss or answer questions", whyPreteach: "This word explains who Ivan can question later.", reference: "paragraph 1", prompt: "When can Ivan inquire of the panel?" },
+      { word: "toxic waste", meaning: "dangerous waste that can harm people or the environment", whyPreteach: "This phrase is one topic discussed by Congress members.", reference: "paragraph 2", prompt: "What kind of waste is discussed?" },
+      { word: "motives", meaning: "reasons for doing something", whyPreteach: "This word explains what the speakers defend.", reference: "paragraph 2", prompt: "What do the speakers defend?" },
+      { word: "brazen", meaning: "too bold or rude", whyPreteach: "This word shows the behavior Ivan tries to avoid.", reference: "paragraph 3", prompt: "How does Ivan try not to be brazen?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How long does the entire talk last?" },
+        { type: "literal", question: "What topics do the Congress members discuss?" },
+        { type: "literal", question: "What grade does Ivan get for the day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Mrs. Russell proud of Ivan?" },
+        { type: "evidence", question: "What details show Ivan keeps his pact even when he disagrees?" },
+        { type: "vocabulary", question: "What does 'brazen' mean in the sentence about Ivan's questions?" }
+      ]
+    }
+  },
+  "reader5-5.2-b-p52-stucco-home-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "stucco", meaning: "a plaster-like material used on the outside of buildings", whyPreteach: "This word names the type of home April finds.", reference: "title and paragraph 1", prompt: "What kind of home does April find?" },
+      { word: "tranquil", meaning: "calm and peaceful", whyPreteach: "This word describes the home's setting.", reference: "paragraph 1", prompt: "What is tranquil about the spot?" },
+      { word: "dwelling", meaning: "a place where people live", whyPreteach: "This word refers to the house.", reference: "paragraph 1", prompt: "Where does the stucco dwelling sit?" },
+      { word: "prospect", meaning: "a possibility that may become real", whyPreteach: "This word explains Tyrone's cautious interest.", reference: "paragraph 2", prompt: "What prospect could be good?" },
+      { word: "remote", meaning: "far away from busy places", whyPreteach: "This word describes why the location feels special.", reference: "paragraph 3", prompt: "What remote spot does Tyrone fall in love with?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does April find at the end of the lane?" },
+        { type: "literal", question: "Who does April tell about the home?" },
+        { type: "literal", question: "How does Tyrone feel when he sees the home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does April feel like the house was made for her?" },
+        { type: "evidence", question: "What details make the home and setting sound attractive?" },
+        { type: "vocabulary", question: "What does 'tranquil spot' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.2-b-p54-stucco-home-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "daze", meaning: "a stunned or amazed state", whyPreteach: "This word describes April and Tyrone inside the home.", reference: "paragraph 1", prompt: "Why might they be in a daze?" },
+      { word: "neglected", meaning: "not cared for properly", whyPreteach: "This word explains the inside condition of the house.", reference: "paragraph 1", prompt: "What has been neglected?" },
+      { word: "revive", meaning: "bring back to good condition", whyPreteach: "This word explains their plan for the old house.", reference: "paragraph 1", prompt: "What do April and Tyrone think they can revive?" },
+      { word: "off-base", meaning: "not reasonable or not correct", whyPreteach: "This phrase explains that the price is not too high for the work needed.", reference: "paragraph 2", prompt: "Why is the cost not way off-base?" },
+      { word: "modest", meaning: "not too large or expensive", whyPreteach: "This word helps students understand the price.", reference: "paragraph 2", prompt: "What does modest cost mean here?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What condition is the inside of the home in?" },
+        { type: "literal", question: "What part of the home is in great shape?" },
+        { type: "literal", question: "What do April and Tyrone decide to do?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do April and Tyrone move fast even though they are not usually rash?" },
+        { type: "evidence", question: "What details show the home needs work but is still a good possibility?" },
+        { type: "vocabulary", question: "What does 'revive' mean in the sentence about the inside of the home?" }
+      ]
+    }
+  },
+  "reader5-5.3-ab-p64-pony-ride": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "request", meaning: "something someone asks for", whyPreteach: "This word explains Sally's repeated wish.", reference: "paragraph 1", prompt: "What request has Sally made many times?" },
+      { word: "ranch", meaning: "a large farm where animals may be kept", whyPreteach: "This word sets the pony ride location.", reference: "paragraph 2", prompt: "Where do Sally and her parents go?" },
+      { word: "pen", meaning: "a fenced area for animals", whyPreteach: "This word helps students picture where the pony is.", reference: "paragraph 3", prompt: "Where do they stare at the pony?" },
+      { word: "mane", meaning: "the long hair on a horse or pony's neck", whyPreteach: "This word helps students picture Sally patting Benny.", reference: "paragraph 4", prompt: "What does Sally pat?" },
+      { word: "spots", meaning: "sees or notices", whyPreteach: "This multiple-meaning word describes what Sally sees around the ranch.", reference: "paragraph 4", prompt: "What animals does Sally spot?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How old is Sally?" },
+        { type: "literal", question: "What is the pony's name?" },
+        { type: "literal", question: "Who owns the ranch?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How do Sally's feelings change from when she first sees the pony to when she rides it?" },
+        { type: "evidence", question: "What details show Sally is nervous at first?" },
+        { type: "vocabulary", question: "What does 'mane' mean in the sentence about Sally patting Benny?" }
+      ]
+    }
+  },
+  "reader5-5.3-ab-p66-ruby-bulldog": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "folds of skin", meaning: "loose skin that bends or wrinkles", whyPreteach: "This phrase helps students picture Ruby's bulldog face.", reference: "paragraph 1", prompt: "Where does Ruby have folds of skin?" },
+      { word: "underbite", meaning: "a mouth shape where the lower teeth or jaw stick out", whyPreteach: "This word describes Ruby's appearance.", reference: "paragraph 1", prompt: "What else does Ruby have?" },
+      { word: "dusk", meaning: "the time when it is getting dark in the evening", whyPreteach: "This word tells when Ruby runs outside.", reference: "paragraph 2", prompt: "Until when does Ruby chase outside?" },
+      { word: "strut", meaning: "a proud or showy way of walking", whyPreteach: "This word explains Ruby's funny personality.", reference: "paragraph 3", prompt: "How does Ruby walk around the house?" },
+      { word: "lonesome", meaning: "lonely", whyPreteach: "This word shows how much Peggy values Ruby.", reference: "paragraph 3", prompt: "How would life feel without Ruby?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who owns Ruby?" },
+        { type: "literal", question: "What does Ruby do when Peggy gets home from work?" },
+        { type: "literal", question: "Where does Ruby jump after zipping onto the deck?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Peggy think Ruby sometimes acts more like a person than a dog?" },
+        { type: "evidence", question: "What details show Peggy loves Ruby just as she is?" },
+        { type: "vocabulary", question: "What does 'strut' mean in the sentence about Ruby's step?" }
+      ]
+    }
+  },
+  "reader5-5.3-ab-p68-grape-jelly": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "cozy", meaning: "small, comfortable, and pleasant", whyPreteach: "This word describes Granny's cabin.", reference: "paragraph 1", prompt: "Why does Libby think the cabin is cozy?" },
+      { word: "tidy", meaning: "neat and clean", whyPreteach: "This word describes why Libby likes visiting.", reference: "paragraph 1", prompt: "How does Granny keep the cabin?" },
+      { word: "plump", meaning: "round and full", whyPreteach: "This word describes the grapes used for jelly.", reference: "paragraph 2", prompt: "What kind of grapes does Granny put in the pot?" },
+      { word: "final product", meaning: "the finished thing being made", whyPreteach: "This phrase explains why grape chunks are removed.", reference: "paragraph 3", prompt: "What does not go into the final product?" },
+      { word: "crocks", meaning: "small containers or jars", whyPreteach: "This word tells where Libby stores the jelly.", reference: "paragraph 3", prompt: "Where does Libby put the thick grape jelly?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who teaches Libby to make grape jelly?" },
+        { type: "literal", question: "What ingredients go into the pot with the grapes?" },
+        { type: "literal", question: "What do Granny and Libby eat with the grape jelly?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Libby want to take some jelly home?" },
+        { type: "evidence", question: "What steps show how the grapes become jelly?" },
+        { type: "vocabulary", question: "What does 'final product' mean in the jelly-making paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.3-b-p70-jolly-menu": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "defrosted", meaning: "thawed or made no longer frozen", whyPreteach: "This word explains Jimmy's dinner problem.", reference: "paragraph 1", prompt: "What had Jimmy not done to the chicken?" },
+      { word: "rethink", meaning: "think again and change a plan", whyPreteach: "This word explains Jimmy's response to the frozen chicken.", reference: "paragraph 1", prompt: "Why does Jimmy have to rethink his plan?" },
+      { word: "pantry", meaning: "a place where food is stored", whyPreteach: "This word helps students follow where Jimmy looks for food.", reference: "paragraph 2", prompt: "Where does Jimmy look around?" },
+      { word: "console", meaning: "comfort someone who feels bad", whyPreteach: "This word explains Meg's kind reaction.", reference: "paragraph 3", prompt: "How does Meg try to console Jimmy?" },
+      { word: "sulking", meaning: "being quietly upset or gloomy", whyPreteach: "This word describes Jimmy after the meal is not great.", reference: "paragraph 3", prompt: "Why is Jimmy sulking?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What food had Jimmy planned to cook first?" },
+        { type: "literal", question: "What does Jimmy use instead of chicken?" },
+        { type: "literal", question: "How does Meg respond to the meal?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the title 'The Jolly Menu' a little funny?" },
+        { type: "evidence", question: "What details show Jimmy solves the dinner problem even if the meal is not perfect?" },
+        { type: "vocabulary", question: "What does 'console him' mean in the sentence about Meg?" }
+      ]
+    }
+  },
+  "reader5-5.3-b-p72-brody-golf-club": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "caddy", meaning: "a person who carries golf clubs and helps a golfer", whyPreteach: "This word names Brody's job.", reference: "paragraph 1", prompt: "What job does Brody have?" },
+      { word: "tip", meaning: "give extra money for service", whyPreteach: "This word explains how club members treat Brody kindly.", reference: "paragraph 1", prompt: "What do many people do for Brody?" },
+      { word: "pretty penny", meaning: "a lot of money", whyPreteach: "This idiom describes Mr. Shelby's expensive clothes.", reference: "paragraph 2", prompt: "What does Brody think costs a pretty penny?" },
+      { word: "crony", meaning: "a close friend or companion", whyPreteach: "This word describes Mr. Henry's relationship to Mr. Shelby.", reference: "paragraph 3", prompt: "Who is Mr. Shelby's best crony?" },
+      { word: "musty", meaning: "smelling old or damp", whyPreteach: "This word describes the golf shack loft.", reference: "paragraph 5", prompt: "What is the loft like?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Brody get a job?" },
+        { type: "literal", question: "Who is Brody often the caddy for?" },
+        { type: "literal", question: "Where does Brody rest after a long day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Brody enjoy the job even though it tires him out?" },
+        { type: "evidence", question: "What details show Mr. Henry is better at golf than Mr. Shelby?" },
+        { type: "vocabulary", question: "What does 'pretty penny' mean in the sentence about Mr. Shelby's clothes?" }
+      ]
+    }
+  },
+  "reader5-5.4-ab-p94-abbys-brave-day-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "developing", meaning: "growing or becoming more serious", whyPreteach: "This word describes the wildfire danger.", reference: "paragraph 1", prompt: "What risk is developing?" },
+      { word: "destructive", meaning: "causing great damage", whyPreteach: "This word explains why people must leave.", reference: "paragraph 1", prompt: "What destructive event is happening?" },
+      { word: "unit", meaning: "a group working together as a team", whyPreteach: "This word describes Abby's fire crew.", reference: "paragraph 2", prompt: "What unit is Abby part of?" },
+      { word: "relocate", meaning: "move to another place", whyPreteach: "This word explains what occupants must do for safety.", reference: "paragraph 2", prompt: "Where must occupants relocate?" },
+      { word: "at stake", meaning: "at risk or in danger", whyPreteach: "This phrase explains why people must move.", reference: "paragraph 2", prompt: "Why is there too much at stake not to move people?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What danger is threatening the local district?" },
+        { type: "literal", question: "Who has been told to leave their homes?" },
+        { type: "literal", question: "How many homes does Abby's unit plan to check?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Abby go toward the homes when other people are leaving?" },
+        { type: "evidence", question: "What details show Abby's work is dangerous?" },
+        { type: "vocabulary", question: "What does 'relocate to a secure spot' mean?" }
+      ]
+    }
+  },
+  "reader5-5.4-ab-p96-abbys-brave-day-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "progresses", meaning: "moves forward step by step", whyPreteach: "This word describes the fire unit moving from home to home.", reference: "paragraph 1", prompt: "Where does the fire unit progress?" },
+      { word: "detects", meaning: "notices or discovers", whyPreteach: "This word explains how Abby finds the cats.", reference: "paragraph 1", prompt: "What does Abby detect under the deck?" },
+      { word: "protective", meaning: "trying to keep someone safe", whyPreteach: "This word describes Ladybug caring for her kittens.", reference: "paragraph 2", prompt: "How is Ladybug protective?" },
+      { word: "deposits", meaning: "puts or places", whyPreteach: "This word explains where Abby puts the rescue bag.", reference: "paragraph 3", prompt: "Where does Abby deposit the bag?" },
+      { word: "reconnect", meaning: "bring back together again", whyPreteach: "This word explains what Abby promises about the cats and owners.", reference: "paragraph 3", prompt: "Who will Abby reconnect the cats with?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Abby hear under the deck?" },
+        { type: "literal", question: "What is the mother cat's name?" },
+        { type: "literal", question: "Where does Abby bring the mother cat and kittens?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Abby move carefully under the deck?" },
+        { type: "evidence", question: "What details show both Abby and Ladybug are protective?" },
+        { type: "vocabulary", question: "What does 'reconnect you with your owners' mean?" }
+      ]
+    }
+  },
+  "reader5-5.4-ab-p98-chicken-bathtub-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "panic", meaning: "sudden fear or worry", whyPreteach: "This word describes Russ when Polly is missing.", reference: "paragraph 2", prompt: "Why is Russ in a panic?" },
+      { word: "comprehend", meaning: "understand", whyPreteach: "This word explains Russ's confusion about Polly.", reference: "paragraph 2", prompt: "What can Russ not comprehend?" },
+      { word: "inspected", meaning: "looked at carefully", whyPreteach: "This word describes the search for Polly.", reference: "paragraph 3", prompt: "What land did they inspect?" },
+      { word: "tri-level", meaning: "having three levels", whyPreteach: "This word helps students picture Russ's house.", reference: "paragraph 3", prompt: "What kind of home does Russ have?" },
+      { word: "recommit", meaning: "promise again or return to a task", whyPreteach: "This word shows Glen plans to keep helping.", reference: "paragraph 4", prompt: "What does Glen say he can recommit to the next day?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of new pet does Russ have?" },
+        { type: "literal", question: "Who left the gate open?" },
+        { type: "literal", question: "Where do Russ and Glen look for Polly?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Polly not the kind of pet Glen first expects?" },
+        { type: "evidence", question: "What details show Russ is worried about Polly?" },
+        { type: "vocabulary", question: "What does 'recommit to the hunt' mean?" }
+      ]
+    }
+  },
+  "reader5-5.4-ab-p100-chicken-bathtub-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "shrub", meaning: "a small bush", whyPreteach: "This word tells where Glen first sees Polly.", reference: "paragraph 1", prompt: "Where does Glen see the white wing?" },
+      { word: "clucking", meaning: "making chicken sounds", whyPreteach: "This word explains what Glen's mother hears.", reference: "paragraph 3", prompt: "What sound does Glen's mother detect?" },
+      { word: "babysit", meaning: "watch and care for someone or something for a short time", whyPreteach: "This word is used humorously for watching the chicken.", reference: "paragraph 4", prompt: "Why does Glen say they must babysit the chicken?" },
+      { word: "relocate", meaning: "move to another place", whyPreteach: "This word explains what Russ will do with Polly.", reference: "paragraph 5", prompt: "Where will Russ relocate Polly?" },
+      { word: "reattach", meaning: "attach again", whyPreteach: "This word explains how Russ will fix the gate problem.", reference: "paragraph 5", prompt: "What will Russ reattach?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Glen find Polly?" },
+        { type: "literal", question: "Where does Glen put Polly while he calls Russ?" },
+        { type: "literal", question: "What does Russ say he will fix?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Glen choose the bathtub as a place for Polly?" },
+        { type: "evidence", question: "What details make the ending funny?" },
+        { type: "vocabulary", question: "What does 'reattach the lock' mean in Russ's sentence?" }
+      ]
+    }
+  },
+  "reader5-5.4-b-p102-explosive-volcano": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "erupted", meaning: "burst out suddenly from a volcano", whyPreteach: "This word is central to the volcanic event.", reference: "paragraph 1", prompt: "What has the volcano done?" },
+      { word: "molten", meaning: "melted by heat", whyPreteach: "This word describes the hot rocks.", reference: "paragraph 1", prompt: "What kind of rocks shot through the opening?" },
+      { word: "ash", meaning: "gray powder left after burning", whyPreteach: "This word explains what is deposited everywhere.", reference: "paragraph 1", prompt: "What is deposited everywhere?" },
+      { word: "vacate", meaning: "leave a place", whyPreteach: "This word explains the emergency plan.", reference: "paragraph 2", prompt: "What must people do with their homes?" },
+      { word: "leveling", meaning: "destroying or flattening", whyPreteach: "This word explains why people fear losing homes.", reference: "paragraph 3", prompt: "What might the active volcano do to a home?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What time does the siren blast?" },
+        { type: "literal", question: "What comes out of the volcano?" },
+        { type: "literal", question: "What must every man, woman, and child do?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do some people not want to leave even though the volcano is dangerous?" },
+        { type: "evidence", question: "What details show the eruption could cause more than one kind of danger?" },
+        { type: "vocabulary", question: "What does 'vacate their homes' mean?" }
+      ]
+    }
+  },
+  "reader5-5.4-b-p104-sales-problem-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "diminishing", meaning: "becoming smaller or less", whyPreteach: "This word describes the sales problem.", reference: "title", prompt: "What is diminishing in this business?" },
+      { word: "industry", meaning: "a type of business or work", whyPreteach: "This word explains Kenny and April's field.", reference: "paragraph 1", prompt: "What industry do Kenny and April work in?" },
+      { word: "acquire", meaning: "get or obtain", whyPreteach: "This word explains what customers may do with equipment.", reference: "paragraph 2", prompt: "What items can people rent or acquire?" },
+      { word: "documented", meaning: "written down or recorded", whyPreteach: "This word explains one management problem.", reference: "paragraph 3", prompt: "What was not documented?" },
+      { word: "grave conflict", meaning: "serious disagreement or trouble", whyPreteach: "This phrase describes the staff problem.", reference: "paragraph 4", prompt: "Why is the staff in grave conflict?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who works with Kenny in the trucking industry?" },
+        { type: "literal", question: "What kinds of items are on their lot?" },
+        { type: "literal", question: "What are two problems at the truck shop?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do customers probably stop trusting the truck shop?" },
+        { type: "evidence", question: "What details show Kenny and April neglected the business environment?" },
+        { type: "vocabulary", question: "What does 'documented' mean in the sentence about truck use?" }
+      ]
+    }
+  },
+  "reader5-5.4-b-p106-sales-problem-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "enriching", meaning: "improving or making better", whyPreteach: "This word describes making staff jobs better.", reference: "paragraph 1", prompt: "What does Kenny want staff to commit to?" },
+      { word: "dynamic", meaning: "energetic and effective", whyPreteach: "This word describes Kenny's leadership.", reference: "paragraph 2", prompt: "How is Kenny dynamic?" },
+      { word: "cohesive", meaning: "working well together", whyPreteach: "This word shows the staff becomes united again.", reference: "paragraph 2", prompt: "What does it mean that the staff is cohesive?" },
+      { word: "reinvent", meaning: "change something in a new and better way", whyPreteach: "This word explains April's sales work.", reference: "paragraph 3", prompt: "What does April reinvent?" },
+      { word: "comprehensive", meaning: "complete and including many parts", whyPreteach: "This word describes April's new sales system.", reference: "paragraph 3", prompt: "What comprehensive mode does April put in place?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Kenny work to do with staff who left?" },
+        { type: "literal", question: "What is April in command of?" },
+        { type: "literal", question: "What happens to sales at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How do Kenny and April solve different parts of the same business problem?" },
+        { type: "evidence", question: "What details show the truck shop is back on track?" },
+        { type: "vocabulary", question: "What does 'cohesive' mean in the sentence about the staff?" }
+      ]
+    }
+  },
+  "reader5-5.5-ab-p128-day-grandma": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "traffic rush", meaning: "a busy time when many cars are on the road", whyPreteach: "This phrase explains why the sisters leave early.", reference: "paragraph 1", prompt: "Why do Emma and Melissa leave before the traffic rush?" },
+      { word: "abundant", meaning: "more than enough or plentiful", whyPreteach: "This word describes the red hills on the drive.", reference: "paragraph 2", prompt: "What kind of red hills do they see?" },
+      { word: "landscape", meaning: "the land and scenery in an area", whyPreteach: "This word helps students picture the drive.", reference: "paragraph 2", prompt: "What landscape does Emma want to look at?" },
+      { word: "reminded", meaning: "helped someone remember", whyPreteach: "This word explains Melissa keeping the plan on track.", reference: "paragraph 2", prompt: "What does Melissa remind Emma about?" },
+      { word: "alike", meaning: "similar", whyPreteach: "This word explains the connection between the three women.", reference: "paragraph 4", prompt: "How are the three women described?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who travels to visit Grandma?" },
+        { type: "literal", question: "Where does Grandma live?" },
+        { type: "literal", question: "What do Emma and Melissa tell Grandma before leaving?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Melissa not want to make extra stops?" },
+        { type: "evidence", question: "What details show Emma, Melissa, and Grandma enjoy being together?" },
+        { type: "vocabulary", question: "What does 'traffic rush' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.5-ab-p130-mojo-digs": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "aware", meaning: "knowing or understanding", whyPreteach: "This word explains Mojo does not know he upsets Logan.", reference: "paragraph 1", prompt: "What is Mojo not aware of?" },
+      { word: "instinctive", meaning: "done naturally without being taught", whyPreteach: "This word explains Mojo's digging habit.", reference: "paragraph 1", prompt: "What instinctive habit does Mojo have?" },
+      { word: "evident", meaning: "clear or easy to see", whyPreteach: "This word signals that the hole problem is obvious.", reference: "paragraph 1", prompt: "What becomes evident to Logan?" },
+      { word: "benefit", meaning: "get something useful or good from", whyPreteach: "This word explains Logan's new idea.", reference: "paragraph 2", prompt: "How can Logan benefit from Mojo's holes?" },
+      { word: "unaware", meaning: "not knowing", whyPreteach: "This word explains that Mojo does not understand his helpful gift.", reference: "paragraph 3", prompt: "What is Mojo unaware of?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What habit does Mojo have?" },
+        { type: "literal", question: "What does Logan plant in Mojo's holes?" },
+        { type: "literal", question: "How does Logan feel about Mojo at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Logan turn a problem into something useful?" },
+        { type: "evidence", question: "What details show Mojo does not mean to upset Logan?" },
+        { type: "vocabulary", question: "What does 'instinctive habit' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader5-5.5-ab-p132-academy": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "identical twin siblings", meaning: "brothers or sisters who look the same and were born together", whyPreteach: "This phrase introduces Benny and Abraham's relationship.", reference: "paragraph 1", prompt: "Who are Benny and Abraham?" },
+      { word: "academy", meaning: "a school or special place for learning", whyPreteach: "This word names the new program setting.", reference: "paragraph 1", prompt: "Where will they study politics?" },
+      { word: "habitat", meaning: "the natural home of plants or animals", whyPreteach: "This word explains the wildlife around the academy.", reference: "paragraph 1", prompt: "What wildlife is in the habitat?" },
+      { word: "recline", meaning: "lean back", whyPreteach: "This word describes the sofa they plan to bring.", reference: "paragraph 3", prompt: "What can the sofa do?" },
+      { word: "instruments", meaning: "tools used to make music", whyPreteach: "This word explains what Benny brings for music classes.", reference: "paragraph 3", prompt: "What will Benny take?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do Benny and Abraham live?" },
+        { type: "literal", question: "What will they study at the academy?" },
+        { type: "literal", question: "What snacks do they plan to bring?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are Benny and Abraham happy to attend the academy together?" },
+        { type: "evidence", question: "What details show the academy will be different from home?" },
+        { type: "vocabulary", question: "What does 'habitat' mean in the sentence about wildlife?" }
+      ]
+    }
+  },
+  "reader5-5.5-b-p134-chinchilla-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "quest", meaning: "a long effort to get or do something", whyPreteach: "This word describes Melissa's repeated wish for a pet.", reference: "paragraph 1", prompt: "What quest does Melissa not give up?" },
+      { word: "lamenting", meaning: "complaining or expressing sadness", whyPreteach: "This word explains how Melissa finally gets a response.", reference: "paragraph 2", prompt: "What pays off for Melissa?" },
+      { word: "at a loss", meaning: "unsure what to say or do", whyPreteach: "This phrase describes Melissa's mother when she hears the pet choice.", reference: "paragraph 3", prompt: "Why is Melissa's mother at a loss?" },
+      { word: "defended herself", meaning: "explained or supported her choice", whyPreteach: "This phrase shows Melissa trying to justify wanting a chinchilla.", reference: "paragraph 3", prompt: "How does Melissa defend herself?" },
+      { word: "manipulate", meaning: "try to control someone in an unfair or sneaky way", whyPreteach: "This word explains why Melissa has to study instead of just begging.", reference: "paragraph 4", prompt: "Why can Melissa not manipulate her mother anymore?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What has Melissa wanted since she was small?" },
+        { type: "literal", question: "What kind of pet does Melissa ask for?" },
+        { type: "literal", question: "What does Melissa's mother tell her to do first?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Melissa's mother unsure about getting a chinchilla?" },
+        { type: "evidence", question: "What details show Melissa wants the pet but does not know enough yet?" },
+        { type: "vocabulary", question: "What does 'at a loss' mean when Melissa's mother hears 'chinchilla'?" }
+      ]
+    }
+  },
+  "reader5-5.5-b-p136-chinchilla-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "advocate", meaning: "speak in support of something", whyPreteach: "This word describes Melissa asking for a chinchilla.", reference: "paragraph 1", prompt: "What did Melissa advocate for?" },
+      { word: "rodent", meaning: "a small mammal such as a mouse, squirrel, or chinchilla", whyPreteach: "This word identifies what a chinchilla is.", reference: "paragraph 2", prompt: "What kind of animal is a chinchilla?" },
+      { word: "dense", meaning: "thick", whyPreteach: "This word describes chinchilla fur.", reference: "paragraph 2", prompt: "What kind of fur do chinchillas have?" },
+      { word: "in demand", meaning: "wanted by many people", whyPreteach: "This phrase explains why chinchillas became extinct in some places.", reference: "paragraph 3", prompt: "What used to be in demand?" },
+      { word: "require", meaning: "need", whyPreteach: "This word explains chinchilla care.", reference: "paragraph 4", prompt: "What do chinchillas require?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Melissa go to study chinchillas?" },
+        { type: "literal", question: "How high can chinchillas jump?" },
+        { type: "literal", question: "What are baby chinchillas called?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Melissa's parents decide she has the wisdom to care for a chinchilla?" },
+        { type: "evidence", question: "What details show a chinchilla would take a lot of care?" },
+        { type: "vocabulary", question: "What does 'in demand' mean in the sentence about chinchilla fur?" }
+      ]
+    }
+  },
+  "reader5-5.5-b-p138-anna-skates-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "dedicate", meaning: "give time and effort to something", whyPreteach: "This word explains Anna's long training.", reference: "paragraph 1", prompt: "What did Anna and her family dedicate themselves to?" },
+      { word: "competitive level", meaning: "a high level where people compete seriously", whyPreteach: "This phrase describes Anna's skating status.", reference: "paragraph 1", prompt: "What level does Anna skate at?" },
+      { word: "objective", meaning: "goal", whyPreteach: "This word names Anna's goal.", reference: "paragraph 1", prompt: "What is Anna's objective?" },
+      { word: "captivates", meaning: "holds attention because something is interesting or beautiful", whyPreteach: "This word describes Anna's effect on the crowd.", reference: "paragraph 2", prompt: "Whom does Anna captivate?" },
+      { word: "prospect", meaning: "possibility or chance", whyPreteach: "This word explains what inspires Anna.", reference: "paragraph 3", prompt: "What prospect inspires Anna?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How long has Anna been skating?" },
+        { type: "literal", question: "What is Anna's objective?" },
+        { type: "literal", question: "What event will matter most at the World Finals?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Anna have a right to be confident?" },
+        { type: "evidence", question: "What details show Anna and her family have worked hard for skating?" },
+        { type: "vocabulary", question: "What does 'captivates' mean in the sentence about people in the stands?" }
+      ]
+    }
+  },
+  "reader5-5.5-b-p140-anna-skates-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "tempo", meaning: "the speed or beat of music", whyPreteach: "This word describes Anna's skating music.", reference: "paragraph 1", prompt: "What tempo does Anna's music have?" },
+      { word: "executes", meaning: "performs or carries out", whyPreteach: "This word describes Anna doing difficult jumps.", reference: "paragraph 1", prompt: "What jumps does Anna execute?" },
+      { word: "elegant", meaning: "graceful and beautiful", whyPreteach: "This word describes Anna's skating style.", reference: "paragraph 1", prompt: "How does Anna look while skating?" },
+      { word: "opponents", meaning: "people competing against someone", whyPreteach: "This word identifies the skaters Anna greets.", reference: "paragraph 2", prompt: "Who are Anna's opponents?" },
+      { word: "jubilant", meaning: "very happy and cheering", whyPreteach: "This word describes the fans after Anna wins.", reference: "paragraph 3", prompt: "How do the fans feel?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What medal does Anna win?" },
+        { type: "literal", question: "Who does Anna shake hands with?" },
+        { type: "literal", question: "Whom does Anna thank when the press comes by?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Anna almost begin to cry at the end?" },
+        { type: "evidence", question: "What details show Anna is both talented and respectful?" },
+        { type: "vocabulary", question: "What does 'jubilant' mean in the sentence about the fans?" }
+      ]
+    }
   }
 };
