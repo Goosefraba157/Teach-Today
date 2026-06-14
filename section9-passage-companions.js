@@ -3000,5 +3000,1419 @@ window.section9PassageCompanions = {
         { type: "vocabulary", question: "What does 'jubilant' mean in the sentence about the fans?" }
       ]
     }
+  },
+  "reader6-6.1-ab-p21-kendra-hopeful-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "crack the tricky code", meaning: "figure out how to read words", whyPreteach: "This phrase explains Kendra's reading struggle.", reference: "paragraph 1", prompt: "What code could Kendra not crack?" },
+      { word: "helpless", meaning: "feeling unable to fix a problem", whyPreteach: "This word shows how Kendra feels before support.", reference: "paragraph 1", prompt: "Why does Kendra feel helpless?" },
+      { word: "instruct", meaning: "teach", whyPreteach: "This word explains Mrs. Cassidy's role.", reference: "paragraph 1", prompt: "What does Mrs. Cassidy know how to do?" },
+      { word: "lively", meaning: "full of energy", whyPreteach: "This word explains why lessons feel enjoyable.", reference: "paragraph 2", prompt: "How is Mrs. Cassidy lively?" },
+      { word: "during", meaning: "while something is happening", whyPreteach: "This word helps students follow the lesson routine.", reference: "paragraph 3", prompt: "What does Kendra use during her lessons?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How many words had Kendra learned by the end of first grade?" },
+        { type: "literal", question: "Who helps Kendra learn to read?" },
+        { type: "literal", question: "What does Kendra keep in her white notebook?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Kendra hopeful after meeting Mrs. Cassidy?" },
+        { type: "evidence", question: "What details show Mrs. Cassidy makes learning feel less scary?" },
+        { type: "vocabulary", question: "What does 'crack the tricky code' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.1-ab-p22-kendra-hopeful-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "decode", meaning: "read a word by using sounds and word parts", whyPreteach: "This word is central to Kendra's reading growth.", reference: "paragraph 1", prompt: "What does Kendra learn how to decode?" },
+      { word: "attempted", meaning: "tried", whyPreteach: "This word helps students understand Kendra's spelling effort.", reference: "paragraph 1", prompt: "What does Kendra attempt to spell?" },
+      { word: "divide", meaning: "break into smaller parts", whyPreteach: "This word explains her strategy for longer words.", reference: "paragraph 1", prompt: "Why does Kendra divide longer words?" },
+      { word: "blend", meaning: "two or more consonant sounds together in a word", whyPreteach: "This word appears in Mrs. Cassidy's question.", reference: "paragraph 4", prompt: "What does Mrs. Cassidy ask Kendra to find?" },
+      { word: "limitless", meaning: "without limits", whyPreteach: "This word explains Kendra's new outlook.", reference: "paragraph 6", prompt: "What does it mean that Kendra's outlook is limitless?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Kendra do when she comes across a word she does not know?" },
+        { type: "literal", question: "How does Kendra answer when Mrs. Cassidy asks about the blend?" },
+        { type: "literal", question: "What does Kendra now love?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How has Kendra changed from Part One to Part Two?" },
+        { type: "evidence", question: "What details show Kendra is becoming more confident?" },
+        { type: "vocabulary", question: "What does 'falling into place' mean in this passage?" }
+      ]
+    }
+  },
+  "reader6-6.1-ab-p24-safety-lesson": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "smoke detectors", meaning: "devices that warn people when smoke is present", whyPreteach: "This is the main safety topic.", reference: "paragraph 1", prompt: "What safety topic does Nell Costa discuss?" },
+      { word: "vital", meaning: "very important", whyPreteach: "This word signals the seriousness of installing detectors correctly.", reference: "paragraph 3", prompt: "Why is installing smoke detectors vital?" },
+      { word: "install", meaning: "put in place so something works", whyPreteach: "This word explains how smoke detectors must be placed.", reference: "paragraph 3", prompt: "Where should smoke detectors be installed?" },
+      { word: "frequently", meaning: "often", whyPreteach: "This word explains how often detectors need care.", reference: "paragraph 4", prompt: "How often should smoke detectors be dusted?" },
+      { word: "conduct fire drills", meaning: "practice what to do during a fire", whyPreteach: "This phrase explains the final safety advice.", reference: "paragraph 5", prompt: "Why should families conduct fire drills at home?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who comes to Brenna's school to give a safety talk?" },
+        { type: "literal", question: "Where should smoke detectors be put in a home?" },
+        { type: "literal", question: "What final fact does Nell stress?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do the students clap for almost two minutes?" },
+        { type: "evidence", question: "What details show smoke detectors only help if they are cared for?" },
+        { type: "vocabulary", question: "What does 'vital' mean in the sentence about smoke detecting equipment?" }
+      ]
+    }
+  },
+  "reader6-6.1-ab-p26-ladybug-problem-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "at hand", meaning: "happening now and needing attention", whyPreteach: "This phrase introduces the cabin problem.", reference: "paragraph 1", prompt: "What problem is at hand?" },
+      { word: "hundreds", meaning: "very many, at least two hundred", whyPreteach: "This word helps students understand the size of the bug problem.", reference: "paragraph 1", prompt: "How many ladybugs are on the walls?" },
+      { word: "react", meaning: "respond to something that happens", whyPreteach: "This word explains that Lilly and Jack must act quickly.", reference: "paragraph 2", prompt: "Why do Lilly and Jack need to react?" },
+      { word: "fondness", meaning: "a liking or caring feeling", whyPreteach: "This word explains Lilly's gentle solution.", reference: "paragraph 2", prompt: "What does Lilly have a fondness for?" },
+      { word: "mindful", meaning: "careful to remember or consider", whyPreteach: "This word explains why they avoid killing the insects.", reference: "paragraph 2", prompt: "What fact does Lilly want them to be mindful of?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is Lilly and Jack's cabin?" },
+        { type: "literal", question: "What do they find all over the cabin walls?" },
+        { type: "literal", question: "Why does Lilly not want to kill the ladybugs?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the ladybug problem need a careful solution?" },
+        { type: "evidence", question: "What details show Lilly cares about living things?" },
+        { type: "vocabulary", question: "What does 'above all' mean in Lilly's sentence?" }
+      ]
+    }
+  },
+  "reader6-6.1-ab-p27-ladybug-problem-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "trusty", meaning: "reliable or helpful", whyPreteach: "This word describes Jack's laptop as useful for solving the problem.", reference: "paragraph 1", prompt: "What trusty item does Jack bring?" },
+      { word: "handy", meaning: "useful", whyPreteach: "This word describes the website Jack finds.", reference: "paragraph 1", prompt: "How does the website help?" },
+      { word: "awareness", meaning: "understanding or knowledge", whyPreteach: "This word explains that they know they must be gentle.", reference: "paragraph 2", prompt: "What awareness do Jack and Lilly have?" },
+      { word: "distress", meaning: "strong upset or discomfort", whyPreteach: "This word explains why the ladybugs may smell bad.", reference: "paragraph 2", prompt: "What can happen if the bugs are in distress?" },
+      { word: "bagful", meaning: "as much as a bag can hold", whyPreteach: "This word helps students picture moving the ladybugs outside.", reference: "paragraph 3", prompt: "What do they carry outside?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How does Jack find an answer to the ladybug problem?" },
+        { type: "literal", question: "What do Jack and Lilly put the ladybugs into?" },
+        { type: "literal", question: "What does Lilly see at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the cloth bag a good solution for this problem?" },
+        { type: "evidence", question: "What details show Jack and Lilly treat the ladybugs kindly?" },
+        { type: "vocabulary", question: "What does 'distress' mean in the sentence about the bugs?" }
+      ]
+    }
+  },
+  "reader6-6.1-b-p28-cathys-fateful-call": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "fateful", meaning: "important because it changes what happens next", whyPreteach: "This word explains why the phone call matters.", reference: "title", prompt: "Why might Cathy's call be fateful?" },
+      { word: "establishment", meaning: "a business or public place", whyPreteach: "This word describes where Cathy is invited to sing.", reference: "paragraph 2", prompt: "Where is Cathy asked to sing?" },
+      { word: "modestly", meaning: "without bragging", whyPreteach: "This word describes Cathy's careful answer.", reference: "paragraph 2", prompt: "How does Cathy respond?" },
+      { word: "witnessing", meaning: "seeing something happen", whyPreteach: "This word explains the audience at the event.", reference: "paragraph 4", prompt: "Who will be witnessing Cathy sing?" },
+      { word: "true calling", meaning: "the work or path someone feels meant to do", whyPreteach: "This phrase explains the ending.", reference: "paragraph 5", prompt: "What does Cathy realize is her true calling?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What did Cathy plan to do with Lucas before the call?" },
+        { type: "literal", question: "What job does the caller offer Cathy?" },
+        { type: "literal", question: "How does the audience react to Cathy's songs?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Cathy almost hang up at first?" },
+        { type: "evidence", question: "What details show Cathy may have a future as a singer?" },
+        { type: "vocabulary", question: "What does 'true calling' mean at the end of the passage?" }
+      ]
+    }
+  },
+  "reader6-6.1-b-p30-work-docks": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "cove", meaning: "a small sheltered part of a coast or bay", whyPreteach: "This word sets the dock location.", reference: "paragraph 1", prompt: "Where are the docks located?" },
+      { word: "inlet", meaning: "a narrow area where water comes into land", whyPreteach: "This word helps students picture the cove.", reference: "paragraph 1", prompt: "What surrounds the inlet?" },
+      { word: "vessels", meaning: "boats or ships", whyPreteach: "This word refers to the ships Jacob helps.", reference: "paragraph 1", prompt: "What kinds of vessels use the cove?" },
+      { word: "casts off", meaning: "unties a boat so it can leave", whyPreteach: "This phrase explains one of Jacob's dock jobs.", reference: "paragraph 2", prompt: "When does Jacob cast off the docking lines?" },
+      { word: "dependable", meaning: "reliable and able to be trusted", whyPreteach: "This word describes Jacob as a worker.", reference: "paragraph 4", prompt: "How does Jacob pride himself?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Jacob work?" },
+        { type: "literal", question: "What does Jacob attach when ships come in?" },
+        { type: "literal", question: "Why must Jacob be extra attentive when there are strong winds?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why can Jacob's job be stressful even though he loves it?" },
+        { type: "evidence", question: "What details show the docks can be a busy and risky place?" },
+        { type: "vocabulary", question: "What does 'casts off the docking lines' mean?" }
+      ]
+    }
+  },
+  "reader6-6.1-b-p32-eventful-day-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "trip of their lifetime", meaning: "a very special trip they may always remember", whyPreteach: "This phrase explains why preparation matters.", reference: "paragraph 1", prompt: "Where are JoAnn and Chucky going?" },
+      { word: "eventful", meaning: "full of important activity", whyPreteach: "This word describes JoAnn's busy day.", reference: "paragraph 2", prompt: "Why is JoAnn's day eventful?" },
+      { word: "accomplishing", meaning: "finishing or getting done", whyPreteach: "This word explains JoAnn's goal.", reference: "paragraph 2", prompt: "What is JoAnn mindful of accomplishing?" },
+      { word: "plan of attack", meaning: "a plan for getting something done", whyPreteach: "This phrase describes JoAnn's task strategy.", reference: "paragraph 2", prompt: "Why is JoAnn's plan not hopeless?" },
+      { word: "vastness", meaning: "very large size or space", whyPreteach: "This word describes Alaska and why they need warm clothes.", reference: "paragraph 3", prompt: "Why will they need jackets and hats in Alaska?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where are JoAnn and Chucky going in a few days?" },
+        { type: "literal", question: "How long will the trip be?" },
+        { type: "literal", question: "What does JoAnn pick up at the shop above the bank?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does JoAnn choose to ignore other tasks for the day?" },
+        { type: "evidence", question: "What details show JoAnn is organized and quick?" },
+        { type: "vocabulary", question: "What does 'mile-long list' mean in this passage?" }
+      ]
+    }
+  },
+  "reader6-6.1-b-p34-eventful-day-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "refreshment", meaning: "a drink or small snack", whyPreteach: "This word explains what JoAnn considers at noon.", reference: "paragraph 1", prompt: "What does JoAnn think about at twelve o'clock?" },
+      { word: "disruptive", meaning: "interrupting or getting in the way", whyPreteach: "This word explains why JoAnn skips lunch.", reference: "paragraph 1", prompt: "Why would stopping for lunch be disruptive?" },
+      { word: "kennel", meaning: "a place that cares for pets", whyPreteach: "This word explains where Penny will stay.", reference: "paragraph 2", prompt: "Where do JoAnn and Chucky meet?" },
+      { word: "exhibited", meaning: "showed", whyPreteach: "This word describes the kennel owner's kindness.", reference: "paragraph 2", prompt: "What did the kennel owner exhibit?" },
+      { word: "amazement", meaning: "great surprise", whyPreteach: "This word describes JoAnn's reaction when tasks are done.", reference: "paragraph 3", prompt: "Why is JoAnn amazed?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why does JoAnn not stop for lunch?" },
+        { type: "literal", question: "What is the name of JoAnn and Chucky's dog?" },
+        { type: "literal", question: "What time do they get back home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do JoAnn and Chucky think the kennel is the right place for Penny?" },
+        { type: "evidence", question: "What details show JoAnn's plan worked?" },
+        { type: "vocabulary", question: "What does 'exhibited toward the pets' mean?" }
+      ]
+    }
+  },
+  "reader6-6.2-ab-p60-cavity-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "American History", meaning: "the study of the history of the United States", whyPreteach: "This phrase appears in Jake's school-day conversation.", reference: "paragraph 1", prompt: "What test does Mom ask about?" },
+      { word: "sore", meaning: "painful or hurting", whyPreteach: "This word explains Jake's tooth problem.", reference: "paragraph 2", prompt: "When does Jake feel sore?" },
+      { word: "cavity", meaning: "a damaged hole in a tooth", whyPreteach: "This word is central to the dental visit.", reference: "paragraph 3", prompt: "What does the dentist think Jake has?" },
+      { word: "filled", meaning: "repaired by putting material into a tooth", whyPreteach: "This word explains the treatment.", reference: "paragraph 3", prompt: "What does the cavity need?" },
+      { word: "flossed", meaning: "cleaned between teeth with floss", whyPreteach: "This word explains Jake's dental care routine.", reference: "paragraph 4", prompt: "What does Jake do every day?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What hurts when Jake bites into food?" },
+        { type: "literal", question: "Who does Mom call after they get home?" },
+        { type: "literal", question: "Why does Jake know he has to go to the dentist?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Jake upset even though he brushes and flosses?" },
+        { type: "evidence", question: "What details show Jake is nervous but brave?" },
+        { type: "vocabulary", question: "What does 'filled' mean in the sentence about the cavity?" }
+      ]
+    }
+  },
+  "reader6-6.2-ab-p62-cavity-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "diploma", meaning: "a document showing someone completed school or training", whyPreteach: "This word explains what Jake sees on the wall.", reference: "paragraph 1", prompt: "What is in the frame on the wall?" },
+      { word: "keep his mind off", meaning: "try not to think about something", whyPreteach: "This phrase explains Jake coping with the shot.", reference: "paragraph 1", prompt: "What is Jake trying not to think about?" },
+      { word: "insisted", meaning: "said firmly", whyPreteach: "This word shows the dentist reassuring Jake.", reference: "paragraph 1", prompt: "What does the dentist insist about the shot?" },
+      { word: "swished", meaning: "moved liquid around in the mouth", whyPreteach: "This word explains what Jake does with the drink.", reference: "paragraph 2", prompt: "What does Jake do before spitting into the sink?" },
+      { word: "minimum", meaning: "the least amount allowed", whyPreteach: "This word explains how long Jake must wait to eat.", reference: "paragraph 3", prompt: "What is the minimum time Jake must wait before eating?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does the dentist tell Jake to think about?" },
+        { type: "literal", question: "How does the shot feel?" },
+        { type: "literal", question: "What does Jake do when he gets home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Jake think he has the best dentist on Earth?" },
+        { type: "evidence", question: "What details show the filling was not as bad as Jake feared?" },
+        { type: "vocabulary", question: "What does 'keep his mind off the shot' mean?" }
+      ]
+    }
+  },
+  "reader6-6.2-ab-p64-island-life-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "something was up", meaning: "something unusual was happening", whyPreteach: "This phrase explains why the kids notice their parents are home early.", reference: "paragraph 2", prompt: "Why do Maxwell and Trudy know something is up?" },
+      { word: "presented with", meaning: "offered or given", whyPreteach: "This phrase explains Mom's new job.", reference: "paragraph 4", prompt: "What was Mom presented with?" },
+      { word: "tropical", meaning: "warm and near the tropics", whyPreteach: "This word describes the island.", reference: "paragraph 4", prompt: "Where is Mom's new job?" },
+      { word: "statements", meaning: "things that are said", whyPreteach: "This word describes the news that shocks the kids.", reference: "paragraph 4", prompt: "What statements shock Trudy and Maxwell?" },
+      { word: "discussed", meaning: "talked about carefully", whyPreteach: "This word explains how the family handles the news.", reference: "paragraph 5", prompt: "What plans do they discuss?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What were Maxwell and Trudy looking forward to after school ended?" },
+        { type: "literal", question: "What news do Mom and Dad share?" },
+        { type: "literal", question: "How does Trudy react to the news?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Mom and Dad expect the kids might be upset?" },
+        { type: "evidence", question: "What details show the move would be a major change?" },
+        { type: "vocabulary", question: "What does 'something was up' mean in the second paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.2-ab-p66-island-life-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "intently", meaning: "with close attention", whyPreteach: "This word describes how the siblings listen.", reference: "paragraph 1", prompt: "How do Maxwell and Trudy listen?" },
+      { word: "protested", meaning: "objected or spoke against something", whyPreteach: "This word explains the kids' first reaction.", reference: "paragraph 1", prompt: "Why do the kids protest?" },
+      { word: "have a say", meaning: "get to share an opinion that matters", whyPreteach: "This phrase explains the family decision.", reference: "paragraph 2", prompt: "What does it mean that the kids will have a say?" },
+      { word: "distant", meaning: "far away", whyPreteach: "This word describes Aruba from their home.", reference: "paragraph 3", prompt: "What distant land do they research?" },
+      { word: "pure bliss", meaning: "complete happiness", whyPreteach: "This phrase shows why the island begins to seem appealing.", reference: "paragraph 4", prompt: "What looks like pure bliss?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What island do Maxwell and Trudy research?" },
+        { type: "literal", question: "What do they use to look up facts?" },
+        { type: "literal", question: "When do Maxwell and Trudy talk until?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How do Maxwell and Trudy's feelings about the move begin to change?" },
+        { type: "evidence", question: "What details from the websites make Aruba seem appealing?" },
+        { type: "vocabulary", question: "What does 'have a say in it' mean?" }
+      ]
+    }
+  },
+  "reader6-6.2-b-p68-travel-map": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "travel map", meaning: "a map used to track places visited", whyPreteach: "This phrase explains Tyrell and Jenna's tradition.", reference: "title and paragraph 1", prompt: "What do Tyrell and Jenna keep on the wall?" },
+      { word: "astonishing", meaning: "very surprising or amazing", whyPreteach: "This word describes Alaska's landscape.", reference: "paragraph 2", prompt: "What is astonishing about Alaska?" },
+      { word: "serene", meaning: "calm and peaceful", whyPreteach: "This word describes the islands.", reference: "paragraph 2", prompt: "What kind of islands do they camp near?" },
+      { word: "drenched", meaning: "very wet", whyPreteach: "This word describes the rafting trip.", reference: "paragraph 3", prompt: "Why do Tyrell and Jenna get drenched?" },
+      { word: "pan for gold", meaning: "search for gold by washing dirt or gravel in a pan", whyPreteach: "This phrase explains their final activity.", reference: "paragraph 3", prompt: "What do they do upland?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What state is the last one checked off on the map?" },
+        { type: "literal", question: "What animals do Tyrell and Jenna see?" },
+        { type: "literal", question: "What is the best day of their trip?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Tyrell and Jenna wonder where to visit next after finishing the map?" },
+        { type: "evidence", question: "What details show Alaska is full of outdoor adventure?" },
+        { type: "vocabulary", question: "What does 'drenched' mean in the rafting paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.2-b-p70-trip-lifetime": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "extended visit", meaning: "a longer-than-usual stay", whyPreteach: "This phrase explains why Tony and Luca travel to Italy.", reference: "paragraph 1", prompt: "Why are Tony and Luca going to Italy?" },
+      { word: "arena", meaning: "a large place for public events or contests", whyPreteach: "This word names their first stop in Rome.", reference: "paragraph 2", prompt: "What is the first stop on the trip?" },
+      { word: "maze of winding lanes", meaning: "many curving streets that can feel confusing", whyPreteach: "This phrase helps students picture the public square.", reference: "paragraph 2", prompt: "Where is the public square set?" },
+      { word: "refreshed", meaning: "made to feel renewed or energized", whyPreteach: "This word describes Tony in Tuscany.", reference: "paragraph 3", prompt: "What refreshes Tony?" },
+      { word: "erupted", meaning: "burst out from a volcano", whyPreteach: "This word explains the volcanic place they visit.", reference: "paragraph 4", prompt: "What had the volcano done many years ago?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do Tony and Luca travel?" },
+        { type: "literal", question: "What places do they visit in Italy?" },
+        { type: "literal", question: "Where do they go back at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is this called a trip of a lifetime?" },
+        { type: "evidence", question: "What details show Italy feels impressive to Tony and Luca?" },
+        { type: "vocabulary", question: "What does 'extended visit' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.3-ab-p86-bike-nantucket": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "explore", meaning: "travel around to learn about a place", whyPreteach: "This word explains why Betsy and Enzo ride bikes.", reference: "paragraph 1", prompt: "What do Betsy and Enzo love to explore?" },
+      { word: "progressively", meaning: "little by little over time", whyPreteach: "This word shows their rides get longer.", reference: "paragraph 1", prompt: "How do their rides change?" },
+      { word: "rental shop", meaning: "a place where people pay to use something for a short time", whyPreteach: "This phrase explains where they get bikes.", reference: "paragraph 2", prompt: "Where do they go on Nantucket?" },
+      { word: "traffic", meaning: "cars and other vehicles on roads", whyPreteach: "This word explains why the bike paths are safe and pleasant.", reference: "paragraph 3", prompt: "What are the bike paths away from?" },
+      { word: "pedaled", meaning: "pushed bike pedals to move", whyPreteach: "This word explains how they travel.", reference: "paragraph 3", prompt: "Where do they skillfully pedal?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What island do Betsy and Enzo visit?" },
+        { type: "literal", question: "How long is their bike ride?" },
+        { type: "literal", question: "Where do they rest and have lunch?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Betsy and Enzo think bikes are the best way to see the island?" },
+        { type: "evidence", question: "What details show this ride is safe and scenic?" },
+        { type: "vocabulary", question: "What does 'progressively longer' mean?" }
+      ]
+    }
+  },
+  "reader6-6.3-ab-p88-pumpkins-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "restlessly", meaning: "unable to sit still because of excitement or worry", whyPreteach: "This word shows David's excitement after school.", reference: "paragraph 1", prompt: "Why might David sit restlessly in class?" },
+      { word: "pack of students", meaning: "a group of students moving together", whyPreteach: "This phrase helps students picture dismissal.", reference: "paragraph 1", prompt: "Who does David follow down the hall?" },
+      { word: "impressively", meaning: "in a way that makes others admire or notice", whyPreteach: "This word introduces David's pumpkin knowledge.", reference: "paragraph 2", prompt: "What does David impressively know?" },
+      { word: "vitamin A", meaning: "a nutrient that helps the body stay healthy", whyPreteach: "This content word supports David's pumpkin facts.", reference: "paragraph 3", prompt: "What vitamin do pumpkins have?" },
+      { word: "pridefully", meaning: "with pride", whyPreteach: "This word describes how David talks about pumpkins.", reference: "paragraph 3", prompt: "How does David talk about pumpkins?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is David excited to get after school?" },
+        { type: "literal", question: "What color are pumpkins?" },
+        { type: "literal", question: "What are pumpkins mostly made of?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell pumpkins are a serious interest for David?" },
+        { type: "evidence", question: "What details show David knows more about pumpkins than most people?" },
+        { type: "vocabulary", question: "What does 'restlessly' mean in the first sentence?" }
+      ]
+    }
+  },
+  "reader6-6.3-ab-p90-pumpkins-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "selectively", meaning: "carefully choosing only certain things", whyPreteach: "This word explains how David chooses pumpkins.", reference: "paragraph 1", prompt: "How does David pick pumpkins?" },
+      { word: "massively", meaning: "very greatly or extremely", whyPreteach: "This word describes the size of the pumpkins.", reference: "paragraph 1", prompt: "How large are David's pumpkins?" },
+      { word: "cure", meaning: "help heal or make well", whyPreteach: "This word appears in David's pumpkin fact.", reference: "paragraph 3", prompt: "How did Native Americans use pumpkins?" },
+      { word: "statement", meaning: "something someone says", whyPreteach: "This word refers to Dad's comment about the front steps.", reference: "paragraph 4", prompt: "What statement makes David laugh?" },
+      { word: "following", meaning: "after that", whyPreteach: "This word helps students follow the ending sequence.", reference: "paragraph 5", prompt: "What happens following Dad's statement?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How many pumpkins does David choose?" },
+        { type: "literal", question: "What does David say people often do with pumpkins?" },
+        { type: "literal", question: "What did Dad think David would do with the pumpkins?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does David laugh at his dad's comment?" },
+        { type: "evidence", question: "What details show David chooses pumpkins for more than decoration?" },
+        { type: "vocabulary", question: "What does 'selectively picking' mean?" }
+      ]
+    }
+  },
+  "reader6-6.3-b-p92-life-chipmunk": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "scampering", meaning: "running quickly with small light steps", whyPreteach: "This word describes chipmunk movement.", reference: "paragraph 1", prompt: "How do chipmunks move around?" },
+      { word: "rodents", meaning: "small mammals with front teeth used for gnawing", whyPreteach: "This word identifies chipmunks as animals.", reference: "paragraph 2", prompt: "What kind of animal is a chipmunk?" },
+      { word: "tunnels", meaning: "underground passages", whyPreteach: "This word explains where some chipmunks live and store food.", reference: "paragraph 2", prompt: "How long can chipmunk tunnels be?" },
+      { word: "stockpile", meaning: "store a supply for later", whyPreteach: "This word explains how chipmunks prepare for colder months.", reference: "paragraph 4", prompt: "What do chipmunks stockpile?" },
+      { word: "consume", meaning: "eat", whyPreteach: "This word explains what happens to some of the collected food.", reference: "paragraph 4", prompt: "What food do chipmunks not consume right away?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How many kinds of chipmunks are there?" },
+        { type: "literal", question: "What are baby chipmunks called?" },
+        { type: "literal", question: "How many nuts can one chipmunk collect in a day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do chipmunks need to store food for colder months?" },
+        { type: "evidence", question: "What details show chipmunks are small but busy animals?" },
+        { type: "vocabulary", question: "What does 'stockpile' mean in the sentence about colder months?" }
+      ]
+    }
+  },
+  "reader6-6.3-b-p94-tom-travels-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "extend his schooling", meaning: "continue going to school longer", whyPreteach: "This phrase explains what Tom does not want yet.", reference: "paragraph 1", prompt: "What does Tom not want to extend yet?" },
+      { word: "follow his heart", meaning: "do what he truly wants", whyPreteach: "This idiom explains Tom's choice to travel.", reference: "paragraph 1", prompt: "How does Tom want to follow his heart?" },
+      { word: "restlessness", meaning: "a feeling of needing to move or do something new", whyPreteach: "This word explains why Tom plans the trip.", reference: "paragraph 1", prompt: "What becomes strong for Tom?" },
+      { word: "established himself", meaning: "settled into a place or role", whyPreteach: "This phrase explains Tom starting out in Atlanta.", reference: "paragraph 2", prompt: "Where does Tom establish himself first?" },
+      { word: "relished", meaning: "enjoyed a lot", whyPreteach: "This word describes Tom's bookstore work.", reference: "paragraph 2", prompt: "What does Tom relish at the bookstore?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What grade has Tom finished?" },
+        { type: "literal", question: "Where does Tom get his first job?" },
+        { type: "literal", question: "What job does Tom get from the old man?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Tom choose travel instead of more school right away?" },
+        { type: "evidence", question: "What details show Tom is willing to take chances?" },
+        { type: "vocabulary", question: "What does 'nothing to lose' mean in this passage?" }
+      ]
+    }
+  },
+  "reader6-6.3-b-p96-tom-travels-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "civil rights", meaning: "rights that protect people's freedom and equal treatment", whyPreteach: "This phrase explains the historic sites Tom visits.", reference: "paragraph 2", prompt: "What kinds of spots does Tom visit in Alabama?" },
+      { word: "institute", meaning: "an organization or place for study or public work", whyPreteach: "This word explains where Tom inspects documents.", reference: "paragraph 2", prompt: "Where does Tom inspect documents?" },
+      { word: "reflected", meaning: "thought carefully", whyPreteach: "This word shows Tom thinking about history.", reference: "paragraph 2", prompt: "What does Tom reflect about?" },
+      { word: "fulfilled", meaning: "completed or carried out", whyPreteach: "This word explains Tom finishing the van task.", reference: "paragraph 3", prompt: "What task does Tom fulfill?" },
+      { word: "progress farther west", meaning: "continue moving toward the west", whyPreteach: "This phrase explains Tom's next plan.", reference: "paragraph 3", prompt: "Where does Tom want to progress?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How many days does Tom have to get the van to Texas?" },
+        { type: "literal", question: "What state capitol does Tom visit?" },
+        { type: "literal", question: "How many days does it take Tom to get the van to Texas?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Tom stop at civil rights spots instead of driving straight to Texas?" },
+        { type: "evidence", question: "What details show Tom is careful and responsible with the van job?" },
+        { type: "vocabulary", question: "What does 'fulfilled his task' mean?" }
+      ]
+    }
+  },
+  "reader6-6.4-ab-p122-apple-picking": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "grove", meaning: "a group of trees planted or growing together", whyPreteach: "This word describes the apple-picking place.", reference: "paragraph 2", prompt: "What does Eva see in the apple grove?" },
+      { word: "crop", meaning: "plants or fruit grown to be picked or used", whyPreteach: "This word describes this year's apples.", reference: "paragraph 2", prompt: "What crop is ripe and ready?" },
+      { word: "bundle", meaning: "a group of things held together", whyPreteach: "This word describes Uncle Mike's apples.", reference: "paragraph 3", prompt: "What bundle does Uncle Mike have?" },
+      { word: "crumble", meaning: "a baked fruit dessert with a crumbly topping", whyPreteach: "This word explains Eva's plan for her apples.", reference: "paragraph 4", prompt: "What does Eva plan to make?" },
+      { word: "stables", meaning: "buildings where animals such as horses or cattle are kept", whyPreteach: "This word explains their stop before leaving.", reference: "paragraph 6", prompt: "Where do they visit cattle?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who goes apple picking with Eva?" },
+        { type: "literal", question: "What kinds of apples do Eva and Uncle Mike pick?" },
+        { type: "literal", question: "Where do they go after putting the apples in the truck?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Eva and Uncle Mike think this may be their best apple-picking day yet?" },
+        { type: "evidence", question: "What details show apple picking makes them hungry?" },
+        { type: "vocabulary", question: "What does 'crop' mean in the sentence about apples being ripe?" }
+      ]
+    }
+  },
+  "reader6-6.4-ab-p124-stumble-puddle": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "stumble", meaning: "a trip or loss of balance", whyPreteach: "This word names Janet's accident.", reference: "title and paragraph 1", prompt: "What happens to Janet during her jog?" },
+      { word: "twisted her ankle", meaning: "hurt her ankle by turning it the wrong way", whyPreteach: "This phrase explains Janet's injury.", reference: "paragraph 1", prompt: "What does Janet do to her ankle?" },
+      { word: "limp", meaning: "walk with difficulty because of pain", whyPreteach: "This word shows Janet is hurt.", reference: "paragraphs 1 and 2", prompt: "How does Janet move after falling?" },
+      { word: "vehicle", meaning: "a car or other machine used for travel", whyPreteach: "This word explains how Dana helps Janet.", reference: "paragraph 2", prompt: "What does Dana help Janet get into?" },
+      { word: "settle on the fact", meaning: "accept something as true", whyPreteach: "This phrase explains Janet accepting that jogging must wait.", reference: "paragraph 4", prompt: "What fact does Janet have to settle on?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Janet doing when she stumbles?" },
+        { type: "literal", question: "Who helps Janet get home?" },
+        { type: "literal", question: "What does Janet put on her ankle at home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Janet mad at herself even though Dana helps her?" },
+        { type: "evidence", question: "What details show Janet's ankle still needs time to heal?" },
+        { type: "vocabulary", question: "What does 'settle on the fact' mean in the last paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.4-ab-p126-candle-shop": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "craft", meaning: "skill in making things by hand", whyPreteach: "This word describes Pete's candle-making talent.", reference: "paragraph 1", prompt: "What craft do people come to see?" },
+      { word: "wax", meaning: "a material used to make candles", whyPreteach: "This word is central to the candle-making process.", reference: "paragraph 2", prompt: "What does Pete melt?" },
+      { word: "wicks", meaning: "strings in candles that are lit", whyPreteach: "This word explains the candle parts Pete makes.", reference: "paragraph 3", prompt: "What does Pete twist strings into?" },
+      { word: "drizzle", meaning: "pour slowly in a thin stream", whyPreteach: "This word explains how Pete pours hot wax.", reference: "paragraph 5", prompt: "How does Pete put wax into cans and bottles?" },
+      { word: "exhibit", meaning: "show or display", whyPreteach: "This word explains how Pete presents candles in his shop.", reference: "paragraph 6", prompt: "Where does Pete exhibit his candles?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who taught Pete how to make candles?" },
+        { type: "literal", question: "What does Pete use as containers for candles?" },
+        { type: "literal", question: "What are some candle smells Pete makes?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do customers travel from all over to Pete's shop?" },
+        { type: "evidence", question: "What steps show candle making takes care and skill?" },
+        { type: "vocabulary", question: "What does 'final product' mean in the paragraph about candle smells?" }
+      ]
+    }
+  },
+  "reader6-6.4-ab-p128-jumping-rope": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "fitness benefits", meaning: "ways something helps the body become healthier or stronger", whyPreteach: "This phrase explains why jumping rope is useful.", reference: "paragraph 1", prompt: "What fitness benefits can jumping rope have?" },
+      { word: "promote", meaning: "help grow or improve", whyPreteach: "This word explains how jumping rope helps strength.", reference: "paragraph 1", prompt: "What can swinging and jumping rope promote?" },
+      { word: "unwinding tangles", meaning: "untwisting knots or twisted rope", whyPreteach: "This phrase explains why a longer rope helps beginners.", reference: "paragraph 2", prompt: "How can a longer rope help?" },
+      { word: "double under", meaning: "a jump-rope trick where the rope passes under twice in one jump", whyPreteach: "This term names a difficult trick.", reference: "paragraph 4", prompt: "What is one difficult jump-rope trick?" },
+      { word: "lessen", meaning: "make smaller or reduce", whyPreteach: "This word explains why small jumps matter.", reference: "paragraph 4", prompt: "What can small jumps lessen?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What equipment do you need to begin jumping rope?" },
+        { type: "literal", question: "Why can music help while jumping rope?" },
+        { type: "literal", question: "What are two difficult jump-rope tricks named in the passage?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might a longer rope be better for someone just learning?" },
+        { type: "evidence", question: "What details show jumping rope is exercise, not just play?" },
+        { type: "vocabulary", question: "What does 'lessen the stress on your legs and ankles' mean?" }
+      ]
+    }
+  },
+  "reader6-6.4-b-p130-james-new-job": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "take a gamble", meaning: "take a risk", whyPreteach: "This phrase explains James choosing a new job.", reference: "paragraph 1", prompt: "Why does James take a gamble?" },
+      { word: "consistent", meaning: "steady or dependable", whyPreteach: "This word explains what was wrong with James's old job.", reference: "paragraph 1", prompt: "Was James's old work consistent?" },
+      { word: "mingle", meaning: "talk and spend time with others", whyPreteach: "This word explains what James will do at the meeting.", reference: "paragraph 2", prompt: "Who will James mingle with?" },
+      { word: "scramble", meaning: "rush or struggle to do something quickly", whyPreteach: "This word explains James's worry about learning the job.", reference: "paragraph 2", prompt: "What does James hope he will not have to scramble to do?" },
+      { word: "cubicle", meaning: "a small workspace in an office", whyPreteach: "This word explains James's new work setting.", reference: "paragraph 3", prompt: "What will James get right away?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is James's new job?" },
+        { type: "literal", question: "Why was James unhappy at his last job?" },
+        { type: "literal", question: "What kinds of places will James call?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does James begin to think this might be his last new job?" },
+        { type: "evidence", question: "What details show James is nervous but hopeful?" },
+        { type: "vocabulary", question: "What does 'take a gamble' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader6-6.4-b-p132-castle-visit-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "time zone", meaning: "an area where the clocks use the same time", whyPreteach: "This phrase explains why the trip is tiring.", reference: "paragraph 1", prompt: "What makes the plane ride difficult besides its length?" },
+      { word: "hustle", meaning: "move quickly", whyPreteach: "This word explains their rushed morning.", reference: "paragraph 2", prompt: "Why do James and Peg have to hustle?" },
+      { word: "left-hand side of the road", meaning: "the side of the road used for driving in some countries", whyPreteach: "This phrase explains what amuses them in Scotland.", reference: "paragraph 2", prompt: "What is different about the road?" },
+      { word: "thistle", meaning: "a prickly plant and emblem of Scotland", whyPreteach: "This word appears in the castle path detail.", reference: "paragraph 4", prompt: "What plant is on each side of the path?" },
+      { word: "emblem", meaning: "a symbol that represents something", whyPreteach: "This word explains the meaning of the thistle.", reference: "paragraph 4", prompt: "What is the thistle an emblem of?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do James and Peg travel?" },
+        { type: "literal", question: "What time does their bus leave?" },
+        { type: "literal", question: "What music do visitors hear at the end of the path?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are James and Peg run-down when they reach the castle?" },
+        { type: "evidence", question: "What details make the castle visit feel special before they even go inside?" },
+        { type: "vocabulary", question: "What does 'emblem' mean in Peg's sentence about the thistle?" }
+      ]
+    }
+  },
+  "reader6-6.4-b-p134-castle-visit-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "ample", meaning: "large or roomy", whyPreteach: "This word describes the castle as a large house.", reference: "paragraph 1", prompt: "What kind of house is the castle?" },
+      { word: "elegant", meaning: "graceful or beautiful in a simple way", whyPreteach: "This word contrasts with the simple damp halls.", reference: "paragraph 1", prompt: "How are the halls elegant?" },
+      { word: "noble families", meaning: "families with high social rank or title", whyPreteach: "This phrase explains who lived in the castle.", reference: "paragraph 1", prompt: "Who dwelled in the castle?" },
+      { word: "demolished", meaning: "destroyed or badly damaged", whyPreteach: "This word explains why the castle needed repairs.", reference: "paragraph 2", prompt: "What demolished the castle more than once?" },
+      { word: "assemble", meaning: "gather together", whyPreteach: "This word explains returning to the bus.", reference: "paragraph 3", prompt: "Where do James and Peg have to assemble?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What are the old castle walls like inside?" },
+        { type: "literal", question: "How long ago was the castle built?" },
+        { type: "literal", question: "What weather do James and Peg walk into at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why can the castle be simple and elegant at the same time?" },
+        { type: "evidence", question: "What details show the castle has a long and difficult history?" },
+        { type: "vocabulary", question: "What does 'demolished' mean in the sentence about battles?" }
+      ]
+    }
+  },
+  "reader7-7.1-ab-p22-book-legends": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "legends", meaning: "old stories that may be partly true and partly imagined", whyPreteach: "The whole passage is about students writing this kind of story.", reference: "title and paragraph 1", prompt: "What kind of stories are the students writing?" },
+      { word: "costume", meaning: "clothing worn to look like someone or something else", whyPreteach: "This word explains how Bruce acts like a dragon.", reference: "paragraph 2", prompt: "Why does Bruce need a costume?" },
+      { word: "riddles", meaning: "tricky questions or puzzles", whyPreteach: "Cindy's problem depends on understanding this word.", reference: "paragraph 3", prompt: "What does Cindy have to answer?" },
+      { word: "excellent", meaning: "very good", whyPreteach: "Students need this word to understand Cindy's name and the joke in the story.", reference: "paragraph 3", prompt: "Why might Cindy be called excellent?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of book are the eighth graders making?" },
+        { type: "literal", question: "What does Bruce dress up as in his legend?" },
+        { type: "literal", question: "What is Cindy unable to answer?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might a class book of legends be fun for students to read?" },
+        { type: "evidence", question: "What details show that the students' legends are imaginative?" },
+        { type: "vocabulary", question: "What does 'riddles' mean in the part about Cindy the Excellent?" }
+      ]
+    }
+  },
+  "reader7-7.1-ab-p24-cisco-bike-shop-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "sales agent", meaning: "a person whose job is to sell things", whyPreteach: "This explains Nigel's role at the bike shop.", reference: "paragraph 1", prompt: "What is Nigel's job at the shop?" },
+      { word: "restocking", meaning: "putting more items back in a store so they can be sold", whyPreteach: "Students need this word to understand one of Nigel's tasks.", reference: "paragraph 1", prompt: "Why would a bike shop need restocking?" },
+      { word: "profits", meaning: "money a business has left after paying costs", whyPreteach: "This business word helps students follow Nigel's success.", reference: "paragraph 2", prompt: "What happens to profits when the shop sells more bikes?" },
+      { word: "safety classes", meaning: "lessons that teach people how to avoid danger", whyPreteach: "Nigel's idea is centered on this phrase.", reference: "paragraph 3", prompt: "What kind of classes does Nigel suggest?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Nigel good at selling?" },
+        { type: "literal", question: "What shop jobs does Nigel help with besides selling?" },
+        { type: "literal", question: "What new idea does Nigel suggest?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do you think Nigel is trusted at the bike shop?" },
+        { type: "evidence", question: "What details show Nigel thinks about the whole business, not just selling one bike?" },
+        { type: "vocabulary", question: "What does 'profits' mean in the paragraph about the bike shop?" }
+      ]
+    }
+  },
+  "reader7-7.1-ab-p26-cisco-bike-shop-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "program", meaning: "an organized set of activities or lessons", whyPreteach: "This word explains what Nigel builds from his idea.", reference: "paragraph 1", prompt: "What program does Nigel create?" },
+      { word: "promotes", meaning: "moves someone to a better or higher job", whyPreteach: "This word explains what Nancy does for Nigel.", reference: "paragraph 3", prompt: "Why might Nancy promote Nigel?" },
+      { word: "staff", meaning: "the people who work for a business", whyPreteach: "Students need this word to understand how the shop grows.", reference: "paragraph 2", prompt: "Why does the shop need more staff?" },
+      { word: "classes grow", meaning: "more people start coming to the lessons", whyPreteach: "This phrase shows that Nigel's plan is successful.", reference: "paragraph 2", prompt: "What happens as the classes grow?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Nigel start teaching at the bike shop?" },
+        { type: "literal", question: "Why does Nancy need to hire more staff?" },
+        { type: "literal", question: "What happens to Nigel at the end?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might safety classes help the bike shop sell more bikes?" },
+        { type: "evidence", question: "What evidence shows Nigel's plan works?" },
+        { type: "vocabulary", question: "What does 'promotes' mean when Nancy changes Nigel's job?" }
+      ]
+    }
+  },
+  "reader7-7.1-ab-p28-space-age-skit-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "skit", meaning: "a short play", whyPreteach: "The passage is about students preparing a five-minute skit.", reference: "title and paragraph 1", prompt: "How is a skit different from a long play?" },
+      { word: "Space Age", meaning: "the time when people began sending satellites, rockets, and spacecraft into space", whyPreteach: "This phrase gives the topic of the students' project.", reference: "paragraph 1", prompt: "What topic is the skit about?" },
+      { word: "satellites", meaning: "objects sent into space to travel around Earth or another body", whyPreteach: "Students need this word for the Space Age details.", reference: "paragraph 2", prompt: "What can a satellite travel around?" },
+      { word: "spacecraft", meaning: "vehicles made to travel in space", whyPreteach: "This word helps students understand the technology in the skit.", reference: "paragraph 2", prompt: "What is a spacecraft used for?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How long does the students' skit need to be?" },
+        { type: "literal", question: "What years does the Space Age skit cover?" },
+        { type: "literal", question: "What space objects do the students include?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would a skit be a good way to show events from the Space Age?" },
+        { type: "evidence", question: "What details show the students have to include real information, not just acting?" },
+        { type: "vocabulary", question: "What does 'satellites' mean in the paragraph about rockets and spacecraft?" }
+      ]
+    }
+  },
+  "reader7-7.1-ab-p30-space-age-skit-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "role", meaning: "a part an actor plays", whyPreteach: "Tracy's challenge is connected to the role she is given.", reference: "paragraph 1", prompt: "What role does Tracy have?" },
+      { word: "shy", meaning: "nervous or uncomfortable around others", whyPreteach: "This word helps students understand Tracy's feelings.", reference: "paragraph 1", prompt: "Why might a shy student feel nervous in a skit?" },
+      { word: "performs", meaning: "acts, sings, speaks, or presents for an audience", whyPreteach: "The ending depends on Tracy performing successfully.", reference: "paragraph 3", prompt: "What does Tracy do in front of the class?" },
+      { word: "nervous", meaning: "worried or uneasy", whyPreteach: "This word helps students track Tracy's change from fear to success.", reference: "paragraph 2", prompt: "How does Tracy feel before the skit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of student is Tracy at first?" },
+        { type: "literal", question: "What makes Tracy nervous?" },
+        { type: "literal", question: "How does Tracy do when she performs?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Tracy feel proud after the skit?" },
+        { type: "evidence", question: "What details show that Tracy overcomes a challenge?" },
+        { type: "vocabulary", question: "What does 'role' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader7-7.1-b-p32-magic-act": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "magic act", meaning: "a performance with tricks that seem impossible", whyPreteach: "This phrase explains the main event in the passage.", reference: "title", prompt: "What happens during a magic act?" },
+      { word: "manifest", meaning: "appear or become clear", whyPreteach: "This is an abstract word used in the magic context.", reference: "paragraph 1", prompt: "What might it mean if something seems to manifest?" },
+      { word: "levitate", meaning: "rise or float in the air", whyPreteach: "This word names the trick Stacy and Vincent plan.", reference: "paragraph 2", prompt: "What would it look like to levitate?" },
+      { word: "crescent", meaning: "a curved shape like a thin moon", whyPreteach: "Students may need this visual word for the stage detail.", reference: "paragraph 2", prompt: "What shape is a crescent?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who helps Stacy with the magic act?" },
+        { type: "literal", question: "What trick do Stacy and Vincent want to show?" },
+        { type: "literal", question: "What is hidden to make the trick work?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do magicians need the audience not to see every part of a trick?" },
+        { type: "evidence", question: "What details show the levitation is planned instead of real magic?" },
+        { type: "vocabulary", question: "What does 'levitate' mean in the part about Stacy's act?" }
+      ]
+    }
+  },
+  "reader7-7.1-b-p34-gem-theft-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "theft", meaning: "the act of stealing something", whyPreteach: "The title and plot depend on this word.", reference: "title", prompt: "What has happened if there is a theft?" },
+      { word: "warehouse", meaning: "a large building where goods are stored", whyPreteach: "Students need the setting to follow the investigation.", reference: "paragraph 1", prompt: "Why might gemstones be kept in a warehouse?" },
+      { word: "secure", meaning: "safe and protected", whyPreteach: "This word makes the theft surprising.", reference: "paragraph 1", prompt: "What should a secure warehouse prevent?" },
+      { word: "opulent", meaning: "very rich, costly, or fancy", whyPreteach: "This word describes the valuable gemstones.", reference: "paragraph 2", prompt: "Why would opulent gems attract a thief?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is stolen from the warehouse?" },
+        { type: "literal", question: "Why is the warehouse supposed to be safe?" },
+        { type: "literal", question: "Who begins investigating the theft?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the theft confusing if the warehouse is secure?" },
+        { type: "evidence", question: "What details show the stolen items are valuable?" },
+        { type: "vocabulary", question: "What does 'opulent' tell you about the gemstones?" }
+      ]
+    }
+  },
+  "reader7-7.1-b-p36-gem-theft-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "interviews", meaning: "planned questions asked to get information", whyPreteach: "The detectives use interviews to solve the case.", reference: "paragraph 1", prompt: "Why would detectives conduct interviews?" },
+      { word: "statements", meaning: "things people say or report", whyPreteach: "This word matters because some statements are false.", reference: "paragraph 2", prompt: "What can a detective learn from statements?" },
+      { word: "confesses", meaning: "admits that one did something wrong", whyPreteach: "This word explains the resolution of the mystery.", reference: "paragraph 3", prompt: "What does Danny confess?" },
+      { word: "last at the warehouse", meaning: "the final person known to be in that place", whyPreteach: "This clue points suspicion toward Danny.", reference: "paragraph 1", prompt: "Why does being last at the warehouse matter?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who was last at the warehouse?" },
+        { type: "literal", question: "What problem do the detectives find in Danny's statements?" },
+        { type: "literal", question: "What does Danny finally do?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do false statements make Danny look guilty?" },
+        { type: "evidence", question: "What clue helps the detectives solve the gem theft?" },
+        { type: "vocabulary", question: "What does 'confesses' mean at the end of the passage?" }
+      ]
+    }
+  },
+  "reader7-7.1-b-p38-secret-agent-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "secret agent", meaning: "a person who works secretly to gather information or stop crime", whyPreteach: "Students need this role to understand Cyrus's work.", reference: "title and paragraph 1", prompt: "What kind of work might a secret agent do?" },
+      { word: "penthouse", meaning: "an apartment at the top of a tall building", whyPreteach: "This word describes an important setting.", reference: "paragraph 1", prompt: "Where is a penthouse usually found?" },
+      { word: "tenacity", meaning: "determination that keeps going", whyPreteach: "This abstract word describes a strength Cyrus needs.", reference: "paragraph 2", prompt: "How can tenacity help an agent?" },
+      { word: "incentives", meaning: "rewards or reasons that encourage someone to act", whyPreteach: "This word helps students understand motivation in the case.", reference: "paragraph 2", prompt: "What incentives might make someone take a risk?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Cyrus's job?" },
+        { type: "literal", question: "Where does Cyrus go for part of his work?" },
+        { type: "literal", question: "What special instrument helps Cyrus enter?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would a secret agent need tenacity?" },
+        { type: "evidence", question: "What details make Cyrus's work seem dangerous or serious?" },
+        { type: "vocabulary", question: "What does 'incentives' mean in the paragraph about crimes?" }
+      ]
+    }
+  },
+  "reader7-7.1-b-p40-secret-agent-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "relic", meaning: "an old object from the past", whyPreteach: "The missing object is a Stone Age relic.", reference: "paragraph 1", prompt: "Why would a relic be important?" },
+      { word: "replacement", meaning: "something put in place of something else", whyPreteach: "This word explains the false object in the mystery.", reference: "paragraph 1", prompt: "What does a replacement do?" },
+      { word: "bandit", meaning: "a robber or thief", whyPreteach: "This word identifies the person Cyrus is trying to catch.", reference: "paragraph 2", prompt: "Why would a bandit hide a relic?" },
+      { word: "retrace", meaning: "go back over the same steps or path", whyPreteach: "Cyrus's strategy depends on retracing what happened.", reference: "paragraph 2", prompt: "Why might Cyrus retrace his steps?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of relic is missing?" },
+        { type: "literal", question: "What has been put in place of the real relic?" },
+        { type: "literal", question: "What does Cyrus do to solve the case?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would someone leave a false replacement behind?" },
+        { type: "evidence", question: "What details show Cyrus uses a plan instead of guessing?" },
+        { type: "vocabulary", question: "What does 'retrace' mean in the sentence about Cyrus's strategy?" }
+      ]
+    }
+  },
+  "reader7-7.2-ab-p52-prince-wilson-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "prince", meaning: "the son of a king or queen", whyPreteach: "This word explains James's position in the story.", reference: "title", prompt: "What family does a prince belong to?" },
+      { word: "tricks", meaning: "actions meant to fool or surprise someone", whyPreteach: "James's behavior is built around tricks.", reference: "paragraph 1", prompt: "What kind of tricks does James play?" },
+      { word: "bridge", meaning: "a structure people use to cross over water or another space", whyPreteach: "The bridge scene is important to understanding the problem.", reference: "paragraph 2", prompt: "What does James put on the bridge?" },
+      { word: "change his ways", meaning: "stop behaving badly and act differently", whyPreteach: "This phrase explains what James's family wants.", reference: "paragraph 3", prompt: "What does James need to change?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Prince James like to do?" },
+        { type: "literal", question: "What does James put on the bridge?" },
+        { type: "literal", question: "What does his family tell him to do?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might James's tricks be a problem for people in the castle?" },
+        { type: "evidence", question: "What details show James is not acting like a good leader yet?" },
+        { type: "vocabulary", question: "What does 'change his ways' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.2-ab-p54-prince-wilson-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "princely", meaning: "acting in a noble, responsible way like a good prince", whyPreteach: "This word shows how James begins to change.", reference: "paragraph 1", prompt: "What would princely behavior look like?" },
+      { word: "throne", meaning: "the special seat or position of a king or ruler", whyPreteach: "The passage turns on James becoming ruler.", reference: "paragraph 2", prompt: "What does it mean to take the throne?" },
+      { word: "ill", meaning: "sick", whyPreteach: "The king's illness causes James to face responsibility.", reference: "paragraph 2", prompt: "Who becomes ill?" },
+      { word: "judge", meaning: "decide what someone is like based on actions", whyPreteach: "Students need this meaning to understand how people view James.", reference: "paragraph 3", prompt: "How do the people judge James?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How does James begin to act differently?" },
+        { type: "literal", question: "What happens to the king?" },
+        { type: "literal", question: "What position is passed to James?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does James need to become more responsible before taking the throne?" },
+        { type: "evidence", question: "What details show James is changing from Part One?" },
+        { type: "vocabulary", question: "What does 'princely' mean in this passage?" }
+      ]
+    }
+  },
+  "reader7-7.2-ab-p56-dance-contest": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "contest", meaning: "a competition", whyPreteach: "Constance's goal is to do well in the dance contest.", reference: "title", prompt: "What happens in a contest?" },
+      { word: "finances", meaning: "money and how it is planned or used", whyPreteach: "This word explains the practical problem Constance must solve.", reference: "paragraph 1", prompt: "Why are finances important before the contest?" },
+      { word: "fee", meaning: "money paid to join or do something", whyPreteach: "Students need this word to follow the cost of entering.", reference: "paragraph 1", prompt: "What fee does Constance need to pay?" },
+      { word: "advances", meaning: "moves forward to the next level", whyPreteach: "This word explains the result of the contest.", reference: "paragraph 3", prompt: "What does it mean if Constance advances?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Constance want to enter?" },
+        { type: "literal", question: "What costs does Constance have to think about?" },
+        { type: "literal", question: "What happens after Constance dances?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Constance panic before the contest?" },
+        { type: "evidence", question: "What details show Constance prepares carefully?" },
+        { type: "vocabulary", question: "What does 'advances' mean at the end of the passage?" }
+      ]
+    }
+  },
+  "reader7-7.2-b-p58-stonehenge-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "monument", meaning: "a structure built to remember or honor something", whyPreteach: "Stonehenge is introduced as a monument.", reference: "paragraph 1", prompt: "What makes Stonehenge a monument?" },
+      { word: "mystery", meaning: "something not fully known or understood", whyPreteach: "The passage centers on unanswered questions about Stonehenge.", reference: "paragraph 1", prompt: "What questions are part of the mystery?" },
+      { word: "sledge", meaning: "a heavy sled used to move large objects", whyPreteach: "This word helps students picture how stones may have been moved.", reference: "paragraph 2", prompt: "Why would people use a sledge for huge stones?" },
+      { word: "tons", meaning: "units used to measure very heavy weight", whyPreteach: "The weight of the stones is hard to picture without this word.", reference: "paragraph 2", prompt: "What does it tell you if a stone weighs many tons?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Stonehenge?" },
+        { type: "literal", question: "What are some questions people ask about Stonehenge?" },
+        { type: "literal", question: "How heavy are some of the stones?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do people still wonder how Stonehenge was built?" },
+        { type: "evidence", question: "What numbers in the passage show that building Stonehenge took great effort?" },
+        { type: "vocabulary", question: "What does 'monument' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader7-7.2-b-p60-stonehenge-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "solstice", meaning: "one of two times in the year when the sun reaches its highest or lowest path in the sky", whyPreteach: "This word explains one possible purpose of Stonehenge.", reference: "paragraph 2", prompt: "What season is named with the solstice in the passage?" },
+      { word: "sacred", meaning: "connected with religion or treated with deep respect", whyPreteach: "This word explains why Stonehenge may have mattered to people.", reference: "paragraph 3", prompt: "What might make a place sacred?" },
+      { word: "relics", meaning: "old objects from the past", whyPreteach: "The passage mentions relics found near Stonehenge.", reference: "paragraph 3", prompt: "What can relics teach us?" },
+      { word: "ropes", meaning: "strong cords used to pull, tie, or lift things", whyPreteach: "Ropes are part of the explanation for moving stones.", reference: "paragraph 1", prompt: "How could ropes help move huge stones?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What tools may have helped move the stones?" },
+        { type: "literal", question: "What event with the sun is connected to Stonehenge?" },
+        { type: "literal", question: "What have people found near Stonehenge?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might people think Stonehenge was a sacred place?" },
+        { type: "evidence", question: "What details support the idea that Stonehenge was important to ancient people?" },
+        { type: "vocabulary", question: "What does 'solstice' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.2-b-p62-remote-lodge": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "remote", meaning: "far away from many people or busy places", whyPreteach: "This word describes the lodge's location and mood.", reference: "title and paragraph 1", prompt: "What might a remote lodge be far from?" },
+      { word: "rustic", meaning: "simple and country-like", whyPreteach: "This word describes the lodge's style.", reference: "paragraph 1", prompt: "What might a rustic place look like?" },
+      { word: "tranquil", meaning: "calm and peaceful", whyPreteach: "This word explains why the setting feels restful.", reference: "paragraph 2", prompt: "What sounds or sights might feel tranquil?" },
+      { word: "unstable", meaning: "not steady or safe", whyPreteach: "This word warns students about the fence detail.", reference: "paragraph 2", prompt: "Why should someone be careful around an unstable fence?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is the lodge located?" },
+        { type: "literal", question: "What kind of fence is near the lodge?" },
+        { type: "literal", question: "What tree is near the entrance?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might someone enjoy visiting a remote lodge?" },
+        { type: "evidence", question: "What details make the lodge seem quiet and natural?" },
+        { type: "vocabulary", question: "What does 'tranquil' mean in the description of the lodge?" }
+      ]
+    }
+  },
+  "reader7-7.3-ab-p82-dolphins-life-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "mammals", meaning: "animals that breathe air, are warm-blooded, and feed milk to their babies", whyPreteach: "The passage explains that dolphins are mammals, not fish.", reference: "paragraph 1", prompt: "Why is a dolphin a mammal?" },
+      { word: "pods", meaning: "groups of dolphins that live or travel together", whyPreteach: "Students need this word to understand dolphin social life.", reference: "paragraph 2", prompt: "What is a pod of dolphins?" },
+      { word: "hunt", meaning: "look for and catch food", whyPreteach: "This word explains how dolphins get food together.", reference: "paragraph 2", prompt: "What do dolphins hunt?" },
+      { word: "octopus", meaning: "a sea animal with eight arms", whyPreteach: "This food word may be unfamiliar to students.", reference: "paragraph 3", prompt: "What kind of animal is an octopus?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of animal is a dolphin?" },
+        { type: "literal", question: "What is a group of dolphins called?" },
+        { type: "literal", question: "What are some foods dolphins eat?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might dolphins hunt better in a pod than alone?" },
+        { type: "evidence", question: "What details show dolphins are not fish?" },
+        { type: "vocabulary", question: "What does 'pods' mean in the paragraph about dolphins living together?" }
+      ]
+    }
+  },
+  "reader7-7.3-ab-p84-dolphins-life-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "surface", meaning: "come up to the top of the water", whyPreteach: "Dolphins must surface to breathe air.", reference: "paragraph 1", prompt: "Why do dolphins surface?" },
+      { word: "blowhole", meaning: "the breathing hole on top of a dolphin's head", whyPreteach: "This body part is important to the passage's explanation.", reference: "paragraph 1", prompt: "Where is a dolphin's blowhole?" },
+      { word: "frequency", meaning: "how often something happens", whyPreteach: "The passage uses this word to describe breathing.", reference: "paragraph 1", prompt: "What does breathing frequency tell us?" },
+      { word: "pollution", meaning: "harmful waste or dirty material in the environment", whyPreteach: "This word explains one way humans harm dolphins.", reference: "paragraph 3", prompt: "How can pollution hurt dolphins?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why do dolphins come to the surface?" },
+        { type: "literal", question: "Where is the dolphin's breathing hole?" },
+        { type: "literal", question: "What human problem can harm dolphins?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would a dolphin be in danger if it could not reach the surface?" },
+        { type: "evidence", question: "What details show dolphins have special body features for living in water?" },
+        { type: "vocabulary", question: "What does 'pollution' mean in the passage about dolphins and humans?" }
+      ]
+    }
+  },
+  "reader7-7.3-ab-p86-online-science-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "online", meaning: "using the internet or a computer connection", whyPreteach: "The class setting is online.", reference: "title", prompt: "How is an online class different from an in-person class?" },
+      { word: "science project", meaning: "an assignment that investigates a science topic", whyPreteach: "Ralph's task is to complete a science project.", reference: "paragraph 1", prompt: "What will Ralph need to do for his science project?" },
+      { word: "investigate", meaning: "study or look closely to learn more", whyPreteach: "This word explains what Ralph must do with a wild animal topic.", reference: "paragraph 2", prompt: "What animal could Ralph investigate?" },
+      { word: "booklet", meaning: "a small book with information", whyPreteach: "Ralph must make a scientific booklet.", reference: "paragraph 2", prompt: "What information might go in a booklet?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of class is Ralph taking?" },
+        { type: "literal", question: "What does Ralph have to investigate?" },
+        { type: "literal", question: "What does Ralph decide is the biggest land animal?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Ralph need to wait before he can start the project?" },
+        { type: "evidence", question: "What details show this is a science assignment, not just a story about animals?" },
+        { type: "vocabulary", question: "What does 'investigate' mean in the sentence about a wild animal?" }
+      ]
+    }
+  },
+  "reader7-7.3-ab-p88-online-science-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "observation", meaning: "watching carefully to learn information", whyPreteach: "The teacher suggests live observation for Ralph's project.", reference: "paragraph 1", prompt: "What could Ralph learn by observation?" },
+      { word: "African elephant", meaning: "a very large elephant species from Africa", whyPreteach: "Ralph's project focuses on this animal.", reference: "paragraph 1", prompt: "What animal does Ralph study?" },
+      { word: "graph", meaning: "a picture or chart that shows information or numbers", whyPreteach: "Ralph uses a graph to show elephant decline.", reference: "paragraph 3", prompt: "What can a graph show?" },
+      { word: "decline", meaning: "a decrease or drop over time", whyPreteach: "This word helps students understand the conservation detail.", reference: "paragraph 3", prompt: "What does it mean if elephant numbers decline?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What animal does Ralph choose for his booklet?" },
+        { type: "literal", question: "What does the teacher suggest Ralph should do?" },
+        { type: "literal", question: "What does Ralph's graph show?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would live observation make Ralph's booklet stronger?" },
+        { type: "evidence", question: "What parts of the project show Ralph is using scientific information?" },
+        { type: "vocabulary", question: "What does 'decline' mean in the sentence about elephant numbers?" }
+      ]
+    }
+  },
+  "reader7-7.3-ab-p90-first-telephone-call": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "telegraph", meaning: "an old machine that sent messages through electric signals", whyPreteach: "The passage compares earlier communication to the telephone.", reference: "paragraph 1", prompt: "What did people use a telegraph for?" },
+      { word: "signals", meaning: "sounds, marks, or actions that send information", whyPreteach: "Students need this word to understand how telegraphs worked.", reference: "paragraph 1", prompt: "What can signals carry?" },
+      { word: "alphabet", meaning: "the letters used to write a language", whyPreteach: "The telegraph message system is connected to an alphabet.", reference: "paragraph 1", prompt: "Why would an alphabet help send messages?" },
+      { word: "transmit", meaning: "send from one place to another", whyPreteach: "This word explains Bell's invention sending sound.", reference: "paragraph 2", prompt: "What did Bell want to transmit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What machine sent messages before the telephone?" },
+        { type: "literal", question: "Who worked on sending sound over a wire?" },
+        { type: "literal", question: "What did the first telephone call show?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would sending a voice over a wire feel amazing at that time?" },
+        { type: "evidence", question: "What details show the telephone was a new step beyond the telegraph?" },
+        { type: "vocabulary", question: "What does 'transmit' mean in the passage about sound?" }
+      ]
+    }
+  },
+  "reader7-7.3-b-p92-elephant-haven-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "haven", meaning: "a safe place", whyPreteach: "This word explains the purpose of the elephant center.", reference: "title", prompt: "Why would elephants need a haven?" },
+      { word: "satchel", meaning: "a bag carried over the shoulder", whyPreteach: "Ralph brings his supplies in a satchel.", reference: "paragraph 2", prompt: "What might Ralph carry in his satchel?" },
+      { word: "photographs", meaning: "pictures taken with a camera", whyPreteach: "Ralph uses photos to collect information for his project.", reference: "paragraph 2", prompt: "How can photographs help a science project?" },
+      { word: "Memphis", meaning: "a city in Tennessee", whyPreteach: "The location may be unfamiliar and helps students track Ralph's trip.", reference: "paragraph 1", prompt: "Where does Ralph find the elephant haven?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What place does Ralph find near Memphis?" },
+        { type: "literal", question: "How does Ralph travel there?" },
+        { type: "literal", question: "What does Ralph bring to collect information?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is visiting the elephant haven useful for Ralph's project?" },
+        { type: "evidence", question: "What details show Ralph is prepared for his visit?" },
+        { type: "vocabulary", question: "What does 'haven' mean in the title?" }
+      ]
+    }
+  },
+  "reader7-7.3-b-p94-elephant-haven-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "captive", meaning: "kept by people and not living freely in the wild", whyPreteach: "This word describes the elephants' past lives.", reference: "paragraph 1", prompt: "Where might captive elephants have lived before?" },
+      { word: "tusks", meaning: "long pointed teeth that grow out from some animals' mouths", whyPreteach: "Students need this body-part word for elephant description.", reference: "paragraph 2", prompt: "What do elephant tusks look like?" },
+      { word: "trunks", meaning: "the long flexible noses of elephants", whyPreteach: "This word is central to understanding elephant features.", reference: "paragraph 2", prompt: "How can an elephant use its trunk?" },
+      { word: "retirement", meaning: "the time after someone stops working", whyPreteach: "The haven is described as a retirement place for elephants.", reference: "paragraph 3", prompt: "Why might old elephants need retirement?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "How many elephants live at the haven?" },
+        { type: "literal", question: "How tall can the elephants be?" },
+        { type: "literal", question: "Where did some elephants live before the haven?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might the haven be better for older elephants than a circus or zoo?" },
+        { type: "evidence", question: "What details show the elephants are large and powerful animals?" },
+        { type: "vocabulary", question: "What does 'captive' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.3-b-p96-bottlenose-dolphin-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "bottlenose", meaning: "having a short rounded snout shaped somewhat like a bottle", whyPreteach: "This word names and describes the dolphin.", reference: "title", prompt: "What body part does 'bottlenose' describe?" },
+      { word: "flukes", meaning: "the two flat parts of a whale or dolphin's tail", whyPreteach: "Students may not know this specific animal feature.", reference: "paragraph 1", prompt: "How might flukes help a dolphin swim?" },
+      { word: "blotches", meaning: "spots or patches of color", whyPreteach: "This word helps students picture the dolphin.", reference: "paragraph 1", prompt: "What would blotches look like on an animal?" },
+      { word: "collectively", meaning: "together as a group", whyPreteach: "This word explains how dolphins hunt in pods.", reference: "paragraph 2", prompt: "What does it mean to hunt collectively?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What body features does the bottlenose dolphin have?" },
+        { type: "literal", question: "How fast can a bottlenose dolphin swim?" },
+        { type: "literal", question: "How do dolphin pods hunt?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would speed help a dolphin when hunting?" },
+        { type: "evidence", question: "What details help you picture a bottlenose dolphin's body?" },
+        { type: "vocabulary", question: "What does 'collectively' mean in the sentence about hunting?" }
+      ]
+    }
+  },
+  "reader7-7.3-b-p98-bottlenose-dolphin-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "mimic", meaning: "copy a sound, action, or behavior", whyPreteach: "The passage explains dolphins can mimic sounds.", reference: "paragraph 1", prompt: "What sound could a dolphin mimic?" },
+      { word: "echolocation", meaning: "using sound echoes to locate objects", whyPreteach: "This science term is central to how dolphins find things.", reference: "paragraph 2", prompt: "How could echolocation help in dark water?" },
+      { word: "frequency", meaning: "the rate or pitch of a sound wave", whyPreteach: "The passage uses this word with high clicks.", reference: "paragraph 2", prompt: "What might high frequency clicks sound like?" },
+      { word: "toxic waste", meaning: "poisonous trash or chemicals that can harm living things", whyPreteach: "This phrase explains one environmental threat.", reference: "paragraph 3", prompt: "Why is toxic waste dangerous for dolphins?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kinds of sounds can dolphins make?" },
+        { type: "literal", question: "What do dolphins use echolocation for?" },
+        { type: "literal", question: "What human-made dangers threaten dolphins?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would echolocation be useful when dolphins hunt?" },
+        { type: "evidence", question: "What details show dolphins communicate and sense their world with sound?" },
+        { type: "vocabulary", question: "What does 'toxic waste' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.3-b-p100-wildlife-refuge": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "wildlife refuge", meaning: "a protected place where wild animals can live", whyPreteach: "The title and setting depend on this phrase.", reference: "title", prompt: "Why do animals need a wildlife refuge?" },
+      { word: "scientific photographer", meaning: "a person who takes photos to study or document nature", whyPreteach: "This phrase explains Joseph Mitchell's work.", reference: "paragraph 1", prompt: "How is a scientific photographer different from someone taking casual pictures?" },
+      { word: "telephoto lens", meaning: "a camera lens that helps photograph things from far away", whyPreteach: "This tool lets Joseph photograph wildlife safely.", reference: "paragraph 2", prompt: "Why would a photographer use a telephoto lens?" },
+      { word: "hatching", meaning: "coming out of an egg", whyPreteach: "The winning photo focuses on a baby ostrich hatching.", reference: "paragraph 3", prompt: "What happens when a bird is hatching?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Joseph Mitchell's job?" },
+        { type: "literal", question: "What tool helps him take pictures from far away?" },
+        { type: "literal", question: "What animal is in the photo that wins?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is a telephoto lens helpful when photographing wild animals?" },
+        { type: "evidence", question: "What details show Joseph's photo took patience and skill?" },
+        { type: "vocabulary", question: "What does 'hatching' mean in the sentence about the baby ostrich?" }
+      ]
+    }
+  },
+  "reader7-7.4-ab-p122-new-kitten": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "adopt", meaning: "take an animal into your home to care for it", whyPreteach: "Peg and Mike are getting a kitten from an institution.", reference: "paragraph 1", prompt: "What does it mean to adopt a kitten?" },
+      { word: "application", meaning: "a form asking for information before someone can be accepted", whyPreteach: "The adoption process includes an application.", reference: "paragraph 1", prompt: "Why would the institution need an application?" },
+      { word: "humane institution", meaning: "a place that protects and cares for animals", whyPreteach: "This phrase explains where the kitten comes from.", reference: "paragraph 1", prompt: "What does a humane institution do?" },
+      { word: "veterinarian", meaning: "an animal doctor", whyPreteach: "Peg and Mike discuss care for the kitten.", reference: "paragraph 2", prompt: "When might a kitten need a veterinarian?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What animal do Peg and Mike want to adopt?" },
+        { type: "literal", question: "What form do they need to fill out?" },
+        { type: "literal", question: "What supplies do they need for the kitten?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the humane institution ask questions before letting people adopt?" },
+        { type: "evidence", question: "What details show Peg and Mike are trying to be responsible pet owners?" },
+        { type: "vocabulary", question: "What does 'adopt' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader7-7.4-ab-p124-class-celebration": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "celebration", meaning: "a special event to show happiness or pride", whyPreteach: "The class celebrates students' learning.", reference: "title", prompt: "What might a class celebration include?" },
+      { word: "progress", meaning: "improvement or moving forward", whyPreteach: "The celebration is about student progress.", reference: "paragraph 1", prompt: "What progress have the students made?" },
+      { word: "reading", meaning: "understanding written words", whyPreteach: "Reading is one area Mr. Vincent celebrates.", reference: "paragraph 1", prompt: "How can students show progress in reading?" },
+      { word: "writing", meaning: "putting ideas into words on paper or a screen", whyPreteach: "Writing is another learning area in the passage.", reference: "paragraph 1", prompt: "How can students show progress in writing?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who is holding a class celebration?" },
+        { type: "literal", question: "What subjects have the students improved in?" },
+        { type: "literal", question: "Why is the class celebrating?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might a celebration help students feel proud of their work?" },
+        { type: "evidence", question: "What details show the celebration is about learning, not just having fun?" },
+        { type: "vocabulary", question: "What does 'progress' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.4-ab-p126-inca-civilization": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "civilization", meaning: "a large organized society with its own culture, work, and systems", whyPreteach: "The passage explains the Inca civilization.", reference: "title", prompt: "What can a civilization build or create?" },
+      { word: "Pacific shores", meaning: "coastal lands along the Pacific Ocean", whyPreteach: "This phrase helps students picture where Inca roads reached.", reference: "paragraph 1", prompt: "Where are shores found?" },
+      { word: "oral traditions", meaning: "stories, knowledge, or history passed down by speaking", whyPreteach: "This phrase explains how information was shared.", reference: "paragraph 2", prompt: "How are oral traditions passed on?" },
+      { word: "contributions", meaning: "things given or added that help others", whyPreteach: "The passage ends by naming what the Inca added to history.", reference: "paragraph 3", prompt: "What contributions did the Inca make?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What did the Inca build across their land?" },
+        { type: "literal", question: "What did their roads include?" },
+        { type: "literal", question: "How did the Inca pass down some traditions?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would roads, bridges, and tunnels help a civilization grow?" },
+        { type: "evidence", question: "What details show the Inca were skilled builders and planners?" },
+        { type: "vocabulary", question: "What does 'oral traditions' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.4-b-p128-television-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "primitive", meaning: "early, simple, or not highly developed", whyPreteach: "This word describes the first television ideas.", reference: "paragraph 1", prompt: "What might a primitive television be like?" },
+      { word: "electric telescope", meaning: "an early idea for a machine that could send pictures over distance", whyPreteach: "This unusual phrase may confuse students without preview.", reference: "paragraph 1", prompt: "Why might someone call it an electric telescope?" },
+      { word: "electronic", meaning: "working through electric signals or parts", whyPreteach: "This word marks the shift toward modern television.", reference: "paragraph 2", prompt: "What makes a device electronic?" },
+      { word: "invention", meaning: "a new device or process someone creates", whyPreteach: "The passage is about the invention of television.", reference: "title", prompt: "What invention is described?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What was one early kind of television called?" },
+        { type: "literal", question: "Who helped develop electronic television?" },
+        { type: "literal", question: "How old was Farnsworth when he made an important television invention?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why were early television ideas called primitive compared with later televisions?" },
+        { type: "evidence", question: "What details show television changed over time?" },
+        { type: "vocabulary", question: "What does 'primitive' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader7-7.4-b-p130-television-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "electrons", meaning: "tiny particles with electric charge", whyPreteach: "This science word explains how pictures were transmitted.", reference: "paragraph 1", prompt: "Why might electrons be part of an electronic device?" },
+      { word: "transmit", meaning: "send from one place to another", whyPreteach: "This word explains how pictures reach a screen.", reference: "paragraph 1", prompt: "What does a television transmit?" },
+      { word: "remote control", meaning: "a device used to control something from a distance", whyPreteach: "This phrase names a later television innovation.", reference: "paragraph 2", prompt: "What can you do with a remote control?" },
+      { word: "innovations", meaning: "new ideas, tools, or improvements", whyPreteach: "The passage lists changes in television technology.", reference: "paragraph 3", prompt: "What television innovations are named?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What helped transmit television pictures?" },
+        { type: "literal", question: "What later tool let people control televisions from a distance?" },
+        { type: "literal", question: "What newer way of watching television is mentioned?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would a remote control make television easier to use?" },
+        { type: "evidence", question: "What details show television kept improving after it was invented?" },
+        { type: "vocabulary", question: "What does 'innovations' mean in the last part of the passage?" }
+      ]
+    }
+  },
+  "reader7-7.4-b-p132-judge-phillips": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "position", meaning: "a job or role", whyPreteach: "Ginny applies for a position with Judge Phillips.", reference: "title", prompt: "What position does Ginny want?" },
+      { word: "magistrate judge", meaning: "a judge who handles certain legal duties in court", whyPreteach: "This phrase explains Judge Phillips's role.", reference: "paragraph 1", prompt: "What kind of judge is Judge Phillips?" },
+      { word: "integrity", meaning: "honesty and strong moral character", whyPreteach: "This abstract word describes a quality Ginny needs.", reference: "paragraph 2", prompt: "Why would integrity matter in a judge's office?" },
+      { word: "constitution", meaning: "the basic laws and principles of a government", whyPreteach: "This word connects Ginny's interest to law.", reference: "paragraph 3", prompt: "Why might someone who likes law study the constitution?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What job does Ginny apply for?" },
+        { type: "literal", question: "What kind of judge is Judge Phillips?" },
+        { type: "literal", question: "What topic is Ginny passionate about?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would integrity be important for someone working with a judge?" },
+        { type: "evidence", question: "What details show Ginny is interested in serious work?" },
+        { type: "vocabulary", question: "What does 'position' mean in the title?" }
+      ]
+    }
+  },
+  "reader7-7.5-ab-p146-clock-time-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "grandfather clock", meaning: "a tall standing clock, often with a swinging pendulum", whyPreteach: "The main problem is about this kind of clock.", reference: "paragraph 1", prompt: "What does a grandfather clock look like?" },
+      { word: "repair", meaning: "fix something that is broken or not working", whyPreteach: "Conrad needs someone to repair the clock.", reference: "paragraph 2", prompt: "Why does the clock need repair?" },
+      { word: "clockmaker", meaning: "a person who makes or fixes clocks", whyPreteach: "Mrs. Sullivan's job helps solve the problem.", reference: "paragraph 2", prompt: "Why would Conrad call a clockmaker?" },
+      { word: "dependable", meaning: "able to be trusted or counted on", whyPreteach: "This word helps students understand why Conrad chooses Mrs. Sullivan.", reference: "paragraph 3", prompt: "What makes someone dependable?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of clock does Conrad have?" },
+        { type: "literal", question: "What is wrong with the clock?" },
+        { type: "literal", question: "Who does Conrad find to help?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might Conrad want someone dependable to work on the clock?" },
+        { type: "evidence", question: "What details show Conrad is trying to solve a practical problem?" },
+        { type: "vocabulary", question: "What does 'repair' mean in the passage?" }
+      ]
+    }
+  },
+  "reader7-7.5-ab-p148-clock-time-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "level", meaning: "flat and even, not tilted", whyPreteach: "The clock's problem is connected to being level.", reference: "paragraph 1", prompt: "What does it mean for a clock to be level?" },
+      { word: "levelers", meaning: "small parts used to make something sit evenly", whyPreteach: "Mrs. Sullivan uses these parts to fix the clock.", reference: "paragraph 2", prompt: "How could levelers help a clock?" },
+      { word: "pendulum", meaning: "a part that swings back and forth in some clocks", whyPreteach: "Students may need this word to understand why leveling matters.", reference: "paragraph 1", prompt: "What does a pendulum do?" },
+      { word: "dependable", meaning: "trustworthy and reliable", whyPreteach: "The passage confirms Mrs. Sullivan can be counted on.", reference: "paragraph 3", prompt: "How does Mrs. Sullivan show she is dependable?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why was the clock not working correctly?" },
+        { type: "literal", question: "What does Mrs. Sullivan use to fix it?" },
+        { type: "literal", question: "How does Conrad feel about Mrs. Sullivan's work?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would moving a grandfather clock make it stop keeping time?" },
+        { type: "evidence", question: "What details show Mrs. Sullivan knows how to solve the problem?" },
+        { type: "vocabulary", question: "What does 'level' mean in the part about fixing the clock?" }
+      ]
+    }
+  },
+  "reader7-7.5-ab-p150-lonely-fish": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "lonely", meaning: "sad because of being alone", whyPreteach: "The fish's feeling is the main problem.", reference: "title", prompt: "Why might a fish be lonely?" },
+      { word: "tank", meaning: "a container that holds water for fish or other animals", whyPreteach: "The setting is the fish tank.", reference: "paragraph 1", prompt: "What lives in the tank?" },
+      { word: "article", meaning: "a piece of writing that gives information", whyPreteach: "Meg uses an article to figure out what to do.", reference: "paragraph 2", prompt: "What can Meg learn from an article?" },
+      { word: "companion", meaning: "someone or something that spends time with another", whyPreteach: "The solution is giving the fish another fish for company.", reference: "paragraph 3", prompt: "How can a companion help the fish?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What seems wrong with Ralph's fish?" },
+        { type: "literal", question: "What does Meg do to care for the tank?" },
+        { type: "literal", question: "What does Meg add to help the fish?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Meg think the fish may need another fish?" },
+        { type: "evidence", question: "What details show Meg is trying different ways to help?" },
+        { type: "vocabulary", question: "What does 'lonely' mean in the title?" }
+      ]
+    }
+  },
+  "reader7-7.5-b-p152-vast-pacific": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "vast", meaning: "extremely large", whyPreteach: "This word explains the size of the Pacific Ocean.", reference: "title", prompt: "What does vast tell us about the Pacific?" },
+      { word: "nations", meaning: "countries", whyPreteach: "The passage mentions many nations around the Pacific.", reference: "paragraph 1", prompt: "What are nations?" },
+      { word: "volcanoes", meaning: "mountains that can release lava, ash, and gases", whyPreteach: "This word is part of the Pacific geography.", reference: "paragraph 2", prompt: "Where might volcanoes be found in the Pacific?" },
+      { word: "resources", meaning: "useful materials or supplies", whyPreteach: "The passage connects the Pacific to economy and assets.", reference: "paragraph 3", prompt: "What resources might an ocean provide?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is the biggest ocean?" },
+        { type: "literal", question: "Who named the Pacific Ocean?" },
+        { type: "literal", question: "What kinds of things are found in and around the Pacific?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why might the Pacific Ocean matter to many nations?" },
+        { type: "evidence", question: "What details show the Pacific is important for more than its size?" },
+        { type: "vocabulary", question: "What does 'vast' mean in the title?" }
+      ]
+    }
+  },
+  "reader7-7.5-b-p154-cyrus-shore": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "shore", meaning: "land along the edge of an ocean, lake, or river", whyPreteach: "The title contrasts going to the shore with working.", reference: "title", prompt: "Where is the shore?" },
+      { word: "saving", meaning: "keeping money for a future goal", whyPreteach: "Cyrus works because he is saving for a truck.", reference: "paragraph 1", prompt: "What is Cyrus saving for?" },
+      { word: "stinky", meaning: "having a bad smell", whyPreteach: "This word describes the fish shop work.", reference: "paragraph 2", prompt: "Why might a fish shop be stinky?" },
+      { word: "messy", meaning: "dirty or not neat", whyPreteach: "This word helps students understand the unpleasant parts of the job.", reference: "paragraph 2", prompt: "What makes Cyrus's work messy?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Cyrus choose not to go?" },
+        { type: "literal", question: "Where does Cyrus work instead?" },
+        { type: "literal", question: "What is Cyrus trying to save money for?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Cyrus choose work even though it is messy and stinky?" },
+        { type: "evidence", question: "What details show Cyrus has to give up something fun for his goal?" },
+        { type: "vocabulary", question: "What does 'shore' mean in the title?" }
+      ]
+    }
+  },
+  "reader7-7.5-b-p156-ice-rink-mixup": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "rink", meaning: "a place with ice where people skate", whyPreteach: "The main problem happens at the ice rink.", reference: "title", prompt: "What do people do at a rink?" },
+      { word: "competition", meaning: "an event where people try to perform better than others", whyPreteach: "Melinda is preparing for a national competition.", reference: "paragraph 1", prompt: "What kind of competition is Melinda in?" },
+      { word: "schedule mix-up", meaning: "a mistake about planned times or events", whyPreteach: "This phrase explains the conflict.", reference: "title and paragraph 2", prompt: "What happens when there is a schedule mix-up?" },
+      { word: "resolves", meaning: "solves or settles a problem", whyPreteach: "The owner resolves the issue at the rink.", reference: "paragraph 3", prompt: "Who resolves the mix-up?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What sport does Melinda practice?" },
+        { type: "literal", question: "What problem happens with the rink schedule?" },
+        { type: "literal", question: "Who helps solve the problem?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why would a schedule mix-up be stressful for Melinda?" },
+        { type: "evidence", question: "What details show Melinda is a serious skater?" },
+        { type: "vocabulary", question: "What does 'resolves' mean in the final part of the passage?" }
+      ]
+    }
   }
 };

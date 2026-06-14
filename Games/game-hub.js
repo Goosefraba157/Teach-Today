@@ -149,14 +149,14 @@
         playable: true
       },
       {
-        id: "word",
+        id: "wordBuilder",
         title: "Word Builder",
-        copy: "Coming next: build words from sounds and race your best score.",
-        href: "#",
-        points: 0,
-        status: "Soon",
+        copy: "Build Wilson 1.3 words from sound tiles, mark the syllable, and stack bonuses.",
+        href: `Word%20Builder/index.html?student=${studentParam}`,
+        points: totals.wordBuilder || 0,
+        status: "Ready",
         art: ["w", "o", "r", "d"],
-        playable: false
+        playable: true
       },
       {
         id: "sound",

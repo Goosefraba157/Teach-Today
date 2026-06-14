@@ -89,6 +89,7 @@ const WELDED_WORDS=new Set([
   'CAN','FAN','MAN','PAN','RAN','TAN','VAN','BAN',
   'HAM','JAM','RAM','YAM','DAM',
 ]);
+const GLUED_SOUNDS=new Set(['AM','AN']);
 
 // ── 1.3 Word data — [WORD, OPEN_CONS, VOWEL, ANSWER] ──
 // OPEN_CONS + VOWEL = pre-filled stem tiles; ANSWER = closing phoneme (1-2 chars)
@@ -193,9 +194,17 @@ const W13=[
 // Build word objects and lookup map
 const WORDS_13=W13.map(([word,open,vow,answer])=>({
   word, tiles:[open,vow], answer,
+  buildTiles:buildTilesForWord(word,open,vow,answer),
   isWelded: WELDED_WORDS.has(word),
 }));
 const WORD_BY_NAME=Object.fromEntries(WORDS_13.map(w=>[w.word,w]));
+
+function buildTilesForWord(word,open,vow,answer){
+  if(WELDED_WORDS.has(word)&&vow==='A'&&(answer==='M'||answer==='N')){
+    return [open,`${vow}${answer}`];
+  }
+  return [open,vow,answer];
+}
 
 // Valid answers per stem (for collision — allow any real word from same stem)
 const STEM_MAP={};
@@ -209,15 +218,30 @@ WORDS_13.forEach(({tiles,answer})=>{
 const CONS_POOL=['B','D','F','G','H','K','L','M','N','P','R','S','T','V','W','Z'];
 const DIG_POOL=['SH','CH','TH','CK','WH'];
 const ALL_ANSWERS=[...CONS_POOL,...DIG_POOL];
+const BUILD_TILE_POOL=[...new Set(WORDS_13.flatMap(w=>w.buildTiles))];
 
 // Current sub-step selection
-let selectedSubstep='1.3';
+let selectedSubstep='1.3A';
+let selectedMode='close';
 
 const TOTAL_WORDS=10;
 const LANES=[155,295,435];
 const GROUND_Y=475;
 const PX_MIN=80, PX_MAX=800, PX_START=160;
-const TILE_SPEED=1.3;
+const BASE_TILE_SPEED=1.45;
+const SPEED_LEVELS=[
+  {label:'Slow', factor:0.72, score:0.75},
+  {label:'Easy', factor:0.92, score:0.95},
+  {label:'Quick', factor:1.12, score:1.18},
+  {label:'Fast', factor:1.36, score:1.48},
+  {label:'Turbo', factor:1.68, score:1.9},
+];
+const SPECIAL_CHOICES=[
+  {kind:'boost', label:'★', name:'BONUS BURST'},
+  {kind:'slow', label:'★', name:'SLOW TRAP'},
+  {kind:'retreat', label:'★', name:'BACK TRAP'},
+  {kind:'scramble', label:'★', name:'SWAP TRAP'},
+];
 
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
@@ -239,6 +263,11 @@ let lives=3, invincible=0;
 let winTimer=0;
 let reshufflePool=null;         // letters to reuse on reshuffle
 let spawnTimer=0;
+let buildStep=0;
+let speedLevel=2;
+let powerBoostTimer=0, bonusSurgeTotal=0;
+let slowPenaltyTimer=0, slowLossTicker=0;
+let retreatTimer=0, scrambleTimer=0, scrambleFlash=0;
 let bgScrollV=0, bgScroll=0;
 let keys={};
 let touchRun=false;        // iPad RUN button held
@@ -252,6 +281,8 @@ const TB={
   laneDown:{x:4,  y:228, w:70, h:72},
   run:     {x:790,y:148, w:66, h:155},
   shuffle: {x:4,  y:308, w:70, h:60},
+  speedDown:{x:626,y:8,w:48,h:36},
+  speedUp:  {x:680,y:8,w:48,h:36},
 };
 function inRect(cx,cy,r){ return cx>=r.x&&cx<r.x+r.w&&cy>=r.y&&cy<r.y+r.h; }
 
@@ -275,6 +306,8 @@ function drawTouchButtons(){
   btn(TB.laneDown.x,TB.laneDown.y,TB.laneDown.w,TB.laneDown.h,'▼', false);
   btn(TB.run.x,     TB.run.y,     TB.run.w,     TB.run.h,     '▶', touchRun,'RUN');
   btn(TB.shuffle.x, TB.shuffle.y, TB.shuffle.w, TB.shuffle.h, '↩', false);
+  btn(TB.speedDown.x,TB.speedDown.y,TB.speedDown.w,TB.speedDown.h,'−', false,'SPD');
+  btn(TB.speedUp.x,  TB.speedUp.y,  TB.speedUp.w,  TB.speedUp.h,  '+', false,'SPD');
 }
 
 // ── Mini-game state ────────────────────────────────────
@@ -402,33 +435,173 @@ function pickWord(){
   if(wordBag.length===0) wordBag=shuffle([...WORDS_13]);
   return wordBag.pop();
 }
-function pickDistractors(answer){
-  const pool=ALL_ANSWERS.filter(c=>c!==answer);
-  const d1=pool[Math.floor(Math.random()*pool.length)];
-  let d2=pool[Math.floor(Math.random()*pool.length)];
-  while(d2===d1) d2=pool[Math.floor(Math.random()*pool.length)];
-  return [d1,d2];
+function pickDistractors(answer,pool=ALL_ANSWERS){
+  const choices=pool.filter(c=>c!==answer);
+  if(choices.length<2) return choices;
+  const poolCopy=shuffle(choices);
+  return [poolCopy[0],poolCopy[1]];
+}
+function speedConfig(){
+  return SPEED_LEVELS[speedLevel]||SPEED_LEVELS[2];
+}
+function scoreMultiplier(){
+  return speedConfig().score;
+}
+function tileSpeed(){
+  const slowFactor=slowPenaltyTimer>0?0.5:1;
+  return BASE_TILE_SPEED*speedConfig().factor*slowFactor;
+}
+function adjustSpeed(delta){
+  const next=Math.max(0,Math.min(SPEED_LEVELS.length-1,speedLevel+delta));
+  if(next===speedLevel) return;
+  speedLevel=next;
+  const cfg=speedConfig();
+  spawnFloater(W/2,132,`Speed: ${cfg.label} (${cfg.score.toFixed(2)}× points)`,cfg.score>=1.18?'#FFD700':'#A8E6CF');
+}
+function maybeSpecialChoice(){
+  if(Math.random()>0.52) return null;
+  const roll=Math.random();
+  if(roll<0.48) return {kind:'boost'};
+  if(roll<0.68) return {kind:'slow'};
+  if(roll<0.84) return {kind:'retreat'};
+  return {kind:'scramble'};
+}
+function normalizeChoice(choice){
+  if(typeof choice==='string') return {kind:'letter', letter:choice};
+  return {...choice};
+}
+function choiceForTile(tile){
+  return tile.kind==='letter'?tile.letter:{kind:tile.kind};
+}
+function choiceName(choice){
+  const c=normalizeChoice(choice);
+  if(c.kind==='letter') return c.letter;
+  return SPECIAL_CHOICES.find(s=>s.kind===c.kind)?.name||'POWER';
+}
+function isBadPower(kind){
+  return kind==='slow'||kind==='retreat'||kind==='scramble';
+}
+function currentBuildTiles(){
+  return currentWord?.buildTiles||[];
+}
+function currentTargetSound(){
+  return selectedMode==='build'?currentBuildTiles()[buildStep]:currentWord.answer;
+}
+function isCorrectTileSound(sound){
+  if(selectedMode==='build') return sound===currentTargetSound();
+  const stemKey=currentWord.tiles.join('');
+  const validAnswers=STEM_MAP[stemKey]||new Set([currentWord.answer]);
+  return validAnswers.has(sound);
+}
+function choicePoolForMode(){
+  return selectedMode==='build'?BUILD_TILE_POOL:ALL_ANSWERS;
+}
+function tilePalette(sound){
+  if(GLUED_SOUNDS.has(sound)) return {bg:W_BG,dark:W_DARK,glow:W_BG};
+  if(VOWELS.has(sound)) return {bg:V_BG,dark:V_DARK,glow:V_BG};
+  return {bg:C_BG,dark:C_DARK,glow:C_BG};
+}
+function addScore(points){
+  score=Math.max(0,score+points);
+}
+function completeCurrentWord(tile){
+  const elapsed=(frame-wordStartFrame)/60;
+  wordTimes.push(elapsed);
+  completedWords.push(currentWord.word);
+  const pts=Math.max(10,Math.round((115-elapsed*10)*scoreMultiplier()));
+  addScore(pts);
+  addHubPoints(pts,{word:currentWord.word,step:selectedSubstep,mode:selectedMode});
+  spawnBurst(tile.x,tile.y,tilePalette(tile.letter).glow,18);
+  spawnFloater(tile.x,tile.y-50,`${currentWord.word.toLowerCase()} ✓`,'#A8E6CF');
+  spawnFloater(tile.x,tile.y-80,`+${pts}`,'#FFD700');
+  tiles.forEach(o=>{ if(!o.done){ o.flying=true; o.vx=10+Math.random()*4; }});
+  wordsDone++;
+  winTimer=120;
+}
+function advanceBuildStep(tile){
+  buildStep++;
+  streak++;
+  spawnBurst(tile.x,tile.y,tilePalette(tile.letter).glow,14);
+  spawnFloater(tile.x,tile.y-50,`${tile.letter.toLowerCase()} ✓`,'#A8E6CF');
+  tiles.forEach(o=>{ if(!o.done){ o.flying=true; o.vx=10+Math.random()*4; }});
+  reshufflePool=null;
+  spawnTimer=45;
+}
+function handleCorrectTile(tile){
+  if(tile.kind==='boost') applyBoost(tile);
+  if(selectedMode==='build'){
+    const lastStep=buildStep>=currentBuildTiles().length-1;
+    if(lastStep){
+      buildStep=currentBuildTiles().length;
+      streak++;
+      completeCurrentWord(tile);
+    } else {
+      advanceBuildStep(tile);
+    }
+    return;
+  }
+  streak++;
+  completeCurrentWord(tile);
+}
+function applyBoost(tile){
+  const instant=Math.round(260*scoreMultiplier());
+  powerBoostTimer=300;
+  bonusSurgeTotal=0;
+  addScore(instant);
+  spawnBurst(tile.x,tile.y,'#FFD700',34);
+  spawnBurst(player.x,player.y,'#A8E6CF',24);
+  spawnFloater(tile.x,tile.y-70,`BONUS BURST +${instant}!`,'#FFD700');
+}
+function applyPowerDown(tile){
+  const penalty=Math.round(65*scoreMultiplier());
+  addScore(-penalty);
+  streak=0;
+  player.hitFlash=28;
+  invincible=Math.max(invincible,45);
+  spawnBurst(tile.x,tile.y,'#6A003A',20);
+  if(tile.kind==='slow'){
+    slowPenaltyTimer=360;
+    slowLossTicker=0;
+    spawnFloater(tile.x,tile.y-66,`SLOW TRAP −${penalty}`,'#DDA0FF');
+  } else if(tile.kind==='retreat'){
+    retreatTimer=150;
+    spawnFloater(tile.x,tile.y-66,`BACK TRAP −${penalty}`,'#FF7A7A');
+  } else if(tile.kind==='scramble'){
+    scrambleTimer=42;
+    scrambleFlash=60;
+    spawnFloater(tile.x,tile.y-66,`SWAP TRAP −${penalty}`,'#FF66CC');
+  }
+}
+function scrambleActiveTiles(){
+  const active=tiles.filter(t=>!t.done&&!t.flying);
+  if(active.length<2) return;
+  const lanes=shuffle(active.map(t=>t.lane));
+  active.forEach((t,i)=>{ t.lane=lanes[i]; t.y=LANES[t.lane]; t.x+=18-Math.random()*36; });
+  spawnFloater(W/2,160,'LANES SWITCHED! REACT FAST!','#FF66CC');
 }
 
 // ── Spawn tiles (or reshuffle same letters) ────────────
 function spawnTiles(letters=null){
-  const answer=currentWord.answer;
+  const answer=currentTargetSound();
   if(!letters){
-    const dis=pickDistractors(answer);
-    letters=shuffle([answer,...dis]);
+    const dis=pickDistractors(answer,choicePoolForMode());
+    const special=maybeSpecialChoice();
+    letters=special?shuffle([answer,special,dis[0]]):shuffle([answer,...dis]);
   } else {
     letters=shuffle([...letters]);
   }
   reshufflePool=letters;
-  const stemKey=currentWord.tiles.join('');
-  const validAnswers=STEM_MAP[stemKey]||new Set([answer]);
   tiles=[];
   for(let lane=0;lane<3;lane++){
-    const L=letters[lane];
+    const choice=normalizeChoice(letters[lane]);
+    const letter=choice.kind==='letter'?choice.letter:answer;
     tiles.push({
       x:W+80, y:LANES[lane], lane,
-      letter:L,
-      correct:validAnswers.has(L),
+      kind:choice.kind,
+      letter,
+      label:choice.kind==='letter'?letter:(SPECIAL_CHOICES.find(s=>s.kind===choice.kind)?.label||'★'),
+      name:choiceName(choice),
+      correct:choice.kind==='boost'||(choice.kind==='letter'&&isCorrectTileSound(letter)),
       alpha:1, done:false,
       flying:false, vx:0,
     });
@@ -440,11 +613,14 @@ function startGame(){
   frame=0; totalFrames=0;
   player={x:PX_START,y:LANES[1],lane:1,vy:0,jumping:false,hitFlash:0,runAnim:0};
   tiles=[]; particles=[]; floaters=[];
-  wordBag=[]; wordsDone=0; wordTimes=[];
+  wordBag=[]; wordsDone=0; wordTimes=[]; completedWords=[];
   reshufflePool=null; spawnTimer=80;
   lives=3; invincible=0; streak=0; score=0;
+  powerBoostTimer=0; bonusSurgeTotal=0; slowPenaltyTimer=0; slowLossTicker=0;
+  retreatTimer=0; scrambleTimer=0; scrambleFlash=0;
   winTimer=0; bgScroll=0; bgScrollV=0;
   currentWord=pickWord();
+  buildStep=0;
   wordStartFrame=0;
   state='playing';
 }
@@ -477,6 +653,10 @@ function drawBG(){
 
 // ── Word display ───────────────────────────────────────
 function drawWordBar(){
+  if(selectedMode==='build'){
+    drawBuildWordBar();
+    return;
+  }
   ctx.fillStyle='rgba(0,0,0,0.6)'; rr(10,8,W-20,98,12); ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1.5; rr(10,8,W-20,98,12); ctx.stroke();
 
@@ -549,10 +729,64 @@ function drawWordBar(){
   ctx.fillText(`Word ${wordsDone+1} / ${TOTAL_WORDS}`,18,22);
 }
 
+function drawBuildWordBar(){
+  ctx.fillStyle='rgba(0,0,0,0.6)'; rr(10,8,W-20,112,12); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1.5; rr(10,8,W-20,112,12); ctx.stroke();
+
+  ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='bold 12px Arial';
+  ctx.fillText('BUILD THE WORD — collect each sound in order!',W/2,24);
+  ctx.fillStyle='#FFD700'; ctx.font='bold 22px Arial';
+  ctx.fillText(currentWord.word.toLowerCase(),W/2,50);
+
+  const phonemes=currentBuildTiles();
+  const tW=78,tH=46,gap=12;
+  const total=phonemes.length*(tW+gap)-gap;
+  const sx=W/2-total/2, ty=61;
+
+  for(let i=0;i<phonemes.length;i++){
+    const ph=phonemes[i];
+    const tx=sx+i*(tW+gap);
+    const done=i<buildStep;
+    const active=i===buildStep;
+    const palette=tilePalette(ph);
+
+    ctx.fillStyle='rgba(0,0,0,0.3)'; rr(tx+3,ty+3,tW,tH,10); ctx.fill();
+    if(done){
+      ctx.fillStyle=palette.bg; rr(tx,ty,tW,tH,10); ctx.fill();
+      ctx.strokeStyle=palette.dark; ctx.lineWidth=2.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+      ctx.fillStyle=palette.dark; rr(tx+tW/2-10,ty+tH-5,20,12,4); ctx.fill();
+      const fs=ph.length>1?23:32;
+      ctx.fillStyle=palette.dark; ctx.font=`bold ${fs}px Arial`;
+      ctx.fillText(ph.toLowerCase(),tx+tW/2,ty+tH-11);
+    } else {
+      const pulse=active?0.14+0.12*Math.sin(frame*0.15):0.06;
+      ctx.fillStyle=`rgba(255,255,255,${pulse})`; rr(tx,ty,tW,tH,10); ctx.fill();
+      ctx.strokeStyle=active?'rgba(255,215,0,0.85)':'rgba(255,255,255,0.16)';
+      ctx.lineWidth=active?3:1.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+      ctx.fillStyle=active?'rgba(255,215,0,0.72)':'rgba(255,255,255,0.24)';
+      ctx.font=`bold ${ph.length>1?18:16}px Arial`;
+      ctx.fillText(ph.length>1?'??':'?',tx+tW/2,ty+tH/2+6);
+    }
+
+    ctx.fillStyle=active?'rgba(255,215,0,0.8)':done?'rgba(168,230,207,0.76)':'rgba(255,255,255,0.26)';
+    ctx.font='bold 10px Arial';
+    ctx.fillText(active?'next':done?'built':`${i+1}`,tx+tW/2,ty+tH+12);
+  }
+
+  const elapsed=winTimer>0?wordTimes[wordTimes.length-1]:(frame-wordStartFrame)/60;
+  ctx.textAlign='right'; ctx.fillStyle=elapsed>10?'#FF6B6B':'rgba(255,255,255,0.6)';
+  ctx.font='bold 16px Arial';
+  ctx.fillText(`⏱ ${elapsed.toFixed(1)}s`,W-18,22);
+
+  ctx.textAlign='left'; ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 15px Arial';
+  ctx.fillText(`Word ${wordsDone+1} / ${TOTAL_WORDS}`,18,22);
+}
+
 // ── Letter tile ────────────────────────────────────────
 function drawTile(t){
   if(t.done&&!t.flying) return;
   const tw=70,th=64;
+  const palette=selectedMode==='build'?tilePalette(t.letter):{bg:C_BG,dark:C_DARK,glow:C_BG};
   ctx.save(); ctx.globalAlpha=t.alpha;
   ctx.translate(t.x,t.y);
 
@@ -567,28 +801,52 @@ function drawTile(t){
   ctx.lineTo(-12,-th/2-30+arrowBob);
   ctx.closePath(); ctx.fill();
 
-  // Glow for correct
-  if(t.correct){
+  // Glow for correct and power cards
+  if(t.correct||t.kind!=='letter'){
     const g=0.5+0.5*Math.sin(frame*0.12);
-    ctx.shadowColor=C_BG; ctx.shadowBlur=26*g;
+    ctx.shadowColor=t.kind==='boost'?'#FFD700':isBadPower(t.kind)?'#FF2F7D':palette.glow;
+    ctx.shadowBlur=(t.kind==='letter'?26:38)*g;
   }
 
   // Shadow
   ctx.fillStyle='rgba(0,0,0,0.28)'; rr(-tw/2+3,-th/2+3,tw,th,11); ctx.fill();
   ctx.shadowBlur=0;
 
-  // Tile (always consonant — closing consonant)
-  ctx.fillStyle=C_BG; rr(-tw/2,-th/2,tw,th,11); ctx.fill();
-  ctx.strokeStyle=t.correct?'#FFD700':C_DARK;
-  ctx.lineWidth=t.correct?3.5:2.5; rr(-tw/2,-th/2,tw,th,11); ctx.stroke();
+  if(t.kind!=='letter'){
+    const good=t.kind==='boost';
+    const grad=ctx.createLinearGradient(-tw/2,-th/2,tw/2,th/2);
+    if(good){
+      grad.addColorStop(0,'#FFF4A8'); grad.addColorStop(0.55,'#FFD700'); grad.addColorStop(1,'#FF8C00');
+    } else {
+      grad.addColorStop(0,'#321044'); grad.addColorStop(0.55,'#7A003C'); grad.addColorStop(1,'#180018');
+    }
+    ctx.fillStyle=grad; rr(-tw/2,-th/2,tw,th,11); ctx.fill();
+    ctx.strokeStyle=good?'#FFFBE0':'#FF4D8D';
+    ctx.lineWidth=good?4:3.5; rr(-tw/2,-th/2,tw,th,11); ctx.stroke();
+    ctx.fillStyle=good?'#FFFBE0':'#FFB3D1';
+    ctx.font='bold 34px Arial'; ctx.textAlign='center';
+    ctx.fillText(t.label,0,8);
+    ctx.font='bold 9px Arial';
+    ctx.fillStyle=good?'#6B3D00':'#FFD6E6';
+    const tag=t.kind==='boost'?'BONUS':t.kind==='slow'?'SLOW':t.kind==='retreat'?'BACK':'SWAP';
+    ctx.fillText(tag,0,th/2-8);
+    if(!good){
+      ctx.fillStyle='#FF335F';
+      ctx.beginPath(); ctx.arc(-14,-7,3,0,Math.PI*2); ctx.arc(14,-7,3,0,Math.PI*2); ctx.fill();
+    }
+  } else {
+    ctx.fillStyle=palette.bg; rr(-tw/2,-th/2,tw,th,11); ctx.fill();
+    ctx.strokeStyle=t.correct?'#FFD700':palette.dark;
+    ctx.lineWidth=t.correct?3.5:2.5; rr(-tw/2,-th/2,tw,th,11); ctx.stroke();
 
-  // Wilson tab
-  ctx.fillStyle=C_DARK; rr(-11,th/2-5,22,14,4); ctx.fill();
+    // Wilson tab
+    ctx.fillStyle=palette.dark; rr(-11,th/2-5,22,14,4); ctx.fill();
 
-  // Letter — lowercase (smaller font for digraphs)
-  const tfs=t.letter.length>1?24:38;
-  ctx.fillStyle=C_DARK; ctx.font=`bold ${tfs}px Arial`; ctx.textAlign='center';
-  ctx.fillText(t.letter.toLowerCase(),0,t.letter.length>1?11:13);
+    // Letter — lowercase (smaller font for digraphs)
+    const tfs=t.letter.length>1?24:38;
+    ctx.fillStyle=palette.dark; ctx.font=`bold ${tfs}px Arial`; ctx.textAlign='center';
+    ctx.fillText(t.letter.toLowerCase(),0,t.letter.length>1?11:13);
+  }
 
   ctx.restore();
 }
@@ -601,6 +859,20 @@ function drawPlayer(){
   const running=keys['d']||keys['D']||keys['ArrowRight']||touchRun;
 
   if(invincible>0&&Math.floor(frame/4)%2===1) return; // blink
+
+  if(powerBoostTimer>0){
+    const pulse=0.5+0.5*Math.sin(frame*0.42);
+    for(let i=0;i<5;i++){
+      const r=28+i*7+pulse*8;
+      ctx.strokeStyle=`rgba(${i%2?255:168},${i%2?215:230},${i%2?0:207},${0.42-i*0.06})`;
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.ellipse(px,py-20+bob,r*0.72,r,Math.sin(frame*0.05+i),0,Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.fillStyle=`rgba(255,245,120,${0.18+0.12*pulse})`;
+    ctx.beginPath(); ctx.ellipse(px,py-20+bob,34+12*pulse,60+18*pulse,0,0,Math.PI*2); ctx.fill();
+  }
 
   // shadow
   ctx.fillStyle='rgba(0,0,0,0.2)';
@@ -705,6 +977,16 @@ function drawHUD(){
   drawMenuBtn();
   drawTouchButtons();
 
+  const cfg=speedConfig();
+  ctx.textAlign='left';
+  ctx.fillStyle='rgba(0,0,0,0.46)'; rr(84,8,214,36,9); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1.5; rr(84,8,214,36,9); ctx.stroke();
+  ctx.fillStyle='#FFD700'; ctx.font='bold 15px Arial';
+  ctx.fillText(`${score} pts`,96,31);
+  ctx.fillStyle=cfg.score>=1.18?'#A8E6CF':'rgba(255,255,255,0.72)';
+  ctx.font='bold 12px Arial';
+  ctx.fillText(`Speed ${speedLevel+1}: ${cfg.label} • ${cfg.score.toFixed(2)}×`,176,31);
+
   for(let i=0;i<3;i++){
     ctx.font='24px Arial';
     ctx.fillStyle=i<lives?'#FF4D6D':'rgba(255,77,109,0.18)';
@@ -715,12 +997,31 @@ function drawHUD(){
     ctx.font=`bold ${14+Math.min(streak,7)}px Arial`;
     ctx.fillText(`🔥 ${streak}× STREAK`,W/2,H-16);
   }
+  if(powerBoostTimer>0){
+    const p=0.55+0.45*Math.sin(frame*0.24);
+    ctx.textAlign='center';
+    ctx.fillStyle=`rgba(255,215,0,${0.3+0.28*p})`; rr(W/2-178,42,356,42,14); ctx.fill();
+    ctx.strokeStyle=`rgba(255,255,160,${0.65+0.3*p})`; ctx.lineWidth=3; rr(W/2-178,42,356,42,14); ctx.stroke();
+    ctx.fillStyle='#FFFBE0'; ctx.font='bold 19px Arial';
+    ctx.fillText(`BONUS OVERLOAD +${bonusSurgeTotal}`,W/2,70);
+  }
+  if(slowPenaltyTimer>0||retreatTimer>0||scrambleFlash>0){
+    ctx.textAlign='center';
+    ctx.fillStyle='rgba(80,0,55,0.62)'; rr(W/2-160,88,320,30,10); ctx.fill();
+    ctx.fillStyle='#FFD6E6'; ctx.font='bold 13px Arial';
+    const msg=retreatTimer>0?'BACK TRAP: chase them!':scrambleFlash>0?'SWAP TRAP: lanes are shifting!':'SLOW TRAP: points draining!';
+    ctx.fillText(msg,W/2,108);
+  }
   ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='12px Arial';
-  ctx.fillText('D/→ run  •  W/S lanes  •  SPACE reshuffle',W-90,H-16);
+  ctx.fillText('D/→ run  •  W/S lanes  •  SPACE reshuffle  •  +/- speed',W-90,H-16);
 }
 
 // ── Word complete overlay — animated red-marker Wilson marking ─
 function drawWinOverlay(){
+  if(selectedMode==='build'){
+    drawBuildWinOverlay();
+    return;
+  }
   const elapsed=winTimer>0?120-winTimer:0;
   const a=Math.min(1,elapsed/10);
   if(a<=0) return;
@@ -816,6 +1117,56 @@ function drawWinOverlay(){
     const wt=wordTimes[wordTimes.length-1];
     ctx.fillStyle='#A8E6CF'; ctx.font='bold 15px Arial'; ctx.textAlign='center';
     ctx.fillText(`CLOSED! ✓ — ${wt.toFixed(1)}s`, W/2, py+ph-18);
+    ctx.restore();
+  }
+}
+
+function drawBuildWinOverlay(){
+  const elapsed=winTimer>0?120-winTimer:0;
+  const a=Math.min(1,elapsed/10);
+  if(a<=0) return;
+
+  ctx.fillStyle=`rgba(0,0,0,${a*0.55})`; ctx.fillRect(0,0,W,H);
+
+  const pw=520, ph=225, px=(W-pw)/2, py=(H-ph)/2-10;
+  ctx.fillStyle=`rgba(10,24,34,${a*0.96})`; rr(px,py,pw,ph,18); ctx.fill();
+  ctx.strokeStyle=`rgba(255,215,0,${a*0.42})`; ctx.lineWidth=2;
+  rr(px,py,pw,ph,18); ctx.stroke();
+
+  const lastWName=completedWords[completedWords.length-1]||'CAT';
+  const lastW=WORD_BY_NAME[lastWName]||WORDS_13[0];
+  const phonemes=lastW.buildTiles||[lastW.tiles[0],lastW.tiles[1],lastW.answer];
+  const tW=82, tH=68, tGap=12, totW=phonemes.length*(tW+tGap)-tGap;
+  const tx0=(W-totW)/2, ty0=py+62;
+
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.fillStyle='#FFD700'; ctx.font='bold 22px Arial'; ctx.textAlign='center';
+  ctx.fillText(`${lastW.word.toLowerCase()} built!`,W/2,py+36);
+  ctx.restore();
+
+  phonemes.forEach((ph,i)=>{
+    const tx=tx0+i*(tW+tGap), ty=ty0;
+    const palette=tilePalette(ph);
+    ctx.fillStyle='rgba(0,0,0,0.28)'; rr(tx+3,ty+3,tW,tH,10); ctx.fill();
+    ctx.fillStyle=palette.bg; rr(tx,ty,tW,tH,10); ctx.fill();
+    ctx.strokeStyle=palette.dark; ctx.lineWidth=2.5; rr(tx,ty,tW,tH,10); ctx.stroke();
+    ctx.fillStyle=palette.dark; rr(tx+tW/2-11,ty+tH-4,22,14,4); ctx.fill();
+    const fs=ph.length>1?25:38;
+    ctx.fillStyle=palette.dark; ctx.font=`bold ${fs}px Arial`; ctx.textAlign='center';
+    ctx.fillText(ph.toLowerCase(),tx+tW/2,ty+tH-12);
+
+    if(i<phonemes.length-1){
+      ctx.fillStyle=`rgba(255,255,255,${0.4*a})`; ctx.font='bold 22px Arial';
+      ctx.fillText('+',tx+tW+tGap/2,ty+tH/2+8);
+    }
+  });
+
+  const timeP=elapsed>34?Math.min(1,(elapsed-34)/16):0;
+  if(timeP>0){
+    ctx.save(); ctx.globalAlpha=timeP;
+    const wt=wordTimes[wordTimes.length-1];
+    ctx.fillStyle='#A8E6CF'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+    ctx.fillText(`BUILT! ✓ — ${wt.toFixed(1)}s`,W/2,py+ph-28);
     ctx.restore();
   }
 }
@@ -1198,16 +1549,16 @@ function drawScooping(){
 
 // ── Sub-step card data ─────────────────────────────────
 const SUBSTEPS=[
-  {id:'1.1', label:'Short Vowels', sub:'Basic CVC words',       locked:true},
-  {id:'1.2', label:'New Patterns',sub:'-ck, -ff, -ll, -ss',    locked:true},
-  {id:'1.3', label:'Digraphs',    sub:'sh  ch  th  wh  -ck',   locked:false},
-  {id:'1.4', label:'Blends',      sub:'bl, cr, st…',            locked:true},
+  {id:'1.3A', label:'Close It',   sub:'Pick the ending sound',    mode:'close', locked:false},
+  {id:'1.3B', label:'Build It',   sub:'Collect sounds in order',  mode:'build', locked:false},
+  {id:'1.4',  label:'Blends',     sub:'bl, cr, st...',            mode:'blends', locked:true},
+  {id:'1.5',  label:'Review Mix', sub:'coming soon',              mode:'review', locked:true},
 ];
 
 // Hit-test for sub-step cards (returns substep id or null)
 function substepCardAt(cx,cy){
   const cW=172,cH=104,gap=16,tot=SUBSTEPS.length*(cW+gap)-gap;
-  const x0=(W-tot)/2, y0=230;
+  const x0=(W-tot)/2, y0=210;
   for(let i=0;i<SUBSTEPS.length;i++){
     const x=x0+i*(cW+gap);
     if(cx>=x&&cx<x+cW&&cy>=y0&&cy<y0+cH) return SUBSTEPS[i];
@@ -1232,9 +1583,9 @@ function drawTitle(){
     ctx.fillText(`▸ ${playerName}`,W/2,132);
   }
 
-  // Sub-step selector label
+  // Mode selector label
   ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='bold 13px Arial';
-  ctx.fillText('SELECT A STEP',W/2,194);
+  ctx.fillText('SELECT A MODE',W/2,194);
   // divider
   ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(W/2-90,200); ctx.lineTo(W/2+90,200); ctx.stroke();
@@ -1245,15 +1596,16 @@ function drawTitle(){
   SUBSTEPS.forEach((s,i)=>{
     const x=x0+i*(cW+gap);
     const active=!s.locked;
+    const selected=active&&s.mode===selectedMode;
     // glow for active
     if(active){
-      ctx.shadowColor=TEAL; ctx.shadowBlur=18;
+      ctx.shadowColor=selected?YELLOW:TEAL; ctx.shadowBlur=selected?24:18;
     }
-    ctx.fillStyle=active?'rgba(42,157,143,0.22)':'rgba(0,0,0,0.35)';
+    ctx.fillStyle=active?(selected?'rgba(233,196,106,0.23)':'rgba(42,157,143,0.22)'):'rgba(0,0,0,0.35)';
     rr(x,y0,cW,cH,12); ctx.fill();
     ctx.shadowBlur=0;
-    ctx.strokeStyle=active?'rgba(42,157,143,0.9)':'rgba(255,255,255,0.1)';
-    ctx.lineWidth=active?2.5:1.5; rr(x,y0,cW,cH,12); ctx.stroke();
+    ctx.strokeStyle=active?(selected?'rgba(255,215,0,0.95)':'rgba(42,157,143,0.9)'):'rgba(255,255,255,0.1)';
+    ctx.lineWidth=active?2.8:1.5; rr(x,y0,cW,cH,12); ctx.stroke();
 
     // Step number
     ctx.textAlign='center';
@@ -1275,7 +1627,7 @@ function drawTitle(){
     } else {
       // Pulsing play label
       const p=0.7+0.3*Math.sin(frame*0.1);
-      ctx.fillStyle=`rgba(42,230,160,${p})`; ctx.font='bold 12px Arial';
+      ctx.fillStyle=selected?`rgba(255,215,0,${p})`:`rgba(42,230,160,${p})`; ctx.font='bold 12px Arial';
       ctx.fillText('▶  TAP TO PLAY', x+cW/2, y0+93);
     }
   });
@@ -1283,13 +1635,16 @@ function drawTitle(){
   // Quick instructions strip
   ctx.fillStyle='rgba(0,0,0,0.38)'; rr(60,336,W-120,64,10); ctx.fill();
   ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
-  ctx.fillText('Run to collect the closing sound and complete the syllable!',W/2,362);
+  const modeHelp=selectedMode==='build'
+    ?'Run to collect the word sounds in order: first, next, then last.'
+    :'Run to collect the closing sound and complete the syllable!';
+  ctx.fillText(modeHelp,W/2,362);
   ctx.fillStyle='rgba(255,230,0,0.75)'; ctx.font='13px Arial';
-  ctx.fillText('D / → run   •   W/S / ↑↓ change lanes   •   SPACE reshuffle',W/2,382);
+  ctx.fillText('D / → run   •   W/S / ↑↓ lanes   •   SPACE reshuffle   •   +/- speed for more points',W/2,382);
 
   // Keyboard shortcut note
   ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='12px Arial';
-  ctx.fillText('Press SPACE to start Step 1.3',W/2,415);
+  ctx.fillText(`Press SPACE to start ${selectedMode==='build'?'Build It':'Close It'}`,W/2,415);
 
   if(highScore){
     ctx.fillStyle='#FFD700'; ctx.font='bold 16px Arial';
@@ -1302,6 +1657,29 @@ function update(){
   frame++; totalFrames++;
   player.hitFlash=Math.max(0,player.hitFlash-1);
   if(invincible>0) invincible--;
+  if(powerBoostTimer>0){
+    powerBoostTimer--;
+    const drip=Math.ceil(2.6*scoreMultiplier());
+    addScore(drip);
+    bonusSurgeTotal+=drip;
+    if(frame%10===0) spawnFloater(player.x,player.y-82,`+${bonusSurgeTotal}`,'#FFD700');
+  }
+  if(slowPenaltyTimer>0){
+    slowPenaltyTimer--;
+    slowLossTicker++;
+    if(slowLossTicker>=18){
+      slowLossTicker=0;
+      const loss=Math.ceil(6*scoreMultiplier());
+      addScore(-loss);
+      spawnFloater(W-150,82,`SLOW DRAIN −${loss}`,'#DDA0FF');
+    }
+  }
+  if(scrambleTimer>0){
+    scrambleTimer--;
+    if(scrambleTimer===0) scrambleActiveTiles();
+  }
+  if(scrambleFlash>0) scrambleFlash--;
+  if(retreatTimer>0) retreatTimer--;
 
   // ── Player horizontal movement ──
   const runRight=keys['d']||keys['D']||keys['ArrowRight']||touchRun;
@@ -1346,6 +1724,7 @@ function update(){
         state='scooping';
       } else {
         currentWord=pickWord();
+        buildStep=0;
         wordStartFrame=frame;
         tiles=[]; reshufflePool=null; spawnTimer=70;
       }
@@ -1365,7 +1744,10 @@ function update(){
 
   // ── Move tiles ──
   tiles.forEach(t=>{
-    if(!t.done&&!t.flying) t.x-=TILE_SPEED;
+    if(!t.done&&!t.flying){
+      if(retreatTimer>0) t.x+=tileSpeed()*2.4;
+      else t.x-=tileSpeed();
+    }
     if(t.flying){ t.x+=t.vx; t.alpha=Math.max(0,t.alpha-0.04); }
   });
 
@@ -1376,21 +1758,13 @@ function update(){
       const dx=Math.abs(t.x-player.x), dy=Math.abs(t.y-player.y);
       if(dx<44&&dy<44){
         t.done=true;
-        if(t.correct){
-          streak++;
-          const elapsed=(frame-wordStartFrame)/60;
-          wordTimes.push(elapsed);
-          completedWords.push(currentWord.word);
-          const pts=Math.max(10,Math.round(100-elapsed*10));
-          score+=pts;
-          addHubPoints(pts,{word:currentWord.word,step:selectedSubstep});
-          spawnBurst(t.x,t.y,C_BG,18);
-          spawnFloater(t.x,t.y-50,`${currentWord.word.toLowerCase()} ✓`,'#A8E6CF');
-          spawnFloater(t.x,t.y-80,`+${pts}`,'#FFD700');
-          // Clear remaining tiles (fly off)
-          tiles.forEach(o=>{ if(!o.done){ o.flying=true; o.vx=10+Math.random()*4; }});
-          wordsDone++;
-          winTimer=120;  // frames for red-marker animation
+        if(t.kind==='boost'){
+          handleCorrectTile(t);
+        } else if(isBadPower(t.kind)){
+          applyPowerDown(t);
+          t.flying=true; t.vx=10;
+        } else if(t.correct){
+          handleCorrectTile(t);
         } else {
           if(invincible===0){
             lives--;
@@ -1405,11 +1779,9 @@ function update(){
             }
             // Wrong tile flies off, reshuffle
             t.flying=true; t.vx=8;
-            // Reshuffle remaining + new tile with different distractors
+            // Reshuffle remaining + a fresh set for the current target.
             setTimeout(()=>{
               if(state!=='playing') return;
-              const answer=currentWord.answer;
-              let pool=[answer,...pickDistractors(answer)];
               reshufflePool=null;
               tiles.forEach(o=>{ if(!o.done) o.flying=true; o.vx=8; });
               setTimeout(()=>{ spawnTimer=1; reshufflePool=null; },400);
@@ -1421,6 +1793,23 @@ function update(){
       if(t.x<player.x-80&&!t.done){
         t.done=true;
         if(t.correct){ reshufflePool=null; spawnTimer=30; } // reshuffle with new letters
+      }
+      if(retreatTimer>0&&t.x>W+120&&!t.done){
+        t.done=true;
+        if(t.correct||t.kind==='boost'){
+          lives--;
+          streak=0;
+          player.hitFlash=26;
+          spawnFloater(W-120,t.y-42,'ESCAPED! −1 HEART','#FF7A7A');
+          spawnBurst(W-40,t.y,'#FF4D6D',16);
+          retreatTimer=0;
+          tiles.forEach(o=>{ if(!o.done){ o.flying=true; o.vx=12; }});
+          reshufflePool=null; spawnTimer=42;
+          if(lives<=0){
+            if(!highScore||totalFrames/60<highScore) highScore=totalFrames/60;
+            state='results';
+          }
+        }
       }
     });
   }
@@ -1437,6 +1826,16 @@ function update(){
 window.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if(e.key==='Escape'){ if(state!=='title') goMenu(); return; }
+  if(['+','=','Add'].includes(e.key)){
+    e.preventDefault();
+    adjustSpeed(1);
+    return;
+  }
+  if(['-','_','Subtract'].includes(e.key)){
+    e.preventDefault();
+    adjustSpeed(-1);
+    return;
+  }
   if(e.code==='Space'){
     e.preventDefault();
     if(state==='title'){ startGame(); return; }
@@ -1446,7 +1845,7 @@ window.addEventListener('keydown',e=>{
       if(!player.jumping){
         player.vy=-16; player.jumping=true;
         // Fly current tiles off, respawn same letters shuffled
-        const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+        const letters=tiles.filter(t=>!t.done&&!t.flying).map(choiceForTile);
         tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
         if(letters.length===3){ reshufflePool=letters; spawnTimer=50; }
         else if(reshufflePool){ spawnTimer=50; }
@@ -1477,10 +1876,12 @@ canvas.addEventListener('touchstart',e=>{
       }
       if(inRect(x,y,TB.laneUp)){ player.lane=Math.max(0,player.lane-1); continue; }
       if(inRect(x,y,TB.laneDown)){ player.lane=Math.min(2,player.lane+1); continue; }
+      if(inRect(x,y,TB.speedDown)){ adjustSpeed(-1); continue; }
+      if(inRect(x,y,TB.speedUp)){ adjustSpeed(1); continue; }
       if(inRect(x,y,TB.shuffle)){
         if(!player.jumping){
           player.vy=-16; player.jumping=true;
-          const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+          const letters=tiles.filter(t=>!t.done&&!t.flying).map(choiceForTile);
           tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
           if(letters.length===3) reshufflePool=letters;
           spawnTimer=50;
@@ -1515,7 +1916,7 @@ canvas.addEventListener('touchend',e=>{
     if(state==='title'){
       const {x,y}=getCanvasXY(touch.clientX,touch.clientY);
       const card=substepCardAt(x,y);
-      if(card&&!card.locked){ selectedSubstep=card.id; startGame(); }
+      if(card&&!card.locked){ selectedSubstep=card.id; selectedMode=card.mode||selectedMode; startGame(); }
       else if(!card){ startGame(); }
       continue;
     }
@@ -1526,7 +1927,7 @@ canvas.addEventListener('touchend',e=>{
     if(dy<-40&&!player.jumping){
       // Fast swipe up = reshuffle
       player.vy=-16; player.jumping=true;
-      const letters=tiles.filter(t=>!t.done&&!t.flying).map(t=>t.letter);
+      const letters=tiles.filter(t=>!t.done&&!t.flying).map(choiceForTile);
       tiles.forEach(t=>{ if(!t.done&&!t.flying){ t.flying=true; t.vx=-12; }});
       if(letters.length===3) reshufflePool=letters;
       spawnTimer=50;
@@ -1541,7 +1942,7 @@ canvas.addEventListener('mousedown',e=>{
   if(state!=='title'&&inMenuBtn(x,y)){ goMenu(); return; }
   if(state==='title'){
     const card=substepCardAt(x,y);
-    if(card&&!card.locked){ selectedSubstep=card.id; startGame(); return; }
+    if(card&&!card.locked){ selectedSubstep=card.id; selectedMode=card.mode||selectedMode; startGame(); return; }
   }
   if(state!=='scooping') return;
   mgHandleDown(x,y);
