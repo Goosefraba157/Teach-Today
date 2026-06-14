@@ -1658,5 +1658,665 @@ window.section9PassageCompanions = {
         { type: "vocabulary", question: "What does 'cast their ballot' mean in the last paragraph?" }
       ]
     }
+  },
+  "reader4-4.1-ab-p34-slope-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "slope", meaning: "the side of a hill that goes up or down", whyPreteach: "This word is central to the sledding setting.", reference: "title and paragraph 3", prompt: "Where are Stan and Kate sledding?" },
+      { word: "waste", meaning: "fail to use something well", whyPreteach: "This word explains why the friends want to use the sunny snowy day.", reference: "paragraph 1", prompt: "Why would it be a waste to stay inside?" },
+      { word: "removed", meaning: "took out or took away", whyPreteach: "This word tells how the friends get their sleds from the shed.", reference: "paragraph 2", prompt: "What did Stan and Kate remove from the shed?" },
+      { word: "thrill", meaning: "a feeling of excitement", whyPreteach: "This word explains what the friends expect from sledding.", reference: "paragraph 2", prompt: "What thrill are Stan and Kate thinking about?" },
+      { word: "hike", meaning: "a long walk, often uphill or outdoors", whyPreteach: "This word helps students understand the effort needed before sledding.", reference: "paragraph 2", prompt: "Why was getting to the top quite a hike?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What do Stan and Kate like to do on snowy hills?" },
+        { type: "literal", question: "What color sled belongs to Kate?" },
+        { type: "literal", question: "What do they have to do after each sled run?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Stan and Kate think it is too fine of a day to waste?" },
+        { type: "evidence", question: "What details show that sledding is fun but also takes effort?" },
+        { type: "vocabulary", question: "What does 'thrill' mean in the sentence about what was to come?" }
+      ]
+    }
+  },
+  "reader4-4.1-ab-p36-slope-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "unexpected", meaning: "not planned or not thought to happen", whyPreteach: "This word prepares students for Stan's sudden fall.", reference: "paragraph 1", prompt: "What unexpected thing happens to Stan?" },
+      { word: "snow drift", meaning: "a pile of snow moved by wind", whyPreteach: "This phrase helps students picture where Stan lands.", reference: "paragraph 1", prompt: "Where does Stan's sled send him?" },
+      { word: "slush", meaning: "wet, partly melted snow", whyPreteach: "This word explains why Stan gets cold and wet.", reference: "paragraph 1", prompt: "What kind of pile does Stan step into?" },
+      { word: "strode", meaning: "walked with long strong steps", whyPreteach: "This action word shows Stan is determined to keep sledding.", reference: "paragraph 2", prompt: "What does Stan do after cleaning off his clothes?" },
+      { word: "fade", meaning: "slowly disappear or become less bright", whyPreteach: "This word explains why the friends stop sledding.", reference: "paragraph 3", prompt: "What is about to fade at the end of the day?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What happens to Stan on the next trip down the hill?" },
+        { type: "literal", question: "How does Stan remove the snow and water from his clothes?" },
+        { type: "literal", question: "Why do Stan and Kate make one last run?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Stan still wants to have fun after the crash?" },
+        { type: "evidence", question: "What details show the sledding hill is cold and wet?" },
+        { type: "vocabulary", question: "What does 'slush' mean in the sentence about Stan's misstep?" }
+      ]
+    }
+  },
+  "reader4-4.1-ab-p38-mittens-strikes": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "strikes again", meaning: "does another surprising or troublesome thing", whyPreteach: "This title phrase frames Mittens as a repeat troublemaker.", reference: "title", prompt: "Why is the story called 'strikes again'?" },
+      { word: "used to", meaning: "familiar with something because it happens often", whyPreteach: "This phrase shows Mittens makes messes often.", reference: "paragraph 1", prompt: "What is the family used to about Mittens?" },
+      { word: "rubbish", meaning: "trash or garbage", whyPreteach: "This word describes the mess Mittens makes.", reference: "paragraph 2", prompt: "What did Mittens leave everywhere?" },
+      { word: "tap", meaning: "a faucet where water comes out", whyPreteach: "This word helps students understand Mittens' sink trick.", reference: "paragraph 3", prompt: "What did Mittens push with his nose?" },
+      { word: "nap", meaning: "a short sleep", whyPreteach: "This word explains Mittens' ending behavior after making trouble.", reference: "paragraph 4", prompt: "What does Mittens do when he is done joking?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of pet is Mittens?" },
+        { type: "literal", question: "What mess does Mittens make with the trashcan?" },
+        { type: "literal", question: "Where does Mittens hide socks?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the narrator warn us not to let Mittens' cute look trick us?" },
+        { type: "evidence", question: "What details show Mittens is clever and mischievous?" },
+        { type: "vocabulary", question: "What does 'used to the fact' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.1-ab-p40-jackson-lake": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "backpacks", meaning: "bags carried on the back", whyPreteach: "This word explains how Miles and Dave carry hike supplies.", reference: "paragraph 2", prompt: "What do the friends fill before the hike?" },
+      { word: "spare", meaning: "extra, kept in case it is needed", whyPreteach: "This word matters when the friends change wet socks.", reference: "paragraph 2", prompt: "Why does Miles pack spare socks?" },
+      { word: "shore", meaning: "the land along the edge of a lake or ocean", whyPreteach: "This word helps students picture where they rest.", reference: "paragraph 4", prompt: "Where do Miles and Dave sit?" },
+      { word: "rare", meaning: "not seen very often", whyPreteach: "This word highlights the special black falcon sighting.", reference: "paragraph 6", prompt: "What rare animal do they see?" },
+      { word: "falcon", meaning: "a bird that hunts and flies fast", whyPreteach: "This content word helps students picture the ending.", reference: "paragraph 6", prompt: "What kind of bird do Miles and Dave see?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where do Miles and Dave plan to hike?" },
+        { type: "literal", question: "What does each friend pack for the hike?" },
+        { type: "literal", question: "Why do they change socks before going home?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Miles and Dave think hiking with a pal is safer?" },
+        { type: "evidence", question: "What details show this hike may have been their best one yet?" },
+        { type: "vocabulary", question: "What does 'spare' mean in the phrase 'spare socks'?" }
+      ]
+    }
+  },
+  "reader4-4.1-ab-p42-cactus-joke-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "attends to", meaning: "takes care of", whyPreteach: "This phrase shows Mom normally cares for her plants well.", reference: "paragraph 1", prompt: "How does Mom attend to her plants?" },
+      { word: "draft", meaning: "a flow of cold air", whyPreteach: "This word explains one reason the cactus is harmed.", reference: "paragraph 2", prompt: "What is in the room that hurts the plant?" },
+      { word: "fall victim", meaning: "be harmed by something", whyPreteach: "This phrase helps students understand what may happen to the cactus.", reference: "paragraph 2", prompt: "What might the cactus fall victim to?" },
+      { word: "waste away", meaning: "become weak or unhealthy over time", whyPreteach: "This phrase explains the plant's decline.", reference: "paragraph 2", prompt: "Why might the cactus waste away?" },
+      { word: "spines", meaning: "sharp points on a cactus", whyPreteach: "This word helps students understand signs that the cactus is sick.", reference: "paragraph 3", prompt: "What happens to the cactus spines?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What joke does Duke play on his mom?" },
+        { type: "literal", question: "Why does Mom not water the cactus?" },
+        { type: "literal", question: "What signs show the cactus is not healthy?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Duke's joke more serious than he may have expected?" },
+        { type: "evidence", question: "What details show the cactus has been hidden for too long?" },
+        { type: "vocabulary", question: "What does 'waste away' mean in the question about the cactus?" }
+      ]
+    }
+  },
+  "reader4-4.1-ab-p43-cactus-joke-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "grasps", meaning: "understands or realizes", whyPreteach: "This word marks the moment Mom notices the plant is missing.", reference: "paragraph 1", prompt: "What does Mom grasp one day?" },
+      { word: "unintended", meaning: "not meant or planned", whyPreteach: "This word helps students discuss Duke's responsibility.", reference: "paragraph 1", prompt: "Was the effect of Duke's joke intended?" },
+      { word: "hope", meaning: "a chance that something can get better", whyPreteach: "This word frames the rescue of the cactus.", reference: "paragraph 2", prompt: "Is there hope for the sick plant?" },
+      { word: "extended", meaning: "longer than usual", whyPreteach: "This word explains the long sunbath Mom gives the cactus.", reference: "paragraph 2", prompt: "What kind of sunbath does Mom give the plant?" },
+      { word: "buds", meaning: "small new parts of a plant that may become flowers", whyPreteach: "This word shows the plant is recovering.", reference: "paragraph 2", prompt: "What comes back to life on the plant?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where does Mom find the missing cactus?" },
+        { type: "literal", question: "How does Duke feel when he sees the plant is unwell?" },
+        { type: "literal", question: "What does Mom do to help the cactus?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What lesson does Duke likely learn from this joke?" },
+        { type: "evidence", question: "What details show that the cactus begins to recover?" },
+        { type: "vocabulary", question: "What does 'unintended' mean in the sentence about the effect of the joke?" }
+      ]
+    }
+  },
+  "reader4-4.1-b-p44-dine-hank": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "dismal", meaning: "sad or gloomy", whyPreteach: "This word describes Hank's mood at the start.", reference: "paragraph 1", prompt: "How does Hank feel at home?" },
+      { word: "content", meaning: "satisfied or happy enough", whyPreteach: "This word shows Hank is not happy with staying home.", reference: "paragraph 1", prompt: "Is Hank content to sit at home?" },
+      { word: "crave", meaning: "want strongly", whyPreteach: "This word explains why Hank wants different food.", reference: "paragraph 1", prompt: "What food does Hank crave?" },
+      { word: "dine out", meaning: "eat at a restaurant", whyPreteach: "This phrase is central to Hank's problem.", reference: "paragraph 1", prompt: "Why is dining out a problem for Hank?" },
+      { word: "unwind", meaning: "relax after stress", whyPreteach: "This word explains why Hank wants to go to the restaurant.", reference: "paragraph 2", prompt: "Why does Hank want to unwind?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why is Hank feeling dismal at home?" },
+        { type: "literal", question: "Why can Ted not dine with Hank?" },
+        { type: "literal", question: "Who does Hank meet at the Shrimp Grill?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Hank's mood change from the start to the end?" },
+        { type: "evidence", question: "What details show Hank does not want to eat alone?" },
+        { type: "vocabulary", question: "What does 'hit the spot' mean when Hank thinks about lemon shrimp with chives?" }
+      ]
+    }
+  },
+  "reader4-4.1-b-p46-wire-contract-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "up to date", meaning: "modern and safe enough for current needs", whyPreteach: "This phrase explains what is wrong with the cabin wires.", reference: "paragraph 1", prompt: "Why are the wires not safe?" },
+      { word: "pose", meaning: "create or present a problem", whyPreteach: "This word explains the fire risk.", reference: "paragraph 1", prompt: "What risk do the wires pose?" },
+      { word: "scope", meaning: "the size or range of a problem or job", whyPreteach: "This word shows the wiring problem is large.", reference: "paragraph 1", prompt: "Why is the scope of the problem vast?" },
+      { word: "possess", meaning: "have", whyPreteach: "This word explains why Jane and Tom need skilled help.", reference: "paragraph 1", prompt: "What skills do Jane and Tom not possess?" },
+      { word: "bids", meaning: "offers stating what someone will charge for a job", whyPreteach: "This word is important to understanding the contract decision.", reference: "paragraph 2", prompt: "Why do Jane and Tom collect bids?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What problem do Jane and Tom have in their cabin?" },
+        { type: "literal", question: "Why do they need to hire someone?" },
+        { type: "literal", question: "How many quotes do they get by the end of the month?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the cheapest quote still a difficult choice for Jane and Tom?" },
+        { type: "evidence", question: "What details show the wiring problem is serious?" },
+        { type: "vocabulary", question: "What does 'scope' mean in the phrase 'the scope of their problem was vast'?" }
+      ]
+    }
+  },
+  "reader4-4.1-b-p47-wire-contract-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "contract", meaning: "an agreement for paid work", whyPreteach: "This word names the job Jane and Tom give Mr. Lund.", reference: "paragraph 1", prompt: "Who gets the contract?" },
+      { word: "probe", meaning: "check or examine closely", whyPreteach: "This word explains Mr. Lund's first step.", reference: "paragraph 2", prompt: "Why does Mr. Lund probe every wall?" },
+      { word: "fuse box", meaning: "an electrical box that helps control power", whyPreteach: "This term helps students understand the wiring work.", reference: "paragraph 2", prompt: "What does Mr. Lund move?" },
+      { word: "install", meaning: "put something in place so it can be used", whyPreteach: "This word explains the new wiring process.", reference: "paragraph 2", prompt: "What does Mr. Lund install?" },
+      { word: "inhabit", meaning: "live in a place", whyPreteach: "This word explains the safe result at the end.", reference: "paragraph 3", prompt: "Why is the cabin safe to inhabit?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why do Jane and Tom choose Mr. Lund?" },
+        { type: "literal", question: "What does Mr. Lund remove from the walls?" },
+        { type: "literal", question: "How do Tom and Jane check the work when Mr. Lund is done?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why was it smart to choose the second-best quote instead of the rude man's quote?" },
+        { type: "evidence", question: "What details show Mr. Lund does careful and complete work?" },
+        { type: "vocabulary", question: "What does 'install' mean in the sentence about new wires?" }
+      ]
+    }
+  },
+  "reader4-4.1-b-p48-quake-state": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "prone", meaning: "likely to have or experience something", whyPreteach: "This word explains why Dave's state often has quakes.", reference: "paragraph 1", prompt: "What does it mean that Dave's state is prone to quakes?" },
+      { word: "dwell", meaning: "live", whyPreteach: "This word introduces Dave's choice to live in the quake state.", reference: "paragraph 1", prompt: "Where does Dave dwell?" },
+      { word: "combat", meaning: "fight against or try to reduce", whyPreteach: "This word explains Dave's problem-solving goal.", reference: "paragraph 1", prompt: "What problem does Dave want to combat?" },
+      { word: "distress kit", meaning: "supplies kept for an emergency", whyPreteach: "This phrase explains Dave's preparation.", reference: "paragraph 3", prompt: "What does Dave store in the plastic tub?" },
+      { word: "lessen the impact", meaning: "make the effect smaller or less harmful", whyPreteach: "This phrase explains why Dave prepares even though he cannot stop quakes.", reference: "paragraph 3", prompt: "How can Dave's plan lessen the impact of a quake?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of state does Dave live in?" },
+        { type: "literal", question: "What does Dave attach to objects that could fall?" },
+        { type: "literal", question: "What does Dave make and keep up to date?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Dave prepare even though he cannot guess when a quake will strike?" },
+        { type: "evidence", question: "What details show Dave is making his home safer step by step?" },
+        { type: "vocabulary", question: "What does 'prone to quakes' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.2-ab-p76-limestone-cave": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "explore", meaning: "look around a place to learn about it", whyPreteach: "This word explains the friends' plan.", reference: "paragraph 1", prompt: "What do the friends want to explore?" },
+      { word: "limestone", meaning: "a kind of rock that can form caves", whyPreteach: "This content word names the type of cave.", reference: "title and paragraph 2", prompt: "What kind of cave do they visit?" },
+      { word: "damp", meaning: "slightly wet", whyPreteach: "This word helps students picture the cave.", reference: "paragraph 4", prompt: "How do the rocks feel inside the cave?" },
+      { word: "lifelike", meaning: "seeming alive", whyPreteach: "This word builds suspense before Steve sees the bat.", reference: "paragraph 5", prompt: "What lifelike thing moves against Steve's skin?" },
+      { word: "escape", meaning: "get away from danger or something scary", whyPreteach: "This word explains why the friends run away.", reference: "paragraph 8", prompt: "What do they escape from?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who plans to explore the cave?" },
+        { type: "literal", question: "What supplies do they bring just in case?" },
+        { type: "literal", question: "What makes the friends run away from the cave?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Steve say it was a mistake to think they were brave?" },
+        { type: "evidence", question: "What details make the cave feel dark or uncomfortable?" },
+        { type: "vocabulary", question: "What does 'damp' mean in the sentence about the rocks?" }
+      ]
+    }
+  },
+  "reader4-4.2-ab-p78-caveman-exhibit": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "exhibit", meaning: "a display people visit to learn about something", whyPreteach: "This word is central to the class trip.", reference: "title and paragraph 1", prompt: "What exhibit does the class visit?" },
+      { word: "extinct", meaning: "no longer living or existing", whyPreteach: "This word explains that the cavemen are from long ago.", reference: "paragraph 2", prompt: "What does extinct mean in this passage?" },
+      { word: "shoreline", meaning: "the land along the edge of water", whyPreteach: "This word helps students picture where the cavemen fished.", reference: "paragraph 2", prompt: "Where did the cavemen go fishing?" },
+      { word: "wildfires", meaning: "large uncontrolled fires outside", whyPreteach: "This word explains one disaster at the campsite.", reference: "paragraph 4", prompt: "What tore through the campsite?" },
+      { word: "forego", meaning: "give up or do without", whyPreteach: "This word explains why some cavemen had to leave the hillside.", reference: "paragraph 4", prompt: "What did the cavemen have to forego?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who takes the class to the caveman exhibit?" },
+        { type: "literal", question: "What did the cavemen use to catch fish?" },
+        { type: "literal", question: "What two disasters made life on the hillside unsafe?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does the passage say the exhibit made the cavemen come back to life?" },
+        { type: "evidence", question: "What details show the cavemen were skilled at surviving before misluck struck?" },
+        { type: "vocabulary", question: "What does 'forego their life on the hillside' mean?" }
+      ]
+    }
+  },
+  "reader4-4.2-ab-p80-cleveland-pride": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "athlete", meaning: "a person skilled at sports", whyPreteach: "This word describes Kendall and the players she admires.", reference: "paragraph 1", prompt: "What kind of athlete is Kendall?" },
+      { word: "foremost", meaning: "most important or first", whyPreteach: "This word shows basketball is Kendall's favorite sport.", reference: "paragraph 1", prompt: "What sport is foremost on Kendall's list?" },
+      { word: "slam dunk", meaning: "a basketball shot pushed down through the hoop", whyPreteach: "This phrase helps students picture Kendall's skill.", reference: "paragraph 1", prompt: "What happens when Kendall makes a slam dunk?" },
+      { word: "stands out", meaning: "is easy to notice because of strong performance", whyPreteach: "This phrase explains why Dad rewards Kendall.", reference: "paragraph 2", prompt: "How does Kendall stand out?" },
+      { word: "collide", meaning: "bump or crash into each other", whyPreteach: "This word helps students picture the basketball game action.", reference: "paragraph 3", prompt: "What do the athletes do as they run?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Kendall's favorite sport?" },
+        { type: "literal", question: "What special gift does Kendall's dad give her?" },
+        { type: "literal", question: "What does Kendall take notes about in her mind?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Kendall's dad think she deserves the special trip?" },
+        { type: "evidence", question: "What details show Kendall wants to improve as a basketball player?" },
+        { type: "vocabulary", question: "What does 'foremost' mean in the sentence about Kendall's list?" }
+      ]
+    }
+  },
+  "reader4-4.2-ab-p82-empire-lake": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "forecast", meaning: "a prediction about the weather", whyPreteach: "This word explains why they expect good camping weather.", reference: "paragraph 1", prompt: "What does the forecast call for?" },
+      { word: "campsite", meaning: "a place where people camp", whyPreteach: "This word supports the trip setting.", reference: "paragraph 1", prompt: "Where are they going to stay?" },
+      { word: "clambake", meaning: "a meal, often cooked outdoors, with clams or seafood", whyPreteach: "This word helps students understand the planned camp meal.", reference: "paragraph 2", prompt: "What meal will Zeke's mom set up?" },
+      { word: "chilling tales", meaning: "scary or spooky stories", whyPreteach: "This phrase explains the bedtime activity.", reference: "paragraph 2", prompt: "What will they tell at bedtime?" },
+      { word: "never-ending", meaning: "seeming to go on for a very long time", whyPreteach: "This word describes the hillside hike.", reference: "paragraph 4", prompt: "What does the hillside feel like?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who comes with Zeke on the camping trip?" },
+        { type: "literal", question: "What will Dad put up when they get to the lake?" },
+        { type: "literal", question: "What do Zeke and Dave plan to look for on the last day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why do Zeke and Dave think this might be the best trip ever?" },
+        { type: "evidence", question: "What details show the trip is carefully planned before it happens?" },
+        { type: "vocabulary", question: "What does 'forecast' mean in the sentence about sun?" }
+      ]
+    }
+  },
+  "reader4-4.2-b-p84-big-upset": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "state champs", meaning: "the team that won the state championship", whyPreteach: "This phrase explains why the Tomcats are hard to beat.", reference: "paragraph 1", prompt: "Who are Ed and Tim playing against?" },
+      { word: "ignite", meaning: "start or spark energy", whyPreteach: "This word describes Tim's shot starting the team strong.", reference: "paragraph 2", prompt: "How does Tim ignite his team?" },
+      { word: "neck and neck", meaning: "very close in a contest", whyPreteach: "This idiom explains the tight score.", reference: "paragraph 3", prompt: "What does it mean that the game is neck and neck?" },
+      { word: "foul", meaning: "an illegal action in a sport", whyPreteach: "This basketball term is needed for the winning play.", reference: "paragraph 4", prompt: "What does the ref call after Tim is hit?" },
+      { word: "upset", meaning: "a surprising win by the team expected to lose", whyPreteach: "This sports meaning explains the title.", reference: "title and paragraph 5", prompt: "Why is this game called an upset?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What team do Ed and Tim play against?" },
+        { type: "literal", question: "Who takes the final shot?" },
+        { type: "literal", question: "What happens when Tim's last shot goes in?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is the ending exciting for everyone in the stands?" },
+        { type: "evidence", question: "What details show Tim stays calm under pressure?" },
+        { type: "vocabulary", question: "What does 'neck and neck' mean in the third paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.2-b-p86-complex-math-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "cope", meaning: "handle or manage a difficult situation", whyPreteach: "This word describes Tom struggling with homework.", reference: "paragraph 1", prompt: "What can Tom not cope with?" },
+      { word: "inquire", meaning: "ask for information or help", whyPreteach: "This word explains Tom's responsible action.", reference: "paragraph 2", prompt: "Who does Tom inquire of?" },
+      { word: "consulted", meaning: "used for help or advice", whyPreteach: "This word shows Tom already tried using his book.", reference: "paragraph 2", prompt: "What did Tom consult?" },
+      { word: "invalid", meaning: "not correct or not accepted", whyPreteach: "This word explains what is wrong with Tom's answers.", reference: "paragraph 2", prompt: "What happens when Tom subtracts?" },
+      { word: "at stake", meaning: "at risk or possibly affected", whyPreteach: "This phrase explains why Tom is worried.", reference: "paragraph 2", prompt: "What does Tom think is at stake?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What subject is Tom having trouble with?" },
+        { type: "literal", question: "Who does Tom ask for help?" },
+        { type: "literal", question: "What classmate does Mr. Jones suggest Tom check with?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Tom is usually responsible with his work?" },
+        { type: "evidence", question: "What details show Tom tried before asking for help?" },
+        { type: "vocabulary", question: "What does 'my grade is at stake' mean?" }
+      ]
+    }
+  },
+  "reader4-4.2-b-p88-complex-math-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "cause", meaning: "the reason something happens", whyPreteach: "This word introduces why students are stressed.", reference: "paragraph 1", prompt: "What is the cause of the class's stress?" },
+      { word: "rote math", meaning: "math done by memorized steps without much thinking", whyPreteach: "This phrase contrasts with the complex problems.", reference: "paragraph 1", prompt: "Why is this not rote math?" },
+      { word: "software", meaning: "computer programs used for tasks", whyPreteach: "This word explains one student's attempt to solve the problems.", reference: "paragraph 2", prompt: "What did one kid use to try the problems?" },
+      { word: "slacking off", meaning: "not working hard enough", whyPreteach: "This phrase helps students understand Mr. Jones is not blaming them.", reference: "paragraph 3", prompt: "Does Mr. Jones think the class is slacking off?" },
+      { word: "walk you through", meaning: "explain step by step", whyPreteach: "This phrase names the teacher's support strategy.", reference: "paragraph 3", prompt: "How will Mr. Jones help the class?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why are the students stressed?" },
+        { type: "literal", question: "What did some students use to try to finish the work?" },
+        { type: "literal", question: "What does Mr. Jones ask students to put away?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Mr. Jones give Tom a wink at the end?" },
+        { type: "evidence", question: "What details show the students were trying, not just refusing to work?" },
+        { type: "vocabulary", question: "What does 'walk you through the problems' mean?" }
+      ]
+    }
+  },
+  "reader4-4.2-b-p90-pothole-problems": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "pothole", meaning: "a hole in a road surface", whyPreteach: "This word names the main problem.", reference: "title and paragraph 1", prompt: "What is on Flag St.?" },
+      { word: "commute", meaning: "regular travel to work, school, or another place", whyPreteach: "This word explains why the pothole affects many people.", reference: "paragraph 1", prompt: "Why is the pothole a problem for the commute?" },
+      { word: "stall", meaning: "delay or stop progress", whyPreteach: "This word explains the traffic problem after the bus gets stuck.", reference: "paragraph 2", prompt: "What stalls everyone's drive?" },
+      { word: "uprise", meaning: "a strong public protest or upset reaction", whyPreteach: "This word shows how people respond to the ignored problem.", reference: "paragraph 2", prompt: "Why are people in an uprise?" },
+      { word: "tamp", meaning: "press down firmly", whyPreteach: "This word explains the final repair step.", reference: "paragraph 3", prompt: "Why do workers tamp the gravel down?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Where is the pothole?" },
+        { type: "literal", question: "What happens when a bus falls into the gap?" },
+        { type: "literal", question: "What do the public works staff put into the hole?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are people so upset that the pothole was ignored for a month?" },
+        { type: "evidence", question: "What steps do the workers take to repair the pothole?" },
+        { type: "vocabulary", question: "What does 'tamp it down' mean in the repair paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.3-ab-p98-lemonade-stand": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "distributes", meaning: "gives out or hands out", whyPreteach: "This word describes Trish selling drinks.", reference: "paragraph 1", prompt: "What does Trish distribute on hot days?" },
+      { word: "contributes", meaning: "gives to help", whyPreteach: "This word shows Trish's generous purpose.", reference: "paragraph 1", prompt: "Where does Trish contribute her profits?" },
+      { word: "profits", meaning: "money left after paying costs", whyPreteach: "This word explains what Trish gives to the food bank.", reference: "paragraph 1", prompt: "What does Trish do with her profits?" },
+      { word: "illustrates", meaning: "draws or creates a picture", whyPreteach: "This word explains how Trish makes her sign.", reference: "paragraph 2", prompt: "What does Trish illustrate for the stand?" },
+      { word: "rave", meaning: "praise with excitement", whyPreteach: "This word shows the community likes Trish's lemonade.", reference: "paragraph 3", prompt: "What do people rave about?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Trish sell on hot days?" },
+        { type: "literal", question: "Where does Trish give her profits?" },
+        { type: "literal", question: "Who helps Trish make the lemonade?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What does Trish's lemonade stand show about her character?" },
+        { type: "evidence", question: "What details show the lemonade stand takes a lot of work?" },
+        { type: "vocabulary", question: "What does 'contributes all of her profits' mean?" }
+      ]
+    }
+  },
+  "reader4-4.3-ab-p100-bike-spot-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "top of the line", meaning: "very high quality", whyPreteach: "This phrase describes Steve's new bike parts.", reference: "paragraph 1", prompt: "What parts of the bike are top of the line?" },
+      { word: "recognize", meaning: "notice and understand", whyPreteach: "This word explains Dad seeing Steve's pride.", reference: "paragraph 2", prompt: "What does Dad recognize?" },
+      { word: "pride", meaning: "a happy feeling about something important to you", whyPreteach: "This word explains Steve's feelings about the bike.", reference: "paragraph 2", prompt: "Why does Steve feel pride?" },
+      { word: "path", meaning: "a place or way where someone or something moves", whyPreteach: "This word matters because Dad does not want bikes in his truck's path.", reference: "paragraph 2", prompt: "Where does Dad not want the bikes left?" },
+      { word: "forecast", meaning: "a prediction about what may happen", whyPreteach: "This word explains Dad's worry based on past experience.", reference: "paragraph 3", prompt: "What forecast does Dad make about the bikes?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why does Steve need a new bike?" },
+        { type: "literal", question: "What warning does Dad give Steve?" },
+        { type: "literal", question: "What happened when Steve left his sled out?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Dad worried about the bikes before Steve's friends arrive?" },
+        { type: "evidence", question: "What details show Steve is proud of his new bike?" },
+        { type: "vocabulary", question: "What does 'calls to mind' mean when Steve thinks about the sled?" }
+      ]
+    }
+  },
+  "reader4-4.3-ab-p102-bike-spot-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "strict tone", meaning: "a serious or firm way of speaking", whyPreteach: "This phrase explains why Steve starts problem-solving.", reference: "paragraph 1", prompt: "How does Dad's strict tone affect Steve?" },
+      { word: "disinvite", meaning: "take back an invitation", whyPreteach: "This word shows Steve wants friends over but needs a plan.", reference: "paragraph 1", prompt: "Does Steve want to disinvite his friends?" },
+      { word: "custom-made", meaning: "made for a specific purpose", whyPreteach: "This word describes the bike rack plan.", reference: "paragraph 1", prompt: "What custom-made thing will they build?" },
+      { word: "construct", meaning: "build", whyPreteach: "This word explains the project action.", reference: "paragraph 2", prompt: "What do the kids construct?" },
+      { word: "demonstrate", meaning: "show clearly", whyPreteach: "This word explains Dad's praise at the end.", reference: "paragraph 2", prompt: "What skill do the kids demonstrate?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What is Steve's plan for the bikes?" },
+        { type: "literal", question: "What materials do the friends use for the bike rack?" },
+        { type: "literal", question: "How does Dad feel when he sees the bike rack?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How does Steve solve both Dad's problem and his friends' problem?" },
+        { type: "evidence", question: "What details show the friends work as a team?" },
+        { type: "vocabulary", question: "What does 'construct' mean in the sentence about the bike rack?" }
+      ]
+    }
+  },
+  "reader4-4.3-ab-p104-calvin-sled-dog": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "contest", meaning: "a competition", whyPreteach: "This word names the dogsled event.", reference: "paragraph 1", prompt: "What contest is about to happen?" },
+      { word: "command", meaning: "lead or control", whyPreteach: "This word explains Calvin's role in the pack.", reference: "paragraph 1", prompt: "How does Calvin command the pack?" },
+      { word: "foremost", meaning: "most important", whyPreteach: "This word signals what the dogs must do first.", reference: "paragraph 2", prompt: "What do Calvin and his pack foremost recognize?" },
+      { word: "signal", meaning: "a sign that tells someone to start", whyPreteach: "This word is part of the race sequence.", reference: "paragraph 3", prompt: "What happens once the signal goes off?" },
+      { word: "finish line", meaning: "the place where a race ends", whyPreteach: "This phrase explains Calvin's goal.", reference: "paragraph 3", prompt: "Where does Calvin want to arrive first?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of animal is Calvin?" },
+        { type: "literal", question: "Who owns or drives Calvin's sled?" },
+        { type: "literal", question: "What word will Mr. Cunningham yell when the race starts?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Calvin need the whole pack to work together?" },
+        { type: "evidence", question: "What details show the race will be difficult?" },
+        { type: "vocabulary", question: "What does 'command the pack' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.3-b-p106-janes-pup-hit": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "collides", meaning: "crashes into", whyPreteach: "This word explains what happens between the van and Spot.", reference: "paragraph 1", prompt: "What collides with Spot?" },
+      { word: "blindside", meaning: "a sudden event that someone does not see coming", whyPreteach: "This word shows why the accident shocks Jane.", reference: "paragraph 1", prompt: "Why is the accident a blindside?" },
+      { word: "devastates", meaning: "makes someone feel deeply upset", whyPreteach: "This word describes Jane's reaction.", reference: "paragraph 1", prompt: "How does the mishap affect Jane?" },
+      { word: "sling", meaning: "a cloth support used to hold an injured body part still", whyPreteach: "This word explains Jane's first aid for Spot.", reference: "paragraph 2", prompt: "What does Jane make for Spot's leg?" },
+      { word: "diminishes", meaning: "becomes smaller or less strong", whyPreteach: "This word shows Jane's stress going down when Spot is okay.", reference: "paragraph 3", prompt: "When does Jane's stress diminish?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What happens to Spot at the crosswalk?" },
+        { type: "literal", question: "What does Jane use to make a sling?" },
+        { type: "literal", question: "Where does Jane take Spot?" }
+      ],
+      stretch: [
+        { type: "inference", question: "How can you tell Jane cares deeply about Spot?" },
+        { type: "evidence", question: "What details show this is an emergency?" },
+        { type: "vocabulary", question: "What does 'diminishes' mean in the sentence about Jane's stress?" }
+      ]
+    }
+  },
+  "reader4-4.3-b-p108-josh-todd-profit": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "contracts", meaning: "agreements to do paid work", whyPreteach: "This word explains Josh and Todd's business.", reference: "paragraph 1", prompt: "What kind of contracts do Josh and Todd get?" },
+      { word: "profit", meaning: "money earned after costs are paid", whyPreteach: "This word is central to the title and ending.", reference: "title and paragraph 1", prompt: "What do Josh and Todd usually make?" },
+      { word: "embellish", meaning: "decorate or improve with details", whyPreteach: "This word explains their website design work.", reference: "paragraph 1", prompt: "How do Josh and Todd embellish websites?" },
+      { word: "skillset", meaning: "a group of skills someone has", whyPreteach: "This word explains why Dr. Ross needs help.", reference: "paragraph 2", prompt: "What skillset does Dr. Ross not have?" },
+      { word: "handsome sum", meaning: "a large amount of money", whyPreteach: "This phrase explains the successful outcome.", reference: "paragraph 3", prompt: "What does Dr. Ross give Josh and Todd?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What kind of work do Josh and Todd do?" },
+        { type: "literal", question: "Who hires them to make a website?" },
+        { type: "literal", question: "How long does it take them to construct the website content?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why are Josh and Todd able to expand their website work?" },
+        { type: "evidence", question: "What details show Josh and Todd are careful and professional?" },
+        { type: "vocabulary", question: "What does 'profit' mean in this passage?" }
+      ]
+    }
+  },
+  "reader4-4.4-ab-p118-antons-bake-shop-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "custom cakes", meaning: "cakes made for a specific person or event", whyPreteach: "This phrase explains Anton's special talent.", reference: "paragraph 1", prompt: "What is the most important thing Anton bakes?" },
+      { word: "run-down", meaning: "old or in poor condition", whyPreteach: "This word describes the shop before Anton improves it.", reference: "paragraph 2", prompt: "What is the rented place like at first?" },
+      { word: "impressive", meaning: "good enough to make people admire it", whyPreteach: "This word explains Anton's goal for the shop.", reference: "paragraph 2", prompt: "What does Anton want the shop to become?" },
+      { word: "extensive", meaning: "large or involving many parts", whyPreteach: "This word shows the renovation job is big.", reference: "paragraph 3", prompt: "What kind of job do Anton and his friends start?" },
+      { word: "distinctive", meaning: "different in a noticeable or special way", whyPreteach: "This word describes the shop's new look.", reference: "paragraph 3", prompt: "What kind of look do they give the shop?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Anton want to be the boss of?" },
+        { type: "literal", question: "How many friends does Anton ask to help?" },
+        { type: "literal", question: "What are two changes they make to the shop?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Anton need help getting the shop ready?" },
+        { type: "evidence", question: "What details show the shop looks better by the end of Part One?" },
+        { type: "vocabulary", question: "What does 'run-down' mean in the sentence about the small place?" }
+      ]
+    }
+  },
+  "reader4-4.4-ab-p119-antons-bake-shop-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "town common", meaning: "a public open area in town", whyPreteach: "This phrase explains where Anton advertises.", reference: "paragraph 1", prompt: "Where does Anton distribute ads?" },
+      { word: "ads", meaning: "notices that tell people about something", whyPreteach: "This word explains how Anton gets customers.", reference: "paragraph 1", prompt: "What does Anton distribute?" },
+      { word: "products", meaning: "things made or sold", whyPreteach: "This word explains the cost of giving away cupcakes.", reference: "paragraph 1", prompt: "What product does Anton give away?" },
+      { word: "attentive", meaning: "careful to notice and help", whyPreteach: "This word describes Anton serving customers.", reference: "paragraph 2", prompt: "How is Anton attentive to everyone?" },
+      { word: "effective", meaning: "successful in getting the wanted result", whyPreteach: "This word explains why Anton's plan works.", reference: "paragraph 2", prompt: "Why is Anton's plan effective?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What does Anton's ad offer customers?" },
+        { type: "literal", question: "What happens by ten a.m.?" },
+        { type: "literal", question: "What does Anton sell in one day?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is giving away cupcakes a smart sales plan?" },
+        { type: "evidence", question: "What details show the public likes Anton's bake shop?" },
+        { type: "vocabulary", question: "What does 'effective' mean in the sentence about Anton's plan?" }
+      ]
+    }
+  },
+  "reader4-4.4-ab-p120-pig-mud": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "muck", meaning: "wet dirt or mud", whyPreteach: "This word helps students understand where pigs play.", reference: "paragraph 1", prompt: "Where do piglets like to have fun?" },
+      { word: "effective sunblock", meaning: "something that works well to protect skin from sun", whyPreteach: "This phrase explains one useful reason pigs use mud.", reference: "paragraph 1", prompt: "How can mud work as sunblock?" },
+      { word: "ticks", meaning: "small bugs that bite animals or people", whyPreteach: "This word explains another reason mud helps pigs.", reference: "paragraph 1", prompt: "What can mud help pigs get rid of?" },
+      { word: "massive", meaning: "very large", whyPreteach: "This word describes the mud pit.", reference: "paragraph 2", prompt: "What kind of mud pit are the pigs in?" },
+      { word: "instructive command", meaning: "a direction that teaches or tells what to do", whyPreteach: "This phrase explains why Grime finally joins the mud play.", reference: "paragraph 4", prompt: "Who gives Grime an instructive command?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Why do pigs spend time in mud?" },
+        { type: "literal", question: "What is the small piglet's name?" },
+        { type: "literal", question: "Who gets Grime to go into the mud pit?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why is Grime's name funny in this passage?" },
+        { type: "evidence", question: "What details show mud is useful for pigs, not just messy?" },
+        { type: "vocabulary", question: "What does 'effective sunblock' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.4-b-p122-not-impressive-date-1": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "banquet", meaning: "a large formal meal or event", whyPreteach: "This word names Jake and Olive's date setting.", reference: "paragraph 1", prompt: "Where does Jake take Olive?" },
+      { word: "festive", meaning: "cheerful and special for a celebration", whyPreteach: "This word describes the night.", reference: "paragraph 1", prompt: "What kind of night will the banquet be?" },
+      { word: "distinctive", meaning: "special or easy to notice", whyPreteach: "This word describes Olive and why Jake wants to impress her.", reference: "paragraph 1", prompt: "How is Olive described?" },
+      { word: "demonstrate", meaning: "show clearly", whyPreteach: "This word explains what Jake wants Olive to see.", reference: "paragraph 1", prompt: "What does Jake want to demonstrate?" },
+      { word: "polish and class", meaning: "good manners and a refined way of acting", whyPreteach: "This phrase explains Jake's goal for the date.", reference: "paragraph 1", prompt: "Why does Jake want to show polish and class?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "Who does Jake ask on a date?" },
+        { type: "literal", question: "Why is the banquet being held?" },
+        { type: "literal", question: "What does Jake do to prepare for the date?" }
+      ],
+      stretch: [
+        { type: "inference", question: "Why does Jake think this date is a step up from most of his dates?" },
+        { type: "evidence", question: "What details show Jake is trying hard to impress Olive?" },
+        { type: "vocabulary", question: "What does 'polish and class' mean in the first paragraph?" }
+      ]
+    }
+  },
+  "reader4-4.4-b-p123-not-impressive-date-2": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "distracted", meaning: "not paying close attention", whyPreteach: "This word explains why Jake drops the food.", reference: "paragraph 1", prompt: "How is Jake acting when the food comes?" },
+      { word: "inattentive", meaning: "not careful or not focused", whyPreteach: "This word reinforces the cause of Jake's mistake.", reference: "paragraph 1", prompt: "Why does Jake lose his grip?" },
+      { word: "prompted", meaning: "caused someone to do something", whyPreteach: "This word explains why the others joke.", reference: "paragraph 2", prompt: "What prompted the others to poke fun?" },
+      { word: "disruptive", meaning: "causing interruption or trouble", whyPreteach: "This word describes how the others see Jake's behavior.", reference: "paragraph 2", prompt: "Why do they say Jake is disruptive?" },
+      { word: "jest", meaning: "joking or playful humor", whyPreteach: "This word explains the ending tone.", reference: "paragraph 3", prompt: "What do Jake and Olive find in the date?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What food does Jake drop on his lap?" },
+        { type: "literal", question: "How do Steve, Jan, and Olive react to Jake's mistake?" },
+        { type: "literal", question: "What does Olive do when the band ends their last song?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What does Olive's reaction show about her?" },
+        { type: "evidence", question: "What details show Jake handles embarrassment without getting angry?" },
+        { type: "vocabulary", question: "What does 'jest' mean in the last sentence?" }
+      ]
+    }
+  },
+  "reader4-4.4-b-p124-gavins-gift": {
+    status: "draft-reviewed",
+    vocabulary: [
+      { word: "constructing", meaning: "building or putting together", whyPreteach: "This word describes Gavin's main skill.", reference: "paragraph 1", prompt: "What is Gavin skilled at constructing?" },
+      { word: "consult", meaning: "give or ask for advice", whyPreteach: "This word shows people can ask Gavin about repairs.", reference: "paragraph 1", prompt: "What can Gavin consult with people about?" },
+      { word: "delves into", meaning: "gets deeply involved in", whyPreteach: "This phrase shows Gavin works hard on each task.", reference: "paragraph 2", prompt: "How does Gavin work once he delves into a task?" },
+      { word: "sound", meaning: "safe, strong, or in good condition", whyPreteach: "This multiple-meaning word explains the result of Gavin's repairs.", reference: "paragraph 2", prompt: "What does it mean for an object to be sound?" },
+      { word: "at his own expense", meaning: "using his own money or resources", whyPreteach: "This phrase shows Gavin's generosity.", reference: "paragraph 3", prompt: "How does Gavin help friends at his own expense?" }
+    ],
+    questions: {
+      support: [
+        { type: "literal", question: "What grade is Gavin in?" },
+        { type: "literal", question: "What kinds of truck parts does Gavin know about?" },
+        { type: "literal", question: "How does Gavin help people around town?" }
+      ],
+      stretch: [
+        { type: "inference", question: "What is Gavin's gift: his skill, his kindness, or both? Explain your thinking." },
+        { type: "evidence", question: "What details show Gavin helps others without being asked or paid?" },
+        { type: "vocabulary", question: "What does 'at his own expense' mean in the sentence about mending busted objects?" }
+      ]
+    }
   }
 };

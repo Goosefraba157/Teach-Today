@@ -300,7 +300,8 @@ button:hover:not(:disabled) {
   position: relative;
   z-index: 18;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
+  justify-content: center;
   flex-wrap: wrap;          /* groups drop to next line instead of overflowing */
   border: 1px solid #e2e8f0;
   border-radius: 10px;
