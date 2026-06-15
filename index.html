@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
-    <link rel="stylesheet" href="teach-today.css?v=section9-companion-1">
+    <link rel="stylesheet" href="teach-today.css?v=presenter-stage-4">
     <script src="app-nav.js" defer></script>
   </head>
   <body>
@@ -263,8 +263,8 @@
         <div class="ribbon-group">
           <span class="ribbon-label">View</span>
           <div class="ribbon-buttons">
-            <button id="ttPresent" type="button" title="Presentation mode">Present</button>
-            <button id="ttDisplayToggle" type="button" title="Student display window">Display</button>
+            <button id="ttPresent" type="button" title="Teacher presentation view">Present</button>
+            <button id="ttDisplayToggle" type="button" title="Presenter stage window">Stage</button>
           </div>
         </div>
         <div class="ribbon-sep"></div>
@@ -297,19 +297,20 @@
       </div>
       <div id="ttLessonTabs" class="lesson-tabs" aria-label="Open lesson tabs" hidden></div>
       <div id="ttAttendancePanel" class="attendance-panel" hidden></div>
-      <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Student display controls">
+      <section id="ttDisplayPanel" class="student-display-panel" hidden aria-label="Presenter stage controls">
         <div>
-          <p>Student Display</p>
+          <p>Presenter Mode</p>
           <strong id="ttDisplayStatus">Not opened yet</strong>
         </div>
         <div class="student-display-actions">
           <button type="button" data-display-mode="private">Privacy</button>
           <button type="button" data-display-mode="poster">Poster</button>
           <button type="button" data-display-mode="hfw">HFW</button>
+          <button type="button" data-display-mode="chart">Chart</button>
           <button type="button" data-display-mode="passage">Passage</button>
           <button type="button" data-display-mode="game">Game</button>
           <button id="ttDisplayProjector" class="secondary" type="button">Projector</button>
-          <button id="ttDisplayOpen" class="secondary" type="button">Open window</button>
+          <button id="ttDisplayOpen" class="secondary" type="button">Open stage</button>
         </div>
       </section>
       <section id="ttGroupSnapshot" class="group-snapshot" aria-label="Last class snapshot"></section>
@@ -335,14 +336,15 @@
 
     <aside class="presentation-dock" aria-label="Presentation controls">
       <button id="ttExitPresent" type="button" title="Exit presentation">×</button>
-      <button id="ttDockDisplay" type="button" title="Student display">Display</button>
+      <button id="ttDockDisplay" type="button" title="Presenter stage">Stage</button>
       <button id="ttLaserToggle" type="button" title="Laser pointer">Laser</button>
       <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
-      <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Student display controls">
+      <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Presenter stage controls">
         <button type="button" data-display-mode="private">Privacy</button>
         <button type="button" data-display-mode="poster">Poster</button>
         <button type="button" data-display-mode="hfw">HFW</button>
+        <button type="button" data-display-mode="chart">Chart</button>
         <button type="button" data-display-mode="passage">Passage</button>
         <button type="button" data-display-mode="game">Game</button>
         <button id="ttPresentDisplayProjector" type="button">Projector</button>
@@ -922,7 +924,7 @@
     <script src="sofia-carbajal-chart-data.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
-    <script src="teach-today.js?v=section9-companion-7"></script>
+    <script src="teach-today.js?v=presenter-stage-4"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>

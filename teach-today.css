@@ -661,13 +661,16 @@ button:hover:not(:disabled) {
 
 .student-display-panel {
   display: grid;
-  grid-template-columns: minmax(160px, 0.42fr) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(190px, 0.44fr) minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  border: 1px solid rgba(37, 99, 235, 0.28);
+  border: 1px solid rgba(15, 118, 110, 0.28);
   border-radius: 16px;
-  padding: 8px;
-  background: #eff6ff;
+  padding: 10px;
+  background:
+    linear-gradient(135deg, rgba(204, 251, 241, 0.78), rgba(219, 234, 254, 0.86)),
+    #eff6ff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 }
 
 .student-display-panel[hidden] {
@@ -675,7 +678,12 @@ button:hover:not(:disabled) {
 }
 
 .student-display-panel p {
-  color: #1d4ed8;
+  margin: 0 0 3px;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .student-display-panel strong {
@@ -696,6 +704,7 @@ button:hover:not(:disabled) {
   border-color: #bfdbfe;
   background: #fff;
   color: #1e3a8a;
+  font-weight: 950;
 }
 
 .student-display-actions button.active {
@@ -1167,9 +1176,9 @@ button:hover:not(:disabled) {
   top: 196px;
   right: 58px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  grid-template-columns: repeat(2, minmax(80px, 1fr));
   gap: 6px;
-  width: 164px;
+  width: 184px;
   border: 1px solid rgba(37, 99, 235, 0.32);
   border-radius: 16px;
   padding: 7px;

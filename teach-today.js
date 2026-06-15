@@ -2857,18 +2857,52 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   return {
     mode,
     updatedAt: new Date().toISOString(),
+    lessonId: lesson.id || "",
     groupName: group.name || "Group",
     substep: skill.id,
     skillTitle: skill.title || "",
     poster,
     highFrequencyWords: hfwWords,
     notebookSentence: "Copy the sentence your teacher gives you.",
+    chart: ttStudentDisplayChartPayload(lesson, skill),
     passageTitle: passage ? ttPassageLabel(passage) : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
     passageText,
     passagePdf: lesson.section9Story || null,
     gameUrl: "Games/index.html",
     privacyTitle: "Private teacher work",
     privacyMessage: "Keep reading, writing, or practicing while your teacher charts."
+  };
+}
+
+function ttStudentDisplayChartPayload(lesson, skill) {
+  const group = ttActiveGroup();
+  const reader = Number(skill.reader || lesson.reader || String(skill.id || "").split(".")[0]);
+  const wordlistPage = Number(lesson.wordlistPageNumber || 0);
+  const level = lesson.readerLevel || group.readerLevel || "AB";
+  const activeHalf = ttChartCard?.dataset?.chartHalf || lesson.chartHalf || "bottom";
+  const pdfPage = wordlistPage ? wordlistPage + 2 : "";
+  const pdfFile = reader ? `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf` : "";
+  const pdfViewerUrl = reader && wordlistPage
+    ? ttPdfViewerHref(
+      pdfFile,
+      pdfPage,
+      `Reader ${reader}, charting p. ${wordlistPage}`
+    )
+    : "";
+  return {
+    key: `section4-r${reader || "x"}-p${wordlistPage || "x"}-${level}`,
+    title: "Wordlist Charting",
+    reader,
+    page: wordlistPage,
+    pdfPage,
+    pdfFile,
+    pdfViewerUrl,
+    level,
+    activeHalf,
+    topWords: (lesson.realWords || []).filter(Boolean).slice(0, 15),
+    bottomWords: (lesson.nonsenseWords || []).filter(Boolean).slice(0, 15),
+    integrityStatus: lesson.section4Integrity?.status || "",
+    integrityMessage: lesson.section4Integrity?.message || ""
   };
 }
 
@@ -3521,6 +3555,7 @@ function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode) {
     private: "Privacy screen ready",
     poster: "Showing Section 1 poster",
     hfw: "Showing high-frequency words",
+    chart: "Showing Section 4 chart",
     passage: "Showing Section 9 passage",
     game: "Showing game hub"
   };
@@ -3572,7 +3607,7 @@ function ttShowScreenChoice(screens) {
   panel.setAttribute("aria-label", "Choose student display screen");
   panel.innerHTML = `
     <div>
-      <p>Student Display</p>
+      <p>Presenter Stage</p>
       <strong>Choose a screen</strong>
       <span>Pick the smartboard or extended display. If it lands wrong, use manual move.</span>
     </div>
@@ -3607,18 +3642,18 @@ function ttShowManualStudentDisplaySetup(reason) {
   panel.innerHTML = `
     <div>
       <p>Manual Setup</p>
-      <strong>Move the student display yourself</strong>
-      <span>${escapeHtml(reason)} Open the student display, drag it to the smartboard or extended monitor, then make that window full screen.</span>
+      <strong>Move the stage yourself</strong>
+      <span>${escapeHtml(reason)} Open the stage, drag it to the smartboard or extended monitor, then make that window full screen.</span>
     </div>
     <div class="screen-choice-actions">
-      <button id="ttScreenChoiceOpenManual" type="button">Open student display</button>
+      <button id="ttScreenChoiceOpenManual" type="button">Open presenter stage</button>
       <button id="ttScreenChoiceClose" class="secondary" type="button">Close</button>
     </div>
   `;
   document.body.appendChild(panel);
   panel.querySelector("#ttScreenChoiceOpenManual")?.addEventListener("click", () => {
     ttOpenStudentDisplay(ttStudentDisplayMode);
-    ttStudentDisplayStatusText("Manual display opened. Move it to the smartboard, then make it full screen.");
+    ttStudentDisplayStatusText("Presenter stage opened. Move it to the smartboard, then make it full screen.");
     panel.remove();
   });
   panel.querySelector("#ttScreenChoiceClose")?.addEventListener("click", () => panel.remove());
@@ -11833,6 +11868,7 @@ function ttBind() {
       ttChartCard.dataset.chartHalf = button.dataset.half;
       syncChartHalfUi(ttChartCard);
       updateLiveScore(ttChartCard);
+      ttSyncStudentDisplay();
     });
   });
   ttById("section4").querySelector(".start-timer").addEventListener("click", () => startLiveTimer(ttChartCard, false));

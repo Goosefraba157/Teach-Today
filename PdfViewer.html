@@ -157,6 +157,27 @@
         font-weight: 800;
       }
 
+      body.stage-view {
+        background: #0f172a;
+      }
+
+      body.stage-view .pdf-topbar {
+        display: none;
+      }
+
+      body.stage-view .pdf-frame-wrap {
+        height: 100vh;
+        padding: 0;
+      }
+
+      body.stage-view .pdf-frame {
+        height: 100vh;
+        min-height: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
       @media (max-width: 620px) {
         .pdf-topbar {
           align-items: flex-start;
@@ -202,6 +223,7 @@
       const file = params.get("file") || "";
       const page = params.get("page") || "";
       const title = params.get("title") || "Reference PDF";
+      const stageView = params.get("stage") === "1";
       const content = document.getElementById("pdfContent");
       const titleNode = document.getElementById("pdfTitle");
 
@@ -211,6 +233,7 @@
 
       titleNode.textContent = title;
       document.title = `${title} - Teach Today`;
+      document.body.classList.toggle("stage-view", stageView);
 
       if (isSafePdfPath(file)) {
         const src = page ? `${file}#page=${encodeURIComponent(page)}` : file;

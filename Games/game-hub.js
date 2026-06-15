@@ -159,6 +159,26 @@
         playable: true
       },
       {
+        id: "letterHunt",
+        title: "Letter Hunt",
+        copy: "Race through the forest to grab your scattered letters and build the word at home base before the CPU does.",
+        href: `Letter%20Hunt/index.html?student=${studentParam}`,
+        points: totals.letterHunt || 0,
+        status: "Ready",
+        art: ["f", "i", "n", "d"],
+        playable: true
+      },
+      {
+        id: "letterSoccer",
+        title: "Letter Soccer",
+        copy: "Race to grab the letter and carry it to your goal! The letter floats in front of the carrier — get in front to steal it, turn away to protect it.",
+        href: `Letter%20Soccer/index.html?student=${studentParam}`,
+        points: totals.letterSoccer || 0,
+        status: "Ready",
+        art: ["⚽", "L", "T", "R"],
+        playable: true
+      },
+      {
         id: "sound",
         title: "Sound Sprint",
         copy: "Coming next: quick sound-symbol rounds with bonus streaks.",
