@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
-    <link rel="stylesheet" href="teach-today.css?v=presenter-stage-4">
+    <link rel="stylesheet" href="teach-today.css?v=stage-section4-page-5">
     <script src="app-nav.js" defer></script>
   </head>
   <body>
@@ -664,12 +664,17 @@
         <div class="section-head section-head-with-actions">
           <div><span>4</span><h2>Wordlist Charting</h2></div>
           <div class="section-action-row">
+            <button id="ttProjectSection4" class="section-refresh secondary" type="button" title="Open the clean student chart stage">Project chart</button>
+            <button id="ttSection4PreviewToggle" class="section-refresh secondary" type="button" title="Mark the projected chart from this screen">Mark stage</button>
             <button id="ttRecheckCharting" class="section-refresh secondary" type="button" title="Rebuild Section 4 from the selected Reader page">Recheck page</button>
             <button class="section-refresh" data-refresh-section="4" type="button" title="Pick a different Reader charting page">Pick page</button>
           </div>
         </div>
         <span id="ttSection4Ref" class="section-ref-pill"></span>
         <p id="ttChartIntegrity" class="chart-integrity" aria-live="polite"></p>
+        <div id="ttSection4StagePreview" class="section4-stage-preview" hidden>
+          <iframe id="ttSection4StageFrame" title="Section 4 student stage preview"></iframe>
+        </div>
         <div class="live-strip">
           <div>
             <p class="mini-label">Active student</p>
@@ -924,7 +929,7 @@
     <script src="sofia-carbajal-chart-data.js"></script>
     <script src="app.js?v=connection-audio-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
-    <script src="teach-today.js?v=presenter-stage-4"></script>
+    <script src="teach-today.js?v=stage-section4-page-5"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js"></script>
     <script src="add-group.js"></script>

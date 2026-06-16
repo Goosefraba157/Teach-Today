@@ -4,7 +4,12 @@ const INK_STORAGE_KEY = "teachToday.studentStageInk.v1";
 const TOOL_STORAGE_KEY = "teachToday.studentStageTool.v1";
 const COLOR_STORAGE_KEY = "teachToday.studentStageColor.v1";
 const SIZE_STORAGE_KEY = "teachToday.studentStageSize.v1";
+const PDF_ZOOM_STORAGE_KEY = "teachToday.studentStagePdfZoom.v1";
 const root = document.getElementById("studentDisplay");
+const stageParams = new URLSearchParams(window.location.search);
+const isSection4StageEmbed = stageParams.get("embed") === "section4-stage";
+
+if (isSection4StageEmbed) document.body.classList.add("stage-embedded-section4");
 
 let currentPayload = null;
 let currentInkKey = "waiting";
@@ -62,6 +67,30 @@ function renderChartWords(words = []) {
       <strong>${escapeHtml(word || " ")}</strong>
     </span>
   `).join("");
+}
+
+function renderChartRows(words = [], half = "top") {
+  const cells = Array.from({ length: 15 }, (_, index) => words[index] || "");
+  const xs = [15, 48, 78];
+  const ys = half === "bottom" ? [67, 75, 83, 91, 96] : [24, 32, 40, 48, 56];
+  return cells.map((word, index) => {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    return `
+      <span class="chart-page-word" style="--x:${xs[col]}%;--y:${ys[row]}%;">
+        ${escapeHtml(word || " ")}
+      </span>
+    `;
+  }).join("");
+}
+
+function renderChartPositionedWords(topWords = [], bottomWords = []) {
+  return `
+    <div class="chart-page-words">
+      ${renderChartRows(topWords, "top")}
+      ${renderChartRows(bottomWords, "bottom")}
+    </div>
+  `;
 }
 
 function renderStageTools(payload) {
@@ -127,7 +156,9 @@ function renderHfw(payload) {
 
 function renderChart(payload) {
   const chart = payload.chart || {};
-  const pdfUrl = chartPdfStageSrc(chart);
+  const hasChartWords = []
+    .concat(chart.topWords || [], chart.bottomWords || [])
+    .some(Boolean);
   const detail = chart.reader && chart.page
     ? `Reader ${chart.reader}, p. ${chart.page}${chart.level ? ` - ${chart.level}` : ""}`
     : "Section 4";
@@ -139,7 +170,15 @@ function renderChart(payload) {
       <div class="stage-body">
         <section class="chart-stage">
           <article class="chart-pdf-panel">
-            ${pdfUrl ? `<iframe class="chart-pdf-frame" title="Reader charting page" src="${escapeHtml(pdfUrl)}"></iframe>` : `
+            ${hasChartWords ? `
+              <div class="chart-page-sheet" style="--chart-scale:${currentPdfZoom === "page-fit" ? "1" : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))}">
+                <p class="chart-page-kicker">syllable division</p>
+                <div class="chart-page-rule chart-page-rule-top"></div>
+                <div class="chart-page-rule chart-page-rule-middle"></div>
+                <div class="chart-page-rule chart-page-rule-bottom"></div>
+                ${renderChartPositionedWords(chart.topWords || [], chart.bottomWords || [])}
+              </div>
+            ` : `
               <div class="chart-pdf-empty">
                 <strong>Reader page not ready</strong>
                 <span>Pick or recheck the Section 4 page in Teach Today.</span>
@@ -199,6 +238,9 @@ function render(payload) {
     return;
   }
 
+  const nextInkKey = payloadInkKey(payload);
+  if (payload.mode === "chart") currentPdfZoom = pdfZoomForKey(nextInkKey);
+
   if (payload.mode === "poster") root.innerHTML = renderPoster(payload);
   else if (payload.mode === "hfw") root.innerHTML = renderHfw(payload);
   else if (payload.mode === "chart") root.innerHTML = renderChart(payload);
@@ -206,7 +248,7 @@ function render(payload) {
   else if (payload.mode === "game") root.innerHTML = renderGame(payload);
   else root.innerHTML = renderPrivate(payload);
 
-  currentInkKey = payloadInkKey(payload);
+  currentInkKey = nextInkKey;
   bindStageControls(payload);
   setupStageInk(payload);
 }
@@ -249,7 +291,7 @@ function chartPdfStageSrc(chart = {}) {
 
 function payloadInkKey(payload) {
   if (!stageSupportsInk(payload)) return "no-ink";
-  if (payload.mode === "chart" && payload.chart?.key) return payload.chart.key;
+  if (payload.mode === "chart" && payload.chart?.key) return `${payload.chart.key}:chart-page-v5`;
   if (payload.mode === "passage" && payload.passagePdf?.passageId) return `passage:${payload.passagePdf.passageId}`;
   if (payload.mode === "poster" && payload.poster?.src) return `poster:${payload.poster.src}`;
   if (payload.mode === "hfw") return `hfw:${payload.substep || ""}:${(payload.highFrequencyWords || []).join("|")}`;
@@ -279,6 +321,25 @@ function readInkStore() {
 
 function saveInkStore() {
   localStorage.setItem(INK_STORAGE_KEY, JSON.stringify(inkStore));
+}
+
+function readPdfZoomStore() {
+  try {
+    const value = JSON.parse(localStorage.getItem(PDF_ZOOM_STORAGE_KEY) || "{}");
+    return value && typeof value === "object" ? value : {};
+  } catch {
+    return {};
+  }
+}
+
+function pdfZoomForKey(key = currentInkKey) {
+  return readPdfZoomStore()[key] || "page-fit";
+}
+
+function savePdfZoomForKey(key = currentInkKey) {
+  const store = readPdfZoomStore();
+  store[key] = currentPdfZoom || "page-fit";
+  localStorage.setItem(PDF_ZOOM_STORAGE_KEY, JSON.stringify(store));
 }
 
 function strokesForKey(key = currentInkKey) {
@@ -342,6 +403,9 @@ function setStageSize(size, options = {}) {
 function setStagePdfZoom(delta) {
   if (currentPdfZoom === "page-fit") currentPdfZoom = 100;
   currentPdfZoom = Math.max(50, Math.min(200, Number(currentPdfZoom || 100) + delta));
+  savePdfZoomForKey();
+  const sheet = root.querySelector(".chart-page-sheet");
+  if (sheet) sheet.style.setProperty("--chart-scale", String(Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
   const frame = root.querySelector(".chart-pdf-frame");
   if (frame && currentPayload?.chart) frame.src = chartPdfStageSrc(currentPayload.chart);
 }
@@ -377,6 +441,7 @@ function startInkStroke(event) {
     tool: currentTool,
     color: currentColor,
     size: currentSize,
+    scope: inkScope(),
     points: [inkPoint(canvas, event)]
   };
   canvas.setPointerCapture?.(event.pointerId);
@@ -402,11 +467,24 @@ function finishInkStroke(event) {
 }
 
 function inkPoint(canvas, event) {
-  const rect = canvas.getBoundingClientRect();
+  const rect = inkTargetRect(canvas);
   return {
     x: (event.clientX - rect.left) / Math.max(1, rect.width),
     y: (event.clientY - rect.top) / Math.max(1, rect.height)
   };
+}
+
+function inkScope() {
+  return currentPayload?.mode === "chart" ? "chart-sheet" : "viewport";
+}
+
+function inkTargetRect(canvas = document.getElementById("stageInkCanvas")) {
+  if (currentPayload?.mode === "chart") {
+    const panel = root.querySelector(".chart-page-sheet") || root.querySelector(".chart-pdf-panel");
+    const rect = panel?.getBoundingClientRect();
+    if (rect?.width && rect?.height) return rect;
+  }
+  return canvas.getBoundingClientRect();
 }
 
 function queueInkDraw() {
@@ -421,16 +499,19 @@ function queueInkDraw() {
 function drawInk() {
   const canvas = document.getElementById("stageInkCanvas");
   if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.clearRect(0, 0, canvasRect.width, canvasRect.height);
   const strokes = activeStroke ? strokesForKey().concat(activeStroke) : strokesForKey();
-  strokes.forEach((stroke) => drawStroke(ctx, stroke, rect));
+  strokes.forEach((stroke) => drawStroke(ctx, stroke, canvasRect));
 }
 
-function drawStroke(ctx, stroke, rect) {
+function drawStroke(ctx, stroke, canvasRect) {
   const points = stroke.points || [];
   if (!points.length) return;
+  const rect = (stroke.scope === "chart-panel" || stroke.scope === "chart-sheet") ? inkTargetRect() : canvasRect;
+  const offsetX = rect.left - canvasRect.left;
+  const offsetY = rect.top - canvasRect.top;
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -440,8 +521,8 @@ function drawStroke(ctx, stroke, rect) {
   ctx.globalCompositeOperation = stroke.tool === "highlight" ? "multiply" : "source-over";
   ctx.beginPath();
   points.forEach((point, index) => {
-    const x = point.x * rect.width;
-    const y = point.y * rect.height;
+    const x = offsetX + point.x * rect.width;
+    const y = offsetY + point.y * rect.height;
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
@@ -456,6 +537,17 @@ window.addEventListener("message", (event) => {
 
 window.addEventListener("storage", (event) => {
   if (event.key === STORAGE_KEY) render(readStoredPayload());
+  if (event.key === INK_STORAGE_KEY) {
+    inkStore = readInkStore();
+    queueInkDraw();
+  }
+  if (event.key === PDF_ZOOM_STORAGE_KEY && currentPayload?.chart) {
+    currentPdfZoom = pdfZoomForKey();
+    const sheet = root.querySelector(".chart-page-sheet");
+    if (sheet) sheet.style.setProperty("--chart-scale", String(currentPdfZoom === "page-fit" ? 1 : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
+    const frame = root.querySelector(".chart-pdf-frame");
+    if (frame) frame.src = chartPdfStageSrc(currentPayload.chart);
+  }
 });
 
 window.addEventListener("resize", resizeInkCanvas);

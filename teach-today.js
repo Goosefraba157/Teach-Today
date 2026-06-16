@@ -2906,6 +2906,39 @@ function ttStudentDisplayChartPayload(lesson, skill) {
   };
 }
 
+function ttSection4StagePayload() {
+  return ttStudentDisplayPayload("chart");
+}
+
+function ttProjectSection4(options = {}) {
+  ttStudentDisplayMode = "chart";
+  const payload = ttSection4StagePayload();
+  ttSendStudentDisplay(payload);
+  ttRenderSection4StagePreview(payload);
+  if (options.open !== false) ttOpenStudentDisplay("chart");
+}
+
+function ttToggleSection4StagePreview() {
+  const preview = ttById("ttSection4StagePreview");
+  if (!preview) return;
+  preview.hidden = !preview.hidden;
+  ttById("section4")?.classList.toggle("stage-preview-open", !preview.hidden);
+  document.body.classList.toggle("section4-stage-preview-open", !preview.hidden);
+  if (!preview.hidden) {
+    ttProjectSection4({ open: false });
+  }
+}
+
+function ttRenderSection4StagePreview(payload = ttSection4StagePayload()) {
+  const preview = ttById("ttSection4StagePreview");
+  const frame = ttById("ttSection4StageFrame");
+  if (!preview || !frame) return;
+  const src = "StudentDisplay.html?embed=section4-stage&v=stage-section4-page-5";
+  if (src && frame.getAttribute("src") !== src) frame.setAttribute("src", src);
+  ttById("section4")?.classList.toggle("stage-preview-open", !preview.hidden);
+  document.body.classList.toggle("section4-stage-preview-open", !preview.hidden);
+}
+
 function ttRenderSection9(lesson, group, skill) {
   ttApplySection9StoryToLesson(lesson, group, skill);
   const story = lesson.section9Story;
@@ -10756,6 +10789,7 @@ function ttSetupChart(lesson) {
   ttFillStudentPills(group);
   syncChartHalfUi(card);
   updateLiveScore(card);
+  ttRenderSection4StagePreview(ttSection4StagePayload());
 }
 
 function ttExactChartingWords(skill, lesson) {
@@ -11859,6 +11893,8 @@ function ttBind() {
   document.querySelectorAll(".section-refresh[data-refresh-section]").forEach((button) => {
     button.addEventListener("click", () => ttRefreshSection(button.dataset.refreshSection));
   });
+  ttById("ttProjectSection4")?.addEventListener("click", () => ttProjectSection4());
+  ttById("ttSection4PreviewToggle")?.addEventListener("click", () => ttToggleSection4StagePreview());
   ttById("ttRecheckCharting")?.addEventListener("click", () => ttRecheckSection4Words());
   ttById("ttCardPrev").addEventListener("click", () => ttShowCard(ttCardIndex - 1));
   ttById("ttCardNext").addEventListener("click", () => ttShowCard(ttCardIndex + 1));

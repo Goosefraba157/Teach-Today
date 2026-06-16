@@ -373,14 +373,17 @@ body.stage-inking .stage-ink-canvas {
   min-height: 0;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 10px;
-  background: #fff;
+  container-type: size;
+  background: #202124;
   box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
   overflow: hidden;
 }
 
 .chart-pdf-panel {
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
+  align-items: start;
+  justify-items: center;
+  padding: 0;
 }
 
 .chart-pdf-head {
@@ -409,6 +412,73 @@ body.stage-inking .stage-ink-canvas {
   min-height: 0;
   border: 0;
   background: #202124;
+}
+
+.chart-page-sheet {
+  position: relative;
+  --chart-view-scale: var(--chart-scale, 1);
+  container-type: inline-size;
+  width: min(100cqw, 77.2727cqh);
+  height: min(100cqh, 129.4118cqw);
+  max-width: none;
+  aspect-ratio: 8.5 / 11;
+  margin-top: 0;
+  transform: scale(var(--chart-view-scale));
+  transform-origin: top center;
+  background: #fff;
+  color: #1f1f1f;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.chart-page-kicker {
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  margin: 0;
+  font-size: 1.7cqw;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: underline;
+}
+
+.chart-page-rule {
+  position: absolute;
+  left: 15%;
+  width: 100%;
+  max-width: 70%;
+  height: 2px;
+  margin: 0;
+  background: #8d8d8d;
+}
+
+.chart-page-rule-top {
+  top: 18%;
+}
+
+.chart-page-rule-middle {
+  top: 62%;
+}
+
+.chart-page-rule-bottom {
+  top: 98%;
+}
+
+.chart-page-words {
+  position: absolute;
+  inset: 0;
+}
+
+.chart-page-word {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  overflow: visible;
+  transform: translateY(-50%);
+  font-size: 4.1cqw;
+  font-weight: 700;
+  line-height: 1.06;
+  white-space: nowrap;
 }
 
 .chart-pdf-empty {

@@ -87,6 +87,314 @@
       </section>
     </main>
 
+    <!-- Multiplayer invite overlay -->
+    <div id="mpInviteOverlay" class="mp-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="mpInviteTitle">
+      <div class="mp-card">
+        <p class="mp-avatar" id="mpInviteAvatar">?</p>
+        <h2 id="mpInviteTitle">Game invite!</h2>
+        <p id="mpInviteBody">Someone wants to play Letter Soccer with you.</p>
+        <div class="mp-invite-btns">
+          <button id="mpAcceptBtn" type="button" class="btn primary">Accept ⚽</button>
+          <button id="mpDeclineBtn" type="button" class="btn">Decline</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multiplayer toast -->
+    <div id="mpToast" class="mp-toast hidden" aria-live="polite"></div>
+
+    <!-- Online lobby panel (slides in when Online tab active) -->
+    <div id="onlineLobby" class="online-lobby hidden" aria-label="Online lobby">
+      <div class="lobby-inner">
+        <header class="lobby-header">
+          <h2>🌐 Online lobby</h2>
+          <button id="lobbyCloseBtn" type="button" class="lobby-close">✕</button>
+        </header>
+
+        <div id="lobbyConnect" class="lobby-connect">
+          <label for="serverUrlInput">Server address</label>
+          <div class="connect-row">
+            <input id="serverUrlInput" type="text" placeholder="ws://192.168.x.x:8765" spellcheck="false">
+            <button id="connectBtn" type="button" class="btn primary">Connect</button>
+          </div>
+          <p class="connect-hint">Ask your teacher for the server address.</p>
+        </div>
+
+        <div id="lobbyStatus" class="lobby-status hidden">
+          <span id="lobbyStatusDot" class="status-dot"></span>
+          <span id="lobbyStatusText">Connecting…</span>
+          <button id="disconnectBtn" type="button" class="btn-sm">Disconnect</button>
+        </div>
+
+        <div id="lobbyPlayerList" class="lobby-player-list hidden">
+          <p class="lobby-section-label">Players online</p>
+          <div id="lobbyPlayers"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="multiplayer.js"></script>
     <script src="game-hub.js"></script>
+
+    <script>
+    // ── GameHub Online Lobby ─────────────────────────────────────────────────
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'teachToday.mpServer';
+      let mp = null;
+      let pendingInvite = null;
+
+      const $ = id => document.getElementById(id);
+      const overlay    = $('mpInviteOverlay');
+      const toast      = $('mpToast');
+      const lobby      = $('onlineLobby');
+      const connectBox = $('lobbyConnect');
+      const statusBar  = $('lobbyStatus');
+      const playerList = $('lobbyPlayerList');
+
+      // ── Auto-detect server when page is served from it ────────────────────
+      // If the student opened this page via http://<mac>.local:8765 (not file://)
+      // the WebSocket is at ws://<same-host>:<same-port> — connect automatically.
+      const isServedFromNetwork = (
+        location.protocol === 'http:' &&
+        location.hostname !== 'localhost' &&
+        location.hostname !== '127.0.0.1'
+      );
+      const AUTO_WS = isServedFromNetwork
+        ? `ws://${location.hostname}:${location.port || 8765}`
+        : null;
+
+      // Inject "Online" button — show green dot badge when auto-served
+      document.addEventListener('DOMContentLoaded', () => {
+        injectOnlineBtn();
+        if (AUTO_WS) autoConnect();   // student opened the teacher's URL → connect silently
+      });
+      injectOnlineBtn();
+
+      function injectOnlineBtn() {
+        const topActions = document.querySelector('.top-actions');
+        if (!topActions || topActions.querySelector('#onlineBtn')) return;
+        const btn = document.createElement('button');
+        btn.id = 'onlineBtn'; btn.type = 'button';
+        btn.textContent = isServedFromNetwork ? '🌐 Online' : '🌐 Online';
+        topActions.insertBefore(btn, topActions.firstChild);
+        btn.addEventListener('click', openLobby);
+      }
+
+      // Auto-connect (silent, no lobby panel needed until student clicks Online)
+      function autoConnect() {
+        const activeEl = document.getElementById('activeStudentName');
+        const name = activeEl?.textContent.trim() || 'Player';
+        const initials = name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
+        if (mp) return;
+        mp = new MultiplayerClient(AUTO_WS, name, initials);
+        wireCallbacks(mp);
+        mp.connect();
+        localStorage.setItem(STORAGE_KEY, AUTO_WS);
+        // Re-try if player name wasn't set yet (picked after DOM loaded)
+        document.addEventListener('click', e => {
+          if (e.target.classList.contains('student-card') && mp && mp.status !== 'lobby') {
+            setTimeout(() => { if (mp) { mp.disconnect(); } autoConnect(); }, 300);
+          }
+        });
+      }
+
+      // ── Lobby open/close ──────────────────────────────────────────────────
+      function openLobby() {
+        lobby.classList.remove('hidden');
+        if (AUTO_WS) {
+          // Hide the manual connect box — server is auto-detected
+          connectBox.classList.add('hidden');
+          $('serverUrlInput').value = AUTO_WS;
+        } else {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) $('serverUrlInput').value = saved;
+        }
+        if (mp && (mp.status === 'lobby' || mp.status === 'playing')) showConnected();
+      }
+
+      $('lobbyCloseBtn').addEventListener('click', () => lobby.classList.add('hidden'));
+
+      // ── Manual connect (for file:// or localhost users) ───────────────────
+      $('connectBtn').addEventListener('click', connectToServer);
+      $('serverUrlInput').addEventListener('keydown', e => { if (e.key === 'Enter') connectToServer(); });
+
+      function connectToServer() {
+        let url = $('serverUrlInput').value.trim();
+        if (!url) return;
+        if (!url.startsWith('ws')) url = 'ws://' + url.replace(/^http(s)?:\/\//, 'ws$1://');
+        $('serverUrlInput').value = url;
+        localStorage.setItem(STORAGE_KEY, url);
+
+        const activeEl = document.getElementById('activeStudentName');
+        const name = activeEl ? activeEl.textContent.trim() : 'Player';
+        const initials = name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+
+        if (mp) mp.disconnect();
+        mp = new MultiplayerClient(url, name, initials);
+        wireCallbacks(mp);
+        showStatus('Connecting…', 'connecting');
+        mp.connect();
+      }
+
+      $('disconnectBtn').addEventListener('click', () => {
+        if (mp) mp.disconnect();
+        showDisconnected();
+      });
+
+      // ── Multiplayer callbacks ─────────────────────────────────────────────
+      function wireCallbacks(client) {
+        client.onConnected = () => {
+          showConnected();
+          showToast('Connected! 🟢');
+        };
+        client.onDisconnect = () => {
+          showDisconnected();
+          showToast('Disconnected from server.', 'warn');
+        };
+        client.onError = msg => {
+          showToast(msg, 'warn');
+          showDisconnected();
+        };
+        client.onLobbyUpdate = players => {
+          renderPlayers(players);
+        };
+        client.onInvite = inv => {
+          pendingInvite = inv;
+          showInviteOverlay(inv);
+        };
+        client.onInviteDeclined = ({ byName }) => {
+          showToast(`${byName} declined your invite.`, 'warn');
+        };
+        client.onGameStart = ({ roomId, role, host, guest, game }) => {
+          const activeEl = document.getElementById('activeStudentName');
+          const student  = activeEl ? encodeURIComponent(activeEl.textContent.trim()) : '';
+          const url = buildGameUrl(game, student, roomId, role,
+            role === 'host' ? guest : host);
+          lobby.classList.add('hidden');
+          // Save rejoin credentials before navigating — the WS will close when we
+          // leave this page. The game page reads this and rejoins the room.
+          sessionStorage.setItem('mp_rejoin', JSON.stringify({
+            serverUrl: mp.serverUrl,
+            roomId,
+            role,
+            playerName: mp.playerName,
+            avatar: mp.avatar,
+          }));
+          window.location.href = url;
+        };
+        client.onPeerLeft = ({ name }) => {
+          showToast(`${name} left the game.`, 'warn');
+        };
+      }
+
+      function buildGameUrl(game, student, roomId, role, peer) {
+        const gameMap = { letterSoccer: 'Letter%20Soccer/index.html' };
+        const path = gameMap[game] || 'Letter%20Soccer/index.html';
+        const qs = new URLSearchParams({
+          student: student || '',
+          mp: '1',
+          role,
+          room: roomId,
+          peerName: peer?.name || '',
+        });
+        return `${path}?${qs}`;
+      }
+
+      // ── Invite overlay ────────────────────────────────────────────────────
+      function showInviteOverlay(inv) {
+        $('mpInviteAvatar').textContent = inv.fromAvatar || inv.fromName?.[0] || '?';
+        $('mpInviteTitle').textContent  = `${inv.fromName} wants to play!`;
+        $('mpInviteBody').textContent   = `Game: Letter Soccer ⚽`;
+        overlay.classList.remove('hidden');
+      }
+
+      $('mpAcceptBtn').addEventListener('click', () => {
+        if (!pendingInvite) return;
+        mp.acceptInvite(pendingInvite.roomId, pendingInvite.game);
+        overlay.classList.add('hidden');
+        pendingInvite = null;
+      });
+      $('mpDeclineBtn').addEventListener('click', () => {
+        if (!pendingInvite) return;
+        mp.declineInvite(pendingInvite.roomId);
+        overlay.classList.add('hidden');
+        pendingInvite = null;
+      });
+
+      // ── Player list ───────────────────────────────────────────────────────
+      function renderPlayers(players) {
+        const myId = mp ? mp.id : null;
+        const container = $('lobbyPlayers');
+        container.innerHTML = '';
+
+        const others = players.filter(p => p.id !== myId);
+        if (!others.length) {
+          container.innerHTML = '<p class="no-players">No other players online yet.</p>';
+          return;
+        }
+        others.forEach(p => {
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          const dot  = p.status === 'playing' ? '🟡' : '🟢';
+          const canInvite = p.status === 'lobby';
+          row.innerHTML = `
+            <span class="p-avatar">${escHtml(p.avatar||'?')}</span>
+            <span class="p-name">${escHtml(p.name)}</span>
+            <span class="p-status">${dot} ${p.status === 'playing' ? 'In game' : 'Available'}</span>
+            <button class="btn-sm invite-btn" ${canInvite?'':'disabled'} data-id="${escHtml(p.id)}">
+              ${canInvite ? 'Invite ⚽' : 'Busy'}
+            </button>
+          `;
+          container.appendChild(row);
+        });
+
+        container.querySelectorAll('.invite-btn:not([disabled])').forEach(btn => {
+          btn.addEventListener('click', () => {
+            mp.sendInvite(btn.dataset.id, 'letterSoccer');
+            showToast('Invite sent! Waiting for response…');
+            btn.disabled = true; btn.textContent = 'Sent…';
+          });
+        });
+      }
+
+      // ── UI helpers ────────────────────────────────────────────────────────
+      function showConnected() {
+        connectBox.classList.add('hidden');
+        statusBar.classList.remove('hidden');
+        playerList.classList.remove('hidden');
+        $('lobbyStatusDot').className = 'status-dot connected';
+        $('lobbyStatusText').textContent = `Connected as ${mp?.playerName || ''}`;
+      }
+
+      function showDisconnected() {
+        connectBox.classList.remove('hidden');
+        statusBar.classList.add('hidden');
+        playerList.classList.add('hidden');
+      }
+
+      function showStatus(text, state) {
+        statusBar.classList.remove('hidden');
+        $('lobbyStatusDot').className = 'status-dot ' + (state || '');
+        $('lobbyStatusText').textContent = text;
+      }
+
+      let toastTimer;
+      function showToast(msg, type = 'info') {
+        toast.textContent = msg;
+        toast.className = 'mp-toast ' + type;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+      }
+
+      // Expose mp so games can call mp.endGame() after returning
+      window._hubMp = () => mp;
+    })();
+    </script>
   </body>
 </html>
