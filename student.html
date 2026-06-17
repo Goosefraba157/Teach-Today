@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#534AB7">
+  <title>Teach Today · Student</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
+  <style>
+    :root {
+      --brand: #534AB7;
+      --brand-light: #EEEDFE;
+      --brand-mid: #7F77DD;
+      --brand-dark: #3C3489;
+      --brand-text: #26215C;
+      --gold: #EF9F27;
+      --gold-light: #FAEEDA;
+      --success: #1D9E75;
+      --success-light: #E1F5EE;
+      --bg: #F4F3FF;
+      --card: #FFFFFF;
+      --text: #1a1a2e;
+      --text-muted: #6B6B8A;
+      --border: rgba(83,74,183,0.1);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 2px 12px rgba(83,74,183,0.08);
+      --sidebar-w: 240px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+    /* ══════════════════════════════════════════
+       APP SHELL
+    ══════════════════════════════════════════ */
+    #app { height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+    /* ── Mobile: stacked (login full-screen, then screens + bottom nav) ── */
+    .screen { display: none; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* ── BOTTOM NAV (mobile only) ── */
+    .bottom-nav { display: none; background: var(--card); border-top: 1px solid var(--border); padding: 6px 0 max(6px, env(safe-area-inset-bottom)); flex-shrink: 0; box-shadow: 0 -2px 12px rgba(0,0,0,0.06); }
+    .bottom-nav.visible { display: flex; }
+    .bottom-nav button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; cursor: pointer; padding: 4px 2px; font-size: 10px; color: var(--text-muted); transition: color 0.15s; font-family: inherit; }
+    .bottom-nav button.active { color: var(--brand); }
+    .bottom-nav button .nav-icon { font-size: 22px; line-height: 1; display: block; }
+    .bottom-nav button.active .nav-icon { filter: drop-shadow(0 0 4px rgba(83,74,183,0.4)); }
+
+    /* ══════════════════════════════════════════
+       LOGIN (same on all sizes)
+    ══════════════════════════════════════════ */
+    #screenLogin { background: var(--brand); align-items: center; justify-content: center; padding: 32px 24px; gap: 0; text-align: center; height: 100vh; }
+    .login-mascot { font-size: 80px; line-height: 1; margin-bottom: 14px; animation: float 3s ease-in-out infinite; display: block; }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-10px) rotate(4deg)} }
+    .login-title { font-size: 38px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .login-tagline { font-size: 15px; color: rgba(255,255,255,0.65); margin-top: 4px; margin-bottom: 36px; }
+    .code-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 24px 22px; width: 100%; max-width: 360px; }
+    .code-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .code-input { width: 100%; font-size: 34px; font-weight: 800; text-align: center; letter-spacing: 8px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.25); border-radius: 12px; color: #fff; padding: 14px 10px; outline: none; text-transform: uppercase; font-family: 'Courier New', monospace; transition: border-color 0.15s, background 0.15s; }
+    .code-input::placeholder { color: rgba(255,255,255,0.3); letter-spacing: 4px; font-size: 22px; }
+    .code-input:focus { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.2); }
+    .login-btn { width: 100%; max-width: 360px; margin-top: 14px; padding: 17px; font-size: 18px; font-weight: 700; color: var(--brand); background: #fff; border: none; border-radius: 14px; cursor: pointer; transition: transform 0.1s, opacity 0.15s; font-family: inherit; }
+    .login-btn:hover { opacity: 0.95; }
+    .login-btn:active { transform: scale(0.97); }
+    .login-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
+    .login-error { color: #FFB8B8; font-size: 13px; margin-top: 10px; min-height: 18px; font-weight: 500; }
+    .login-hint { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 20px; }
+    .login-hint code { background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 5px; font-size: 11px; }
+
+    /* ══════════════════════════════════════════
+       MOBILE LAYOUT — screens fill below bottom nav
+    ══════════════════════════════════════════ */
+    #mainLayout { display: none; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
+    #mainLayout.visible { display: flex; }
+
+    /* Mobile: screens stack, bottom nav fixed */
+    .screen-area { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
+
+    /* ══════════════════════════════════════════
+       SIDEBAR (tablet/desktop only — hidden on mobile)
+    ══════════════════════════════════════════ */
+    .sidebar { display: none; }
+
+    /* ══════════════════════════════════════════
+       HOME — MOBILE
+    ══════════════════════════════════════════ */
+    #screenHome { flex: 1; overflow-y: auto; background: var(--bg); }
+
+    .home-header { background: var(--brand); padding: 18px 18px 26px; flex-shrink: 0; }
+    .header-top { display: flex; align-items: center; gap: 10px; }
+    .avatar-btn { font-size: 38px; line-height: 1; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.25); border-radius: 50%; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .header-info { flex: 1; min-width: 0; }
+    .header-name { font-size: 17px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 1px; }
+    .streak-pill { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.12); border-radius: 100px; padding: 5px 10px; flex-shrink: 0; }
+    .streak-fire { font-size: 16px; line-height: 1; }
+    .streak-num { font-size: 15px; font-weight: 800; color: var(--gold); }
+    .streak-lbl { font-size: 9px; color: rgba(255,255,255,0.55); line-height: 1.2; }
+    .xp-row { margin-top: 12px; }
+    .xp-labels { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.55); margin-bottom: 5px; }
+    .xp-track { background: rgba(255,255,255,0.15); border-radius: 100px; height: 7px; overflow: hidden; }
+    .xp-fill { background: #9FE1CB; height: 7px; border-radius: 100px; width: 0%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+    .home-body { padding: 14px; display: flex; flex-direction: column; gap: 18px; padding-bottom: 90px; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+
+    /* Task cards */
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+    .task-card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: var(--shadow); }
+    .task-card:active, .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(83,74,183,0.14); }
+    .task-card.done { opacity: 0.65; }
+    .task-ico { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .task-body { flex: 1; min-width: 0; }
+    .task-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .task-meta { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .task-badge { padding: 4px 9px; border-radius: 100px; font-size: 10px; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+    .badge-new { background: var(--gold-light); color: #633806; }
+    .badge-done { background: #C0DD97; color: #27500A; }
+    .badge-go { background: var(--brand-light); color: var(--brand-text); }
+
+    /* Pathway mini */
+    .pathway-card { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .pathway-hdr { background: var(--brand); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .pathway-hdr h3 { color: #fff; font-size: 13px; font-weight: 700; }
+    .pathway-see-all { font-size: 11px; color: rgba(255,255,255,0.65); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+    .pathway-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .pathway-row { display: flex; align-items: flex-start; gap: 10px; }
+    .p-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .p-dot.done { background: #C0DD97; color: #27500A; font-size: 13px; }
+    .p-dot.next { background: #eee; color: #aaa; }
+    .p-info { flex: 1; }
+    .p-label { font-size: 12px; font-weight: 600; }
+    .p-bar-wrap { margin-top: 4px; }
+    .p-bar-track { background: #eee; border-radius: 100px; height: 5px; overflow: hidden; }
+    .p-bar-fill { height: 5px; border-radius: 100px; }
+    .p-bar-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Games grid (home) */
+    .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .game-tile { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: var(--shadow); position: relative; }
+    .game-tile:not(.locked):hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(83,74,183,0.14); }
+    .game-tile:active:not(.locked) { transform: scale(0.96); }
+    .game-tile.locked { opacity: 0.42; cursor: default; }
+    .game-tile .g-emoji { font-size: 32px; line-height: 1; }
+    .game-tile .g-name { font-size: 12px; font-weight: 700; text-align: center; color: var(--text); }
+    .game-tile .g-sub { font-size: 10px; color: var(--text-muted); text-align: center; }
+    .g-lock { position: absolute; top: 6px; right: 8px; font-size: 12px; }
+
+    /* Rewards shelf */
+    .rewards-shelf { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .rew-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .rew-ico { width: 48px; height: 48px; border-radius: 10px; background: #f5f5f5; border: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 22px; position: relative; }
+    .rew-ico.new-r { border-color: var(--gold); background: var(--gold-light); }
+    .rew-ico.locked-r { filter: grayscale(1); opacity: 0.3; }
+    .rew-pip { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; background: var(--gold); border-radius: 50%; border: 2px solid var(--bg); }
+    .rew-lbl { font-size: 9px; color: var(--text-muted); text-align: center; line-height: 1.2; }
+
+    /* MAP */
+    #screenMap { flex: 1; overflow: hidden; background: var(--bg); }
+    .map-hdr { background: var(--brand); padding: 16px 18px; flex-shrink: 0; }
+    .map-hdr h2 { font-size: 20px; font-weight: 800; color: #fff; }
+    .map-hdr p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+    .map-scroll-outer { flex: 1; overflow: auto; }
+    .map-tree-wrap { padding: 14px; display: flex; align-items: flex-start; min-width: max-content; min-height: 100%; }
+    .m-step-col { display: flex; flex-direction: column; align-items: center; }
+    .m-step-hdr { width: 136px; text-align: center; margin-bottom: 7px; }
+    .m-step-icon { font-size: 18px; }
+    .m-step-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 100px; display: inline-block; margin-top: 2px; }
+    .m-step-name { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+    .m-nodes-col { display: flex; flex-direction: column; gap: 4px; width: 136px; }
+    .m-node { padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 1.5px solid transparent; min-height: 42px; transition: transform 0.1s; position: relative; }
+    .m-node:not(.m-locked):hover { transform: scale(1.02); }
+    .m-node:active { transform: scale(0.97); }
+    .m-node.m-locked { background: #eeecf8 !important; border-color: #d8d4f0 !important; }
+    .m-nid { font-size: 9px; font-weight: 700; }
+    .m-ntitle { font-size: 10px; font-weight: 600; line-height: 1.3; margin-top: 1px; }
+    .m-avs { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
+    .m-av { width: 13px; height: 13px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 6px; font-weight: 700; color: #fff; }
+    .m-conn { display: flex; align-items: center; padding-top: 30px; width: 14px; justify-content: center; flex-shrink: 0; color: #c5c0e8; font-size: 13px; }
+    .m-boss-wrap { margin-top: 4px; width: 136px; }
+    .m-boss-node { background: #FAEEDA; border: 1.5px solid #EF9F27; border-radius: 8px; padding: 6px 8px; text-align: center; cursor: pointer; }
+    .m-boss-node.m-locked { background: #eeecf8 !important; border-color: #d8d4f0 !important; }
+    .m-boss-icon { font-size: 14px; }
+    .m-boss-lbl { font-size: 9px; font-weight: 700; color: #633806; }
+    .m-boss-node.m-locked .m-boss-lbl { color: #a0a0c0; }
+
+    /* GAMES SCREEN */
+    #screenGames { flex: 1; overflow-y: auto; background: var(--bg); }
+    .games-hdr { background: var(--brand); padding: 18px 18px 22px; flex-shrink: 0; }
+    .games-hdr h2 { font-size: 22px; font-weight: 800; color: #fff; }
+    .games-hdr p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+    .games-list-wrap { padding: 14px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 80px; }
+    .game-row-card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; transition: transform 0.1s, box-shadow 0.1s; }
+    .game-row-card:not(.g-locked):hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(83,74,183,0.13); }
+    .game-row-thumb { width: 76px; display: flex; align-items: center; justify-content: center; font-size: 36px; flex-shrink: 0; }
+    .game-row-info { padding: 13px 14px 13px 4px; flex: 1; }
+    .game-row-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .game-row-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; }
+    .game-row-btn { background: var(--brand); color: #fff; border: none; border-radius: 100px; padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+    .game-row-btn:active { opacity: 0.8; }
+    .game-row-card.g-locked { opacity: 0.5; }
+    .game-row-card.g-locked .game-row-btn { background: #c0bdd8; cursor: default; }
+
+    /* REWARDS SCREEN */
+    #screenRewards { flex: 1; overflow-y: auto; background: var(--bg); }
+    .rew-hdr { background: var(--brand); padding: 18px 18px 22px; flex-shrink: 0; }
+    .rew-hdr h2 { font-size: 22px; font-weight: 800; color: #fff; }
+    .rew-hdr p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+    .rew-body { padding: 14px; padding-bottom: 80px; }
+    .rew-section-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin: 14px 0 8px; }
+    .rew-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .rew-full-item { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: var(--shadow); transition: transform 0.1s; }
+    .rew-full-item:not(.locked-full):hover { transform: translateY(-2px); }
+    .rew-full-ico { font-size: 32px; line-height: 1; }
+    .rew-full-name { font-size: 11px; font-weight: 700; text-align: center; color: var(--text); }
+    .rew-full-desc { font-size: 10px; text-align: center; color: var(--text-muted); }
+    .rew-full-item.locked-full { opacity: 0.35; }
+    .rew-full-item.new-full { border-color: var(--gold); background: var(--gold-light); }
+
+    .empty-state { text-align: center; color: var(--text-muted); font-size: 13px; padding: 24px 0; }
+
+    /* ══════════════════════════════════════════
+       TABLET / LAPTOP — ≥ 768px
+    ══════════════════════════════════════════ */
+    @media (min-width: 768px) {
+
+      #app { flex-direction: row; height: 100vh; overflow: hidden; }
+
+      /* Sidebar */
+      .sidebar {
+        display: flex; flex-direction: column;
+        width: var(--sidebar-w); flex-shrink: 0;
+        background: var(--brand); color: #fff;
+        padding: 0; overflow: hidden;
+        border-right: none;
+      }
+
+      .sb-logo { padding: 22px 20px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      .sb-logo-icon { font-size: 26px; }
+      .sb-logo-text { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+
+      .sb-profile { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+      .sb-avatar { font-size: 44px; line-height: 1; display: block; margin-bottom: 8px; cursor: pointer; }
+      .sb-name { font-size: 16px; font-weight: 700; }
+      .sb-substep { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; margin-bottom: 12px; }
+      .sb-streak { display: flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+      .sb-streak-num { font-weight: 800; color: var(--gold); }
+      .sb-xp-label { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+      .sb-xp-track { background: rgba(255,255,255,0.15); border-radius: 100px; height: 6px; overflow: hidden; }
+      .sb-xp-fill { height: 6px; border-radius: 100px; background: #9FE1CB; width: 0%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+      .sb-nav { flex: 1; padding: 10px 10px; display: flex; flex-direction: column; gap: 2px; }
+      .sb-nav-btn { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; border: none; background: none; color: rgba(255,255,255,0.65); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; width: 100%; text-align: left; }
+      .sb-nav-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+      .sb-nav-btn.active { background: rgba(255,255,255,0.18); color: #fff; }
+      .sb-nav-btn .nb-icon { font-size: 20px; flex-shrink: 0; width: 24px; text-align: center; }
+
+      .sb-footer { padding: 14px 16px max(14px, env(safe-area-inset-bottom)); border-top: 1px solid rgba(255,255,255,0.1); }
+      .sb-logout { font-size: 12px; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
+      .sb-logout:hover { color: rgba(255,255,255,0.7); }
+
+      /* Main content area */
+      #mainLayout { flex-direction: row; }
+      .screen-area { flex: 1; overflow: hidden; }
+
+      /* Bottom nav hidden on desktop */
+      .bottom-nav { display: none !important; }
+
+      /* Screen shared styles on desktop — allow overflow */
+      .screen { flex: 1; height: 100%; }
+
+      /* ── HOME — desktop ── */
+      #screenHome { background: var(--bg); overflow: hidden; flex-direction: row; }
+
+      /* Hide the top purple header on desktop (sidebar has all that info) */
+      .home-header { display: none; }
+
+      /* Desktop home: two columns */
+      .home-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 20px;
+        padding: 24px;
+        overflow-y: auto;
+        height: 100%;
+        align-content: start;
+      }
+
+      /* Tasks spans left column, stacked top */
+      .home-tasks-section { grid-column: 1; grid-row: 1; }
+      /* Pathway spans left column */
+      .home-pathway-section { grid-column: 1; grid-row: 2; }
+      /* Games span right column top */
+      .home-games-section { grid-column: 2; grid-row: 1 / 3; }
+      /* Rewards span full width at bottom */
+      .home-rewards-section { grid-column: 1 / 3; grid-row: 3; }
+
+      .section-label { font-size: 12px; }
+      .task-card { border-radius: 12px; }
+      .task-name { font-size: 14px; }
+
+      /* 2x2 game grid on desktop becomes 2x2 but bigger tiles */
+      .games-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .game-tile { padding: 20px 14px; }
+      .game-tile .g-emoji { font-size: 40px; }
+      .game-tile .g-name { font-size: 13px; }
+
+      /* Rewards shelf: more columns */
+      .rewards-shelf { grid-template-columns: repeat(8, 1fr); gap: 8px; }
+      .rew-ico { width: 52px; height: 52px; font-size: 24px; }
+
+      /* ── MAP — desktop ── */
+      #screenMap { overflow: hidden; }
+      .map-hdr h2 { font-size: 24px; }
+      .map-hdr p { font-size: 13px; }
+      .m-step-col { }
+      .m-nodes-col { width: 160px; }
+      .m-step-hdr { width: 160px; }
+      .m-node { min-height: 50px; padding: 8px 10px; }
+      .m-nid { font-size: 10px; }
+      .m-ntitle { font-size: 11px; }
+
+      /* ── GAMES — desktop: card grid ── */
+      #screenGames { overflow: hidden; }
+      .games-hdr { padding: 22px 28px 26px; }
+      .games-hdr h2 { font-size: 28px; }
+      .games-list-wrap {
+        padding: 24px 28px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        padding-bottom: 24px;
+        overflow-y: auto;
+        height: calc(100% - 90px);
+        align-content: start;
+      }
+      .game-row-thumb { width: 90px; font-size: 44px; }
+      .game-row-name { font-size: 16px; }
+      .game-row-desc { font-size: 13px; }
+      .game-row-btn { font-size: 13px; padding: 9px 20px; }
+
+      /* ── REWARDS — desktop: bigger grid ── */
+      #screenRewards { overflow: hidden; }
+      .rew-hdr { padding: 22px 28px 26px; }
+      .rew-hdr h2 { font-size: 28px; }
+      .rew-body { padding: 24px 28px; padding-bottom: 0; overflow-y: auto; height: calc(100% - 90px); }
+      .rew-grid { grid-template-columns: repeat(5, 1fr); gap: 14px; }
+      .rew-full-item { padding: 18px 12px; border-radius: 14px; }
+      .rew-full-ico { font-size: 40px; }
+      .rew-full-name { font-size: 12px; }
+      .rew-full-desc { font-size: 11px; }
+    }
+
+    /* ── Wider desktop ── */
+    @media (min-width: 1100px) {
+      :root { --sidebar-w: 260px; }
+      .sb-nav-btn { font-size: 15px; padding: 12px 14px; }
+      .home-body { gap: 24px; padding: 28px; }
+      .games-list-wrap { grid-template-columns: 1fr 1fr 1fr; }
+      .rew-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ LOGIN (always full screen, no sidebar) ══ -->
+  <div id="screenLogin" class="screen active" style="flex-direction:column">
+    <span class="login-mascot">🦊</span>
+    <div class="login-title">Teach Today</div>
+    <div class="login-tagline">Your learning adventure awaits</div>
+    <div class="code-box">
+      <div class="code-label">Enter your learning code</div>
+      <input id="codeInput" class="code-input" type="text" maxlength="8"
+             placeholder="XXXXXX" autocomplete="off" autocorrect="off"
+             autocapitalize="characters" spellcheck="false">
+    </div>
+    <button id="loginBtn" class="login-btn">Let's go! →</button>
+    <div id="loginError" class="login-error"></div>
+    <div class="login-hint">Ask your teacher for your code · Try <code>DEMO</code> to explore</div>
+  </div>
+
+  <!-- ══ SIDEBAR (desktop only, hidden until logged in) ══ -->
+  <aside class="sidebar" id="sidebar" aria-label="Navigation">
+    <div class="sb-logo">
+      <span class="sb-logo-icon">🦊</span>
+      <span class="sb-logo-text">Teach Today</span>
+    </div>
+    <div class="sb-profile">
+      <span class="sb-avatar" id="sbAvatar">🦊</span>
+      <div class="sb-name" id="sbName">Student</div>
+      <div class="sb-substep" id="sbSubstep">Sub-step 1.1</div>
+      <div class="sb-streak">
+        <span>🔥</span>
+        <span class="sb-streak-num" id="sbStreakNum">0</span>
+        <span>day streak</span>
+      </div>
+      <div class="sb-xp-label">
+        <span id="sbXpLabel">0 XP</span>
+        <span id="sbXpNext">→ 500 XP</span>
+      </div>
+      <div class="sb-xp-track"><div class="sb-xp-fill" id="sbXpFill"></div></div>
+    </div>
+    <nav class="sb-nav">
+      <button class="sb-nav-btn active" data-nav="home"><span class="nb-icon">🏠</span>Home</button>
+      <button class="sb-nav-btn" data-nav="map"><span class="nb-icon">🗺️</span>Master Map</button>
+      <button class="sb-nav-btn" data-nav="games"><span class="nb-icon">🎮</span>Games</button>
+      <button class="sb-nav-btn" data-nav="rewards"><span class="nb-icon">🏆</span>Rewards</button>
+    </nav>
+    <div class="sb-footer">
+      <button class="sb-logout" id="sbLogout">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN LAYOUT (screens + mobile bottom nav) ══ -->
+  <div id="mainLayout">
+    <div class="screen-area">
+
+      <!-- HOME -->
+      <div id="screenHome" class="screen">
+        <!-- Mobile header (hidden on desktop) -->
+        <div class="home-header">
+          <div class="header-top">
+            <button class="avatar-btn" id="avatarBtn">🦊</button>
+            <div class="header-info">
+              <div class="header-name" id="headerName">Student</div>
+              <div class="header-sub" id="headerSub">Loading…</div>
+            </div>
+            <div class="streak-pill">
+              <span class="streak-fire">🔥</span>
+              <div>
+                <div class="streak-num" id="streakNum">0</div>
+                <div class="streak-lbl">day<br>streak</div>
+              </div>
+            </div>
+          </div>
+          <div class="xp-row">
+            <div class="xp-labels">
+              <span id="xpLabel">0 XP</span>
+              <span id="xpNextLabel">Next reward: 500 XP</span>
+            </div>
+            <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+          </div>
+        </div>
+
+        <!-- Body (mobile: column, desktop: grid via CSS) -->
+        <div class="home-body" id="homeBody">
+          <div class="home-tasks-section">
+            <div class="section-label">Today's quests</div>
+            <div class="task-list" id="taskList"></div>
+          </div>
+          <div class="home-pathway-section">
+            <div class="section-label">My journey</div>
+            <div class="pathway-card">
+              <div class="pathway-hdr">
+                <h3>🗺️ Learning Pathway</h3>
+                <button class="pathway-see-all" id="pathwaySeeAll">See full map →</button>
+              </div>
+              <div class="pathway-body" id="pathwayMini"></div>
+            </div>
+          </div>
+          <div class="home-games-section">
+            <div class="section-label">My games</div>
+            <div class="games-grid" id="homeGames"></div>
+          </div>
+          <div class="home-rewards-section">
+            <div class="section-label">My rewards</div>
+            <div class="rewards-shelf" id="rewardsShelf"></div>
+          </div>
+        </div>
+      </div><!-- /screenHome -->
+
+      <!-- MAP -->
+      <div id="screenMap" class="screen">
+        <div class="map-hdr">
+          <h2>🗺️ Master Map</h2>
+          <p>Your complete learning journey — 12 steps · 63 sub-steps</p>
+        </div>
+        <div class="map-scroll-outer">
+          <div class="map-tree-wrap" id="mapTree"></div>
+        </div>
+      </div>
+
+      <!-- GAMES -->
+      <div id="screenGames" class="screen">
+        <div class="games-hdr">
+          <h2>🎮 Games</h2>
+          <p>Practice your reading skills with fun games</p>
+        </div>
+        <div class="games-list-wrap" id="gamesList"></div>
+      </div>
+
+      <!-- REWARDS -->
+      <div id="screenRewards" class="screen">
+        <div class="rew-hdr">
+          <h2>🏆 My Rewards</h2>
+          <p>Badges, trophies, stickers, and avatars you've earned</p>
+        </div>
+        <div class="rew-body" id="rewardsBody"></div>
+      </div>
+
+    </div><!-- /screen-area -->
+
+    <!-- Mobile bottom nav -->
+    <nav class="bottom-nav" id="bottomNav">
+      <button id="navHome" class="active"><span class="nav-icon">🏠</span>Home</button>
+      <button id="navMap"><span class="nav-icon">🗺️</span>Map</button>
+      <button id="navGames"><span class="nav-icon">🎮</span>Games</button>
+      <button id="navRewards"><span class="nav-icon">🏆</span>Rewards</button>
+    </nav>
+  </div><!-- /mainLayout -->
+</div><!-- /app -->
+
+<script type="module">
+
+// ─── CONFIG ──────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAQxODRvRAINGXfSxlqTxiyhkeisIPQLEs",
+  authDomain: "teach-today-35149.firebaseapp.com",
+  projectId: "teach-today-35149",
+  storageBucket: "teach-today-35149.firebasestorage.app",
+  messagingSenderId: "506415947825",
+  appId: "1:506415947825:web:9415befdc50d928eccb510"
+};
+const SDK = "10.12.5";
+const SESSION_KEY = "tt_student_v1";
+
+// ─── WRS DATA ────────────────────────────────────────────
+const STEPS = [
+  {id:1, name:"Foundations",    icon:"🌱", color:"#534AB7", light:"#EEEDFE", text:"#26215C"},
+  {id:2, name:"Welded Sounds",  icon:"🔗", color:"#185FA5", light:"#E6F1FB", text:"#042C53"},
+  {id:3, name:"Multi-syllable", icon:"🏗️", color:"#1D9E75", light:"#E1F5EE", text:"#04342C"},
+  {id:4, name:"Vowel-e Magic",  icon:"✨", color:"#993C1D", light:"#FAECE7", text:"#4A1B0C"},
+  {id:5, name:"Open Syllables", icon:"🌿", color:"#3B6D11", light:"#EAF3DE", text:"#173404"},
+  {id:6, name:"Suffix Power",   icon:"📎", color:"#854F0B", light:"#FAEEDA", text:"#412402"},
+  {id:7, name:"Soft Sounds",    icon:"🎭", color:"#993556", light:"#FBEAF0", text:"#4B1528"},
+  {id:8, name:"R-Controlled",   icon:"🌀", color:"#A32D2D", light:"#FCEBEB", text:"#501313"},
+  {id:9, name:"Vowel Teams",    icon:"🌊", color:"#3C3489", light:"#EEEDFE", text:"#26215C"},
+  {id:10,name:"Suffix Rules",   icon:"🔄", color:"#0C447C", light:"#E6F1FB", text:"#042C53"},
+  {id:11,name:"Y & Advanced",   icon:"🌟", color:"#085041", light:"#E1F5EE", text:"#04342C"},
+  {id:12,name:"Grand Masters",  icon:"💎", color:"#633806", light:"#FAEEDA", text:"#412402"},
+];
+const SUBSTEPS = [
+  {id:"1.1",step:1,short:"Foundations"},{id:"1.2",step:1,short:"New sounds"},
+  {id:"1.3",step:1,short:"3-sound words"},{id:"1.4",step:1,short:"Bonus letters"},
+  {id:"1.5",step:1,short:"Nasal combos"},{id:"1.6",step:1,short:"Base + suffix"},
+  {id:"2.1",step:2,short:"Welded sounds"},{id:"2.2",step:2,short:"Four sounds"},
+  {id:"2.3",step:2,short:"Closed exceptions"},{id:"2.4",step:2,short:"Five sounds"},
+  {id:"2.5",step:2,short:"3-letter blends"},
+  {id:"3.1",step:3,short:"Two closed syl."},{id:"3.2",step:3,short:"Closed + blends"},
+  {id:"3.3",step:3,short:"ct blend syl."},{id:"3.4",step:3,short:"Multisyllabic"},
+  {id:"3.5",step:3,short:"Closed + suffixes"},
+  {id:"4.1",step:4,short:"Vowel-e intro"},{id:"4.2",step:4,short:"v-e + closed"},
+  {id:"4.3",step:4,short:"Multisyl. mixed"},{id:"4.4",step:4,short:"v-e exceptions"},
+  {id:"5.1",step:5,short:"Open syllables"},{id:"5.2",step:5,short:"Open + closed"},
+  {id:"5.3",step:5,short:"Final y"},{id:"5.4",step:5,short:"Three syl. types"},
+  {id:"5.5",step:5,short:"Open exceptions"},
+  {id:"6.1",step:6,short:"More suffixes"},{id:"6.2",step:6,short:"Suffix ed"},
+  {id:"6.3",step:6,short:"Two suffixes"},{id:"6.4",step:6,short:"Final stable syl."},
+  {id:"7.1",step:7,short:"Soft c and g"},{id:"7.2",step:7,short:"ce, ge, dge"},
+  {id:"7.3",step:7,short:"ph and tch"},{id:"7.4",step:7,short:"tion and sion"},
+  {id:"7.5",step:7,short:"Contractions"},
+  {id:"8.1",step:8,short:"R-controlled"},{id:"8.2",step:8,short:"ar and or multi."},
+  {id:"8.3",step:8,short:"er, ir, ur multi."},{id:"8.4",step:8,short:"R-ctrl exceptions"},
+  {id:"8.5",step:8,short:"Final ar/or/ard"},
+  {id:"9.1",step:9,short:"Long a teams"},{id:"9.2",step:9,short:"Long e teams"},
+  {id:"9.3",step:9,short:"More vowel teams"},{id:"9.4",step:9,short:"Diphthongs"},
+  {id:"9.5",step:9,short:"Vowel sounds u"},{id:"9.6",step:9,short:"Advanced teams"},
+  {id:"9.7",step:9,short:"Additional teams"},
+  {id:"10.1",step:10,short:"Suffixes ending e"},{id:"10.2",step:10,short:"Drop-e rule"},
+  {id:"10.3",step:10,short:"Doubling 1-syl."},{id:"10.4",step:10,short:"Doubling multi."},
+  {id:"10.5",step:10,short:"Advanced suffixes"},{id:"10.6",step:10,short:"Latin base+suffix"},
+  {id:"11.1",step:11,short:"Y sounds"},{id:"11.2",step:11,short:"Y spelling rule"},
+  {id:"11.3",step:11,short:"igh and eigh"},{id:"11.4",step:11,short:"ie and ei"},
+  {id:"11.5",step:11,short:"I sound options"},
+  {id:"12.1",step:12,short:"Split vowels"},{id:"12.2",step:12,short:"Silent letters"},
+  {id:"12.3",step:12,short:"W affects vowels"},{id:"12.4",step:12,short:"ch as /k/"},
+  {id:"12.5",step:12,short:"More suffixes"},{id:"12.6",step:12,short:"Assimilated pre."},
+];
+const ORDER = SUBSTEPS.map(s => s.id);
+
+const GAMES = [
+  {id:"syllable-scoop", name:"Syllable Scoop", emoji:"🔪", unlockAt:"1.1",
+   desc:"Scoop or slice syllables! Practice reading multi-syllable words at speed."},
+  {id:"word-match",     name:"Word Match",     emoji:"🧠", unlockAt:"2.1",
+   desc:"Match words to their sounds. Build accuracy and automaticity."},
+  {id:"word-blaster",   name:"Word Blaster",   emoji:"🚀", unlockAt:"3.1",
+   desc:"Blast words as fast as you can! Fluency challenge mode."},
+  {id:"dictation-dash", name:"Dictation Dash", emoji:"✏️", unlockAt:"4.1",
+   desc:"Spell words correctly before the timer runs out."},
+  {id:"passage-race",   name:"Passage Race",   emoji:"📖", unlockAt:"5.1",
+   desc:"Read passages for speed and comprehension. Beat your best WCPM!"},
+  {id:"boss-battle",    name:"Boss Battle",    emoji:"⚔️", unlockAt:"6.1",
+   desc:"Face the sub-step boss! Master the concepts to advance."},
+];
+
+const AVATARS = ["🦊","🦅","🦁","🐺","🐬","🦋","🐉","🦄"];
+
+const MAP_GROUPS = [
+  {substep:"2.1", color:"#7F77DD", initials:["AM","EA","AG","MP","EC","RM","DV","AP","TJ","JG","MO","JM","JA","RA"]},
+  {substep:"3.5", color:"#1D9E75", initials:["JI","SC","AL","LS","JR","AY","JV","MK","JE","JR2","YT","KM"]},
+  {substep:"7.1", color:"#BA7517", initials:["JC","JD","AA","DH","BM","XJ","AN"]},
+];
+const mapAvatarsBySubstep = {};
+MAP_GROUPS.forEach(g => { mapAvatarsBySubstep[g.substep] = g.initials.map(i => ({i, color:g.color})); });
+
+// ─── DEMO PROFILE ────────────────────────────────────────
+const DEMO = {
+  id:"demo", name:"Alex", fullName:"Alex (Demo)", substep:"2.1",
+  xp:620, streak:7, avatarId:0,
+  lastLoginDate: new Date().toISOString().slice(0,10),
+  completedLessons:["1.1-0","1.1-1","1.1-2","1.2-0","1.2-1","1.3-0","1.4-0","1.5-0","1.6-0"],
+  assignedTasks:[
+    {id:"t1",type:"lesson",     icon:"📚",iconBg:"#E6F1FB",title:"Blending with welded sounds",  meta:"Lesson · Sub-step 2.1 · ~8 min",xp:60, done:true},
+    {id:"t2",type:"game",       icon:"🎮",iconBg:"#EAF3DE",title:"Syllable Scoop practice",       meta:"Game · 2.1 words",              xp:75, done:false,gameId:"syllable-scoop"},
+    {id:"t3",type:"assignment", icon:"✏️",iconBg:"#FAEEDA",title:"Dictation practice",            meta:"From your teacher",             xp:80, done:false,isNew:true},
+  ],
+  rewards:[
+    {id:"medal-step1",  icon:"🏅",label:"Step 1 medal", category:"Trophies",isNew:true},
+    {id:"streak-7",     icon:"🌟",label:"7-day streak",  category:"Streaks"},
+    {id:"avatar-dragon",icon:"🐉",label:"Dragon avatar", category:"Avatars"},
+    {id:"wave",         icon:"🌊",label:"Wave sticker",  category:"Stickers"},
+    {id:"speed",        icon:"⚡",label:"Speed star",    category:"Special"},
+    {id:"trophy-step2", icon:"🏆",label:"Step 2 trophy", category:"Trophies",locked:true},
+    {id:"sharp",        icon:"🎯",label:"Sharpshooter",  category:"Special", locked:true},
+    {id:"rainbow",      icon:"🌈",label:"Rainbow badge", category:"Stickers",locked:true},
+  ]
+};
+
+// ─── STATE ───────────────────────────────────────────────
+let student = null;
+let fb = null;
+
+// ─── FIREBASE ────────────────────────────────────────────
+async function firestore() {
+  if (fb) return fb;
+  const [appMod, fsMod] = await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-firestore.js`),
+  ]);
+  const app = appMod.initializeApp(FIREBASE_CONFIG);
+  fb = { db: fsMod.getFirestore(app), ...fsMod };
+  return fb;
+}
+
+async function resolveCode(rawCode) {
+  const code = rawCode.trim().toUpperCase();
+  if (code === "DEMO") return { ...DEMO };
+
+  const { db, doc, getDoc, setDoc, serverTimestamp } = await firestore();
+  const codeSnap = await getDoc(doc(db, "studentCodes", code));
+  if (!codeSnap.exists() || codeSnap.data().active === false) throw new Error("CODE_NOT_FOUND");
+
+  const codeData = codeSnap.data();
+  const studentRef = doc(db, "students", codeData.studentId);
+  const studentSnap = await getDoc(studentRef);
+
+  let profile;
+  if (studentSnap.exists()) {
+    profile = { id: codeData.studentId, loginCode: code, ...studentSnap.data() };
+  } else {
+    profile = {
+      id:codeData.studentId, name:codeData.studentName||"Student",
+      fullName:codeData.studentName||"Student", substep:codeData.substep||"1.1",
+      groupId:codeData.groupId||"", xp:0, streak:0, avatarId:0,
+      lastLoginDate:"", completedLessons:[], assignedTasks:codeData.assignedTasks||[],
+      rewards:[], loginCode:code,
+    };
+    await setDoc(studentRef, { ...profile, createdAt: serverTimestamp() });
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if (profile.lastLoginDate !== today) {
+    const newStreak = profile.lastLoginDate === yesterday ? (profile.streak||0)+1 : 1;
+    profile.streak = newStreak; profile.lastLoginDate = today;
+    await setDoc(studentRef, {lastLoginDate:today, streak:newStreak}, {merge:true});
+  }
+  return profile;
+}
+
+// ─── SESSION ─────────────────────────────────────────────
+function saveSession(p) { try { localStorage.setItem(SESSION_KEY, JSON.stringify({profile:p})); } catch {} }
+function loadSession()   { try { const r=localStorage.getItem(SESSION_KEY); return r?JSON.parse(r):null; } catch{return null;} }
+function clearSession()  { localStorage.removeItem(SESSION_KEY); }
+
+// ─── RESPONSIVE HELPERS ──────────────────────────────────
+const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
+
+// ─── NAV ─────────────────────────────────────────────────
+const SCREENS = {home:"screenHome", map:"screenMap", games:"screenGames", rewards:"screenRewards"};
+let activeScreen = "home";
+
+function nav(id) {
+  activeScreen = id;
+  Object.entries(SCREENS).forEach(([key, sid]) => {
+    document.getElementById(sid)?.classList.toggle("active", key===id);
+  });
+  // Update mobile bottom nav
+  document.querySelectorAll(".bottom-nav button").forEach(btn => {
+    btn.classList.toggle("active", btn.id === "nav"+cap(id));
+  });
+  // Update sidebar nav
+  document.querySelectorAll(".sb-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.nav === id);
+  });
+  if (id==="map")     renderMap();
+  if (id==="games")   renderGamesFull();
+  if (id==="rewards") renderRewardsFull();
+}
+
+function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ─── BOOT ────────────────────────────────────────────────
+(function boot() {
+  // Mobile bottom nav
+  ["home","map","games","rewards"].forEach(id => {
+    document.getElementById("nav"+cap(id))?.addEventListener("click", ()=>nav(id));
+  });
+  // Sidebar nav
+  document.querySelectorAll(".sb-nav-btn").forEach(btn => {
+    btn.addEventListener("click", ()=>nav(btn.dataset.nav));
+  });
+  document.getElementById("pathwaySeeAll")?.addEventListener("click", ()=>nav("map"));
+  document.getElementById("loginBtn").addEventListener("click", handleLogin);
+  document.getElementById("codeInput").addEventListener("keydown", e=>{if(e.key==="Enter")handleLogin();});
+  document.getElementById("codeInput").addEventListener("input", function(){
+    this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  });
+  document.getElementById("sbLogout")?.addEventListener("click", logout);
+
+  // Auto-login from session
+  const session = loadSession();
+  if (session?.profile) {
+    student = session.profile;
+    if (student.id !== "demo") {
+      firestore().then(async ({db, doc, getDoc})=>{
+        const snap = await getDoc(doc(db,"students",student.id)).catch(()=>null);
+        if (snap?.exists()) {
+          student = {id:student.id, loginCode:student.loginCode, ...snap.data()};
+          saveSession(student);
+          renderHome();
+          updateSidebar();
+        }
+      });
+    }
+    enterApp();
+  }
+})();
+
+// ─── LOGIN ───────────────────────────────────────────────
+async function handleLogin() {
+  const input = document.getElementById("codeInput").value.trim();
+  const btn   = document.getElementById("loginBtn");
+  const err   = document.getElementById("loginError");
+  if (!input || input.length < 3) { err.textContent="Please enter your code"; return; }
+  err.textContent=""; btn.disabled=true; btn.textContent="Checking…";
+  try {
+    student = await resolveCode(input);
+    saveSession(student);
+    enterApp();
+  } catch(e) {
+    if (e.message==="CODE_NOT_FOUND") {
+      err.textContent="Code not found — ask your teacher for your code.";
+    } else {
+      err.textContent="Can't connect right now — loading demo mode.";
+      student={...DEMO, name:input};
+      saveSession(student);
+      setTimeout(enterApp, 900);
+    }
+  }
+  btn.disabled=false; btn.textContent="Let's go! →";
+}
+
+function enterApp() {
+  document.getElementById("screenLogin").classList.remove("active");
+  document.getElementById("mainLayout").classList.add("visible");
+  if (isDesktop()) {
+    document.getElementById("sidebar").style.display="flex";
+  } else {
+    document.getElementById("bottomNav").classList.add("visible");
+  }
+  nav("home");
+  renderHome();
+  updateSidebar();
+
+  // Handle resize between mobile/desktop
+  window.addEventListener("resize", handleResize, {passive:true});
+}
+
+function handleResize() {
+  const sb = document.getElementById("sidebar");
+  const bn = document.getElementById("bottomNav");
+  if (isDesktop()) {
+    sb.style.display="flex";
+    bn.classList.remove("visible");
+  } else {
+    sb.style.display="none";
+    bn.classList.add("visible");
+  }
+}
+
+function logout() {
+  clearSession();
+  student=null;
+  document.getElementById("mainLayout").classList.remove("visible");
+  document.getElementById("sidebar").style.display="none";
+  document.getElementById("bottomNav").classList.remove("visible");
+  document.getElementById("screenLogin").classList.add("active");
+  Object.values(SCREENS).forEach(sid => document.getElementById(sid)?.classList.remove("active"));
+  document.getElementById("codeInput").value="";
+  document.getElementById("loginError").textContent="";
+}
+
+// ─── SIDEBAR UPDATE ──────────────────────────────────────
+function updateSidebar() {
+  if (!student) return;
+  const p = student;
+  const step = STEPS.find(s=>s.id===parseInt(p.substep))||STEPS[0];
+  const xp = p.xp||0;
+  const milestone = Math.ceil((xp+1)/500)*500;
+  const pct = ((xp%500)/500*100).toFixed(1);
+
+  document.getElementById("sbAvatar").textContent   = AVATARS[p.avatarId||0];
+  document.getElementById("sbName").textContent     = p.name||"Student";
+  document.getElementById("sbSubstep").textContent  = `${step.icon} Step ${step.id} · Sub-step ${p.substep}`;
+  document.getElementById("sbStreakNum").textContent = p.streak||0;
+  document.getElementById("sbXpLabel").textContent  = `${xp.toLocaleString()} XP`;
+  document.getElementById("sbXpNext").textContent   = `→ ${milestone.toLocaleString()} XP`;
+  requestAnimationFrame(()=>{ document.getElementById("sbXpFill").style.width=pct+"%"; });
+}
+
+// ─── HOME ────────────────────────────────────────────────
+function renderHome() {
+  if (!student) return;
+  const p = student;
+  const step = STEPS.find(s=>s.id===parseInt(p.substep))||STEPS[0];
+
+  // Mobile header
+  document.getElementById("avatarBtn").textContent  = AVATARS[p.avatarId||0];
+  document.getElementById("headerName").textContent = p.name||"Student";
+  document.getElementById("headerSub").textContent  = `${step.icon} Step ${step.id} · Sub-step ${p.substep}`;
+  document.getElementById("streakNum").textContent  = p.streak||0;
+  const xp = p.xp||0;
+  const milestone = Math.ceil((xp+1)/500)*500;
+  const pct = ((xp%500)/500*100).toFixed(1);
+  document.getElementById("xpLabel").textContent     = `${xp.toLocaleString()} XP`;
+  document.getElementById("xpNextLabel").textContent = `Next reward: ${milestone.toLocaleString()} XP`;
+  document.getElementById("xpFill").style.background = step.color;
+  requestAnimationFrame(()=>{ document.getElementById("xpFill").style.width=pct+"%"; });
+
+  renderTasks();
+  renderPathwayMini();
+  renderHomeGames();
+  renderRewardsShelf();
+}
+
+// ─── TASKS ───────────────────────────────────────────────
+function renderTasks() {
+  const tasks = student.assignedTasks||[];
+  const el = document.getElementById("taskList");
+  if (!tasks.length) {
+    el.innerHTML=`<div class="empty-state">No quests yet — check back after your lesson! 🎓</div>`;
+    return;
+  }
+  el.innerHTML = tasks.map(t=>{
+    const badge = t.done
+      ? `<span class="task-badge badge-done">Done ✓</span>`
+      : t.isNew ? `<span class="task-badge badge-new">New!</span>`
+                : `<span class="task-badge badge-go">Go →</span>`;
+    return `<div class="task-card${t.done?" done":""}" data-tid="${esc(t.id)}">
+      <div class="task-ico" style="background:${t.iconBg||"#eee"}">${t.icon||"📋"}</div>
+      <div class="task-body">
+        <div class="task-name">${esc(t.title)}</div>
+        <div class="task-meta">${esc(t.meta||"")}</div>
+      </div>${badge}</div>`;
+  }).join("");
+  el.querySelectorAll(".task-card").forEach(c=>c.addEventListener("click",()=>doTask(c.dataset.tid)));
+}
+function doTask(tid) {
+  const t=(student.assignedTasks||[]).find(x=>x.id===tid);
+  if (!t) return;
+  if (t.type==="game"&&t.gameId){launchGame(t.gameId);return;}
+  alert(`"${t.title}" — lesson player coming soon! 🎓`);
+}
+
+// ─── PATHWAY MINI ────────────────────────────────────────
+function renderPathwayMini() {
+  const curIdx = ORDER.indexOf(student.substep);
+  const doneCount = (student.completedLessons||[]).filter(l=>l.startsWith(student.substep)).length;
+
+  const show=[];
+  if(curIdx>0) show.push({ss:SUBSTEPS[curIdx-1],state:"done"});
+  show.push({ss:SUBSTEPS[curIdx],state:"active"});
+  if(curIdx+1<ORDER.length) show.push({ss:SUBSTEPS[curIdx+1],state:"next"});
+  if(curIdx+2<ORDER.length) show.push({ss:SUBSTEPS[curIdx+2],state:"next"});
+
+  document.getElementById("pathwayMini").innerHTML = show.map(({ss,state})=>{
+    const s=STEPS.find(x=>x.id===ss.step)||STEPS[0];
+    const dotStyle=state==="active"?`background:${s.color};box-shadow:0 0 0 3px ${s.light}`:"";
+    const dot=state==="done"?"✓":state==="active"?ss.id:"🔒";
+    return `<div class="pathway-row">
+      <div class="p-dot ${state}" style="${dotStyle}">${dot}</div>
+      <div class="p-info">
+        <div class="p-label" style="color:${state==="active"?s.color:"var(--text)"}">
+          ${ss.id} — ${esc(ss.short)}</div>
+        ${state==="active"?`<div class="p-bar-wrap">
+          <div class="p-bar-track"><div class="p-bar-fill"
+            style="width:${Math.min(100,(doneCount/8)*100).toFixed(0)}%;background:${s.color}">
+          </div></div>
+          <div class="p-bar-label">${doneCount} of 8 lessons done</div>
+        </div>`:""}
+      </div></div>`;
+  }).join("");
+}
+
+// ─── HOME GAMES ──────────────────────────────────────────
+function renderHomeGames() {
+  const curIdx = ORDER.indexOf(student.substep);
+  document.getElementById("homeGames").innerHTML = GAMES.slice(0,4).map(g=>{
+    const locked=ORDER.indexOf(g.unlockAt)>curIdx;
+    return `<div class="game-tile${locked?" locked":""}" data-game="${g.id}">
+      ${locked?`<span class="g-lock">🔒</span>`:""}
+      <span class="g-emoji">${g.emoji}</span>
+      <div class="g-name">${g.name}</div>
+      <div class="g-sub">${locked?`Unlock at ${g.unlockAt}`:"Ready to play"}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".game-tile:not(.locked)").forEach(el=>{
+    el.addEventListener("click",()=>launchGame(el.dataset.game));
+  });
+}
+
+// ─── REWARDS SHELF ───────────────────────────────────────
+function renderRewardsShelf() {
+  const rewards=student.rewards||[];
+  const display=rewards.length&&typeof rewards[0]==="object"?rewards.slice(0,8):DEMO.rewards.slice(0,8);
+  document.getElementById("rewardsShelf").innerHTML=display.map(r=>{
+    const cls=r.isNew?"new-r":r.locked?"locked-r":"";
+    return `<div class="rew-item">
+      <div class="rew-ico ${cls}">${r.isNew?'<div class="rew-pip"></div>':""}${r.icon}</div>
+      <div class="rew-lbl">${esc(r.label)}</div>
+    </div>`;
+  }).join("");
+}
+
+// ─── MAP ─────────────────────────────────────────────────
+function renderMap() {
+  if (!student) return;
+  const curIdx=ORDER.indexOf(student.substep);
+  const el=document.getElementById("mapTree");
+  el.innerHTML="";
+
+  STEPS.forEach((step,si)=>{
+    const subs=SUBSTEPS.filter(s=>s.step===step.id);
+    const col=document.createElement("div"); col.className="m-step-col";
+    const hdr=document.createElement("div"); hdr.className="m-step-hdr";
+    hdr.innerHTML=`<div class="m-step-icon">${step.icon}</div>
+      <div><span class="m-step-badge" style="background:${step.light};color:${step.text}">
+        Step ${step.id}</span></div>
+      <div class="m-step-name">${step.name}</div>`;
+    col.appendChild(hdr);
+
+    const nc=document.createElement("div"); nc.className="m-nodes-col";
+    subs.forEach(ss=>{
+      const idx=ORDER.indexOf(ss.id);
+      const state=idx<curIdx?"m-done":idx===curIdx?"m-active":"m-locked";
+      const isMe=ss.id===student.substep;
+      const avs=(mapAvatarsBySubstep[ss.id]||[]).slice(0,5);
+      const node=document.createElement("div"); node.className=`m-node ${state}`;
+      if(state!=="m-locked"){
+        node.style.background=step.light;
+        node.style.borderColor=state==="m-done"?step.color+"88":step.color;
+      }
+      node.innerHTML=`
+        <div class="m-nid" style="color:${state==="m-locked"?"#a0a0c0":step.color}">${ss.id}</div>
+        <div class="m-ntitle" style="color:${state==="m-locked"?"#a0a0c0":""}">
+          ${isMe?"⭐ ":""}${esc(ss.short)}</div>
+        ${state==="m-locked"&&!avs.length?'<div style="font-size:12px;opacity:0.3;margin-top:2px">🔒</div>':""}
+        <div class="m-avs">${avs.map(a=>`<div class="m-av" style="background:${a.color}">${a.i}</div>`).join("")}</div>`;
+      nc.appendChild(node);
+    });
+
+    const allDone=subs.every(s=>ORDER.indexOf(s.id)<curIdx);
+    const boss=document.createElement("div"); boss.className="m-boss-wrap";
+    boss.innerHTML=`<div class="m-boss-node${allDone?"":" m-locked"}">
+      <div class="m-boss-icon">🏆</div>
+      <div class="m-boss-lbl">Step ${step.id} Trophy</div>
+    </div>`;
+    nc.appendChild(boss);
+    col.appendChild(nc);
+    el.appendChild(col);
+
+    if(si<STEPS.length-1){
+      const conn=document.createElement("div");
+      conn.className="m-conn"; conn.textContent="›";
+      el.appendChild(conn);
+    }
+  });
+
+  const stepNum=parseInt(student.substep);
+  setTimeout(()=>{
+    const col=el.children[(stepNum-1)*2];
+    col?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+  },120);
+}
+
+// ─── GAMES FULL ──────────────────────────────────────────
+function renderGamesFull() {
+  const curIdx=ORDER.indexOf(student.substep);
+  document.getElementById("gamesList").innerHTML=GAMES.map(g=>{
+    const locked=ORDER.indexOf(g.unlockAt)>curIdx;
+    return `<div class="game-row-card${locked?" g-locked":""}">
+      <div class="game-row-thumb">${g.emoji}</div>
+      <div class="game-row-info">
+        <div class="game-row-name">${g.name}</div>
+        <div class="game-row-desc">${g.desc}</div>
+        <button class="game-row-btn" data-game="${g.id}" ${locked?"disabled":""}>
+          ${locked?`🔒 Unlocks at ${g.unlockAt}`:"Play now →"}
+        </button>
+      </div></div>`;
+  }).join("");
+  document.querySelectorAll(".game-row-btn:not([disabled])").forEach(btn=>{
+    btn.addEventListener("click",()=>launchGame(btn.dataset.game));
+  });
+}
+
+function launchGame(id) {
+  if(id==="syllable-scoop")
+    window.open(`TeachToday.html?game=syllable-scoop&substep=${encodeURIComponent(student.substep)}`,"_blank");
+  else alert(`${GAMES.find(g=>g.id===id)?.name||"Game"} coming soon! 🚀`);
+}
+
+// ─── REWARDS FULL ────────────────────────────────────────
+function renderRewardsFull() {
+  const rewards=student.rewards||[];
+  const display=rewards.length&&typeof rewards[0]==="object"?rewards:DEMO.rewards;
+  const byCategory={};
+  display.forEach(r=>{
+    const cat=r.category||"Other";
+    if(!byCategory[cat]) byCategory[cat]=[];
+    byCategory[cat].push(r);
+  });
+  document.getElementById("rewardsBody").innerHTML=Object.entries(byCategory).map(([cat,items])=>`
+    <div class="rew-section-title">${cat}</div>
+    <div class="rew-grid">${items.map(r=>`
+      <div class="rew-full-item${r.locked?" locked-full":""}${r.isNew?" new-full":""}">
+        <div class="rew-full-ico">${r.icon}</div>
+        <div class="rew-full-name">${esc(r.label)}</div>
+        <div class="rew-full-desc">${r.locked?"Keep going!":r.isNew?"Just earned! 🎉":"Earned"}</div>
+      </div>`).join("")}
+    </div>`).join("");
+}
+
+// ─── UTIL ────────────────────────────────────────────────
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[c]);
+}
+
+</script>
+</body>
+</html>
