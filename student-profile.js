@@ -144,6 +144,7 @@ function render() {
   renderRows(records);
   renderDictationRows(dictationMisses);
   renderRecordingsSection(records);
+  renderSoundsDrillSection(student);
 }
 
 function dateKeyLocal(value) {

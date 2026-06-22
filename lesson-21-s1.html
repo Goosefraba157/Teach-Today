@@ -365,6 +365,8 @@
 
     /* ── STUDENT SELECTOR (Intro) ───────────────────────── */
     .stu-section { width:100%; max-width:340px; }
+    .stu-required-note { font-size:11px; font-weight:700; color:#FFD166; text-align:center;
+                         margin-top:6px; min-height:16px; }
     .stu-label   { font-size:10px; font-weight:800; color:rgba(255,255,255,.45);
                    text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
     .stu-chips   { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
@@ -529,12 +531,13 @@
 
   <!-- Student selector -->
   <div class="stu-section">
-    <div class="stu-label">Who's practicing?</div>
+    <div class="stu-label">Who's practicing? (tap a name to track progress)</div>
     <div class="stu-chips" id="stuChips"></div>
     <div class="stu-add-row" id="stuAddRow">
       <input class="stu-input" id="stuNameInput" placeholder="Student name…" maxlength="24">
       <button class="stu-add-btn" id="stuAddBtn">Add</button>
     </div>
+    <div class="stu-required-note" id="stuRequiredNote"></div>
   </div>
 
   <!-- Drill mode selector -->
@@ -1848,8 +1851,28 @@ async function startWholeDrillAnalysis() {
 
   const blob = await stopWholeDrillRecording();
 
+  // Persist audio in shared IndexedDB so student profile Recordings section can play it
+  if (blob && blob.size > 1000) {
+    await saveDrillAudio(currentSessionId, blob);
+  }
+
   // Grade from accumulated WSR texts (always available, even without AI)
   wholeDrillResults = gradeWholeDrillTranscript(wholeWSRTexts);
+
+  // Update the already-saved session with audio ID and confidence results
+  try {
+    const key      = 'teachToday_sessions';
+    const sessions = JSON.parse(localStorage.getItem(key) || '[]');
+    const pos      = sessions.findIndex(s => s.id === currentSessionId);
+    if (pos >= 0) {
+      sessions[pos].audioRecordingId  = blob?.size > 1000 ? currentSessionId : null;
+      sessions[pos].confidenceResults = wholeDrillResults;
+      sessions[pos].rawTranscript     = sessions[pos].rawTranscript ||
+        wholeWSRTexts.map(t => t.join(' ')).join(' | ');
+      localStorage.setItem(key, JSON.stringify(sessions));
+      crossWriteMasterRecord(sessions[pos]);
+    }
+  } catch(e) { console.warn('[WholeDrill] session audio update failed:', e.message); }
 
   showWholeDrillVictory(blob, wholeDrillResults);
 }
@@ -2197,6 +2220,82 @@ function buildCardRecord(card, i) {
   };
 }
 
+/* ── SHARED AUDIO INDEXEDDB (same DB as main TeachToday app) ─ */
+// DB: 'teachToday_audio', store: 'recordings' — key is the session/record ID.
+function openDrillAudioDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('teachToday_audio', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('recordings');
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveDrillAudio(id, blob) {
+  try {
+    const db = await openDrillAudioDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', 'readwrite');
+      tx.objectStore('recordings').put(blob, id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    console.log('[DrillAudio] saved to IndexedDB, id:', id);
+  } catch(e) { console.warn('[DrillAudio] IndexedDB save failed:', e.message); }
+}
+
+/* ── CROSS-WRITE TO MAIN APP masterRecords ───────────────────
+   Writes a 'soundsDrill' type record into dyslexiaInstructionEngine.v2
+   so the student profile page can display drill history.           */
+function crossWriteMasterRecord(session) {
+  try {
+    const MAIN_KEY = 'dyslexiaInstructionEngine.v2';
+    const appData  = JSON.parse(localStorage.getItem(MAIN_KEY) || '{}');
+    appData.masterRecords = appData.masterRecords || [];
+
+    // Remove any prior record with same session id to avoid duplicates on resave
+    const existing = appData.masterRecords.findIndex(r => r.id === session.id);
+    const record = {
+      id:              session.id,
+      type:            'soundsDrill',
+      date:            session.date,
+      displayDate:     new Date(session.date).toLocaleDateString(),
+      student:         session.studentName || 'Unknown',
+      studentId:       session.studentId   || null,
+      lesson:          session.lesson,
+      substep:         '2.1',
+      drillMode:       session.drillMode,
+      elapsed:         session.elapsed,
+      xp:              session.xp,
+      perfect:         session.perfect,
+      totalCards:      DRILL.length,
+      // Evidence fields — never overwritten after initial save
+      rawTranscript:   session.rawTranscript || '',
+      provider:        session.provider      || 'none',
+      confidenceResults: session.confidenceResults || [],
+      // Per-card detail (full evidence)
+      cards:           session.cards,
+      // Audio reference — points to IndexedDB 'teachToday_audio'/'recordings'
+      audioRecordingId: session.audioRecordingId || null,
+      audioFileName:    session.audioFileName    || null,
+      // Teacher data — preserved on resave
+      teacherNotes:    session.teacherNotes    || '',
+      teacherOverrides: session.teacherOverrides || {},
+    };
+    if (existing >= 0) {
+      // Preserve teacher annotations when resaving — never destroy original evidence
+      const prev = appData.masterRecords[existing];
+      record.teacherNotes    = prev.teacherNotes    || record.teacherNotes;
+      record.teacherOverrides = { ...record.teacherOverrides, ...prev.teacherOverrides };
+      // Preserve original transcript — never overwrite
+      record.rawTranscript   = prev.rawTranscript   || record.rawTranscript;
+      appData.masterRecords[existing] = record;
+    } else {
+      appData.masterRecords.push(record);
+    }
+    localStorage.setItem(MAIN_KEY, JSON.stringify(appData));
+  } catch(e) { console.warn('[CrossWrite] masterRecords update failed:', e.message); }
+}
+
 function saveSession(elapsed) {
   try {
     const stu  = getStudent(currentStudentId);
@@ -2210,12 +2309,30 @@ function saveSession(elapsed) {
       studentId:   currentStudentId   || null,
       studentName: stu ? stu.name     : 'Unknown',
       cards:       DRILL.map((card, i) => buildCardRecord(card, i)),
+      // Evidence fields — preserved permanently, never overwritten
+      drillMode:          drillMode,
+      provider:           providerStatus,
+      rawTranscript:      drillMode === 'whole-drill'
+                            ? wholeWSRTexts.map(t => t.join(' ')).join(' | ')
+                            : cardResults.map(r => r?.finalTranscript || '').join(' | '),
+      confidenceResults:  drillMode === 'whole-drill' ? wholeDrillResults : [],
+      audioRecordingId:   drillAudioBlob ? currentSessionId : null,
+      audioFileName:      drillAudioBlob ? (() => {
+        const ext = drillAudioBlob.type?.includes('ogg') ? 'ogg' : 'webm';
+        const d   = new Date().toISOString().slice(0,10);
+        const safeName = (s) => String(s||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+        return `${safeName(stu?.name||'student')}_s1_drill_${d}.${ext}`;
+      })() : null,
+      teacherNotes:       '',
+      teacherOverrides:   {},
     };
     const key      = 'teachToday_sessions';
     const existing = JSON.parse(localStorage.getItem(key) || '[]');
     existing.push(session);
     if (existing.length > 100) existing.splice(0, existing.length - 100);
     localStorage.setItem(key, JSON.stringify(existing));
+    // Cross-write into the main app's masterRecords so student profile can see it
+    crossWriteMasterRecord(session);
     console.log('[Session] saved:', session.date);
   } catch(e) {
     console.warn('[Session] could not save:', e.message);
@@ -2234,7 +2351,15 @@ function resaveSession() {
     sessions[pos].xp          = xp;
     sessions[pos].studentId   = currentStudentId   || null;
     sessions[pos].studentName = stu ? stu.name     : 'Unknown';
+    // Rebuild teacher overrides map so masterRecords stays in sync
+    sessions[pos].teacherOverrides = {};
+    DRILL.forEach((card, i) => {
+      const r = cardResults[i];
+      if (r?.teacherGrade) sessions[pos].teacherOverrides[card.id] = r.teacherGrade;
+    });
     localStorage.setItem(key, JSON.stringify(sessions));
+    // Keep masterRecords in sync with updated teacher overrides
+    crossWriteMasterRecord(sessions[pos]);
   } catch(e) { console.warn('[Session] resave failed:', e.message); }
 }
 
@@ -2745,6 +2870,18 @@ if (location.protocol === 'file:') {
 }
 
 document.getElementById('startBtn').addEventListener('click', async () => {
+  // Warn if no student selected (soft — drill still works)
+  if (!currentStudentId) {
+    const note = document.getElementById('stuRequiredNote');
+    note.textContent = '⚠️ No student selected — progress won\'t be saved to a profile';
+    setTimeout(() => { note.textContent = ''; }, 4000);
+  }
+
+  // Auto-enable mic if not already set up (user gesture = click, so getUserMedia is allowed)
+  if (!micPermitted && navigator.mediaDevices?.getUserMedia && location.protocol !== 'file:') {
+    await toggleMicSetting();
+  }
+
   startedAt = Date.now();
   wholeWSRTexts    = [];
   wholeDrillResults = [];
