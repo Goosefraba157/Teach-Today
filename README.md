@@ -10,6 +10,8 @@ For the live iPad-style lesson flow, open `TeachToday.html`.
 
 From Teach Today, use `Student profile` to open a separate student data tab.
 
+For patch testing, open `DeveloperDashboard.html` and unlock creator mode. The master menu entries live in `developer-menu-config.js`; add future pages, games, prototypes, or debug links to that one list and the dashboard will render them automatically. The access helper is `developer-access.js`, and installed/offline coverage is listed in `service-worker.js`.
+
 ## What it does
 
 - Stores groups, students, current substep, trouble spots, teacher notes, and past plans in the browser.

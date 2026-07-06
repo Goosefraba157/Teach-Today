@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css">
-    <link rel="stylesheet" href="student-profile.css?v=audio-speed-drive-1">
+    <link rel="stylesheet" href="student-profile.css?v=student-app-sync-1">
     <script src="app-nav.js" defer></script>
   </head>
   <body>
@@ -32,6 +32,7 @@
       </div>
       <div class="tt-header-spacer"></div>
       <div class="header-actions">
+        <button id="openStudentHome" type="button" class="tt-btn">Student home</button>
         <button id="connectDriveAudio" type="button" class="tt-btn">Google Drive</button>
         <button id="printProfile" type="button" class="tt-btn">Print</button>
         <button id="backTeach" type="button" class="tt-btn tt-btn-back" data-tt-app-back>← Teach Today</button>
@@ -51,6 +52,48 @@
           </div>
         </div>
         <div id="profileStudentButtons" class="profile-student-buttons"></div>
+      </section>
+
+      <nav class="profile-view-tabs" aria-label="Student profile views">
+        <button id="teacherDataTab" class="active" type="button">Teacher data</button>
+        <button id="studentAppTab" type="button">Student app</button>
+      </nav>
+
+      <section class="profile-card student-app-view" id="studentAppView" hidden>
+        <div class="student-app-view-head">
+          <div>
+            <span class="student-app-kicker">Connected student home</span>
+            <h2>Student App Progress</h2>
+            <p id="studentAppConnection">Open this tab to load the latest student activity.</p>
+          </div>
+          <button id="refreshStudentApp" class="profile-action-btn" type="button">Refresh</button>
+        </div>
+        <div class="student-app-metrics">
+          <article><strong id="studentAppXp">—</strong><span>Total XP</span></article>
+          <article><strong id="studentAppStreak">—</strong><span>Day streak</span></article>
+          <article><strong id="studentAppCompleted">—</strong><span>Completed</span></article>
+          <article><strong id="studentAppLastActive">—</strong><span>Last active</span></article>
+        </div>
+        <div class="student-app-grid">
+          <article>
+            <div class="section-title">
+              <h3>Activity & recordings</h3>
+              <p>Append-only evidence from the student app</p>
+            </div>
+            <div id="studentAppActivity" class="student-app-activity">
+              <p class="recordings-empty">No student-app activity loaded yet.</p>
+            </div>
+          </article>
+          <aside>
+            <div class="section-title">
+              <h3>Journey snapshot</h3>
+              <p>Assignments, lessons, and rewards</p>
+            </div>
+            <div id="studentAppJourney" class="student-app-journey">
+              <p class="recordings-empty">No journey data loaded yet.</p>
+            </div>
+          </aside>
+        </div>
       </section>
 
       <section class="profile-card comparison-card">
@@ -222,9 +265,12 @@
       </section>
 
       <section class="profile-card" id="soundsDrillSection">
-        <div class="section-title">
-          <h2>Section 1 — Sounds Quick Drill</h2>
-          <p>History from the student sound practice app</p>
+        <div class="section-title section-title-with-action">
+          <div>
+            <h2>Section 1 — Sounds Quick Drill</h2>
+            <p>History from the student sound practice app</p>
+          </div>
+          <button id="launchSoundsDrill" type="button" class="profile-action-btn">Open practice</button>
         </div>
         <div id="soundsDrillList" class="recordings-list">
           <p class="recordings-empty">No sounds drill sessions saved for this student yet.</p>
@@ -291,7 +337,7 @@
     </main>
 
     <script src="sofia-carbajal-chart-data.js"></script>
-    <script src="student-profile.js?v=audio-speed-drive-1"></script>
+    <script src="student-profile.js?v=student-app-sync-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

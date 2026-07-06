@@ -152,6 +152,7 @@
       const connectBox = $('lobbyConnect');
       const statusBar  = $('lobbyStatus');
       const playerList = $('lobbyPlayerList');
+      let lastConnectedStudent = '';
 
       // ── Auto-detect server when page is served from it ────────────────────
       // If the student opened this page via http://<mac>.local:8765 (not file://)
@@ -168,9 +169,15 @@
       // Inject "Online" button — show green dot badge when auto-served
       document.addEventListener('DOMContentLoaded', () => {
         injectOnlineBtn();
-        if (AUTO_WS) autoConnect();   // student opened the teacher's URL → connect silently
+        if (AUTO_WS) autoConnect();   // student opened the teacher's URL → connect silently once a name is selected
       });
       injectOnlineBtn();
+      window.addEventListener('teachToday:gameHubStudentChanged', () => {
+        if (AUTO_WS) setTimeout(autoConnect, 60);
+      });
+      document.addEventListener('click', e => {
+        if (AUTO_WS && e.target.closest('.student-card')) setTimeout(autoConnect, 120);
+      });
 
       function injectOnlineBtn() {
         const topActions = document.querySelector('.top-actions');
@@ -184,20 +191,15 @@
 
       // Auto-connect (silent, no lobby panel needed until student clicks Online)
       function autoConnect() {
-        const activeEl = document.getElementById('activeStudentName');
-        const name = activeEl?.textContent.trim() || 'Player';
-        const initials = name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
-        if (mp) return;
-        mp = new MultiplayerClient(AUTO_WS, name, initials);
+        const identity = getActiveStudentIdentity();
+        if (!identity) return;
+        if (mp && lastConnectedStudent === identity.name && mp.status !== 'disconnected') return;
+        if (mp) mp.disconnect();
+        lastConnectedStudent = identity.name;
+        mp = new MultiplayerClient(AUTO_WS, identity.name, identity.initials);
         wireCallbacks(mp);
         mp.connect();
         localStorage.setItem(STORAGE_KEY, AUTO_WS);
-        // Re-try if player name wasn't set yet (picked after DOM loaded)
-        document.addEventListener('click', e => {
-          if (e.target.classList.contains('student-card') && mp && mp.status !== 'lobby') {
-            setTimeout(() => { if (mp) { mp.disconnect(); } autoConnect(); }, 300);
-          }
-        });
       }
 
       // ── Lobby open/close ──────────────────────────────────────────────────
@@ -221,18 +223,19 @@
       $('serverUrlInput').addEventListener('keydown', e => { if (e.key === 'Enter') connectToServer(); });
 
       function connectToServer() {
-        let url = $('serverUrlInput').value.trim();
+        const identity = getActiveStudentIdentity();
+        if (!identity) {
+          showToast('Pick a student name first.', 'warn');
+          return;
+        }
+        let url = normalizeServerUrl($('serverUrlInput').value);
         if (!url) return;
-        if (!url.startsWith('ws')) url = 'ws://' + url.replace(/^http(s)?:\/\//, 'ws$1://');
         $('serverUrlInput').value = url;
         localStorage.setItem(STORAGE_KEY, url);
 
-        const activeEl = document.getElementById('activeStudentName');
-        const name = activeEl ? activeEl.textContent.trim() : 'Player';
-        const initials = name.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
-
         if (mp) mp.disconnect();
-        mp = new MultiplayerClient(url, name, initials);
+        lastConnectedStudent = identity.name;
+        mp = new MultiplayerClient(url, identity.name, identity.initials);
         wireCallbacks(mp);
         showStatus('Connecting…', 'connecting');
         mp.connect();
@@ -268,8 +271,8 @@
           showToast(`${byName} declined your invite.`, 'warn');
         };
         client.onGameStart = ({ roomId, role, host, guest, game }) => {
-          const activeEl = document.getElementById('activeStudentName');
-          const student  = activeEl ? encodeURIComponent(activeEl.textContent.trim()) : '';
+          const identity = getActiveStudentIdentity();
+          const student  = identity?.name || mp.playerName || '';
           const url = buildGameUrl(game, student, roomId, role,
             role === 'host' ? guest : host);
           lobby.classList.add('hidden');
@@ -300,6 +303,25 @@
           peerName: peer?.name || '',
         });
         return `${path}?${qs}`;
+      }
+
+      function getActiveStudentIdentity() {
+        const questScreen = document.getElementById('questScreen');
+        const activeEl = document.getElementById('activeStudentName');
+        const name = activeEl?.textContent.trim() || '';
+        if (!name || name === 'Student' || questScreen?.classList.contains('hidden')) return null;
+        return {
+          name,
+          initials: name.split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?'
+        };
+      }
+
+      function normalizeServerUrl(raw) {
+        const url = String(raw || '').trim();
+        if (!url) return '';
+        if (/^wss?:\/\//i.test(url)) return url;
+        if (/^https?:\/\//i.test(url)) return url.replace(/^http/i, 'ws');
+        return `ws://${url}`;
       }
 
       // ── Invite overlay ────────────────────────────────────────────────────

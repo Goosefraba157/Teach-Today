@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isTeacher() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function ownsStudent(studentId) {
+      return signedIn()
+        && firestore.get(/databases/(default)/documents/students/$(studentId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /student-activity/{studentId}/{activityId}/{fileName} {
+      allow read: if isTeacher() || ownsStudent(studentId);
+      allow write: if ownsStudent(studentId)
+        && request.resource.size < 50 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    match /users/{userId}/recordings/{allPaths=**} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+  }
+}

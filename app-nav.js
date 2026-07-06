@@ -1,6 +1,7 @@
 (function () {
   const RETURN_KEY = "teachToday.returnSpot.v1";
   const RESTORE_KEY = "teachToday.restoreSpot.v1";
+  const DEV_ACCESS_KEY = "teachToday.developerAccess.v1";
   const SAME_ORIGIN_PROTOCOLS = new Set(["http:", "https:", "file:"]);
 
   function scriptBaseUrl() {
@@ -57,6 +58,27 @@
     if (/\/Games\/(?!index\.html$)/.test(path)) return new URL("Games/index.html", APP_BASE).href;
     if (/\/(?:PdfViewer|ReferencePdfs)\.html$/.test(path)) return new URL("ReferencePdfs.html", APP_BASE).href;
     return new URL("TeachToday.html", APP_BASE).href;
+  }
+
+  function developerAccessEnabled() {
+    const params = new URLSearchParams(location.search || "");
+    if (params.get("developer") === "1" || params.get("dev") === "1" || params.get("creator") === "1") return true;
+    try {
+      const saved = JSON.parse(localStorage.getItem(DEV_ACCESS_KEY) || "null");
+      return saved?.enabled === true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function developerDashboardUrl() {
+    return new URL("DeveloperDashboard.html", APP_BASE).href;
+  }
+
+  function isDeveloperDashboard() {
+    const here = normalizeUrl(location.href);
+    const dashboard = normalizeUrl(developerDashboardUrl());
+    return here && dashboard && here.origin === dashboard.origin && here.pathname === dashboard.pathname;
   }
 
   function restoreIfNeeded() {
@@ -135,6 +157,16 @@
       button.innerHTML = `<span class="tt-app-back-icon" aria-hidden="true">‹</span><span>Back</span>`;
       if (document.body.dataset.appSurface === "game") button.classList.add("tt-game-back");
       document.body.appendChild(button);
+    }
+
+    if (developerAccessEnabled() && !isDeveloperDashboard() && !document.querySelector(".tt-dev-home")) {
+      const devHome = document.createElement("a");
+      devHome.className = "tt-dev-home";
+      devHome.href = developerDashboardUrl();
+      devHome.setAttribute("aria-label", "Go to developer dashboard");
+      devHome.textContent = "DEV";
+      if (document.body.dataset.appSurface === "game") devHome.classList.add("tt-game-dev-home");
+      document.body.appendChild(devHome);
     }
   }
 

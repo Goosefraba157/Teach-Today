@@ -11971,6 +11971,46 @@ function ttOpenStudentProfile() {
   location.href = url;
 }
 
+function ttHandleDeveloperRoute() {
+  const params = new URLSearchParams(location.search);
+  const route = String(params.get("devRoute") || "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+  if (!route || !window.TTDeveloperAccess?.isEnabled?.()) return;
+
+  if (route === "home" || route === "planner") {
+    ttShowHomeScreen();
+    return;
+  }
+
+  const targetMap = {
+    "lesson-flow": "",
+    "section1": "section1",
+    "section2": "section2",
+    "section3": "section3",
+    "section4": "section4",
+    "section5": "section5",
+    "section6": "section6",
+    "section7": "section7",
+    "section8": "section8",
+    "section9": "section9",
+    "section10": "section10",
+    "wrap-up": "ttWrapUpPanel",
+    "exports": "",
+    "records": ""
+  };
+  if (!(route in targetMap)) return;
+
+  const afterOpen = () => {
+    if (route === "records") {
+      const panel = ttById("ttDataPanel");
+      if (panel?.hidden) ttById("ttDataToggle")?.click();
+    }
+    if (route === "exports") ttById("ttPdfPlan")?.focus();
+  };
+
+  if (route === "wrap-up") ttRenderWrapUpPanel(ttActiveGroup(), ttLesson);
+  ttOpenTeachFlow({ targetId: targetMap[route], transition: false, afterOpen });
+}
+
 const ttLoadedPlan = ttLoadPlanFromUrl();
 ttLoadedPlan || ttLoadDraftLesson() || ttBuildLesson();
 ttInitCloudSync();
@@ -11980,3 +12020,4 @@ ttBind();
 window.addEventListener("beforeunload", ttFinalizeActivePassageStroke);
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
+ttHandleDeveloperRoute();

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Teach Today Developer Dashboard</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css">
+    <link rel="stylesheet" href="developer-dashboard.css">
+    <script src="app-nav.js?v=dev-dashboard-1" defer></script>
+  </head>
+  <body>
+    <main class="dev-shell">
+      <section id="devAccessGate" class="access-gate" aria-labelledby="accessTitle">
+        <div class="access-card">
+          <div class="access-brand">
+            <img src="assets/morrocoy-logo.png" alt="">
+            <div>
+              <p class="kicker">Creator access</p>
+              <h1 id="accessTitle">Developer Menu</h1>
+            </div>
+          </div>
+          <p class="access-copy">Unlock the master testing menu for this browser. Student and teacher entry points stay on their normal routes.</p>
+          <div class="access-form">
+            <label for="developerCode">
+              Access code
+              <input id="developerCode" type="password" autocomplete="off" spellcheck="false" placeholder="Enter creator code">
+            </label>
+            <button id="unlockDevMode" class="primary-action" type="button">Unlock dashboard</button>
+            <p id="accessError" class="access-error" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="devDashboard" class="dev-dashboard" hidden>
+        <header class="dev-topbar">
+          <div class="dev-brand">
+            <img src="assets/morrocoy-logo.png" alt="">
+            <div>
+              <p class="kicker">Teach Today</p>
+              <h1>Developer Dashboard</h1>
+            </div>
+          </div>
+          <div class="dev-meta">
+            <span id="sessionLabel" class="session-pill">Creator mode</span>
+            <a class="secondary-action" href="TeachToday.html">Teacher home</a>
+            <button id="lockDevMode" class="secondary-action" type="button">Lock</button>
+          </div>
+        </header>
+
+        <section class="toolbar-panel" aria-label="Developer menu controls">
+          <div class="search-wrap">
+            <label for="menuSearch">
+              Search sections
+              <input id="menuSearch" type="search" autocomplete="off" placeholder="Search games, Section 9, reports, PDFs, tests">
+            </label>
+          </div>
+          <div id="menuFilters" class="filter-row" aria-label="Filter menu groups"></div>
+        </section>
+
+        <div id="developerMenu" class="section-stack"></div>
+        <div id="emptyResults" class="empty-results" hidden>No matching developer links.</div>
+
+        <footer class="dev-footer">
+          Route: <strong>DeveloperDashboard.html</strong>. Menu entries live in <strong>developer-menu-config.js</strong>; add future sections there and the dashboard will render them automatically.
+        </footer>
+      </section>
+    </main>
+
+    <script src="developer-access.js"></script>
+    <script src="developer-menu-config.js"></script>
+    <script src="developer-dashboard.js"></script>
+  </body>
+</html>

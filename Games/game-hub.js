@@ -10,7 +10,8 @@
     "Alesander", "Linda", "Joshua", "Jayden C.", "Jayden D.", "Aileen",
     "Davonte", "Bethany", "Ayden", "Jedediah", "Makayla", "Rodrigo",
     "Diomedes", "Alberto", "Ta'Marrion", "Jesus", "Madison", "Xavier",
-    "Allison", "Jade", "Julianna", "Robert", "Jose", "Jerson", "Yeici", "Katy"
+    "Allison", "Jade", "Julianna", "Robert", "Jose", "Jerson", "Yeici", "Katy",
+    "Maya", "Eli", "Jordan"
   ];
 
   const dom = {
@@ -233,6 +234,9 @@
     hub.students[id].lastPlayedAt = new Date().toISOString();
     saveHub();
     render();
+    window.dispatchEvent(new CustomEvent("teachToday:gameHubStudentChanged", {
+      detail: { student: hub.students[id] }
+    }));
   }
 
   function addStudentFromInput() {

@@ -108,8 +108,28 @@
     .section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
 
     /* Task cards */
+    .quest-board { display: flex; flex-direction: column; gap: 14px; }
+    .quest-lane { min-width: 0; }
+    .quest-lane + .quest-lane { border-top: 1px solid var(--border); padding-top: 13px; }
+    .quest-lane-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+    .quest-lane-icon { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .quest-lane-main .quest-lane-icon { background: var(--brand); color: #fff; box-shadow: 0 4px 10px rgba(83,74,183,0.2); }
+    .quest-lane-side .quest-lane-icon { background: var(--gold-light); color: #633806; }
+    .quest-lane-copy { flex: 1; min-width: 0; }
+    .quest-lane-title { font-size: 12px; font-weight: 800; color: var(--text); }
+    .quest-lane-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; line-height: 1.3; }
+    .quest-progress { background: var(--brand-light); color: var(--brand-text); padding: 4px 8px; border-radius: 100px; font-size: 9px; font-weight: 800; white-space: nowrap; }
+    .developer-pill { background: #FFF0C8; color: #734D00; border: 1px solid #F0C45C; padding: 4px 8px; border-radius: 100px; font-size: 9px; font-weight: 800; white-space: nowrap; }
     .task-list { display: flex; flex-direction: column; gap: 8px; }
-    .task-card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: var(--shadow); }
+    .quest-route { position: relative; padding-left: 20px; }
+    .quest-route::before { content: ""; position: absolute; left: 7px; top: 18px; bottom: 18px; width: 2px; border-radius: 2px; background: #D8D5F5; }
+    .task-card { position: relative; background: var(--card); border-radius: 14px; border: 1px solid var(--border); padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: var(--shadow); }
+    .quest-route .task-card::before { content: ""; position: absolute; left: -18px; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--card); border: 3px solid var(--brand-mid); transform: translateY(-50%); z-index: 1; }
+    .quest-route .task-card.done::before { background: #C0DD97; border-color: #6A9A2D; }
+    .quest-lane-main .task-card:not(.done) { border-color: rgba(83,74,183,0.24); }
+    .quest-lane-side .task-card { box-shadow: none; background: rgba(255,255,255,0.78); }
+    .task-card.locked { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+    .task-card.locked:hover { transform: none; box-shadow: none; }
     .task-card:active, .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(83,74,183,0.14); }
     .task-card.done { opacity: 0.65; }
     .task-ico { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
@@ -515,6 +535,10 @@
   </div><!-- /mainLayout -->
 </div><!-- /app -->
 
+<script src="student-activity-sync.js"></script>
+<script src="student-developer-access.js"></script>
+<script src="student-lesson-data.js"></script>
+<script src="student-lesson-progress.js"></script>
 <script type="module">
 
 // ─── CONFIG ──────────────────────────────────────────────
@@ -638,20 +662,27 @@ let fb = null;
 // ─── FIREBASE ────────────────────────────────────────────
 async function firestore() {
   if (fb) return fb;
-  const [appMod, fsMod] = await Promise.all([
+  const [appMod, fsMod, authMod] = await Promise.all([
     import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-app.js`),
     import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-firestore.js`),
+    import(`https://www.gstatic.com/firebasejs/${SDK}/firebase-auth.js`),
   ]);
-  const app = appMod.initializeApp(FIREBASE_CONFIG);
-  fb = { db: fsMod.getFirestore(app), ...fsMod };
+  const app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(FIREBASE_CONFIG);
+  const auth = authMod.getAuth(app);
+  if (!auth.currentUser) await authMod.signInAnonymously(auth);
+  fb = { db: fsMod.getFirestore(app), auth, ...fsMod, ...authMod };
   return fb;
+}
+
+function studentLinkId(groupId, name) {
+  return `${groupId || "group"}__${String(name || "student").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 }
 
 async function resolveCode(rawCode) {
   const code = rawCode.trim().toUpperCase();
   if (code === "DEMO") return { ...DEMO };
 
-  const { db, doc, getDoc, setDoc, serverTimestamp } = await firestore();
+  const { db, auth, doc, getDoc, setDoc, serverTimestamp } = await firestore();
   const codeSnap = await getDoc(doc(db, "studentCodes", code));
   if (!codeSnap.exists() || codeSnap.data().active === false) throw new Error("CODE_NOT_FOUND");
 
@@ -662,16 +693,27 @@ async function resolveCode(rawCode) {
   let profile;
   if (studentSnap.exists()) {
     profile = { id: codeData.studentId, loginCode: code, ...studentSnap.data() };
+    if (!profile.ownerUid) {
+      profile.ownerUid = auth.currentUser.uid;
+      await setDoc(studentRef, { ownerUid: profile.ownerUid }, { merge: true });
+    }
   } else {
     profile = {
       id:codeData.studentId, name:codeData.studentName||"Student",
       fullName:codeData.studentName||"Student", substep:codeData.substep||"1.1",
       groupId:codeData.groupId||"", xp:0, streak:0, avatarId:0,
       lastLoginDate:"", completedLessons:[], assignedTasks:codeData.assignedTasks||[],
-      rewards:[], loginCode:code,
+      rewards:[], loginCode:code, ownerUid:auth.currentUser.uid,
     };
     await setDoc(studentRef, { ...profile, createdAt: serverTimestamp() });
   }
+  await setDoc(doc(db, "studentLinks", studentLinkId(profile.groupId, profile.name)), {
+    studentId: profile.id,
+    studentName: profile.name,
+    groupId: profile.groupId || "",
+    ownerUid: auth.currentUser.uid,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 
   const today = new Date().toISOString().slice(0,10);
   const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
@@ -687,6 +729,32 @@ async function resolveCode(rawCode) {
 function saveSession(p) { try { localStorage.setItem(SESSION_KEY, JSON.stringify({profile:p})); } catch {} }
 function loadSession()   { try { const r=localStorage.getItem(SESSION_KEY); return r?JSON.parse(r):null; } catch{return null;} }
 function clearSession()  { localStorage.removeItem(SESSION_KEY); }
+
+function teacherPreviewProfile() {
+  const query = new URLSearchParams(location.search);
+  if (query.get("preview") !== "1" || !query.get("student")) return null;
+  const name = query.get("student");
+  const groupId = query.get("group") || "";
+  let group = null;
+  try {
+    const appData = JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}");
+    group = (appData.groups || []).find((item) => item.id === groupId) || null;
+  } catch {}
+  return {
+    id: `local:${groupId || "group"}:${name}`,
+    name,
+    fullName: name,
+    groupId,
+    groupName: group?.name || "",
+    substep: query.get("substep") || group?.substep || "2.1",
+    xp: 0,
+    streak: 0,
+    avatarId: 0,
+    completedLessons: [],
+    assignedTasks: [],
+    rewards: []
+  };
+}
 
 // ─── RESPONSIVE HELPERS ──────────────────────────────────
 const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
@@ -732,6 +800,14 @@ function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
     this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,"");
   });
   document.getElementById("sbLogout")?.addEventListener("click", logout);
+
+  // Teacher preview arrives from a student's profile and skips the code screen.
+  const preview = teacherPreviewProfile();
+  if (preview) {
+    student = preview;
+    enterApp();
+    return;
+  }
 
   // Auto-login from session
   const session = loadSession();
@@ -787,6 +863,7 @@ function enterApp() {
   nav("home");
   renderHome();
   updateSidebar();
+  window.TTStudentActivity?.flush({ profile: student }).catch(() => {});
 
   // Handle resize between mobile/desktop
   window.addEventListener("resize", handleResize, {passive:true});
@@ -861,48 +938,174 @@ function renderHome() {
 
 // ─── TASKS ───────────────────────────────────────────────
 function renderTasks() {
-  const tasks = student.assignedTasks||[];
+  let tasks = [...(student.assignedTasks || [])];
+  let pathSummary = null;
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
+  let lessonConfig = null;
+  if (window.TTStudentLessonData && window.TTStudentLessonProgress) {
+    lessonConfig = window.TTStudentLessonData.getSubstep(student.substep)
+      || (developerAccess ? window.TTStudentLessonData.listSubsteps()[0] : null);
+  }
+  if (lessonConfig) {
+    const lessonSubstepId = lessonConfig.substepId;
+    const testingAnotherSubstep = lessonSubstepId !== student.substep;
+    const lessonState = window.TTStudentLessonProgress.load(student.id, student);
+    const progress = window.TTStudentLessonProgress.getSubstep(lessonState, lessonSubstepId);
+    pathSummary = window.TTStudentLessonProgress.summary(lessonState, lessonConfig);
+    const setTasks = lessonConfig.heroPath.lessonSets.map((set, index, sets) => {
+      const completed = progress.completedSets.includes(set.setId);
+      const naturallyUnlocked = index === 0 || progress.completedSets.includes(sets[index - 1].setId);
+      const unlocked = developerAccess || naturallyUnlocked;
+      const completedActivities = set.activities.filter((activity) => progress.completedActivities.includes(activity.id)).length;
+      return {
+        id: `hero-set:${lessonSubstepId}:${set.setId}`,
+        type: "lesson",
+        questPath: "main",
+        icon: set.icon,
+        iconBg: `${set.color}18`,
+        title: `Set ${set.number}: ${set.title}`,
+        meta: completed ? "Set cleared · Replay anytime" : testingAnotherSubstep ? `${completedActivities} of ${set.activities.length} activities · Test Step ${lessonSubstepId}` : developerAccess && !naturallyUnlocked ? `${completedActivities} of ${set.activities.length} activities · Developer access` : unlocked ? `${completedActivities} of ${set.activities.length} activities · Continue` : "Complete the previous set to unlock",
+        done: completed,
+        locked: !unlocked,
+        developerUnlocked: developerAccess && !naturallyUnlocked,
+        setId: set.setId
+      };
+    });
+    const drillTask = {
+      id: `drill-path:${lessonSubstepId}`,
+      type: "practice",
+      questPath: "side",
+      icon: "⚡",
+      iconBg: "#E6F1FB",
+      title: "Power-Up Loop",
+      meta: `${testingAnotherSubstep ? `Step ${lessonSubstepId} Developer Lab` : pathSummary.masteryStatus} · Adaptive practice available`,
+      done: false
+    };
+    const legacyTitles = /sounds quick drill|blending with welded sounds/i;
+    tasks = tasks.filter((task) => !(task.lessonId === "sounds-2.1" || legacyTitles.test(task.title || "")));
+    tasks = [...setTasks, drillTask, ...tasks];
+  }
   const el = document.getElementById("taskList");
   if (!tasks.length) {
     el.innerHTML=`<div class="empty-state">No quests yet — check back after your lesson! 🎓</div>`;
     return;
   }
-  el.innerHTML = tasks.map(t=>{
+  const renderTask = (t) => {
     const badge = t.done
       ? `<span class="task-badge badge-done">Done ✓</span>`
+      : t.locked ? `<span class="task-badge">🔒</span>`
       : t.isNew ? `<span class="task-badge badge-new">New!</span>`
                 : `<span class="task-badge badge-go">Go →</span>`;
-    return `<div class="task-card${t.done?" done":""}" data-tid="${esc(t.id)}">
+    return `<div class="task-card${t.done?" done":""}${t.locked?" locked":""}" data-tid="${esc(t.id)}" role="button" tabindex="${t.locked?"-1":"0"}" aria-disabled="${t.locked?"true":"false"}">
       <div class="task-ico" style="background:${t.iconBg||"#eee"}">${t.icon||"📋"}</div>
       <div class="task-body">
         <div class="task-name">${esc(t.title)}</div>
         <div class="task-meta">${esc(t.meta||"")}</div>
       </div>${badge}</div>`;
-  }).join("");
-  el.querySelectorAll(".task-card").forEach(c=>c.addEventListener("click",()=>doTask(c.dataset.tid)));
+  };
+  const mainQuests = tasks.filter((task) => task.questPath === "main" || (!task.questPath && task.type === "lesson"));
+  const sideQuests = tasks.filter((task) => !mainQuests.includes(task));
+  const mainDone = mainQuests.filter((task) => task.done).length;
+  const lanes = [];
+  if (mainQuests.length) {
+    lanes.push(`<section class="quest-lane quest-lane-main" aria-labelledby="mainQuestTitle">
+      <div class="quest-lane-head">
+        <div class="quest-lane-icon" aria-hidden="true">⚑</div>
+        <div class="quest-lane-copy">
+          <div class="quest-lane-title" id="mainQuestTitle">Hero's Path${lessonConfig && lessonConfig.substepId !== student.substep ? ` · Step ${esc(lessonConfig.substepId)}` : ""}</div>
+          <div class="quest-lane-sub">${developerAccess && lessonConfig?.substepId !== student.substep ? `Developer Lab · your assigned Sub-step ${esc(student.substep)} is unchanged` : developerAccess ? "Developer access · all lesson sets are open" : `Required lessons for Sub-step ${esc(student.substep)}`}</div>
+        </div>
+        ${developerAccess ? '<div class="developer-pill">🧪 All open</div>' : ""}
+        <div class="quest-progress">${mainDone} of ${mainQuests.length} complete</div>
+      </div>
+      <div class="task-list quest-route">${mainQuests.map(renderTask).join("")}</div>
+    </section>`);
+  }
+  if (sideQuests.length) {
+    lanes.push(`<section class="quest-lane quest-lane-side" aria-labelledby="sideQuestTitle">
+      <div class="quest-lane-head">
+        <div class="quest-lane-icon" aria-hidden="true">✦</div>
+        <div class="quest-lane-copy">
+          <div class="quest-lane-title" id="sideQuestTitle">Side Quests</div>
+          <div class="quest-lane-sub">Extra practice and teacher challenges</div>
+        </div>
+      </div>
+      <div class="task-list">${sideQuests.map(renderTask).join("")}</div>
+    </section>`);
+  }
+  el.innerHTML = `<div class="quest-board">${lanes.join("")}</div>`;
+  el.querySelectorAll(".task-card:not(.locked)").forEach(c=>{
+    c.addEventListener("click",()=>doTask(c.dataset.tid));
+    c.addEventListener("keydown",(event)=>{
+      if(event.key==="Enter"||event.key===" "){event.preventDefault();doTask(c.dataset.tid);}
+    });
+  });
 }
 function doTask(tid) {
-  const t=(student.assignedTasks||[]).find(x=>x.id===tid);
+  if (tid.startsWith("hero-set:")) {
+    const [, lessonSubstepId, setId] = tid.split(":");
+    launchStudentLesson("hero", setId, lessonSubstepId);
+    return;
+  }
+  if (tid.startsWith("drill-path:")) { launchStudentLesson("drill", "", tid.split(":")[1]); return; }
+  const t = tid === "sounds-2.1"
+    ? { id: tid, type: "lesson", lessonId: "sounds-2.1", title: "Sounds Quick Drill" }
+    : (student.assignedTasks || []).find((item) => item.id === tid);
   if (!t) return;
+  if (t.lessonId === "sounds-2.1") { launchSoundsDrill(); return; }
   if (t.type==="game"&&t.gameId){launchGame(t.gameId);return;}
   alert(`"${t.title}" — lesson player coming soon! 🎓`);
+}
+
+function launchStudentLesson(route, setId="", lessonSubstepId="") {
+  const url = new URL("student-lesson.html", location.href);
+  url.searchParams.set("substep", lessonSubstepId || student.substep || "2.1");
+  url.searchParams.set("route", route);
+  if (setId) url.searchParams.set("set", setId);
+  if (window.TTStudentDeveloperAccess?.isEnabled(student)) url.searchParams.set("developer", "1");
+  url.searchParams.set("studentId", student.id || "");
+  url.searchParams.set("student", student.name || "Student");
+  url.searchParams.set("group", student.groupId || "");
+  url.searchParams.set("groupName", student.groupName || "");
+  url.searchParams.set("return", `${location.pathname.split("/").pop() || "student.html"}${location.search}`);
+  location.href = url.href;
+}
+
+function launchSoundsDrill() {
+  const url = new URL("lesson-21-s1.html", location.href);
+  url.searchParams.set("studentId", student.id || "");
+  url.searchParams.set("student", student.name || "Student");
+  url.searchParams.set("group", student.groupId || "");
+  url.searchParams.set("groupName", student.groupName || "");
+  url.searchParams.set("source", "student-home");
+  url.searchParams.set("return", `${location.pathname.split("/").pop() || "student.html"}${location.search}`);
+  location.href = url.href;
 }
 
 // ─── PATHWAY MINI ────────────────────────────────────────
 function renderPathwayMini() {
   const curIdx = ORDER.indexOf(student.substep);
-  const doneCount = (student.completedLessons||[]).filter(l=>l.startsWith(student.substep)).length;
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
+  let doneCount = (student.completedLessons||[]).filter(l=>l.startsWith(student.substep)).length;
+  let lessonTotal = 8;
+  if (student.substep === "2.1" && window.TTStudentLessonData && window.TTStudentLessonProgress) {
+    const lessonConfig = window.TTStudentLessonData.getSubstep("2.1");
+    const lessonState = window.TTStudentLessonProgress.load(student.id, student);
+    const summary = window.TTStudentLessonProgress.summary(lessonState, lessonConfig);
+    doneCount = summary.completedActivities;
+    lessonTotal = summary.totalActivities;
+  }
 
   const show=[];
   if(curIdx>0) show.push({ss:SUBSTEPS[curIdx-1],state:"done"});
   show.push({ss:SUBSTEPS[curIdx],state:"active"});
-  if(curIdx+1<ORDER.length) show.push({ss:SUBSTEPS[curIdx+1],state:"next"});
-  if(curIdx+2<ORDER.length) show.push({ss:SUBSTEPS[curIdx+2],state:"next"});
+  if(curIdx+1<ORDER.length) show.push({ss:SUBSTEPS[curIdx+1],state:developerAccess?"dev":"next"});
+  if(curIdx+2<ORDER.length) show.push({ss:SUBSTEPS[curIdx+2],state:developerAccess?"dev":"next"});
 
   document.getElementById("pathwayMini").innerHTML = show.map(({ss,state})=>{
     const s=STEPS.find(x=>x.id===ss.step)||STEPS[0];
     const dotStyle=state==="active"?`background:${s.color};box-shadow:0 0 0 3px ${s.light}`:"";
-    const dot=state==="done"?"✓":state==="active"?ss.id:"🔒";
+    const dot=state==="done"?"✓":state==="active"?ss.id:state==="dev"?"🧪":"🔒";
     return `<div class="pathway-row">
       <div class="p-dot ${state}" style="${dotStyle}">${dot}</div>
       <div class="p-info">
@@ -910,9 +1113,9 @@ function renderPathwayMini() {
           ${ss.id} — ${esc(ss.short)}</div>
         ${state==="active"?`<div class="p-bar-wrap">
           <div class="p-bar-track"><div class="p-bar-fill"
-            style="width:${Math.min(100,(doneCount/8)*100).toFixed(0)}%;background:${s.color}">
+            style="width:${Math.min(100,(doneCount/lessonTotal)*100).toFixed(0)}%;background:${s.color}">
           </div></div>
-          <div class="p-bar-label">${doneCount} of 8 lessons done</div>
+          <div class="p-bar-label">${doneCount} of ${lessonTotal} activities done</div>
         </div>`:""}
       </div></div>`;
   }).join("");
@@ -921,13 +1124,14 @@ function renderPathwayMini() {
 // ─── HOME GAMES ──────────────────────────────────────────
 function renderHomeGames() {
   const curIdx = ORDER.indexOf(student.substep);
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
   document.getElementById("homeGames").innerHTML = GAMES.slice(0,4).map(g=>{
-    const locked=ORDER.indexOf(g.unlockAt)>curIdx;
+    const locked=!developerAccess&&ORDER.indexOf(g.unlockAt)>curIdx;
     return `<div class="game-tile${locked?" locked":""}" data-game="${g.id}">
       ${locked?`<span class="g-lock">🔒</span>`:""}
       <span class="g-emoji">${g.emoji}</span>
       <div class="g-name">${g.name}</div>
-      <div class="g-sub">${locked?`Unlock at ${g.unlockAt}`:"Ready to play"}</div>
+      <div class="g-sub">${locked?`Unlock at ${g.unlockAt}`:developerAccess&&ORDER.indexOf(g.unlockAt)>curIdx?"Developer access":"Ready to play"}</div>
     </div>`;
   }).join("");
   document.querySelectorAll(".game-tile:not(.locked)").forEach(el=>{
@@ -938,9 +1142,10 @@ function renderHomeGames() {
 // ─── REWARDS SHELF ───────────────────────────────────────
 function renderRewardsShelf() {
   const rewards=student.rewards||[];
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
   const display=rewards.length&&typeof rewards[0]==="object"?rewards.slice(0,8):DEMO.rewards.slice(0,8);
   document.getElementById("rewardsShelf").innerHTML=display.map(r=>{
-    const cls=r.isNew?"new-r":r.locked?"locked-r":"";
+    const cls=r.isNew?"new-r":r.locked&&!developerAccess?"locked-r":"";
     return `<div class="rew-item">
       <div class="rew-ico ${cls}">${r.isNew?'<div class="rew-pip"></div>':""}${r.icon}</div>
       <div class="rew-lbl">${esc(r.label)}</div>
@@ -952,6 +1157,7 @@ function renderRewardsShelf() {
 function renderMap() {
   if (!student) return;
   const curIdx=ORDER.indexOf(student.substep);
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
   const el=document.getElementById("mapTree");
   el.innerHTML="";
 
@@ -968,28 +1174,37 @@ function renderMap() {
     const nc=document.createElement("div"); nc.className="m-nodes-col";
     subs.forEach(ss=>{
       const idx=ORDER.indexOf(ss.id);
-      const state=idx<curIdx?"m-done":idx===curIdx?"m-active":"m-locked";
+      const state=idx<curIdx?"m-done":idx===curIdx?"m-active":developerAccess?"m-dev":"m-locked";
       const isMe=ss.id===student.substep;
       const avs=(mapAvatarsBySubstep[ss.id]||[]).slice(0,5);
       const node=document.createElement("div"); node.className=`m-node ${state}`;
       if(state!=="m-locked"){
         node.style.background=step.light;
         node.style.borderColor=state==="m-done"?step.color+"88":step.color;
+        if(state==="m-dev") node.style.borderStyle="dashed";
       }
       node.innerHTML=`
         <div class="m-nid" style="color:${state==="m-locked"?"#a0a0c0":step.color}">${ss.id}</div>
         <div class="m-ntitle" style="color:${state==="m-locked"?"#a0a0c0":""}">
-          ${isMe?"⭐ ":""}${esc(ss.short)}</div>
+          ${isMe?"⭐ ":state==="m-dev"?"🧪 ":""}${esc(ss.short)}</div>
         ${state==="m-locked"&&!avs.length?'<div style="font-size:12px;opacity:0.3;margin-top:2px">🔒</div>':""}
         <div class="m-avs">${avs.map(a=>`<div class="m-av" style="background:${a.color}">${a.i}</div>`).join("")}</div>`;
+      if(developerAccess){
+        node.setAttribute("role","button");
+        node.tabIndex=0;
+        node.title=`Open Sub-step ${ss.id} developer shell`;
+        const openNode=()=>launchStudentLesson("hero","",ss.id);
+        node.addEventListener("click",openNode);
+        node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openNode();}});
+      }
       nc.appendChild(node);
     });
 
     const allDone=subs.every(s=>ORDER.indexOf(s.id)<curIdx);
     const boss=document.createElement("div"); boss.className="m-boss-wrap";
-    boss.innerHTML=`<div class="m-boss-node${allDone?"":" m-locked"}">
+    boss.innerHTML=`<div class="m-boss-node${allDone||developerAccess?"":" m-locked"}">
       <div class="m-boss-icon">🏆</div>
-      <div class="m-boss-lbl">Step ${step.id} Trophy</div>
+      <div class="m-boss-lbl">${developerAccess&&!allDone?"🧪 ":""}Step ${step.id} Trophy</div>
     </div>`;
     nc.appendChild(boss);
     col.appendChild(nc);
@@ -1012,15 +1227,16 @@ function renderMap() {
 // ─── GAMES FULL ──────────────────────────────────────────
 function renderGamesFull() {
   const curIdx=ORDER.indexOf(student.substep);
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
   document.getElementById("gamesList").innerHTML=GAMES.map(g=>{
-    const locked=ORDER.indexOf(g.unlockAt)>curIdx;
+    const locked=!developerAccess&&ORDER.indexOf(g.unlockAt)>curIdx;
     return `<div class="game-row-card${locked?" g-locked":""}">
       <div class="game-row-thumb">${g.emoji}</div>
       <div class="game-row-info">
         <div class="game-row-name">${g.name}</div>
         <div class="game-row-desc">${g.desc}</div>
         <button class="game-row-btn" data-game="${g.id}" ${locked?"disabled":""}>
-          ${locked?`🔒 Unlocks at ${g.unlockAt}`:"Play now →"}
+          ${locked?`🔒 Unlocks at ${g.unlockAt}`:developerAccess&&ORDER.indexOf(g.unlockAt)>curIdx?"🧪 Test now →":"Play now →"}
         </button>
       </div></div>`;
   }).join("");
@@ -1038,6 +1254,7 @@ function launchGame(id) {
 // ─── REWARDS FULL ────────────────────────────────────────
 function renderRewardsFull() {
   const rewards=student.rewards||[];
+  const developerAccess = window.TTStudentDeveloperAccess?.isEnabled(student) || false;
   const display=rewards.length&&typeof rewards[0]==="object"?rewards:DEMO.rewards;
   const byCategory={};
   display.forEach(r=>{
@@ -1048,10 +1265,10 @@ function renderRewardsFull() {
   document.getElementById("rewardsBody").innerHTML=Object.entries(byCategory).map(([cat,items])=>`
     <div class="rew-section-title">${cat}</div>
     <div class="rew-grid">${items.map(r=>`
-      <div class="rew-full-item${r.locked?" locked-full":""}${r.isNew?" new-full":""}">
+      <div class="rew-full-item${r.locked&&!developerAccess?" locked-full":""}${r.isNew?" new-full":""}">
         <div class="rew-full-ico">${r.icon}</div>
         <div class="rew-full-name">${esc(r.label)}</div>
-        <div class="rew-full-desc">${r.locked?"Keep going!":r.isNew?"Just earned! 🎉":"Earned"}</div>
+        <div class="rew-full-desc">${r.locked&&developerAccess?"Developer preview":r.locked?"Keep going!":r.isNew?"Just earned! 🎉":"Earned"}</div>
       </div>`).join("")}
     </div>`).join("");
 }
@@ -1060,6 +1277,10 @@ function renderRewardsFull() {
 function esc(v){
   return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[c]);
 }
+
+window.addEventListener("online", () => {
+  if (student) window.TTStudentActivity?.flush({ profile: student }).catch(() => {});
+});
 
 </script>
 </body>

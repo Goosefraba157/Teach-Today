@@ -156,7 +156,8 @@
    control at bottom-left for pages, games, PDFs, and reports.
 ──────────────────────────────────────────────────────── */
 .tt-app-home,
-.tt-app-back {
+.tt-app-back,
+.tt-dev-home {
   position: fixed;
   z-index: 10000;
   display: inline-flex;
@@ -192,6 +193,19 @@
   object-fit: cover;
 }
 
+.tt-dev-home {
+  left: max(10px, env(safe-area-inset-left));
+  top: calc(max(10px, env(safe-area-inset-top)) + 50px);
+  min-width: 42px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-color: rgba(34, 94, 168, 0.22);
+  background: #e8f1fb;
+  color: #225ea8;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
 .tt-app-back {
   left: max(12px, env(safe-area-inset-left));
   bottom: max(12px, env(safe-area-inset-bottom));
@@ -219,7 +233,9 @@
 .tt-app-home:hover,
 .tt-app-home:focus-visible,
 .tt-app-back:hover,
-.tt-app-back:focus-visible {
+.tt-app-back:focus-visible,
+.tt-dev-home:hover,
+.tt-dev-home:focus-visible {
   outline: none;
   transform: translateY(-1px);
 }
@@ -236,8 +252,15 @@
   box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.16);
 }
 
+.tt-dev-home:hover,
+.tt-dev-home:focus-visible {
+  background: #dbeafe;
+  box-shadow: inset 0 0 0 1px rgba(34, 94, 168, 0.24);
+}
+
 .tt-app-home:active,
-.tt-app-back:active {
+.tt-app-back:active,
+.tt-dev-home:active {
   transform: translateY(0);
 }
 
@@ -247,8 +270,10 @@
 
 body.tt-dark-surface .tt-app-home,
 body.tt-dark-surface .tt-app-back,
+body.tt-dark-surface .tt-dev-home,
 .tt-game-home,
-.tt-game-back {
+.tt-game-back,
+.tt-game-dev-home {
   border-color: rgba(255, 255, 255, 0.18);
   background: rgba(8, 13, 25, 0.66);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32);
@@ -258,6 +283,12 @@ body.tt-dark-surface .tt-app-home,
 .tt-game-home {
   background: rgba(255, 255, 255, 0.95);
   box-shadow: inset 0 0 0 1px rgba(153, 246, 228, 0.24), 0 5px 14px rgba(0, 0, 0, 0.24);
+}
+
+body.tt-dark-surface .tt-dev-home,
+.tt-game-dev-home {
+  background: rgba(224, 242, 254, 0.92);
+  color: #075985;
 }
 
 body.tt-dark-surface .tt-app-back,

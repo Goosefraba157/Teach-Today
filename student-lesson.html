@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#534AB7">
+  <title>Teach Today · Hero's Path</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
+  <link rel="stylesheet" href="student-lesson.css">
+</head>
+<body>
+  <div class="lesson-app" id="lessonApp">
+    <header class="lesson-topbar">
+      <button class="icon-btn back-btn" id="backHomeBtn" aria-label="Back to student home">←</button>
+      <div class="lesson-brand">
+        <span class="brand-fox">🦊</span>
+        <div>
+          <strong>Teach Today</strong>
+          <span id="lessonBreadcrumb">Step 2 · Sub-step 2.1</span>
+        </div>
+      </div>
+      <span class="developer-badge" id="developerBadge" hidden>🧪 Developer access</span>
+      <div class="topbar-stats">
+        <span class="mini-stat" title="Current streak">🔥 <b id="lessonStreak">0</b></span>
+        <span class="mini-stat xp-stat">⚡ <b id="lessonXp">0 XP</b></span>
+      </div>
+    </header>
+
+    <main class="lesson-shell">
+      <aside class="lesson-rail" id="lessonRail">
+        <div class="student-chip">
+          <span class="student-avatar" id="lessonAvatar">🦊</span>
+          <div>
+            <b id="lessonStudentName">Student</b>
+            <span id="lessonConcept">Welded sounds</span>
+          </div>
+        </div>
+
+        <div class="path-switch" role="tablist" aria-label="Choose a learning path">
+          <button class="path-tab active" id="heroTab" data-route="hero" role="tab" aria-selected="true">
+            <span>⚑</span><b>Hero's Path</b><small>Campaign</small>
+          </button>
+          <button class="path-tab" id="drillTab" data-route="drill" role="tab" aria-selected="false">
+            <span>⚡</span><b>Power-Up Loop</b><small>Adaptive drill</small>
+          </button>
+        </div>
+
+        <section class="mastery-card" aria-labelledby="masteryTitle">
+          <div class="mastery-top">
+            <span id="masteryTitle">Sub-step mastery</span>
+            <b id="masteryStatus">Accuracy building</b>
+          </div>
+          <div class="mastery-meter"><span id="masteryFill"></span></div>
+          <div class="mastery-grid">
+            <div><b id="decodeAccuracy">0%</b><span>Decoding</span></div>
+            <div><b id="encodeAccuracy">0%</b><span>Encoding</span></div>
+          </div>
+        </section>
+
+        <section class="word-memory" aria-labelledby="wordMemoryTitle">
+          <div class="rail-section-title" id="wordMemoryTitle">Word memory</div>
+          <div class="memory-row"><span>🌟 Mastered</span><b id="masteredCount">0</b></div>
+          <div class="memory-row"><span>🔁 Reviewing</span><b id="reviewCount">0</b></div>
+        </section>
+      </aside>
+
+      <section class="lesson-main">
+        <div class="lobby-view" id="lobbyView">
+          <div class="campaign-hero" id="campaignHero">
+            <div class="campaign-copy">
+              <div class="eyebrow" id="pathEyebrow">HERO'S PATH · STEP 2.1</div>
+              <h1 id="pathTitle">Train your welded sound powers</h1>
+              <p id="pathDescription">Clear each set to unlock the next part of the campaign.</p>
+            </div>
+            <div class="campaign-progress-card">
+              <div class="ring-progress" id="campaignRing" style="--progress:0">
+                <span id="campaignPercent">0%</span>
+              </div>
+              <div><b id="campaignProgressText">0 of 15</b><span>activities complete</span></div>
+            </div>
+          </div>
+
+          <div id="heroLobby" class="hero-lobby"></div>
+          <div id="drillLobby" class="drill-lobby" hidden></div>
+        </div>
+
+        <div class="activity-view" id="activityView" hidden>
+          <div class="activity-toolbar">
+            <button class="quiet-btn" id="exitActivityBtn">← Exit round</button>
+            <div class="round-progress" aria-label="Round progress">
+              <span id="roundProgressFill"></span>
+            </div>
+            <div class="round-count" id="roundCount">1 / 5</div>
+          </div>
+          <div class="activity-stage" id="activityStage"></div>
+          <div class="feedback-bar" id="feedbackBar" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="reward-screen" id="rewardScreen" hidden>
+    <div class="confetti" aria-hidden="true"></div>
+    <div class="reward-card">
+      <div class="reward-burst" id="rewardIcon">⭐</div>
+      <div class="eyebrow">ROUND COMPLETE</div>
+      <h2 id="rewardTitle">Nice work!</h2>
+      <p id="rewardMessage">Your accuracy is growing.</p>
+      <div class="reward-stats">
+        <div><b id="rewardAccuracy">100%</b><span>Accuracy</span></div>
+        <div><b id="rewardXp">+20</b><span>XP</span></div>
+        <div><b id="rewardWords">0</b><span>Mastered</span></div>
+      </div>
+      <button class="primary-btn reward-continue" id="rewardContinueBtn">Keep going →</button>
+    </div>
+  </div>
+
+  <script src="reader-wordlists.js"></script>
+  <script src="reader-sentences.js"></script>
+  <script src="student-developer-access.js"></script>
+  <script src="student-lesson-data.js"></script>
+  <script src="student-lesson-progress.js"></script>
+  <script src="student-lesson.js"></script>
+</body>
+</html>

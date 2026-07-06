@@ -15,6 +15,10 @@ const profileDriveScope = "https://www.googleapis.com/auth/drive.file";
 let profileFirebaseSdkPromise = null;
 let profileDriveAccessToken = "";
 let comparisonScope = "group";
+let profileView = "teacher";
+let studentAppLoadToken = 0;
+let studentAppPortalProfile = null;
+let studentAppActivityById = new Map();
 
 function byId(id) {
   return document.getElementById(id);
@@ -37,11 +41,13 @@ async function profileFirebaseSdk() {
   if (profileFirebaseSdkPromise) return profileFirebaseSdkPromise;
   profileFirebaseSdkPromise = Promise.all([
     import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-app.js`),
-    import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-auth.js`)
-  ]).then(([appModule, authModule]) => {
-    const firebaseApp = appModule.initializeApp(profileFirebaseConfig);
+    import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-auth.js`),
+    import(`https://www.gstatic.com/firebasejs/${profileFirebaseSdkVersion}/firebase-firestore.js`)
+  ]).then(([appModule, authModule, firestoreModule]) => {
+    const firebaseApp = appModule.getApps().length ? appModule.getApp() : appModule.initializeApp(profileFirebaseConfig);
     const firebaseAuth = authModule.getAuth(firebaseApp);
-    return { ...authModule, firebaseAuth };
+    const firestoreDb = firestoreModule.getFirestore(firebaseApp);
+    return { ...authModule, ...firestoreModule, firebaseAuth, firestoreDb };
   });
   return profileFirebaseSdkPromise;
 }
@@ -66,6 +72,285 @@ async function loadDriveAudioFile(fileId) {
   return response.blob();
 }
 
+function profileDriveHeaders(contentType = "application/json") {
+  const headers = { Authorization: `Bearer ${profileDriveAccessToken}` };
+  if (contentType) headers["Content-Type"] = contentType;
+  return headers;
+}
+
+async function profileDriveRequest(path, options = {}) {
+  if (!(await ensureProfileDrivePermission())) throw new Error("Google Drive permission was not granted.");
+  const response = await fetch(`https://www.googleapis.com/drive/v3/${path}`, {
+    ...options,
+    headers: { ...profileDriveHeaders(options.contentType), ...(options.headers || {}) }
+  });
+  if (!response.ok) throw new Error(`Google Drive request failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
+  return response.json();
+}
+
+async function profileDriveFolder() {
+  let folderId = localStorage.getItem("teachToday.driveFolderId") || "";
+  if (folderId) return folderId;
+  const queryText = [
+    "mimeType='application/vnd.google-apps.folder'",
+    "name='Teach Today Recordings'",
+    "trashed=false"
+  ].join(" and ");
+  const result = await profileDriveRequest(`files?q=${encodeURIComponent(queryText)}&spaces=drive&fields=files(id,name)&pageSize=1`);
+  folderId = result.files?.[0]?.id || "";
+  if (!folderId) {
+    const folder = await profileDriveRequest("files?fields=id,name", {
+      method: "POST",
+      body: JSON.stringify({ name: "Teach Today Recordings", mimeType: "application/vnd.google-apps.folder" })
+    });
+    folderId = folder.id || "";
+  }
+  if (folderId) localStorage.setItem("teachToday.driveFolderId", folderId);
+  return folderId;
+}
+
+async function profileDriveUpload(blob, fileName) {
+  if (!(await ensureProfileDrivePermission())) throw new Error("Google Drive permission was not granted.");
+  const folderId = await profileDriveFolder();
+  const boundary = `teach_today_${Date.now()}`;
+  const metadata = { name: fileName, parents: folderId ? [folderId] : undefined, mimeType: blob.type || "audio/webm" };
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify(metadata),
+    `\r\n--${boundary}\r\nContent-Type: ${blob.type || "audio/webm"}\r\n\r\n`,
+    blob,
+    `\r\n--${boundary}--`
+  ], { type: `multipart/related; boundary=${boundary}` });
+  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+    method: "POST",
+    headers: profileDriveHeaders(body.type),
+    body
+  });
+  if (!response.ok) throw new Error(`Google Drive upload failed (${response.status}): ${await response.text().catch(() => response.statusText)}`);
+  return response.json();
+}
+
+function normalizeStudentName(value) {
+  return String(value || "").trim().toLocaleLowerCase();
+}
+
+function portalStudentLinkId(groupId, name) {
+  return `${groupId || "group"}__${String(name || "student").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+async function findPortalStudent(group, student) {
+  const { firestoreDb, doc, getDoc, collection, getDocs, query, where } = await profileFirebaseSdk();
+  const linkSnapshot = await getDoc(doc(firestoreDb, "studentLinks", portalStudentLinkId(group.id, student)));
+  if (linkSnapshot.exists() && linkSnapshot.data().studentId) {
+    const studentSnapshot = await getDoc(doc(firestoreDb, "students", linkSnapshot.data().studentId));
+    if (studentSnapshot.exists()) return { id: studentSnapshot.id, ...studentSnapshot.data() };
+  }
+  const snapshot = await getDocs(query(collection(firestoreDb, "students"), where("groupId", "==", group.id || "")));
+  const candidates = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+  return candidates.find((item) => normalizeStudentName(item.name) === normalizeStudentName(student)
+    || normalizeStudentName(item.fullName) === normalizeStudentName(student)) || null;
+}
+
+async function loadPortalActivity(portalProfile) {
+  if (!portalProfile?.id) return [];
+  const { firestoreDb, collection, getDocs } = await profileFirebaseSdk();
+  const snapshot = await getDocs(collection(firestoreDb, "students", portalProfile.id, "activity"));
+  return snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data(), portalStudentId: portalProfile.id }));
+}
+
+function setProfileView(view) {
+  profileView = view === "student-app" ? "student-app" : "teacher";
+  byId("teacherDataTab")?.classList.toggle("active", profileView === "teacher");
+  byId("studentAppTab")?.classList.toggle("active", profileView === "student-app");
+  const main = document.querySelector(".profile-shell");
+  [...(main?.children || [])].forEach((section) => {
+    if (section.classList.contains("profile-roster-card") || section.classList.contains("profile-view-tabs")) return;
+    section.hidden = profileView === "student-app" ? section.id !== "studentAppView" : section.id === "studentAppView";
+  });
+  if (profileView === "student-app") renderStudentAppView();
+}
+
+function localStudentAppActivity(records) {
+  return records.filter((record) => record.type === "soundsDrill").map((record) => ({
+    ...record,
+    title: record.title || "Sounds Quick Drill",
+    originalTranscript: record.originalTranscript || record.rawTranscript || "",
+    source: "teacher-device"
+  }));
+}
+
+function mergeStudentActivity(localItems, remoteItems) {
+  const merged = new Map();
+  localItems.forEach((item) => merged.set(item.id, item));
+  remoteItems.forEach((item) => merged.set(item.id, { ...(merged.get(item.id) || {}), ...item, source: "student-cloud" }));
+  return [...merged.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+}
+
+function importStudentActivityIntoTeacherRecords(remoteItems, student, group) {
+  if (!remoteItems.length) return;
+  const data = state();
+  data.masterRecords = data.masterRecords || [];
+  remoteItems.forEach((activity) => {
+    const existing = data.masterRecords.find((record) => record.id === activity.id);
+    const record = {
+      ...activity,
+      type: activity.type || "studentAppActivity",
+      student,
+      studentId: activity.studentId || activity.portalStudentId || null,
+      groupId: group.id || activity.groupId || null,
+      group: group.name || activity.groupName || "",
+      rawTranscript: activity.originalTranscript || activity.rawTranscript || "",
+      source: "student-cloud"
+    };
+    if (existing) {
+      const originalTranscript = existing.originalTranscript || existing.rawTranscript || record.originalTranscript || record.rawTranscript;
+      Object.assign(existing, record, {
+        originalTranscript,
+        rawTranscript: originalTranscript,
+        teacherNotes: existing.teacherNotes || record.teacherNotes || "",
+        teacherOverrides: { ...(record.teacherOverrides || {}), ...(existing.teacherOverrides || {}) }
+      });
+    } else {
+      data.masterRecords.push(record);
+    }
+  });
+  data.lastSavedAt = new Date().toISOString();
+  localStorage.setItem(storageKey, JSON.stringify(data));
+}
+
+function studentActivityBadges(activity) {
+  const results = activity.confidenceResults || [];
+  if (results.length) {
+    const exact = results.filter((item) => item.conf === "exact").length;
+    const similar = results.filter((item) => item.conf === "similar").length;
+    const review = results.filter((item) => item.conf === "review").length;
+    return `<span class="drill-confidence exact">⭐ ${exact} exact</span><span class="drill-confidence similar">🙂 ${similar} similar</span><span class="drill-confidence review">❓ ${review} review</span>`;
+  }
+  return `<span class="drill-confidence exact">⭐ ${escapeHtml(activity.perfect || 0)} of ${escapeHtml(activity.totalCards || 14)} perfect</span>`;
+}
+
+async function renderStudentAppView() {
+  const token = ++studentAppLoadToken;
+  const { group, student, records } = selectedContext();
+  const connection = byId("studentAppConnection");
+  const activityContainer = byId("studentAppActivity");
+  connection.className = "";
+  connection.textContent = "Checking the student's latest synced activity…";
+  activityContainer.innerHTML = "<p class=\"recordings-empty\">Loading student activity…</p>";
+  let portalProfile = null;
+  let remoteActivity = [];
+  let connectionError = "";
+  try {
+    const { firebaseAuth } = await profileFirebaseSdk();
+    await firebaseAuth.authStateReady?.();
+    if (!firebaseAuth.currentUser) throw new Error("Connect Google Drive at the top of this profile to load protected student data.");
+    portalProfile = await findPortalStudent(group, student);
+    if (portalProfile) remoteActivity = await loadPortalActivity(portalProfile);
+  } catch (error) {
+    connectionError = String(error?.message || error);
+  }
+  if (token !== studentAppLoadToken) return;
+  studentAppPortalProfile = portalProfile;
+  importStudentActivityIntoTeacherRecords(remoteActivity, student, group);
+  const activity = mergeStudentActivity(localStudentAppActivity(records), remoteActivity);
+  studentAppActivityById = new Map(activity.map((item) => [item.id, item]));
+
+  if (portalProfile) {
+    connection.textContent = `Connected to ${portalProfile.name || student}'s student home · ${activity.length} saved activit${activity.length === 1 ? "y" : "ies"}`;
+    connection.className = "sync-ok";
+  } else if (connectionError) {
+    connection.textContent = `Cloud activity could not load yet. Local teacher records are still shown. ${connectionError}`;
+    connection.className = "sync-warn";
+  } else {
+    connection.textContent = "This profile is not linked to a student login yet. Once the student signs in with a code for this group, activity will appear here.";
+    connection.className = "sync-warn";
+  }
+
+  byId("studentAppXp").textContent = portalProfile ? Number(portalProfile.xp || 0).toLocaleString() : "—";
+  byId("studentAppStreak").textContent = portalProfile ? Number(portalProfile.streak || 0) : "—";
+  byId("studentAppCompleted").textContent = portalProfile ? (portalProfile.completedLessons || []).length : activity.length;
+  byId("studentAppLastActive").textContent = portalProfile?.lastActivityAt ? shortDate(portalProfile.lastActivityAt) : activity[0]?.date ? shortDate(activity[0].date) : "—";
+  renderStudentAppJourney(portalProfile, activity);
+  renderStudentAppActivity(activity);
+}
+
+function renderStudentAppJourney(profile, activity) {
+  const container = byId("studentAppJourney");
+  const tasks = profile?.assignedTasks || [];
+  const rewards = profile?.rewards || [];
+  const completed = profile?.completedLessons || [];
+  container.innerHTML = `
+    <div class="journey-block"><strong>Current placement</strong><div class="journey-item"><b>Sub-step</b><span>${escapeHtml(profile?.substep || selectedContext().group.substep || "—")}</span></div></div>
+    <div class="journey-block"><strong>Assignments</strong><div class="journey-list">${tasks.slice(0, 8).map((task) => `<div class="journey-item"><b>${escapeHtml(task.title || "Assignment")}</b><span>${task.done ? "Done ✓" : "Ready"}</span></div>`).join("") || `<span class="recordings-empty">No assignments synced yet.</span>`}</div></div>
+    <div class="journey-block"><strong>Achievements</strong><div class="journey-item"><b>Completed lessons</b><span>${completed.length}</span></div><div class="journey-item"><b>Saved activities</b><span>${activity.length}</span></div><div class="journey-item"><b>Rewards earned</b><span>${rewards.filter((reward) => !reward.locked).length}</span></div></div>`;
+}
+
+function renderStudentAppActivity(activity) {
+  const container = byId("studentAppActivity");
+  if (!activity.length) {
+    container.innerHTML = "<p class=\"recordings-empty\">No student-app completions have synced yet.</p>";
+    return;
+  }
+  container.innerHTML = activity.map((item) => {
+    const transcript = item.originalTranscript
+      ? `<details class="drill-transcript"><summary>Original recognition transcript</summary><p>${escapeHtml(item.originalTranscript)}</p></details>` : "";
+    const hasAudio = Boolean(item.audioUrl || item.audioRecordingId || item.driveFileId);
+    const driveAction = item.driveFileId
+      ? `<a href="${escapeHtml(item.driveWebViewLink || `https://drive.google.com/open?id=${item.driveFileId}`)}" target="_blank" rel="noopener">Open in Google Drive</a>`
+      : hasAudio ? `<button type="button" class="student-drive-upload" data-activity-id="${escapeHtml(item.id)}">Save audio to Google Drive</button>` : "";
+    const audio = item.audioUrl ? audioPlayerMarkup(item.audioUrl, item.audioFileName || "student-audio.webm", false) : "";
+    return `<article class="student-activity-card">
+      <div class="student-activity-head"><div><strong>${escapeHtml(item.title || item.lesson || "Student activity")}</strong><div class="student-activity-meta">${escapeHtml(formatDateTime(item.date))} · Sub-step ${escapeHtml(item.substep || "—")} · +${escapeHtml(item.xp || 0)} XP</div></div><span>${item.source === "student-cloud" ? "Cloud synced" : "Teacher device"}</span></div>
+      <div class="student-activity-badges">${studentActivityBadges(item)}</div>
+      ${audio}${transcript}
+      <div class="student-activity-actions">${driveAction}</div>
+    </article>`;
+  }).join("");
+  wireAudioSpeedControls(container);
+  container.querySelectorAll(".student-drive-upload").forEach((button) => {
+    button.addEventListener("click", () => uploadStudentActivityToDrive(button));
+  });
+}
+
+async function uploadStudentActivityToDrive(button) {
+  const activity = studentAppActivityById.get(button.dataset.activityId);
+  if (!activity) return;
+  button.disabled = true;
+  button.textContent = "Uploading…";
+  try {
+    let blob = activity.audioRecordingId ? await loadAudioBlob(activity.audioRecordingId).catch(() => null) : null;
+    if (!blob && activity.audioUrl) {
+      const response = await fetch(activity.audioUrl);
+      if (!response.ok) throw new Error(`Cloud audio could not download (${response.status}).`);
+      blob = await response.blob();
+    }
+    if (!blob) throw new Error("The original recording is not available on this device or in cloud storage.");
+    const file = await profileDriveUpload(blob, activity.audioFileName || `${activity.studentName || "student"}-activity.webm`);
+    const patch = {
+      driveFileId: file.id,
+      driveFileName: file.name || activity.audioFileName,
+      driveWebViewLink: file.webViewLink || "",
+      driveUploadStatus: "cloud-ready",
+      driveUploadedAt: new Date().toISOString()
+    };
+    Object.assign(activity, patch);
+    const data = state();
+    const localRecord = (data.masterRecords || []).find((record) => record.id === activity.id);
+    if (localRecord) Object.assign(localRecord, patch);
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    if (activity.portalStudentId || studentAppPortalProfile?.id) {
+      const { firestoreDb, doc, setDoc } = await profileFirebaseSdk();
+      await setDoc(doc(firestoreDb, "students", activity.portalStudentId || studentAppPortalProfile.id, "activity", activity.id), patch, { merge: true });
+    }
+    button.textContent = "Saved to Google Drive ✓";
+    renderStudentAppActivity([...studentAppActivityById.values()]);
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "Retry Google Drive upload";
+    button.title = String(error?.message || error);
+  }
+}
+
 function params() {
   return new URLSearchParams(location.search);
 }
@@ -81,7 +366,12 @@ function selectedContext() {
   const profileGroup = student && !(group.students || []).includes(student)
     ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
     : group;
-  const records = (data.masterRecords || []).filter((record) => record.student === student && (!profileGroup.id || record.groupId === profileGroup.id || record.group === profileGroup.name));
+  const records = (data.masterRecords || []).filter((record) => record.student === student && (
+    !profileGroup.id
+    || record.groupId === profileGroup.id
+    || record.group === profileGroup.name
+    || (record.type === "soundsDrill" && !record.groupId && !record.group)
+  ));
   const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
   const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
   return { data, group: profileGroup, student, records, dictationMisses, encodingObservations };
@@ -143,8 +433,8 @@ function render() {
   renderChartingSheet(records);
   renderRows(records);
   renderDictationRows(dictationMisses);
-  renderRecordingsSection(records);
-  renderSoundsDrillSection(student);
+  renderRecordingsSection(records.filter((record) => record.type !== "soundsDrill"));
+  renderSoundsDrillSection(records);
 }
 
 function dateKeyLocal(value) {
@@ -1216,6 +1506,62 @@ async function renderRecordingsSection(records) {
   });
 }
 
+async function renderSoundsDrillSection(records) {
+  const container = byId("soundsDrillList");
+  if (!container) return;
+  const sessions = records
+    .filter((record) => record.type === "soundsDrill")
+    .slice()
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+  if (!sessions.length) {
+    container.innerHTML = "<p class=\"recordings-empty\">No sounds drill sessions saved for this student yet.</p>";
+    return;
+  }
+
+  const cards = await Promise.all(sessions.map(async (record) => {
+    let audioUrl = record.audioUrl || "";
+    if (!audioUrl && record.audioRecordingId) {
+      const blob = await loadAudioBlob(record.audioRecordingId).catch(() => null);
+      if (blob) audioUrl = URL.createObjectURL(blob);
+    }
+    return { record, audioUrl };
+  }));
+
+  container.innerHTML = "";
+  cards.forEach(({ record, audioUrl }) => {
+    const card = document.createElement("article");
+    card.className = "sounds-drill-card";
+    const confidence = record.confidenceResults || [];
+    const exact = confidence.filter((item) => item.conf === "exact").length;
+    const similar = confidence.filter((item) => item.conf === "similar").length;
+    const review = confidence.filter((item) => item.conf === "review").length;
+    const total = Number(record.totalCards || record.cards?.length || 14);
+    const mode = record.drillMode === "whole-drill" ? "Full drill recording" : "Per-card practice";
+    const summary = confidence.length
+      ? `<span class="drill-confidence exact">⭐ ${exact} exact</span><span class="drill-confidence similar">🙂 ${similar} similar</span><span class="drill-confidence review">❓ ${review} review</span>`
+      : `<span class="drill-confidence exact">⭐ ${Number(record.perfect || 0)} of ${total} perfect</span>`;
+    const transcript = record.rawTranscript
+      ? `<details class="drill-transcript"><summary>What recognition heard</summary><p>${escapeHtml(record.rawTranscript)}</p></details>`
+      : "";
+    const audio = audioUrl
+      ? audioPlayerMarkup(audioUrl, record.audioFileName || "sounds-drill.webm", !record.audioUrl)
+      : record.audioRecordingId
+        ? `<p class="drill-audio-missing">Recording is saved on the device where this drill was completed.</p>`
+        : "";
+    card.innerHTML = `
+      <div class="sounds-drill-head">
+        <div><strong>${escapeHtml(mode)}</strong><span>${escapeHtml(formatDateTime(record.date))} · ${escapeHtml(record.elapsed || 0)} sec · +${escapeHtml(record.xp || 0)} XP</span></div>
+        <span class="drill-substep">2.1</span>
+      </div>
+      <div class="drill-confidence-row">${summary}</div>
+      ${audio}
+      ${transcript}`;
+    container.appendChild(card);
+  });
+  wireAudioSpeedControls(container);
+}
+
 function renderDictationRows(misses) {
   const body = byId("dictationRows");
   body.innerHTML = "";
@@ -1284,6 +1630,29 @@ byId("backTeach").addEventListener("click", () => {
   const { group } = selectedContext();
   location.href = `TeachToday.html?group=${encodeURIComponent(group.id || "")}`;
 });
+function studentHomeUrl() {
+  const { group, student } = selectedContext();
+  const url = new URL("student.html", location.href);
+  url.searchParams.set("preview", "1");
+  url.searchParams.set("student", student || "Student");
+  url.searchParams.set("group", group.id || "");
+  url.searchParams.set("substep", group.substep || "2.1");
+  return url.href;
+}
+byId("openStudentHome")?.addEventListener("click", () => {
+  location.href = studentHomeUrl();
+});
+byId("launchSoundsDrill")?.addEventListener("click", () => {
+  const { group, student } = selectedContext();
+  const url = new URL("lesson-21-s1.html", location.href);
+  url.searchParams.set("student", student || "Student");
+  url.searchParams.set("studentId", `local:${group.id || "group"}:${student || "student"}`);
+  url.searchParams.set("group", group.id || "");
+  url.searchParams.set("groupName", group.name || "");
+  url.searchParams.set("source", "teacher-profile");
+  url.searchParams.set("return", `StudentProfile.html?group=${encodeURIComponent(group.id || "")}&student=${encodeURIComponent(student || "")}`);
+  location.href = url.href;
+});
 byId("connectDriveAudio")?.addEventListener("click", async () => {
   const button = byId("connectDriveAudio");
   button.textContent = "Connecting...";
@@ -1291,11 +1660,19 @@ byId("connectDriveAudio")?.addEventListener("click", async () => {
     const connected = await ensureProfileDrivePermission();
     button.textContent = connected ? "Drive connected" : "Google Drive";
     render();
+    if (connected && profileView === "student-app") {
+      await renderStudentAppView();
+      const pendingUploads = [...byId("studentAppActivity").querySelectorAll(".student-drive-upload")];
+      for (const uploadButton of pendingUploads) await uploadStudentActivityToDrive(uploadButton);
+    }
   } catch (err) {
     button.textContent = "Drive failed";
     console.warn("Google Drive permission failed:", err);
   }
 });
+byId("teacherDataTab")?.addEventListener("click", () => setProfileView("teacher"));
+byId("studentAppTab")?.addEventListener("click", () => setProfileView("student-app"));
+byId("refreshStudentApp")?.addEventListener("click", () => renderStudentAppView());
 byId("compareGroup").addEventListener("click", () => {
   comparisonScope = "group";
   render();

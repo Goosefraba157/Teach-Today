@@ -28,6 +28,11 @@
       "url": "./StudentProfile.html"
     },
     {
+      "name": "Student Home",
+      "short_name": "Student",
+      "url": "./student.html"
+    },
+    {
       "name": "Game Quest",
       "short_name": "Games",
       "url": "./Games/index.html"
