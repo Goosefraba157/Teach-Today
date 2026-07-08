@@ -10,7 +10,9 @@ For the live iPad-style lesson flow, open `TeachToday.html`.
 
 From Teach Today, use `Student profile` to open a separate student data tab.
 
-For patch testing, open `DeveloperDashboard.html` and unlock creator mode. The master menu entries live in `developer-menu-config.js`; add future pages, games, prototypes, or debug links to that one list and the dashboard will render them automatically. The access helper is `developer-access.js`, and installed/offline coverage is listed in `service-worker.js`.
+For patch testing, open `DeveloperDashboard.html` and unlock creator mode. The master menu entries live in `developer-menu-config.js`; add future pages, games, prototypes, diagnostics, or debug links to that one list and the dashboard will render them automatically. The access helper is `developer-access.js`, and installed/offline coverage is listed in `service-worker.js`.
+
+For student-data checks, open `DeveloperDataDiagnostic.html` from the developer dashboard. It compares one student across the teacher master state (`dyslexiaInstructionEngine.v2`), student home session (`tt_student_v1`), lesson progress keys (`teachToday.studentLessonProgress.v1.<studentId>`), the Game Hub ledger (`teachTodayGameHub.v1`), standalone 2.1 drill stores, student activity outbox, game-specific stores, and backup/sync status flags. New stores should be added to `developer-data-diagnostic.js` in the store summary and student report builders so future patches stay auditable.
 
 ## What it does
 

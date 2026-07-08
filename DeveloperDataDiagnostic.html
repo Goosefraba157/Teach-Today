@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Teach Today Data Sync Diagnostic</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
+    <link rel="stylesheet" href="developer-data-diagnostic.css?v=data-diagnostic-1">
+    <script src="app-nav.js?v=data-diagnostic-1" defer></script>
+  </head>
+  <body>
+    <main class="diag-shell">
+      <section id="diagAccessGate" class="diag-gate" aria-labelledby="diagGateTitle">
+        <article class="diag-gate-card">
+          <div class="diag-brand">
+            <img src="assets/morrocoy-logo.png" alt="">
+            <div>
+              <p class="kicker">Creator access</p>
+              <h1 id="diagGateTitle">Data Sync Diagnostic</h1>
+            </div>
+          </div>
+          <p>Unlock creator mode from the developer dashboard before opening student data tools.</p>
+          <a class="primary-action" href="DeveloperDashboard.html">Open developer dashboard</a>
+        </article>
+      </section>
+
+      <section id="diagApp" class="diag-app" hidden>
+        <header class="diag-topbar">
+          <div class="diag-brand">
+            <img src="assets/morrocoy-logo.png" alt="">
+            <div>
+              <p class="kicker">Teach Today</p>
+              <h1>Data Sync Diagnostic</h1>
+            </div>
+          </div>
+          <div class="diag-actions">
+            <span id="diagAccessLabel" class="session-pill">Creator mode</span>
+            <a class="secondary-action" href="DeveloperDashboard.html?developer=1">Dashboard</a>
+            <a class="secondary-action" href="TeachToday.html?developer=1">Teacher home</a>
+            <button id="lockDevMode" class="secondary-action" type="button">Lock</button>
+          </div>
+        </header>
+
+        <section class="control-panel" aria-label="Diagnostic controls">
+          <label for="studentSelect">
+            Student
+            <select id="studentSelect"></select>
+          </label>
+          <label for="studentSearch">
+            Filter
+            <input id="studentSearch" type="search" autocomplete="off" placeholder="Search students or IDs">
+          </label>
+          <div class="button-cluster">
+            <button id="createTestStudent" class="primary-action" type="button">Create test student</button>
+            <button id="runLessonSave" class="secondary-action" type="button">Run test lesson save</button>
+            <button id="runGameSave" class="secondary-action" type="button">Run test game save</button>
+            <button id="compareViews" class="secondary-action" type="button">Compare views</button>
+            <button id="reloadData" class="secondary-action" type="button">Reload data</button>
+            <button id="clearTestData" class="danger-action" type="button">Clear only test data</button>
+          </div>
+        </section>
+
+        <section id="statusStrip" class="status-strip" aria-live="polite"></section>
+
+        <section class="summary-grid" aria-label="Selected student summary">
+          <article class="metric-card">
+            <span>Profile</span>
+            <strong id="profileName">--</strong>
+            <small id="profileMeta">--</small>
+          </article>
+          <article class="metric-card">
+            <span>Lesson</span>
+            <strong id="lessonNow">--</strong>
+            <small id="lessonMeta">--</small>
+          </article>
+          <article class="metric-card">
+            <span>Teacher Records</span>
+            <strong id="teacherRecordsCount">0</strong>
+            <small id="teacherRecordsMeta">--</small>
+          </article>
+          <article class="metric-card">
+            <span>Games</span>
+            <strong id="gamePoints">0 pts</strong>
+            <small id="gameMeta">--</small>
+          </article>
+          <article class="metric-card">
+            <span>Accuracy</span>
+            <strong id="accuracySummary">--</strong>
+            <small id="speedSummary">--</small>
+          </article>
+          <article class="metric-card">
+            <span>Last Updated</span>
+            <strong id="lastUpdated">--</strong>
+            <small id="sourceSummary">--</small>
+          </article>
+        </section>
+
+        <section class="panel-grid">
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>Sync Warnings</h2>
+              <span id="warningCount" class="count-pill">0</span>
+            </div>
+            <div id="warningList" class="list-stack"></div>
+          </article>
+
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>Storage Sources</h2>
+              <span id="storeCount" class="count-pill">0</span>
+            </div>
+            <div id="storeList" class="store-list"></div>
+          </article>
+        </section>
+
+        <section class="detail-grid">
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>Recent Lesson Attempts</h2>
+              <a id="profileLink" class="mini-link" href="StudentProfile.html?developer=1">Student profile</a>
+            </div>
+            <div id="lessonAttempts" class="table-wrap"></div>
+          </article>
+
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>Recent Game Attempts</h2>
+              <a id="gameHubLink" class="mini-link" href="Games/index.html?developer=1">Game hub</a>
+            </div>
+            <div id="gameAttempts" class="table-wrap"></div>
+          </article>
+
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>Encoding and Decoding</h2>
+              <a id="reportLink" class="mini-link" href="StudentReport.html?developer=1">Report</a>
+            </div>
+            <div id="skillBreakdown" class="skill-stack"></div>
+          </article>
+
+          <article class="data-panel">
+            <div class="panel-head">
+              <h2>View Comparison</h2>
+              <span id="comparisonBadge" class="count-pill">Ready</span>
+            </div>
+            <div id="viewComparison" class="comparison-list"></div>
+          </article>
+        </section>
+
+        <section class="data-panel raw-panel">
+          <div class="panel-head">
+            <h2>Raw Student Record JSON</h2>
+            <button id="toggleRaw" class="secondary-action" type="button">Show raw JSON</button>
+          </div>
+          <pre id="rawJson" hidden></pre>
+        </section>
+
+        <footer class="diag-footer">
+          Route: <strong>DeveloperDataDiagnostic.html</strong>. Add dashboard links in <strong>developer-menu-config.js</strong>. Test writes are limited to <strong>Dev Sync Student</strong>.
+        </footer>
+      </section>
+    </main>
+
+    <script src="developer-access.js?v=data-diagnostic-1"></script>
+    <script src="developer-data-diagnostic.js?v=data-diagnostic-1"></script>
+  </body>
+</html>

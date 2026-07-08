@@ -44,6 +44,12 @@
           status: "Admin"
         },
         {
+          title: "Data Sync Diagnostic",
+          description: "Developer-only audit page for one student across teacher records, student progress, game hub, outbox, and raw JSON.",
+          href: "DeveloperDataDiagnostic.html",
+          status: "Dev"
+        },
+        {
           title: "Wilson Export Ribbon",
           description: "Live lesson top ribbon where PDF, Wilson LP, and fillable Wilson PDF exports are launched.",
           href: "TeachToday.html?devRoute=exports",

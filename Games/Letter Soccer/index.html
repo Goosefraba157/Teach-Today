@@ -682,7 +682,7 @@ const MATCH_TYPE_OPTIONS=['single','best3','best5','cup'];
 const TOURNAMENT_CONFIG={
   groupCount:4,
   teamsPerGroup:4,
-  defaultMatchType:'best3',
+  defaultMatchType:'single',
   ambience:true,
   cpuRatingSpread:0.18
 };
@@ -1616,6 +1616,7 @@ function makeGroupFixtures(groups){
           round,
           home,
           away,
+          status:'upcoming',
           played:false,
           result:null
         });
@@ -1657,15 +1658,23 @@ function applyStandingResult(group,teamA,teamB,goalsA,goalsB){
   }
 }
 
+function calculateGroupStandings(groups,fixtures){
+  const standings=(groups||[]).map(group=>group.map(makeStanding));
+  (fixtures||[])
+    .filter(f=>f.stage==='group'&&(f.played||f.status==='completed')&&f.result)
+    .forEach(f=>{
+      const homeGoals=Number.isFinite(f.homeScore)?f.homeScore:f.result.homeGoals;
+      const awayGoals=Number.isFinite(f.awayScore)?f.awayScore:f.result.awayGoals;
+      applyStandingResult(standings[f.groupIndex],f.home,f.away,homeGoals,awayGoals);
+    });
+  return standings;
+}
+
 function rebuildTournamentStandings(ts=tournamentState){
   if(!ts?.groups) return;
-  ts.standings=ts.groups.map(group=>group.map(makeStanding));
-  (ts.results||[]).forEach(result=>{
-    const fixture=(ts.fixtures||[]).find(f=>f.id===result.fixtureId);
-    if(!fixture||fixture.stage!=='group') return;
-    applyStandingResult(ts.standings[fixture.groupIndex],result.home,result.away,result.goalsHome,result.goalsAway);
-  });
+  ts.standings=calculateGroupStandings(ts.groups,ts.fixtures);
   ts.standingsSource='completed fixtures';
+  refreshFixtureStatuses(ts);
 }
 
 function sortedStandings(group){
@@ -1688,6 +1697,38 @@ function fixtureScoreText(fixture){
   return `${fixture.result.homeGoals}-${fixture.result.awayGoals}`;
 }
 
+function allTournamentFixtures(ts=tournamentState){
+  if(!ts) return [];
+  return [
+    ...(ts.fixtures||[]),
+    ...Object.values(ts.bracket?.rounds||{}).flat()
+  ];
+}
+
+function fixtureStatus(fixture,ts=tournamentState){
+  if(!fixture) return 'upcoming';
+  if(fixture.played||fixture.result) return 'completed';
+  if(ts?.currentFixtureId===fixture.id) return 'current';
+  return 'upcoming';
+}
+
+function refreshFixtureStatuses(ts=tournamentState){
+  allTournamentFixtures(ts).forEach(f=>{ f.status=fixtureStatus(f,ts); });
+}
+
+function setCurrentTournamentFixture(fixtureId,ts=tournamentState){
+  if(!ts) return;
+  ts.currentFixtureId=fixtureId||null;
+  refreshFixtureStatuses(ts);
+}
+
+function cloneTournamentState(ts){
+  if(!ts) return null;
+  const copy=JSON.parse(JSON.stringify(ts));
+  delete copy.replaySnapshot;
+  return copy;
+}
+
 function fixtureOpponent(fixture,userTeam){
   if(!fixture) return null;
   if(fixture.home===userTeam) return fixture.away;
@@ -1697,11 +1738,7 @@ function fixtureOpponent(fixture,userTeam){
 
 function currentTournamentFixture(){
   if(!tournamentState?.currentFixtureId) return null;
-  const all=[
-    ...(tournamentState.fixtures||[]),
-    ...Object.values(tournamentState.bracket?.rounds||{}).flat()
-  ];
-  return all.find(f=>f.id===tournamentState.currentFixtureId)||null;
+  return allTournamentFixtures(tournamentState).find(f=>f.id===tournamentState.currentFixtureId)||null;
 }
 
 function currentTournamentOpponent(){
@@ -1784,7 +1821,7 @@ function startTournamentCup(){
   live.active=true;
   live.stage='group';
   live.groupRound=0;
-  live.currentFixtureId=nextUserGroupFixture(live)?.id||null;
+  setCurrentTournamentFixture(nextUserGroupFixture(live)?.id||null,live);
   const opponent=currentTournamentOpponent();
   if(opponent) opponentTeamCode=normalizeTeamCode(opponent,opponentTeamCode);
   renderTournamentPanel();
@@ -1799,8 +1836,11 @@ function nextUserGroupFixture(ts=tournamentState){
 function recordFixtureResult(fixture,goalsHome,goalsAway,source='cpu'){
   if(!fixture||fixture.played) return null;
   fixture.played=true;
-  fixture.result={homeGoals:goalsHome,awayGoals:goalsAway,source};
   const winner=goalsHome===goalsAway?null:(goalsHome>goalsAway?fixture.home:fixture.away);
+  fixture.status='completed';
+  fixture.homeScore=goalsHome;
+  fixture.awayScore=goalsAway;
+  fixture.result={homeGoals:goalsHome,awayGoals:goalsAway,winner,source};
   const result={fixtureId:fixture.id,stage:fixture.stage,round:fixture.round,home:fixture.home,away:fixture.away,goalsHome,goalsAway,winner,source};
   tournamentState.results.push(result);
   rebuildTournamentStandings(tournamentState);
@@ -1835,11 +1875,12 @@ function createKnockoutBracket(){
     currentRound:'quarterfinal',
     currentRoundLabel:'Quarterfinal',
     rounds:{
-      quarterfinal:qfPairs.map(([home,away],idx)=>({id:`qf${idx}`,stage:'knockout',round:'quarterfinal',roundLabel:'Quarterfinal',home,away,played:false,result:null})),
+      quarterfinal:qfPairs.map(([home,away],idx)=>({id:`qf${idx}`,stage:'knockout',round:'quarterfinal',roundLabel:'Quarterfinal',home,away,status:'upcoming',played:false,result:null})),
       semifinal:[],
       final:[]
     }
   };
+  refreshFixtureStatuses(ts);
 }
 
 function completeTournamentElimination(championPool){
@@ -1848,7 +1889,7 @@ function completeTournamentElimination(championPool){
   ts.active=false;
   ts.outcome='eliminated';
   ts.champion=simulateChampionFrom(championPool.filter(Boolean));
-  ts.currentFixtureId=null;
+  setCurrentTournamentFixture(null,ts);
 }
 
 function finishTournamentGroupStage(){
@@ -1860,7 +1901,7 @@ function finishTournamentGroupStage(){
   }
   ts.stage='knockout';
   const userFixture=ts.bracket.rounds.quarterfinal.find(f=>f.home===ts.userTeam||f.away===ts.userTeam);
-  ts.currentFixtureId=userFixture?.id||null;
+  setCurrentTournamentFixture(userFixture?.id||null,ts);
   const opponent=currentTournamentOpponent();
   if(opponent) opponentTeamCode=normalizeTeamCode(opponent,opponentTeamCode);
 }
@@ -1898,13 +1939,13 @@ function buildNextKnockoutRound(currentRound){
     ts.active=false;
     ts.outcome=winners[0]===ts.userTeam?'champion':'eliminated';
     ts.champion=winners[0]||null;
-    ts.currentFixtureId=null;
+    setCurrentTournamentFixture(null,ts);
     return;
   }
   const nextFixtures=[];
   for(let i=0;i<winners.length;i+=2){
     if(winners[i]&&winners[i+1]){
-      nextFixtures.push({id:`${nextRound}${i/2}`,stage:'knockout',round:nextRound,roundLabel:knockoutLabel(nextRound),home:winners[i],away:winners[i+1],played:false,result:null});
+      nextFixtures.push({id:`${nextRound}${i/2}`,stage:'knockout',round:nextRound,roundLabel:knockoutLabel(nextRound),home:winners[i],away:winners[i+1],status:'upcoming',played:false,result:null});
     }
   }
   ts.bracket.currentRound=nextRound;
@@ -1915,7 +1956,7 @@ function buildNextKnockoutRound(currentRound){
     completeTournamentElimination(winners);
     return;
   }
-  ts.currentFixtureId=userFixture.id;
+  setCurrentTournamentFixture(userFixture.id,ts);
   const opponent=currentTournamentOpponent();
   if(opponent) opponentTeamCode=normalizeTeamCode(opponent,opponentTeamCode);
 }
@@ -1939,6 +1980,7 @@ function advanceTournamentAfterUserMatch(won){
   if(!ts||!ts.active) return;
   const fixture=currentTournamentFixture();
   if(!fixture) return;
+  const replaySnapshot=cloneTournamentState(ts);
   const stageBefore=tournamentRoundLabel();
   const userHome=fixture.home===ts.userTeam;
   const userSeriesGoals=matchSeries?.playerWins??pScore;
@@ -1958,7 +2000,7 @@ function advanceTournamentAfterUserMatch(won){
     const next=nextUserGroupFixture(ts);
     if(next){
       ts.groupRound=next.round;
-      ts.currentFixtureId=next.id;
+      setCurrentTournamentFixture(next.id,ts);
       const opponent=currentTournamentOpponent();
       if(opponent) opponentTeamCode=normalizeTeamCode(opponent,opponentTeamCode);
     } else {
@@ -1977,6 +2019,7 @@ function advanceTournamentAfterUserMatch(won){
   ts.progression={
     stage:stageBefore,
     round:fixture.round,
+    completedFixtureId:fixture.id,
     userResult,
     cpuResults,
     nextFixtureId:nextFixture?.id||null,
@@ -1985,6 +2028,7 @@ function advanceTournamentAfterUserMatch(won){
     outcome:ts.outcome,
     champion:ts.champion
   };
+  ts.replaySnapshot=replaySnapshot;
   renderTournamentPanel();
 }
 
@@ -2019,21 +2063,40 @@ function renderGroupTablesHtml(ts){
 }
 
 function renderFixtureBoard(ts){
-  const currentId=ts.currentFixtureId;
   if(ts.stage==='knockout'&&ts.bracket) return renderBracketSummary(ts);
   const rounds=[0,1,2].map(round=>{
     const rows=(ts.fixtures||[]).filter(f=>f.round===round).map(f=>{
-      const isCurrent=f.id===currentId;
+      const status=fixtureStatus(f,ts);
+      const isCurrent=status==='current';
+      const isCompleted=status==='completed';
       const isUser=f.home===ts.userTeam||f.away===ts.userTeam;
-      const status=f.played?fixtureScoreText(f):(isCurrent?'CURRENT':'upcoming');
-      return `<div class="fixture-row ${isCurrent?'current':''} ${f.played?'done':''} ${isUser?'you':''}">
-        <span>${escHtml(f.home)} ${f.played?fixtureScoreText(f):'vs'} ${escHtml(f.away)}</span>
-        <span>${escHtml(status)}</span>
+      const display=isCompleted?fixtureScoreText(f):(isCurrent?'CURRENT':'upcoming');
+      return `<div class="fixture-row ${isCurrent?'current':''} ${isCompleted?'done':''} ${isUser?'you':''}">
+        <span>${escHtml(f.home)} ${isCompleted?fixtureScoreText(f):'vs'} ${escHtml(f.away)}</span>
+        <span>${escHtml(display)}</span>
       </div>`;
     }).join('');
     return `<div class="tournament-box"><strong>Round ${round+1} Fixtures</strong>${rows}</div>`;
   }).join('');
   return `<div class="fixture-board">${rounds}</div>`;
+}
+
+function renderBracketPlaceholders(){
+  const qf=[
+    ['Group A Winner','Group B Runner-Up'],
+    ['Group C Winner','Group D Runner-Up'],
+    ['Group B Winner','Group A Runner-Up'],
+    ['Group D Winner','Group C Runner-Up']
+  ].map(([a,b],i)=>`<div class="fixture-row"><span>QF${i+1}: ${escHtml(a)} vs ${escHtml(b)}</span><span>locked</span></div>`).join('');
+  const sf=[
+    ['Winner QF1','Winner QF2'],
+    ['Winner QF3','Winner QF4']
+  ].map(([a,b],i)=>`<div class="fixture-row"><span>SF${i+1}: ${escHtml(a)} vs ${escHtml(b)}</span><span>locked</span></div>`).join('');
+  return `<div class="fixture-board">
+    <div class="tournament-box"><strong>Quarterfinal Preview</strong>${qf}</div>
+    <div class="tournament-box"><strong>Semifinal Preview</strong>${sf}</div>
+    <div class="tournament-box"><strong>Final Preview</strong><div class="fixture-row"><span>Winner SF1 vs Winner SF2</span><span>locked</span></div></div>
+  </div>`;
 }
 
 function renderCupProgression(ts){
@@ -2055,17 +2118,38 @@ function renderCupProgression(ts){
 function renderCupDebug(ts){
   if(!DEBUG_CUP) return '';
   const fixture=currentTournamentFixture();
+  const standingsLines=(ts.standings||[]).map((group,idx)=>{
+    const rows=sortedStandings(group).map(s=>`${s.code}:${s.played}/${s.wins}-${s.losses}/${s.gf}-${s.ga}/${s.points}`).join(' ');
+    return `Group ${String.fromCharCode(65+idx)} ${rows}`;
+  }).join('\n');
   const lines=[
     `stage: ${ts.stage}`,
     `round: ${ts.groupRound ?? ts.bracket?.currentRound ?? '-'}`,
     `currentFixtureId: ${ts.currentFixtureId||'-'}`,
+    `currentFixtureStatus: ${fixture?.status||'-'}`,
     `currentFixture: ${fixture?`${fixture.home} vs ${fixture.away}`:'-'}`,
     `userTeam: ${ts.userTeam}`,
+    `nextUserFixture: ${fixture?`${fixture.home} vs ${fixture.away}`:'-'}`,
+    `completedFixtures: ${allTournamentFixtures(ts).filter(f=>fixtureStatus(f,ts)==='completed').length}`,
     `results: ${(ts.results||[]).length}`,
     `standingsSource: ${ts.standingsSource||'completed fixtures'}`,
-    `fixtures: ${(ts.fixtures||[]).filter(f=>f.played).length}/${(ts.fixtures||[]).length} group played`
+    `fixtures: ${(ts.fixtures||[]).filter(f=>f.played).length}/${(ts.fixtures||[]).length} group played`,
+    standingsLines
   ];
   return `<div class="cup-debug">${escHtml(lines.join('\n'))}</div>`;
+}
+
+function validateCupState(context='cup'){
+  if(!DEBUG_CUP||!tournamentState) return;
+  const ts=tournamentState;
+  refreshFixtureStatuses(ts);
+  const current=allTournamentFixtures(ts).filter(f=>f.status==='current');
+  if(current.length>1) console.warn(`[Cup debug] ${context}: more than one current fixture`,current);
+  const fixture=currentTournamentFixture();
+  if(fixture&&fixture.status==='completed') console.warn(`[Cup debug] ${context}: current fixture is already completed`,fixture);
+  const completedFixture=allTournamentFixtures(ts).find(f=>f.id===ts.progression?.completedFixtureId);
+  if(phase==='gameOver'&&ts.progression?.userResult&&!completedFixture?.result) console.warn(`[Cup debug] ${context}: result screen has progression but completed fixture has no score`,ts.progression);
+  if(ts.results?.some(r=>r.source==='user')&&!allTournamentFixtures(ts).some(f=>f.status==='completed')) console.warn(`[Cup debug] ${context}: user result exists but standings have 0 completed fixtures`,ts);
 }
 
 function renderTournamentPanel(){
@@ -2098,6 +2182,7 @@ function renderTournamentPanel(){
   else if(ts.outcome==='champion') status=`Champion! ${ts.userTeam} lifted the cup.`;
   else status=`Eliminated · Champion: ${ts.champion||'TBD'}`;
   const fixtureBoard=renderFixtureBoard(ts);
+  const bracketPreview=ts.stage==='group'&&!ts.bracket?renderBracketPlaceholders():'';
   const progressionHtml=renderCupProgression(ts);
   const simHtml=ts.lastSimulated?.length?`
     <div class="tournament-box"><strong>Latest CPU results</strong>
@@ -2112,8 +2197,10 @@ function renderTournamentPanel(){
     ${progressionHtml}
     <div class="tournament-grid">${groupsHtml}${simHtml}</div>
     ${fixtureBoard}
+    ${bracketPreview}
     ${renderCupDebug(ts)}
   `;
+  validateCupState('renderTournamentPanel');
 }
 
 function renderBracketSummary(ts){
@@ -6947,8 +7034,9 @@ function showGameOver(){
   el.btn.dataset.action=MP_ACTIVE&&series?.complete?'lobby':primaryAction;
   el.rematch.hidden=false;
   el.rematch.disabled=false;
-  el.rematch.textContent=MP_ACTIVE?'Rematch':'Replay';
+  el.rematch.textContent=MP_ACTIVE?'Rematch':(selectedMatchTypeId==='cup'?'Replay Match':'Replay');
   el.backLobby.hidden=false;
+  el.backLobby.textContent=selectedMatchTypeId==='cup'&&!MP_ACTIVE?'Back to Cup Setup':'Back to Lobby';
   el.leg.style.display='none';
   setSetupMenusVisible(false);
   renderTournamentPanel();
@@ -6975,12 +7063,28 @@ el.rematch.addEventListener('click',()=>{
     startMultiplayerRematch();
     return;
   }
+  if(selectedMatchTypeId==='cup'&&tournamentState?.replaySnapshot){
+    tournamentState=cloneTournamentState(tournamentState.replaySnapshot);
+    refreshFixtureStatuses(tournamentState);
+    const opponent=currentTournamentOpponent();
+    if(opponent) opponentTeamCode=normalizeTeamCode(opponent,opponentTeamCode);
+    replayWordOverride=currentWord;
+    resetMatchSeries();
+    startNextWordFromOverlay();
+    return;
+  }
   replayWordOverride=currentWord;
   startMatchFromOverlay();
 });
 
 el.backLobby.addEventListener('click',()=>{
   if(MP_ACTIVE&&mpClient) mpClient.endGame();
+  if(selectedMatchTypeId==='cup'&&!MP_ACTIVE){
+    tournamentState=null;
+    ensureTournamentState(true);
+    showSetupOverlay('🏆 Cup Setup');
+    return;
+  }
   window.location.href='../index.html';
 });
 

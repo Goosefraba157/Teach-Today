@@ -1,8 +1,9 @@
-const CACHE_NAME = "teach-today-offline-v2026-07-06-dev-dashboard-1";
+const CACHE_NAME = "teach-today-offline-v2026-07-06-letter-soccer-cup-state-data-diagnostic-1";
 
 const APP_SHELL = [
   "./",
   "./DeveloperDashboard.html",
+  "./DeveloperDataDiagnostic.html",
   "./TeachToday.html",
   "./PdfViewer.html",
   "./ReferencePdfs.html",
@@ -19,6 +20,7 @@ const APP_SHELL = [
   "./app-nav.css",
   "./app-nav.js",
   "./developer-dashboard.css",
+  "./developer-data-diagnostic.css",
   "./teach-today.css",
   "./student-display.css",
   "./student-profile.css",
@@ -28,6 +30,7 @@ const APP_SHELL = [
   "./developer-access.js",
   "./developer-menu-config.js",
   "./developer-dashboard.js",
+  "./developer-data-diagnostic.js",
   "./teach-today.js",
   "./student-display.js",
   "./student-profile.js",
