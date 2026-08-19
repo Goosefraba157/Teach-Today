@@ -9813,28 +9813,28 @@ async function ttSecureLegacyStudentData() {
 
     for (const studentId of studentClaims) {
       await setDoc(doc(firestoreDb, "students", studentId), {
-        ownerUid: ttFirebaseUser.uid,
+        teacherUid: ttFirebaseUser.uid,
         privacyMigratedAt: serverTimestamp()
       }, { merge: true });
     }
 
     for (const codeId of codeClaims) {
       await setDoc(doc(firestoreDb, "studentCodes", codeId), {
-        ownerUid: ttFirebaseUser.uid,
+        teacherUid: ttFirebaseUser.uid,
         privacyMigratedAt: serverTimestamp()
       }, { merge: true });
     }
 
     for (const linkId of linkClaims) {
       await setDoc(doc(firestoreDb, "studentLinks", linkId), {
-        ownerUid: ttFirebaseUser.uid,
+        teacherUid: ttFirebaseUser.uid,
         privacyMigratedAt: serverTimestamp()
       }, { merge: true });
     }
 
     const receipt = {
       completedAt: new Date().toISOString(),
-      ownerUid: ttFirebaseUser.uid,
+      teacherUid: ttFirebaseUser.uid,
       students: claimedStudentIds.size,
       codes: codeClaims.length,
       links: linkClaims.length
