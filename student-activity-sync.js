@@ -129,6 +129,7 @@
           const uploaded = await uploadAudio({ ...event, originalTranscript }, api);
           await api.setDoc(activityRef, { ...uploaded, originalTranscript, syncedAt: api.serverTimestamp() }, { merge: true });
           await api.setDoc(api.doc(api.firestoreDb, "students", profile.id), {
+            teacherUid: profile.teacherUid || "",
             name: profile.name || event.studentName || "Student",
             groupId: profile.groupId || event.groupId || "",
             groupName: profile.groupName || event.groupName || "",

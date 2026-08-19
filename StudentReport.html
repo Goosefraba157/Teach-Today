@@ -222,6 +222,13 @@ function loadState() {
 
 function qp() { return new URLSearchParams(location.search); }
 
+function studentNameFromPrivateId(data, group, studentId) {
+  if (!studentId) return "";
+  const roster = (data.rosterStudents || []).find((item) => item.studentId === studentId);
+  if (roster?.name) return roster.name;
+  return Object.entries(group?.studentIds || {}).find(([, id]) => id === studentId)?.[0] || "";
+}
+
 function getContext() {
   const data = loadState();
   const q = qp();
@@ -229,7 +236,11 @@ function getContext() {
     || (data.groups || []).find((g) => g.id === data.selectedGroupId)
     || (data.groups || [])[0]
     || { name: "No group", students: [] };
-  const student = q.get("student") || group.activeStudent || group.students[0] || "";
+  const student = studentNameFromPrivateId(data, group, q.get("studentId"))
+    || q.get("student")
+    || group.activeStudent
+    || group.students[0]
+    || "";
   const profileGroup = student && !(group.students || []).includes(student)
     ? (data.groups || []).find((g) => (g.students || []).includes(student)) || group
     : group;

@@ -3773,6 +3773,7 @@ function ttRenderDataCenter() {
   const cloudStatusEl = ttById("ttCloudSyncStatus");
   const driveStatusEl = ttById("ttDriveSyncStatus");
   const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
+  const secureLegacyButton = ttById("ttSecureLegacyStudentData");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
@@ -3781,6 +3782,7 @@ function ttRenderDataCenter() {
   if (cloudStatusEl) cloudStatusEl.textContent = `${cloudFolder ? `${cloudFolder}: ` : ""}${cloudStatus} Local browser storage is still saved first.`;
   if (driveStatusEl) driveStatusEl.textContent = `${driveStatus} Local browser storage is still saved first.`;
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
+  if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
 }
 
 function ttShowConnectionNotice(message, title = "Cloud connection issue") {
@@ -9746,6 +9748,87 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
   }
 }
 
+async function ttSecureLegacyStudentData() {
+  if (!ttFirebaseUser) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google before securing legacy student records.");
+    ttRenderDataCenter();
+    return;
+  }
+  const button = ttById("ttSecureLegacyStudentData");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Securing student records…";
+  }
+  try {
+    const { firestoreDb, collection, getDocs, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+    const normalize = (value) => String(value || "").trim().toLocaleLowerCase();
+    const localStudents = new Map();
+    (appState.groups || []).forEach((group) => {
+      (group.students || []).forEach((name) => {
+        const roster = (appState.rosterStudents || []).find((item) => item.studentId === group.studentIds?.[name]
+          || normalize(item.name || item.fullName) === normalize(name));
+        const key = `${group.id}::${normalize(name)}`;
+        localStudents.set(key, { groupId: group.id, name, studentId: roster?.studentId || group.studentIds?.[name] || "" });
+      });
+    });
+
+    const studentSnapshot = await getDocs(collection(firestoreDb, "students"));
+    const claimedStudentIds = new Set();
+    for (const studentDoc of studentSnapshot.docs) {
+      const data = studentDoc.data();
+      const names = [data.name, data.fullName].map(normalize).filter(Boolean);
+      const matchesLocal = names.some((name) => localStudents.has(`${data.groupId || ""}::${name}`));
+      if (!matchesLocal && ![...localStudents.values()].some((item) => item.studentId && item.studentId === studentDoc.id)) continue;
+      await setDoc(doc(firestoreDb, "students", studentDoc.id), {
+        teacherUid: ttFirebaseUser.uid,
+        privacyMigratedAt: serverTimestamp()
+      }, { merge: true });
+      claimedStudentIds.add(studentDoc.id);
+    }
+
+    let securedCodes = 0;
+    const codeSnapshot = await getDocs(collection(firestoreDb, "studentCodes"));
+    for (const codeDoc of codeSnapshot.docs) {
+      if (!claimedStudentIds.has(codeDoc.data().studentId)) continue;
+      await setDoc(doc(firestoreDb, "studentCodes", codeDoc.id), {
+        teacherUid: ttFirebaseUser.uid,
+        privacyMigratedAt: serverTimestamp()
+      }, { merge: true });
+      securedCodes += 1;
+    }
+
+    let securedLinks = 0;
+    const linkSnapshot = await getDocs(collection(firestoreDb, "studentLinks"));
+    for (const linkDoc of linkSnapshot.docs) {
+      if (!claimedStudentIds.has(linkDoc.data().studentId)) continue;
+      await setDoc(doc(firestoreDb, "studentLinks", linkDoc.id), {
+        teacherUid: ttFirebaseUser.uid,
+        privacyMigratedAt: serverTimestamp()
+      }, { merge: true });
+      securedLinks += 1;
+    }
+
+    const receipt = {
+      completedAt: new Date().toISOString(),
+      teacherUid: ttFirebaseUser.uid,
+      students: claimedStudentIds.size,
+      codes: securedCodes,
+      links: securedLinks
+    };
+    localStorage.setItem("teachToday.privacyMigrationReceipt", JSON.stringify(receipt));
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Privacy migration secured ${receipt.students} student record(s), ${receipt.codes} code(s), and ${receipt.links} link(s).`);
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Privacy migration could not finish (${detail}). No records were deleted.`);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Secure legacy student records";
+    }
+    ttRenderDataCenter();
+  }
+}
+
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
   ttFirebaseTimer = setTimeout(() => ttFirebaseSyncWrite(), 1200);
@@ -12270,6 +12353,7 @@ function ttBind() {
     ttRenderDataCenter();
   }));
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
+  ttById("ttSecureLegacyStudentData")?.addEventListener("click", () => ttSecureLegacyStudentData());
   ttById("ttConnectionRetry")?.addEventListener("click", () => ttRetryCloudConnections());
   ttById("ttConnectionOffline")?.addEventListener("click", () => ttSetWorkOffline(true));
   document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
@@ -12446,7 +12530,10 @@ function ttOpenStudentProfile() {
   const group = ttActiveGroup();
   const student = group.activeStudent || group.students[0] || "";
   if (!student) return;
-  const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&student=${encodeURIComponent(student)}`;
+  const studentId = group.studentIds?.[student]
+    || (appState.rosterStudents || []).find((item) => (item.name || item.fullName) === student)?.studentId
+    || "";
+  const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&studentId=${encodeURIComponent(studentId)}`;
   location.href = url;
 }
 

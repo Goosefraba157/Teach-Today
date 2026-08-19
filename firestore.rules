@@ -4,43 +4,70 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null;
     }
-    function isTeacher() {
+    function isGoogleTeacher() {
       return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function teacherOwns(data) {
+      return isGoogleTeacher() && data.teacherUid == request.auth.uid;
     }
     function ownsStudent(studentId) {
       return signedIn()
         && get(/databases/$(database)/documents/students/$(studentId)).data.ownerUid == request.auth.uid;
     }
+    function teachesStudent(studentId) {
+      return teacherOwns(get(/databases/$(database)/documents/students/$(studentId)).data);
+    }
 
     match /studentCodes/{code} {
-      allow get: if signedIn();
-      allow list, create, update, delete: if isTeacher();
+      allow get: if signedIn() && resource.data.active == true;
+      allow list: if teacherOwns(resource.data);
+      allow create: if isGoogleTeacher()
+        && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if teacherOwns(resource.data)
+        && request.resource.data.teacherUid == resource.data.teacherUid;
+      allow delete: if teacherOwns(resource.data);
     }
 
     match /studentLinks/{linkId} {
-      allow read: if isTeacher();
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isTeacher() || resource.data.ownerUid == request.auth.uid;
-      allow delete: if isTeacher();
+      allow read: if teacherOwns(resource.data)
+        || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.teacherUid is string
+        && get(/databases/$(database)/documents/students/$(request.resource.data.studentId)).data.teacherUid == request.resource.data.teacherUid;
+      allow update: if teacherOwns(resource.data)
+        || (signedIn()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.teacherUid == resource.data.teacherUid);
+      allow delete: if teacherOwns(resource.data);
     }
 
     match /students/{studentId} {
-      allow read: if isTeacher() || (signedIn() && resource.data.ownerUid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isTeacher()
-        || (signedIn() && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid)
-        || (signedIn() && !('ownerUid' in resource.data) && request.resource.data.ownerUid == request.auth.uid);
-      allow delete: if isTeacher();
+      allow read: if teacherOwns(resource.data)
+        || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.teacherUid is string
+        && request.resource.data.loginCode is string
+        && get(/databases/$(database)/documents/studentCodes/$(request.resource.data.loginCode)).data.teacherUid == request.resource.data.teacherUid;
+      allow update: if (teacherOwns(resource.data)
+        && request.resource.data.teacherUid == resource.data.teacherUid)
+        || (signedIn()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.teacherUid == resource.data.teacherUid);
+      allow delete: if teacherOwns(resource.data);
 
       match /activity/{activityId} {
-        allow read: if isTeacher() || ownsStudent(studentId);
+        allow read: if teachesStudent(studentId) || ownsStudent(studentId);
         allow create: if ownsStudent(studentId)
           && request.resource.data.studentId == studentId;
-        allow update: if isTeacher()
+        allow update: if teachesStudent(studentId)
           || (ownsStudent(studentId)
             && request.resource.data.studentId == studentId
             && request.resource.data.originalTranscript == resource.data.originalTranscript);
-        allow delete: if isTeacher();
+        allow delete: if teachesStudent(studentId);
       }
     }
 
@@ -49,7 +76,7 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
     match /teachTodaySync/{document=**} {
-      allow read, write: if isTeacher();
+      allow read, write: if false;
     }
   }
 }

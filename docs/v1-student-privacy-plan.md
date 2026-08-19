@@ -100,6 +100,18 @@ Record
 - Student matching still falls back to group plus normalized name, which cannot reliably preserve identity across school years.
 - Some local storage keys are keyed by student ID, while older records and groups still use names. Migration must support both during transition.
 
+## Implementation Status (2026-08-18)
+
+- Complete: permanent random student IDs and privacy-safe display names.
+- Complete: active `2026-2027` school year plus archived `2025-2026` metadata for legacy groups and records.
+- Complete: real roster and school defaults removed from publicly served source.
+- Complete: ordinary profile, report, student-preview, drill, and game navigation changed to use student IDs instead of names in URLs.
+- Complete: student-identifying chart PDFs and named example lesson decks removed from the publishable tree; recovery commits retain them privately for rollback.
+- Prepared, not deployed: owner-scoped Firestore and Storage rules.
+- Prepared, not run: teacher-controlled migration that adds `teacherUid` to matched legacy student, code, and link documents and records a local receipt.
+- Still required before strict rules deploy: publish the migration-capable app, sign in as the teacher, run **Secure legacy student records**, and verify nonzero expected counts.
+- Still required for historical removal: rewrite the public Git repository history or replace the repository after preserving a private backup. Removing files from the current branch alone does not erase old commits.
+
 ## Completion Criteria
 
 - No real roster appears in publicly served source or default data.

@@ -135,14 +135,18 @@ function portalStudentLinkId(groupId, name) {
 }
 
 async function findPortalStudent(group, student) {
-  const { firestoreDb, doc, getDoc, collection, getDocs, query, where } = await profileFirebaseSdk();
+  const { firestoreDb, firebaseAuth, doc, getDoc, collection, getDocs, query, where } = await profileFirebaseSdk();
+  const teacherUid = firebaseAuth.currentUser?.uid || "";
+  if (!teacherUid) return null;
   const linkSnapshot = await getDoc(doc(firestoreDb, "studentLinks", portalStudentLinkId(group.id, student)));
   if (linkSnapshot.exists() && linkSnapshot.data().studentId) {
     const studentSnapshot = await getDoc(doc(firestoreDb, "students", linkSnapshot.data().studentId));
     if (studentSnapshot.exists()) return { id: studentSnapshot.id, ...studentSnapshot.data() };
   }
-  const snapshot = await getDocs(query(collection(firestoreDb, "students"), where("groupId", "==", group.id || "")));
-  const candidates = snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+  const snapshot = await getDocs(query(collection(firestoreDb, "students"), where("teacherUid", "==", teacherUid)));
+  const candidates = snapshot.docs
+    .map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+    .filter((item) => item.groupId === (group.id || ""));
   return candidates.find((item) => normalizeStudentName(item.name) === normalizeStudentName(student)
     || normalizeStudentName(item.fullName) === normalizeStudentName(student)) || null;
 }
@@ -351,6 +355,19 @@ function params() {
   return new URLSearchParams(location.search);
 }
 
+function privateStudentId(data, group, student) {
+  return group?.studentIds?.[student]
+    || (data.rosterStudents || []).find((item) => (item.name || item.fullName) === student)?.studentId
+    || "";
+}
+
+function studentNameFromPrivateId(data, group, studentId) {
+  if (!studentId) return "";
+  const roster = (data.rosterStudents || []).find((item) => item.studentId === studentId);
+  if (roster?.name) return roster.name;
+  return Object.entries(group?.studentIds || {}).find(([, id]) => id === studentId)?.[0] || "";
+}
+
 function selectedContext() {
   const data = state();
   const query = params();
@@ -358,7 +375,12 @@ function selectedContext() {
     || (data.groups || []).find((item) => item.id === data.selectedGroupId)
     || (data.groups || [])[0]
     || { name: "No group", students: [] };
-  const student = query.get("student") || group.activeStudent || group.students[0] || "";
+  const studentId = query.get("studentId") || "";
+  const student = studentNameFromPrivateId(data, group, studentId)
+    || query.get("student")
+    || group.activeStudent
+    || group.students[0]
+    || "";
   const profileGroup = student && !(group.students || []).includes(student)
     ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
     : group;
@@ -370,7 +392,7 @@ function selectedContext() {
   ));
   const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
   const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
-  return { data, group: profileGroup, student, records, dictationMisses, encodingObservations };
+  return { data, group: profileGroup, student, studentId: studentId || privateStudentId(data, profileGroup, student), records, dictationMisses, encodingObservations };
 }
 
 function render() {
@@ -615,7 +637,8 @@ function renderProfileStudentButtons(data, group, activeStudent) {
       const studentGroup = comparisonScope === "all"
         ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
         : group;
-      location.href = `StudentProfile.html?group=${encodeURIComponent(studentGroup.id || "")}&student=${encodeURIComponent(student)}`;
+      const studentId = privateStudentId(data, studentGroup, student);
+      location.href = `StudentProfile.html?group=${encodeURIComponent(studentGroup.id || "")}&studentId=${encodeURIComponent(studentId)}`;
     });
     container.appendChild(button);
   });
@@ -1618,8 +1641,8 @@ function shortDate(value) {
 }
 
 byId("printProfile").addEventListener("click", () => {
-  const { group, student } = selectedContext();
-  const url = `StudentReport.html?group=${encodeURIComponent(group.id || "")}&student=${encodeURIComponent(student)}`;
+  const { group, studentId } = selectedContext();
+  const url = `StudentReport.html?group=${encodeURIComponent(group.id || "")}&studentId=${encodeURIComponent(studentId || "")}`;
   location.href = url;
 });
 byId("backTeach").addEventListener("click", () => {
@@ -1627,10 +1650,10 @@ byId("backTeach").addEventListener("click", () => {
   location.href = `TeachToday.html?group=${encodeURIComponent(group.id || "")}`;
 });
 function studentHomeUrl() {
-  const { group, student } = selectedContext();
+  const { group, studentId } = selectedContext();
   const url = new URL("student.html", location.href);
   url.searchParams.set("preview", "1");
-  url.searchParams.set("student", student || "Student");
+  url.searchParams.set("studentId", studentId || "");
   url.searchParams.set("group", group.id || "");
   url.searchParams.set("substep", group.substep || "2.1");
   return url.href;
@@ -1639,14 +1662,12 @@ byId("openStudentHome")?.addEventListener("click", () => {
   location.href = studentHomeUrl();
 });
 byId("launchSoundsDrill")?.addEventListener("click", () => {
-  const { group, student } = selectedContext();
+  const { group, student, studentId } = selectedContext();
   const url = new URL("lesson-21-s1.html", location.href);
-  url.searchParams.set("student", student || "Student");
-  url.searchParams.set("studentId", `local:${group.id || "group"}:${student || "student"}`);
+  url.searchParams.set("studentId", studentId || "");
   url.searchParams.set("group", group.id || "");
-  url.searchParams.set("groupName", group.name || "");
   url.searchParams.set("source", "teacher-profile");
-  url.searchParams.set("return", `StudentProfile.html?group=${encodeURIComponent(group.id || "")}&student=${encodeURIComponent(student || "")}`);
+  url.searchParams.set("return", `StudentProfile.html?group=${encodeURIComponent(group.id || "")}&studentId=${encodeURIComponent(studentId || "")}`);
   location.href = url.href;
 });
 byId("connectDriveAudio")?.addEventListener("click", async () => {

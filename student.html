@@ -687,6 +687,8 @@ async function resolveCode(rawCode) {
   if (!codeSnap.exists() || codeSnap.data().active === false) throw new Error("CODE_NOT_FOUND");
 
   const codeData = codeSnap.data();
+  const teacherUid = String(codeData.teacherUid || "");
+  if (!teacherUid) throw new Error("CODE_NEEDS_PRIVACY_UPGRADE");
   const studentRef = doc(db, "students", codeData.studentId);
   const studentSnap = await getDoc(studentRef);
 
@@ -697,13 +699,17 @@ async function resolveCode(rawCode) {
       profile.ownerUid = auth.currentUser.uid;
       await setDoc(studentRef, { ownerUid: profile.ownerUid }, { merge: true });
     }
+    if (!profile.teacherUid) {
+      profile.teacherUid = teacherUid;
+      await setDoc(studentRef, { teacherUid }, { merge: true });
+    }
   } else {
     profile = {
       id:codeData.studentId, name:codeData.studentName||"Student",
       fullName:codeData.studentName||"Student", substep:codeData.substep||"1.1",
       groupId:codeData.groupId||"", xp:0, streak:0, avatarId:0,
       lastLoginDate:"", completedLessons:[], assignedTasks:codeData.assignedTasks||[],
-      rewards:[], loginCode:code, ownerUid:auth.currentUser.uid,
+      rewards:[], loginCode:code, ownerUid:auth.currentUser.uid, teacherUid,
     };
     await setDoc(studentRef, { ...profile, createdAt: serverTimestamp() });
   }
@@ -712,6 +718,7 @@ async function resolveCode(rawCode) {
     studentName: profile.name,
     groupId: profile.groupId || "",
     ownerUid: auth.currentUser.uid,
+    teacherUid,
     updatedAt: serverTimestamp()
   }, { merge: true });
 
@@ -732,16 +739,19 @@ function clearSession()  { localStorage.removeItem(SESSION_KEY); }
 
 function teacherPreviewProfile() {
   const query = new URLSearchParams(location.search);
-  if (query.get("preview") !== "1" || !query.get("student")) return null;
-  const name = query.get("student");
+  if (query.get("preview") !== "1" || !query.get("studentId")) return null;
+  const studentId = query.get("studentId");
   const groupId = query.get("group") || "";
   let group = null;
+  let rosterStudent = null;
   try {
     const appData = JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}");
     group = (appData.groups || []).find((item) => item.id === groupId) || null;
+    rosterStudent = (appData.rosterStudents || []).find((item) => item.studentId === studentId) || null;
   } catch {}
+  const name = rosterStudent?.displayName || rosterStudent?.name || "Student";
   return {
-    id: `local:${groupId || "group"}:${name}`,
+    id: studentId,
     name,
     fullName: name,
     groupId,
@@ -842,6 +852,8 @@ async function handleLogin() {
   } catch(e) {
     if (e.message==="CODE_NOT_FOUND") {
       err.textContent="Code not found — ask your teacher for your code.";
+    } else if (e.message==="CODE_NEEDS_PRIVACY_UPGRADE") {
+      err.textContent="This code needs a privacy update from your teacher.";
     } else {
       err.textContent="Can't connect right now — loading demo mode.";
       student={...DEMO, name:input};
@@ -1064,9 +1076,7 @@ function launchStudentLesson(route, setId="", lessonSubstepId="") {
   if (setId) url.searchParams.set("set", setId);
   if (window.TTStudentDeveloperAccess?.isEnabled(student)) url.searchParams.set("developer", "1");
   url.searchParams.set("studentId", student.id || "");
-  url.searchParams.set("student", student.name || "Student");
   url.searchParams.set("group", student.groupId || "");
-  url.searchParams.set("groupName", student.groupName || "");
   url.searchParams.set("return", `${location.pathname.split("/").pop() || "student.html"}${location.search}`);
   location.href = url.href;
 }
@@ -1074,9 +1084,7 @@ function launchStudentLesson(route, setId="", lessonSubstepId="") {
 function launchSoundsDrill() {
   const url = new URL("lesson-21-s1.html", location.href);
   url.searchParams.set("studentId", student.id || "");
-  url.searchParams.set("student", student.name || "Student");
   url.searchParams.set("group", student.groupId || "");
-  url.searchParams.set("groupName", student.groupName || "");
   url.searchParams.set("source", "student-home");
   url.searchParams.set("return", `${location.pathname.split("/").pop() || "student.html"}${location.search}`);
   location.href = url.href;

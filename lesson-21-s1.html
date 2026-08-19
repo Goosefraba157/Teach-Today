@@ -2550,9 +2550,18 @@ function renderStudentChips() {
 }
 
 function hydrateStudentFromLaunch() {
-  const name = launchParams.get('student');
-  if (!name) return;
-  const requestedId = launchParams.get('studentId') || `student:${name}`;
+  const requestedId = launchParams.get('studentId') || '';
+  let name = launchParams.get('student') || '';
+  if (!name && requestedId) {
+    try {
+      const sessionProfile = JSON.parse(localStorage.getItem('tt_student_v1') || '{}').profile;
+      if (sessionProfile?.id === requestedId) name = sessionProfile.name || '';
+      const appData = JSON.parse(localStorage.getItem('dyslexiaInstructionEngine.v2') || '{}');
+      const rosterStudent = (appData.rosterStudents || []).find((item) => item.studentId === requestedId);
+      name ||= rosterStudent?.displayName || rosterStudent?.name || '';
+    } catch {}
+  }
+  if (!name || !requestedId) return;
   const students = getStudents();
   let student = students.find((item) => item.id === requestedId)
     || students.find((item) => item.name.toLowerCase() === name.toLowerCase());

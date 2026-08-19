@@ -5,14 +5,7 @@
   const CURSIVE_KEY = "wilsonCursiveStrokeLab.v1";
   const TEACH_KEY = "dyslexiaInstructionEngine.v2";
 
-  const seedNames = [
-    "Angel", "Emma", "Ariana", "Mia", "Emmanuel", "Juan", "Sofia",
-    "Alesander", "Linda", "Joshua", "Jayden C.", "Jayden D.", "Aileen",
-    "Davonte", "Bethany", "Ayden", "Jedediah", "Makayla", "Rodrigo",
-    "Diomedes", "Alberto", "Ta'Marrion", "Jesus", "Madison", "Xavier",
-    "Allison", "Jade", "Julianna", "Robert", "Jose", "Jerson", "Yeici", "Katy",
-    "Maya", "Eli", "Jordan"
-  ];
+  const seedNames = ["Student One", "Student Two"];
 
   const dom = {
     studentGate: document.querySelector("#studentGate"),
@@ -117,13 +110,13 @@
   }
 
   function renderGames(student, totals) {
-    const studentParam = encodeURIComponent(student.name);
+    const studentParam = encodeURIComponent(student.id);
     const gameCards = [
       {
         id: "cursive",
         title: "Cursive Stroke Lab",
         copy: "Trace letters, build streaks, and turn careful strokes into points.",
-        href: `Cursive%20Tracing%20WIlson/index.html?student=${studentParam}`,
+        href: `Cursive%20Tracing%20WIlson/index.html?studentId=${studentParam}`,
         points: totals.cursive || 0,
         status: "Ready",
         art: ["a", "b", "c", "d"],
@@ -133,7 +126,7 @@
         id: "syllableSlice",
         title: "Syllable Slice",
         copy: "Slice Reader 3.1 words into syllables, stack speed bonuses, and unlock boss rounds.",
-        href: `Syllable%20Slice/index.html?student=${studentParam}`,
+        href: `Syllable%20Slice/index.html?studentId=${studentParam}`,
         points: totals.syllableSlice || 0,
         status: "Ready",
         art: ["sy", "lla", "ble", "|"],
@@ -143,7 +136,7 @@
         id: "decodeDash",
         title: "Decode Dash",
         copy: "Run, jump, and grab the right sound tile to finish Wilson 1.3 words.",
-        href: `Decode%20Dash/index.html?student=${studentParam}`,
+        href: `Decode%20Dash/index.html?studentId=${studentParam}`,
         points: totals.decodeDash || 0,
         status: "Ready",
         art: ["d", "a", "sh", "✓"],
@@ -153,7 +146,7 @@
         id: "wordBuilder",
         title: "Word Builder",
         copy: "Build Wilson 1.3 words from sound tiles, mark the syllable, and stack bonuses.",
-        href: `Word%20Builder/index.html?student=${studentParam}`,
+        href: `Word%20Builder/index.html?studentId=${studentParam}`,
         points: totals.wordBuilder || 0,
         status: "Ready",
         art: ["w", "o", "r", "d"],
@@ -163,7 +156,7 @@
         id: "letterHunt",
         title: "Letter Hunt",
         copy: "Race through the forest to grab your scattered letters and build the word at home base before the CPU does.",
-        href: `Letter%20Hunt/index.html?student=${studentParam}`,
+        href: `Letter%20Hunt/index.html?studentId=${studentParam}`,
         points: totals.letterHunt || 0,
         status: "Ready",
         art: ["f", "i", "n", "d"],
@@ -173,7 +166,7 @@
         id: "letterSoccer",
         title: "Letter Soccer",
         copy: "Race to grab the letter and carry it to your goal! The letter floats in front of the carrier — get in front to steal it, turn away to protect it.",
-        href: `Letter%20Soccer/index.html?student=${studentParam}`,
+        href: `Letter%20Soccer/index.html?studentId=${studentParam}`,
         points: totals.letterSoccer || 0,
         status: "Ready",
         art: ["⚽", "L", "T", "R"],
@@ -270,17 +263,19 @@
   }
 
   function restoreFromQuery() {
-    const name = new URLSearchParams(window.location.search).get("student");
-    if (!name) return;
-    const student = ensureStudent(name);
-    hub.activeStudentId = student.id;
+    const query = new URLSearchParams(window.location.search);
+    const studentId = query.get("studentId");
+    if (studentId && hub.students[studentId]) hub.activeStudentId = studentId;
   }
 
   function readTeachingRoster() {
     try {
       const saved = JSON.parse(localStorage.getItem(TEACH_KEY) || "null");
       if (!saved || !Array.isArray(saved.rosterStudents)) return [];
-      return saved.rosterStudents.map((student) => student.name || student.fullName).filter(Boolean);
+      return saved.rosterStudents.map((student) => ({
+        id: student.studentId || "",
+        name: student.displayName || student.name || student.fullName || ""
+      })).filter((student) => student.name);
     } catch {
       return [];
     }
@@ -302,15 +297,16 @@
     }
   }
 
-  function mergeStudents(names) {
-    names.forEach((name) => {
-      if (name) ensureStudent(name);
+  function mergeStudents(students) {
+    students.forEach((student) => {
+      if (student) ensureStudent(student);
     });
   }
 
-  function ensureStudent(name) {
-    const clean = name.trim();
-    const id = slugify(clean);
+  function ensureStudent(value) {
+    const candidate = typeof value === "string" ? { name: value } : value;
+    const clean = String(candidate.name || "").trim();
+    const id = candidate.id || slugify(clean);
     if (!hub.students[id]) {
       hub.students[id] = {
         id,

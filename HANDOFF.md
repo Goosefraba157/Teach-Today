@@ -20,6 +20,11 @@
 - Commit: `bf63641` (`Preserve recovered V1 slide presenter work`)
 - This commit captures the recovered V1 modifications and the previously uncommitted Lesson Builder V2 presenter files before further work.
 
+## Privacy Checkpoints
+- `7142fe2` — privacy migration design and safety boundary.
+- `4beaecd` — permanent private student IDs, school-year metadata, and removal of real public roster defaults.
+- Owner-scoped Firebase rules and the legacy ownership migration are prepared locally but must not be deployed out of order. Publish code first, run the signed-in migration, verify its receipt, and only then deploy strict rules.
+
 ## Current Baseline (as of 2026-06-08 Codex session)
 - **Student display** — privacy, poster, HFW, passage, and game modes; teacher can open/project from toolbar and presentation dock
 - **PDF reference page** — Wilson Readers and Dictation books with dashboard links to current reader/charting and dictation pages

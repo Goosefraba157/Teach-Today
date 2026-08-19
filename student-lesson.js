@@ -360,9 +360,7 @@
   function launchSoundsActivity() {
     const url = new URL("lesson-21-s1.html", location.href);
     url.searchParams.set("studentId", profile.id || "");
-    url.searchParams.set("student", profile.name || "Student");
     url.searchParams.set("group", profile.groupId || "");
-    url.searchParams.set("groupName", profile.groupName || "");
     url.searchParams.set("source", "student-home");
     if (developerAccess) url.searchParams.set("developer", "1");
     const returnUrl = new URL("student-lesson.html", location.href);
