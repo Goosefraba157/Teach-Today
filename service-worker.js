@@ -53,7 +53,6 @@ const APP_SHELL = [
   "./dictation-phrase-index.js",
   "./dictation-sentence-index.js",
   "./sample-blue-group-data.js",
-  "./sofia-carbajal-chart-data.js",
   "./section9-passage-companions.js",
   "./wilson-lp-template.js",
   "./wilson-hfw-data.js",

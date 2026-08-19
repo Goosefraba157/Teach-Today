@@ -27,10 +27,6 @@ function byId(id) {
 function state() {
   try {
     const data = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    if (typeof window.mergeSofiaCarbajalChartData === "function") {
-      window.mergeSofiaCarbajalChartData(data);
-      localStorage.setItem(storageKey, JSON.stringify(data));
-    }
     return data;
   } catch {
     return {};

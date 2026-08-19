@@ -164,6 +164,7 @@ const troubleOptions = [
 ];
 
 const storageKey = "dyslexiaInstructionEngine.v2";
+const privacySchemaVersion = 1;
 let appState = loadState();
 let activeTimers = new Map();
 let activeRecognition = null;
@@ -176,39 +177,8 @@ let mutedCard = null;
 
 function defaultRosterStudents() {
   return [
-    { name: "Angel", fullName: "Angel Martinez", gradeLevel: "4", school: "Gabe P. Allen Elementary" },
-    { name: "Emma", fullName: "Emma Ajvix", gradeLevel: "2", school: "Gabe P. Allen Elementary" },
-    { name: "Ariana", fullName: "Ariana Galindo", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Mia", fullName: "Mia Pena-Contreras", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Emmanuel", fullName: "Emmanuel Cedillo", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Juan", fullName: "Juan Ibarra", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Sofia", fullName: "Sofia Carbajal", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Alesander", fullName: "Alesander Mondragon", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Linda", fullName: "Linda Salazar-Romero", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Joshua", fullName: "Joshua Rodriguez", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Jayden C.", fullName: "Jayden Chacon-Gonzalez", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Jayden D.", fullName: "Jayden Delgadillo", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Aileen", fullName: "Aileen Alarcon", gradeLevel: "6", school: "Gabe P. Allen Elementary" },
-    { name: "Davonte", fullName: "Davonte Hamilton", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Bethany", fullName: "Bethany Martinez", gradeLevel: "5", school: "Gabe P. Allen Elementary" },
-    { name: "Ayden", fullName: "Ayden Mondragon", gradeLevel: "4", school: "Gabe P. Allen Elementary" },
-    { name: "Jedediah", fullName: "Jedediah Vega", gradeLevel: "4", school: "Gabe P. Allen Elementary" },
-    { name: "Makayla", fullName: "Makayla Ridge", gradeLevel: "4", school: "Gabe P. Allen Elementary" },
-    { name: "Rodrigo", fullName: "Rodrigo Molero Medina", gradeLevel: "3", school: "Nancy J. Cochran Elementary" },
-    { name: "Diomedes", fullName: "Diomedes Valle", gradeLevel: "2", school: "Nancy J. Cochran Elementary" },
-    { name: "Alberto", fullName: "Alberto Pizano", gradeLevel: "FLS", school: "Nancy J. Cochran Elementary" },
-    { name: "Ta'Marrion", fullName: "Ta'Marrion Jefferson", gradeLevel: "FLS", school: "Nancy J. Cochran Elementary" },
-    { name: "Jesus", fullName: "Jesus Gamino", gradeLevel: "FLS", school: "Nancy J. Cochran Elementary" },
-    { name: "Madison", fullName: "Madison Ortiz", gradeLevel: "FLS", school: "Nancy J. Cochran Elementary" },
-    { name: "Xavier", fullName: "Xavier Jimenez", gradeLevel: "5", school: "Nancy J. Cochran Elementary" },
-    { name: "Allison", fullName: "Allison Navarro", gradeLevel: "5", school: "Nancy J. Cochran Elementary" },
-    { name: "Jade", fullName: "Jade Mejia", gradeLevel: "3", school: "Nancy J. Cochran Elementary" },
-    { name: "Julianna", fullName: "Julianna Alamaraz", gradeLevel: "2", school: "Nancy J. Cochran Elementary" },
-    { name: "Robert", fullName: "Robert Aidric", gradeLevel: "1", school: "Nancy J. Cochran Elementary" },
-    { name: "Jose", fullName: "Jose Espinoza Ponce", gradeLevel: "5", school: "Nancy J. Cochran Elementary" },
-    { name: "Jerson", fullName: "Jerson Reyes Umanzor", gradeLevel: "5", school: "Nancy J. Cochran Elementary" },
-    { name: "Yeici", fullName: "Yeici Turcios Umanzor", gradeLevel: "5", school: "Nancy J. Cochran Elementary" },
-    { name: "Katy", fullName: "Katy Morales", gradeLevel: "5", school: "Nancy J. Cochran Elementary" }
+    { name: "Student One", fullName: "Student One", gradeLevel: "", school: "Demo School", isDemo: true },
+    { name: "Student Two", fullName: "Student Two", gradeLevel: "", school: "Demo School", isDemo: true }
   ];
 }
 
@@ -231,79 +201,148 @@ function defaultTeachingGroups() {
     history: []
   });
   return [
-    group("grp-a", "Gabe P. Allen Elementary", "8:00 - 9:00", "Allen Angel 2.1", "2.1", "Angel", ["Angel", "Emma"]),
-    group("grp-b", "Gabe P. Allen Elementary", "9:15 - 10:15", "Allen Ariana 2.1", "2.1", "Ariana", ["Ariana", "Mia", "Emmanuel"]),
-    group("grp-c", "Gabe P. Allen Elementary", "10:20 - 11:20", "Allen Sofia 3.5", "3.5", "Sofia", ["Juan", "Sofia", "Alesander", "Linda", "Joshua"]),
-    group("grp-d", "Gabe P. Allen Elementary", "11:30 - 12:30", "Allen Aileen 7.1", "7.1", "Aileen", ["Jayden C.", "Jayden D.", "Aileen", "Davonte", "Bethany"]),
-    group("grp-e", "Gabe P. Allen Elementary", "1:00 - 2:00", "Allen Jedediah 3.5", "3.5", "Jedediah", ["Ayden", "Jedediah", "Makayla"]),
-    group("grp-f", "Nancy J. Cochran Elementary", "8:45 - 10:00", "Cochran Rodrigo ESP", "2.1", "Rodrigo", ["Rodrigo", "Diomedes"]),
-    group("grp-g", "Nancy J. Cochran Elementary", "10:00 - 11:15", "Cochran Alberto FLS", "2.1", "Alberto", ["Alberto", "Ta'Marrion", "Jesus", "Madison"]),
-    group("grp-h", "Nancy J. Cochran Elementary", "11:15 - 12:30", "Cochran Allison 7.1", "7.1", "Allison", ["Xavier", "Allison"]),
-    group("grp-i", "Nancy J. Cochran Elementary", "12:30 - 1:45", "Cochran Jade 2.1", "2.1", "Jade", ["Jade", "Julianna", "Robert"]),
-    group("grp-j", "Nancy J. Cochran Elementary", "2:15 - 3:30", "Cochran Yeici 3.5", "3.5", "Yeici", ["Jose", "Jerson", "Yeici", "Katy"])
+    group("grp-demo", "Demo School", "", "Demo Group", "2.1", "Student One", ["Student One", "Student Two"])
   ];
 }
 
 function defaultTeachTodayState() {
   return {
-    selectedGroupId: "grp-a",
+    selectedGroupId: "grp-demo",
     masterRecords: [],
     rosterVersion: 3,
+    privacyVersion: privacySchemaVersion,
+    activeSchoolYearId: currentSchoolYearId(),
+    schoolYears: [schoolYearRecord(currentSchoolYearId())],
     rosterStudents: defaultRosterStudents(),
     groups: defaultTeachingGroups()
   };
 }
 
+function currentSchoolYearId(date = new Date()) {
+  const year = date.getFullYear();
+  const startYear = date.getMonth() >= 6 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+function schoolYearRecord(id) {
+  const [startYear, endYear] = String(id || currentSchoolYearId()).split("-");
+  return {
+    id: `${startYear}-${endYear}`,
+    label: `${startYear}-${endYear}`,
+    startsOn: `${startYear}-07-01`,
+    endsOn: `${endYear}-06-30`,
+    status: "active"
+  };
+}
+
+function previousSchoolYearId(activeId = currentSchoolYearId()) {
+  const startYear = Number(String(activeId).split("-")[0]);
+  return `${startYear - 1}-${startYear}`;
+}
+
+function privateRandomId(prefix) {
+  const random = globalThis.crypto?.randomUUID?.()
+    || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}_${random}`;
+}
+
+function privacyDisplayName(student) {
+  const source = String(student?.fullName || student?.name || student || "Student").trim();
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return parts[0] || "Student";
+  const first = parts[0];
+  const last = parts.at(-1).replace(/[^\p{L}\p{N}]/gu, "");
+  return last ? `${first} ${last.charAt(0).toLocaleUpperCase()}.` : first;
+}
+
+function normalizePrivateStudentName(value) {
+  return String(value || "").trim().toLocaleLowerCase();
+}
+
+function applyStudentPrivacySchema(state) {
+  const isLegacyMigration = !state.privacyVersion;
+  const activeYearId = state.activeSchoolYearId || currentSchoolYearId();
+  const existingDataYearId = isLegacyMigration ? previousSchoolYearId(activeYearId) : activeYearId;
+  state.activeSchoolYearId = activeYearId;
+  state.schoolYears = Array.isArray(state.schoolYears) ? state.schoolYears : [];
+  if (!state.schoolYears.some((year) => year.id === activeYearId)) {
+    state.schoolYears.push(schoolYearRecord(activeYearId));
+  }
+  if (isLegacyMigration && !state.schoolYears.some((year) => year.id === existingDataYearId)) {
+    state.schoolYears.push({ ...schoolYearRecord(existingDataYearId), status: "archived" });
+  }
+
+  state.rosterStudents = Array.isArray(state.rosterStudents) ? state.rosterStudents : [];
+  state.rosterStudents = state.rosterStudents.map((value) => {
+    const student = typeof value === "string" ? { name: value } : { ...value };
+    student.studentId ||= privateRandomId("stu");
+    student.displayName ||= privacyDisplayName(student);
+    student.status ||= "active";
+    student.createdAt ||= new Date().toISOString();
+    return student;
+  });
+
+  const byName = new Map();
+  state.rosterStudents.forEach((student) => {
+    [student.name, student.fullName, student.displayName].filter(Boolean).forEach((name) => {
+      const key = normalizePrivateStudentName(name);
+      if (!byName.has(key)) byName.set(key, student.studentId);
+    });
+  });
+
+  (state.groups || []).forEach((group) => {
+    group.schoolYearId ||= existingDataYearId;
+    group.status ||= isLegacyMigration ? "archived" : "active";
+    group.studentIds ||= {};
+    (group.students || []).forEach((name) => {
+      const studentId = byName.get(normalizePrivateStudentName(name));
+      if (studentId) group.studentIds[name] ||= studentId;
+    });
+    (group.history || []).forEach((plan) => {
+      plan.schoolYearId ||= group.schoolYearId;
+      plan.groupIdAtTime ||= group.id;
+    });
+    (group.chartResults || []).forEach((record) => {
+      record.schoolYearId ||= group.schoolYearId;
+      record.groupIdAtTime ||= group.id;
+      record.studentId ||= byName.get(normalizePrivateStudentName(record.student)) || null;
+    });
+  });
+
+  (state.masterRecords || []).forEach((record) => {
+    const group = (state.groups || []).find((item) => item.id === record.groupId);
+    record.schoolYearId ||= group?.schoolYearId || activeYearId;
+    record.groupIdAtTime ||= record.groupId || group?.id || null;
+    record.studentId ||= byName.get(normalizePrivateStudentName(record.student || record.studentName)) || null;
+  });
+
+  state.privacyVersion = privacySchemaVersion;
+  return state;
+}
+
 function upgradeTeachTodayState(data) {
   const upgraded = data && typeof data === "object" ? data : {};
   upgraded.masterRecords ||= [];
-  upgraded.rosterStudents = mergeRosterStudents(defaultRosterStudents(), upgraded.rosterStudents || []);
+  upgraded.rosterStudents = mergeRosterStudents([], upgraded.rosterStudents || []);
   const defaults = defaultTeachingGroups();
   if (upgraded.rosterVersion < 2) {
-    upgraded.rosterStudents = defaultRosterStudents();
-    const defaultById = new Map(defaults.map((group) => [group.id, group]));
-    (upgraded.groups || []).forEach((group) => {
-      const fixed = defaultById.get(group.id);
-      if (!fixed) return;
-      group.school = fixed.school;
-      group.name = fixed.name;
-      group.time = fixed.time;
-    });
-  }
-  if (upgraded.rosterVersion < 3) {
-    upgraded.rosterStudents = (upgraded.rosterStudents || []).map((student) => {
-      if ((student.name || student) !== "Jefferson") return student;
-      return { ...(typeof student === "string" ? {} : student), name: "Ta'Marrion", fullName: "Ta'Marrion Jefferson" };
-    });
-    (upgraded.groups || []).forEach((group) => {
-      group.students = (group.students || []).map((student) => student === "Jefferson" ? "Ta'Marrion" : student);
-      if (group.activeStudent === "Jefferson") group.activeStudent = "Ta'Marrion";
-    });
-    (upgraded.masterRecords || []).forEach((record) => {
-      if (record.student === "Jefferson") record.student = "Ta'Marrion";
-    });
+    upgraded.rosterStudents = mergeRosterStudents([], upgraded.rosterStudents || []);
   }
   const demoOnly = !upgraded.rosterVersion
     && (upgraded.groups || []).length <= 2
     && (upgraded.groups || []).every((group) => ["Blue Group", "Green Group"].includes(group.name));
   if (!Array.isArray(upgraded.groups) || !upgraded.groups.length || demoOnly) {
     upgraded.groups = defaults;
-    upgraded.selectedGroupId = "grp-a";
+    upgraded.rosterStudents = defaultRosterStudents();
+    upgraded.selectedGroupId = "grp-demo";
   } else {
-    const ids = new Set(upgraded.groups.map((group) => group.id));
-    defaults.forEach((group) => {
-      if (!ids.has(group.id)) upgraded.groups.push(group);
-    });
     if (!upgraded.groups.some((group) => group.id === upgraded.selectedGroupId)) {
-      upgraded.selectedGroupId = upgraded.groups[0]?.id || "grp-a";
+      upgraded.selectedGroupId = upgraded.groups[0]?.id || "grp-demo";
     }
   }
   mergeSampleBlueGroup(upgraded);
-  if (typeof window.mergeSofiaCarbajalChartData === "function") {
-    window.mergeSofiaCarbajalChartData(upgraded);
-  }
   upgraded.rosterVersion = 3;
-  return upgraded;
+  return applyStudentPrivacySchema(upgraded);
 }
 
 function mergeSampleBlueGroup(state) {
@@ -388,6 +427,7 @@ function loadState() {
 }
 
 function saveState() {
+  applyStudentPrivacySchema(appState);
   appState.lastSavedAt = new Date().toISOString();
   localStorage.setItem(storageKey, JSON.stringify(appState));
   if (typeof window.teachTodayQueueCloudSync === "function") {
@@ -949,6 +989,8 @@ function createGroup(name) {
   return {
     id: `grp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name,
+    schoolYearId: appState?.activeSchoolYearId || currentSchoolYearId(),
+    status: "active",
     substep: "1.1",
     meetingDays: 5,
     readerLevel: "AB",

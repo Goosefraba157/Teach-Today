@@ -207,7 +207,6 @@
   <p style="color:#94a3b8;font-size:13px;">Loading report…</p>
 </div>
 
-<script src="sofia-carbajal-chart-data.js"></script>
 <script>
 "use strict";
 
@@ -217,9 +216,6 @@ const storageKey = "dyslexiaInstructionEngine.v2";
 function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    if (typeof window.mergeSofiaCarbajalChartData === "function") {
-      window.mergeSofiaCarbajalChartData(raw);
-    }
     return raw;
   } catch { return {}; }
 }
