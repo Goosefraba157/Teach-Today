@@ -8,6 +8,12 @@
 ## Last Updated
 2026-08-18
 
+## Shared Memory Rules
+- This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
+- `AGENTS.md` requires future coding chats to read this file first and update it after material work.
+- Durable choices live in `docs/DECISIONS.md`; completed work is summarized in `docs/CHANGELOG.md`.
+- Do not create competing handoff/status files. Do not include student-identifying information here.
+
 ## Active Direction
 - **V1 Teach Today is the active product.** Preserve its current visual design and working teacher/student flows.
 - **Slides and presentation mode are the current priority.** Work through the path: Teacher Home -> select group -> build/open lesson -> presentation mode -> slides.
@@ -16,14 +22,20 @@
 - Do not move or rename V1 runtime files without first auditing GitHub Pages paths, Firebase references, service-worker cache entries, and existing links.
 
 ## Recovery Point
-- Branch: `codex/v1-slides-recovery`
-- Commit: `bf63641` (`Preserve recovered V1 slide presenter work`)
-- This commit captures the recovered V1 modifications and the previously uncommitted Lesson Builder V2 presenter files before further work.
+- Active branch: `main`
+- Recovery commit: `bf63641` (`Preserve recovered V1 slide presenter work`)
+- Privacy baseline through: `05f5ea1` (`Protect student portal data and repository privacy`)
+- The five recovery/privacy commits were pushed to GitHub `main` on 2026-08-18.
 
 ## Privacy Checkpoints
 - `7142fe2` — privacy migration design and safety boundary.
 - `4beaecd` — permanent private student IDs, school-year metadata, and removal of real public roster defaults.
-- Owner-scoped Firebase rules and the legacy ownership migration are prepared locally but must not be deployed out of order. Publish code first, run the signed-in migration, verify its receipt, and only then deploy strict rules.
+- Owner-scoped Firebase rules and the legacy ownership migration are published in application source but must not be deployed/run out of order. GitHub push is complete. Next: allow GitHub Pages to publish, run the signed-in migration, verify its receipt, and only then deploy strict Firebase rules.
+
+## Private Input Workflow
+- Private rosters, reports, screenshots, PDFs, and spreadsheets may be attached to a chat or placed in `private-input/` for a specific task.
+- `private-input/` contents are ignored by Git except for its README.
+- Extract only the necessary fields, preview matches/counts, write only to the authorized private destination, and never commit source student records.
 
 ## Current Baseline (as of 2026-06-08 Codex session)
 - **Student display** — privacy, poster, HFW, passage, and game modes; teacher can open/project from toolbar and presentation dock
@@ -43,15 +55,15 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
-- Audit the existing V1 presentation flow against the recovered presenter prototype.
-- Make a slide-by-slide inventory for opening and Sections 1-10.
-- Connect the strongest presenter behavior to V1 incrementally, preserving the working V1 route after every change.
-- Smoke-test Teacher Home -> lesson -> presentation after each small integration.
+- Confirm GitHub Pages has published the privacy baseline.
+- Run the signed-in legacy ownership migration and verify its receipt and record counts.
+- Deploy and verify strict Firebase rules only after migration verification.
+- Then audit the V1 presentation flow, inventory slides for opening and Sections 1-10, and improve it incrementally.
 
 ---
 
 ## How to Use This File
-After a Codex session, paste or write a quick update here:
+After a Codex session, update this file with:
 - What Codex just built or changed
 - What's still in progress or next
 - Any gotchas or decisions made

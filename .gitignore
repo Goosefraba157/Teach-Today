@@ -2,6 +2,10 @@
 sofia-carbajal-chart-data.js
 *-chart-data.js
 
+# Private local intake (keep only its instructions in Git)
+private-input/*
+!private-input/README.md
+
 # macOS
 .DS_Store
 
@@ -29,6 +33,13 @@ Sounds for Section 1/
 Phrases From Dictation Book PDFs/
 Sentences from Dictation Books/
 Lessons Created/
+
+# Common private exports accidentally placed at repository root
+student-roster*.csv
+student-roster*.xlsx
+student-export*.csv
+student-export*.xlsx
+firebase-export*
 
 # Presentation scratch files
 wilson-7-1-presentation/scratch/

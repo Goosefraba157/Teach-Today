@@ -1,0 +1,51 @@
+# Teach Today — Working Instructions
+
+These instructions apply to the entire repository.
+
+## Start every task here
+
+Before changing code or data:
+
+1. Read `HANDOFF.md` for the current state and next safe action.
+2. Read `docs/DECISIONS.md` before changing architecture, privacy, storage, routes, or version direction.
+3. Check `docs/CHANGELOG.md` for recent work.
+4. Inspect the working tree and preserve unrelated user changes.
+
+`HANDOFF.md` is the canonical current-state file. Do not create another project-state, status, or handoff document. If an older note conflicts with it, follow `HANDOFF.md` and record the conflict there.
+
+## Product boundaries
+
+- V1 (`TeachToday.html` and its existing teacher/student/presenter flow) is the active product.
+- Preserve V1's visual design and working routes.
+- `/v2/` is paused reference material. Do not route users to it or extend it unless the user explicitly reactivates it.
+- Slides and presentation mode are the current product priority after the privacy rollout is safely completed.
+- Do not move or rename runtime files without auditing GitHub Pages paths, Firebase references, service-worker caches, and links.
+
+## Student privacy and uploads
+
+- Treat rosters, student identifiers, assessment results, notes, exports, screenshots, PDFs, and spreadsheets containing student information as private educational records.
+- Never commit private student data, Firebase exports, credentials, tokens, or unredacted roster files to Git or GitHub.
+- Use first name plus last initial for teacher-facing recognition when practical. Keep permanent student IDs private and separate from display names.
+- Put any local private source files under `private-input/`; Git ignores its contents except for its instructions file.
+- A chat attachment is temporary input, not permission to publish it. Extract only what the requested task requires, write only the minimum necessary data to the authorized private store, and do not copy the source into tracked repository paths.
+- Before bulk importing or migrating student records, preview the mapping/counts, preserve the original data, and obtain explicit user confirmation for any destructive or irreversible step.
+- Do not claim FERPA compliance as a legal conclusion. Describe the safeguards implemented and flag remaining operational duties.
+
+## Updating shared memory
+
+After every material change:
+
+1. Update `HANDOFF.md` with what changed, current deployment/migration status, and the exact next step.
+2. Add a concise entry to `docs/CHANGELOG.md`.
+3. Add or revise `docs/DECISIONS.md` only when a durable product, architecture, privacy, or workflow decision changes.
+4. Commit these documentation updates with the related code and push them so other computers/accounts receive the same state.
+
+Do not place secrets or student-identifying information in any memory document.
+
+## Git and deployment safety
+
+- Pull/fetch before starting work on a different computer or account.
+- Use small, reviewable commits. Never force-push or rewrite shared history without explicit authorization and a verified backup.
+- GitHub Pages publication and Firebase rules deployment are separate operations.
+- For the current privacy rollout: publish application code, run and verify the signed-in legacy ownership migration, and only then deploy strict Firebase rules.
+
