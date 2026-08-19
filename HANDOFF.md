@@ -59,7 +59,7 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
-- Publish the school-year home-screen filter. The 2026-2027 roster is already imported and verified in the private hosted-app data; the source roster remains outside Git.
+- Publish the school-year home-screen filter and group editor. The 2026-2027 roster is already imported and verified in the private hosted-app data; the source roster remains outside Git.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 

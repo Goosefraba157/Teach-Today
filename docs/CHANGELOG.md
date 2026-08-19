@@ -18,3 +18,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Removed the obsolete legacy student migration button after confirming there were no records requiring that migration.
 - Added a school-year selector to the V1 home screen so the current year is shown by default and archived groups remain available without mixing into daily planning.
 - Privately imported and verified the 2026-2027 teaching groups in the hosted app, reusing confirmed student identities and syncing the result to the authenticated Firebase record. No roster data was added to Git.
+- Added current-year group editing for names, schedules, instructional placement, and student membership while preserving student profiles and historical records; archived groups remain protected.

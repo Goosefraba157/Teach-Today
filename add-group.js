@@ -1,7 +1,6 @@
 /**
  * Teach Today — New Group modal
- * Exposes window.ttOpenNewGroupModal() called by teach-today.js when
- * the user clicks the "+" card on the Home screen.
+ * Exposes create/edit group modals used by the Home screen.
  *
  * NOTE: scopeMap and appState are declared with const/let in app.js so
  * they are NOT window properties. Reference them as bare globals.
@@ -14,13 +13,14 @@
   'use strict';
 
   let pendingStudents = [];
+  let editingGroupId = null;
 
   /* ── Public API ───────────────────────────────────────── */
   window.ttOpenNewGroupModal = function () {
     const modal = document.getElementById('ttNewGroupModal');
     if (!modal) return;
 
-    // Reset state
+    editingGroupId = null;
     pendingStudents = [];
     document.getElementById('ttNgName').value = '';
     document.getElementById('ttNgTime').value = '';
@@ -28,12 +28,45 @@
     document.getElementById('ttNgName').style.borderColor = '';
 
     populateSubstepSelect();
+    document.getElementById('ttNgSubstep').value = '1.1';
+    document.getElementById('ttNgLevel').value = 'AB';
+    setModalMode(false);
     populateRosterSelect();
     renderStudentTags();
 
     modal.removeAttribute('hidden');
     setTimeout(() => document.getElementById('ttNgName')?.focus(), 60);
   };
+
+  window.ttOpenEditGroupModal = function (groupId) {
+    const modal = document.getElementById('ttNewGroupModal');
+    const group = (typeof appState !== 'undefined' ? appState.groups : []).find(item => item.id === groupId);
+    if (!modal || !group || group.schoolYearId !== appState.activeSchoolYearId) return;
+
+    editingGroupId = group.id;
+    pendingStudents = [...(group.students || [])];
+    document.getElementById('ttNgName').value = group.name || '';
+    document.getElementById('ttNgTime').value = group.time || '';
+    document.getElementById('ttNgNewStudent').value = '';
+    document.getElementById('ttNgName').style.borderColor = '';
+    populateSubstepSelect();
+    document.getElementById('ttNgSubstep').value = group.substep || '1.1';
+    document.getElementById('ttNgLevel').value = group.readerLevel || 'AB';
+    setModalMode(true);
+    populateRosterSelect();
+    renderStudentTags();
+    modal.removeAttribute('hidden');
+    setTimeout(() => document.getElementById('ttNgName')?.focus(), 60);
+  };
+
+  function setModalMode(isEditing) {
+    const dialog = document.querySelector('#ttNewGroupModal .tt-modal-card');
+    const title = document.getElementById('ttNewGroupTitle');
+    const submit = document.getElementById('ttNewGroupCreate');
+    if (dialog) dialog.setAttribute('aria-label', isEditing ? 'Edit group' : 'Create a new group');
+    if (title) title.textContent = isEditing ? 'Edit Group' : 'Create a New Group';
+    if (submit) submit.textContent = isEditing ? 'Save Changes' : 'Create Group →';
+  }
 
   /* ── Substep select ───────────────────────────────────── */
   function populateSubstepSelect() {
@@ -110,8 +143,8 @@
     populateRosterSelect();
   }
 
-  /* ── Create group ─────────────────────────────────────── */
-  function handleCreate() {
+  /* ── Create or update group ───────────────────────────── */
+  function handleSave() {
     const nameInput = document.getElementById('ttNgName');
     const name = nameInput?.value.trim();
 
@@ -130,10 +163,16 @@
     const substep = document.getElementById('ttNgSubstep')?.value || '1.1';
     const level   = document.getElementById('ttNgLevel')?.value || 'AB';
 
-    const group       = createGroup(name);
+    const existingGroup = editingGroupId
+      ? appState.groups.find(item => item.id === editingGroupId)
+      : null;
+    const group = existingGroup || createGroup(name);
+    const previousStudentIds = { ...(group.studentIds || {}) };
+    group.name        = name;
     group.time        = time;
     group.substep     = substep;
     group.readerLevel = level;
+    group.students    = [];
 
     // Add students; register new ones in the master roster
     appState.rosterStudents = appState.rosterStudents || [];
@@ -147,10 +186,19 @@
       }
     });
 
-    if (group.students.length > 0) group.activeStudent = group.students[0];
+    group.studentIds = Object.fromEntries(
+      pendingStudents
+        .filter(studentName => previousStudentIds[studentName])
+        .map(studentName => [studentName, previousStudentIds[studentName]])
+    );
+    if (!group.activeStudent || !group.students.includes(group.activeStudent)) {
+      group.activeStudent = group.students[0] || '';
+    }
 
-    appState.groups = appState.groups || [];
-    appState.groups.push(group);
+    if (!existingGroup) {
+      appState.groups = appState.groups || [];
+      appState.groups.push(group);
+    }
     appState.selectedGroupId = group.id;
     saveState();
 
@@ -172,6 +220,7 @@
     const modal = document.getElementById('ttNewGroupModal');
     if (modal) modal.setAttribute('hidden', '');
     pendingStudents = [];
+    editingGroupId = null;
   }
 
   /* ── Event wiring ─────────────────────────────────────── */
@@ -181,7 +230,7 @@
 
     document.getElementById('ttNewGroupClose')?.addEventListener('click', closeModal);
     document.getElementById('ttNewGroupCancel')?.addEventListener('click', closeModal);
-    document.getElementById('ttNewGroupCreate')?.addEventListener('click', handleCreate);
+    document.getElementById('ttNewGroupCreate')?.addEventListener('click', handleSave);
 
     // Backdrop click
     modal.addEventListener('click', e => {
@@ -217,7 +266,7 @@
     // Enter in name or time field submits the form
     ['ttNgName', 'ttNgTime'].forEach(id => {
       document.getElementById(id)?.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); handleCreate(); }
+        if (e.key === 'Enter') { e.preventDefault(); handleSave(); }
       });
       document.getElementById(id)?.addEventListener('input', () => {
         document.getElementById(id).style.borderColor = '';

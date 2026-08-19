@@ -4501,12 +4501,17 @@ function ttRenderHomeScreen() {
       <strong>New Group</strong>
       <em>Create a teaching group</em>
     </button>`;
-    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("") + (viewingArchive ? "" : addCard);
+    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group, !viewingArchive)).join("") + (viewingArchive ? "" : addCard);
     list.querySelectorAll("[data-home-group]").forEach((button) => {
       button.addEventListener("click", () => {
         ttPlannerGroupId = button.dataset.homeGroup;
         ttPlannerDraft = {};
         ttRenderHomeScreen();
+      });
+    });
+    list.querySelectorAll("[data-edit-group]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (typeof ttOpenEditGroupModal === "function") ttOpenEditGroupModal(button.dataset.editGroup);
       });
     });
     list.querySelector("#ttHomeAddGroup")?.addEventListener("click", () => {
@@ -4534,7 +4539,7 @@ function ttSubstepProgressBar(group) {
   </div>`;
 }
 
-function ttHomeGroupCardHtml(group) {
+function ttHomeGroupCardHtml(group, editable = true) {
   const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
   const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
   const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]) || (group.history || []).at(-1);
@@ -4551,14 +4556,17 @@ function ttHomeGroupCardHtml(group) {
   const chartText = lastRecord
     ? `${lastRecord.student}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
     : "No charting saved";
-  return `<button type="button" class="home-group-card${active}" style="--group-color: ${color};" data-home-group="${escapeHtml(group.id)}">
-    <span>${escapeHtml(group.time || "Group")}</span>
-    <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
-    ${ttSubstepProgressBar(group)}
-    <em>${escapeHtml(students || "No students yet")}</em>
-    <small>Last lesson: ${escapeHtml(lastText)}</small>
-    <small>Last chart: ${escapeHtml(chartText)}</small>
-  </button>`;
+  return `<div class="home-group-card-shell" style="--group-color: ${color};">
+    <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}">
+      <span>${escapeHtml(group.time || "Group")}</span>
+      <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
+      ${ttSubstepProgressBar(group)}
+      <em>${escapeHtml(students || "No students yet")}</em>
+      <small>Last lesson: ${escapeHtml(lastText)}</small>
+      <small>Last chart: ${escapeHtml(chartText)}</small>
+    </button>
+    ${editable ? `<button type="button" class="home-group-edit" data-edit-group="${escapeHtml(group.id)}" aria-label="Edit ${escapeHtml(group.name || "group")}" title="Edit group">Edit</button>` : ""}
+  </div>`;
 }
 
 function ttPlannerGroup() {
