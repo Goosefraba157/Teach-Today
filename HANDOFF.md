@@ -6,7 +6,19 @@
 ---
 
 ## Last Updated
-2026-06-11
+2026-08-18
+
+## Active Direction
+- **V1 Teach Today is the active product.** Preserve its current visual design and working teacher/student flows.
+- **Slides and presentation mode are the current priority.** Work through the path: Teacher Home -> select group -> build/open lesson -> presentation mode -> slides.
+- **The `/v2/` lesson-engine experiment is paused.** Keep it intact for reference, but do not extend it or route users into it while V1 slide work is active.
+- **The `lesson-planner-v2-*` files are a presenter prototype, not the paused `/v2/` app.** Harvest useful slide behavior from them into V1 deliberately; do not replace V1 wholesale.
+- Do not move or rename V1 runtime files without first auditing GitHub Pages paths, Firebase references, service-worker cache entries, and existing links.
+
+## Recovery Point
+- Branch: `codex/v1-slides-recovery`
+- Commit: `bf63641` (`Preserve recovered V1 slide presenter work`)
+- This commit captures the recovered V1 modifications and the previously uncommitted Lesson Builder V2 presenter files before further work.
 
 ## Current Baseline (as of 2026-06-08 Codex session)
 - **Student display** — privacy, poster, HFW, passage, and game modes; teacher can open/project from toolbar and presentation dock
@@ -26,7 +38,10 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
-*(Update this section after each Codex session)*
+- Audit the existing V1 presentation flow against the recovered presenter prototype.
+- Make a slide-by-slide inventory for opening and Sections 1-10.
+- Connect the strongest presenter behavior to V1 incrementally, preserving the working V1 route after every change.
+- Smoke-test Teacher Home -> lesson -> presentation after each small integration.
 
 ---
 
