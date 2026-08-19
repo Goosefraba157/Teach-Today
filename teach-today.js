@@ -4461,9 +4461,37 @@ function ttOpenTeachFlow(options = {}) {
 function ttRenderHomeScreen() {
   const home = ttById("ttHomeScreen");
   if (!home || home.hidden) return;
-  const groups = appState.groups || [];
+  const yearSelect = ttById("ttHomeSchoolYear");
+  const activeYearId = appState.activeSchoolYearId || currentSchoolYearId();
+  const schoolYears = (appState.schoolYears || []).slice().sort((a, b) => b.id.localeCompare(a.id));
+  const requestedYearId = yearSelect?.value;
+  const viewedYearId = schoolYears.some((year) => year.id === requestedYearId)
+    ? requestedYearId
+    : activeYearId;
+  if (yearSelect) {
+    yearSelect.innerHTML = schoolYears.map((year) =>
+      `<option value="${escapeHtml(year.id)}">${escapeHtml(year.label || year.id)}${year.id === activeYearId ? " (Current)" : ""}</option>`
+    ).join("");
+    yearSelect.value = viewedYearId;
+    if (!yearSelect.dataset.bound) {
+      yearSelect.dataset.bound = "true";
+      yearSelect.addEventListener("change", () => {
+        ttPlannerGroupId = "";
+        ttPlannerDraft = {};
+        ttRenderHomeScreen();
+      });
+    }
+  }
+  const viewingArchive = viewedYearId !== activeYearId;
+  const status = ttById("ttHomeSchoolYearStatus");
+  if (status) status.textContent = viewingArchive
+    ? "Archived groups — history is preserved"
+    : "Current groups";
+  const groups = (appState.groups || []).filter((group) => group.schoolYearId === viewedYearId);
   if (!ttPlannerGroupId || !groups.some((group) => group.id === ttPlannerGroupId)) {
-    ttPlannerGroupId = appState.selectedGroupId || groups[0]?.id || "";
+    ttPlannerGroupId = groups.some((group) => group.id === appState.selectedGroupId)
+      ? appState.selectedGroupId
+      : groups[0]?.id || "";
   }
   ttEnsurePlannerDraft(ttPlannerGroup());
   const list = ttById("ttHomeGroups");
@@ -4473,7 +4501,7 @@ function ttRenderHomeScreen() {
       <strong>New Group</strong>
       <em>Create a teaching group</em>
     </button>`;
-    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("") + addCard;
+    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group)).join("") + (viewingArchive ? "" : addCard);
     list.querySelectorAll("[data-home-group]").forEach((button) => {
       button.addEventListener("click", () => {
         ttPlannerGroupId = button.dataset.homeGroup;

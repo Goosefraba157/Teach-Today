@@ -309,6 +309,11 @@ function applyStudentPrivacySchema(state) {
     });
   });
 
+  state.schoolYears = state.schoolYears.map((year) => ({
+    ...year,
+    status: year.id === activeYearId ? "active" : "archived"
+  }));
+
   (state.masterRecords || []).forEach((record) => {
     const group = (state.groups || []).find((item) => item.id === record.groupId);
     record.schoolYearId ||= group?.schoolYearId || activeYearId;
