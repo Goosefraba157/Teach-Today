@@ -31,6 +31,7 @@
 - `7142fe2` — privacy migration design and safety boundary.
 - `4beaecd` — permanent private student IDs, school-year metadata, and removal of real public roster defaults.
 - Owner-scoped Firebase rules and the legacy ownership migration are published in application source but must not be deployed/run out of order. GitHub push is complete. Next: allow GitHub Pages to publish, run the signed-in migration, verify its receipt, and only then deploy strict Firebase rules.
+- A preflight review found the published migration used `teacherUid` while strict rules require `ownerUid`; no migration was run. The local fix adds the correct field and a count-only confirmation preview. It must be committed, pushed, and republished before migration.
 
 ## Private Input Workflow
 - Private rosters, reports, screenshots, PDFs, and spreadsheets may be attached to a chat or placed in `private-input/` for a specific task.

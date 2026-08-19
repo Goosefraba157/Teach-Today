@@ -9773,47 +9773,71 @@ async function ttSecureLegacyStudentData() {
     });
 
     const studentSnapshot = await getDocs(collection(firestoreDb, "students"));
+    const studentClaims = [];
     const claimedStudentIds = new Set();
     for (const studentDoc of studentSnapshot.docs) {
       const data = studentDoc.data();
       const names = [data.name, data.fullName].map(normalize).filter(Boolean);
       const matchesLocal = names.some((name) => localStudents.has(`${data.groupId || ""}::${name}`));
       if (!matchesLocal && ![...localStudents.values()].some((item) => item.studentId && item.studentId === studentDoc.id)) continue;
-      await setDoc(doc(firestoreDb, "students", studentDoc.id), {
-        teacherUid: ttFirebaseUser.uid,
-        privacyMigratedAt: serverTimestamp()
-      }, { merge: true });
+      studentClaims.push(studentDoc.id);
       claimedStudentIds.add(studentDoc.id);
     }
 
-    let securedCodes = 0;
     const codeSnapshot = await getDocs(collection(firestoreDb, "studentCodes"));
+    const codeClaims = [];
     for (const codeDoc of codeSnapshot.docs) {
       if (!claimedStudentIds.has(codeDoc.data().studentId)) continue;
-      await setDoc(doc(firestoreDb, "studentCodes", codeDoc.id), {
-        teacherUid: ttFirebaseUser.uid,
-        privacyMigratedAt: serverTimestamp()
-      }, { merge: true });
-      securedCodes += 1;
+      codeClaims.push(codeDoc.id);
     }
 
-    let securedLinks = 0;
     const linkSnapshot = await getDocs(collection(firestoreDb, "studentLinks"));
+    const linkClaims = [];
     for (const linkDoc of linkSnapshot.docs) {
       if (!claimedStudentIds.has(linkDoc.data().studentId)) continue;
-      await setDoc(doc(firestoreDb, "studentLinks", linkDoc.id), {
-        teacherUid: ttFirebaseUser.uid,
+      linkClaims.push(linkDoc.id);
+    }
+
+    if (!studentClaims.length) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Privacy migration found no matching legacy student records. Nothing was changed.");
+      return;
+    }
+
+    const approved = window.confirm(
+      `Ready to secure ${studentClaims.length} student record(s), ${codeClaims.length} code(s), and ${linkClaims.length} link(s) for the signed-in teacher account. No records will be deleted. Continue?`
+    );
+    if (!approved) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Privacy migration preview canceled. Nothing was changed.");
+      return;
+    }
+
+    for (const studentId of studentClaims) {
+      await setDoc(doc(firestoreDb, "students", studentId), {
+        ownerUid: ttFirebaseUser.uid,
         privacyMigratedAt: serverTimestamp()
       }, { merge: true });
-      securedLinks += 1;
+    }
+
+    for (const codeId of codeClaims) {
+      await setDoc(doc(firestoreDb, "studentCodes", codeId), {
+        ownerUid: ttFirebaseUser.uid,
+        privacyMigratedAt: serverTimestamp()
+      }, { merge: true });
+    }
+
+    for (const linkId of linkClaims) {
+      await setDoc(doc(firestoreDb, "studentLinks", linkId), {
+        ownerUid: ttFirebaseUser.uid,
+        privacyMigratedAt: serverTimestamp()
+      }, { merge: true });
     }
 
     const receipt = {
       completedAt: new Date().toISOString(),
-      teacherUid: ttFirebaseUser.uid,
+      ownerUid: ttFirebaseUser.uid,
       students: claimedStudentIds.size,
-      codes: securedCodes,
-      links: securedLinks
+      codes: codeClaims.length,
+      links: linkClaims.length
     };
     localStorage.setItem("teachToday.privacyMigrationReceipt", JSON.stringify(receipt));
     localStorage.setItem("teachToday.firebaseSyncStatus", `Privacy migration secured ${receipt.students} student record(s), ${receipt.codes} code(s), and ${receipt.links} link(s).`);

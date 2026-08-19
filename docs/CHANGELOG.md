@@ -13,4 +13,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Protected student portal data and removed tracked files containing student information from the current tree.
 - Published five recovery/privacy commits to GitHub `main`.
 - Added repository-wide continuity instructions, durable decisions, and a private local intake workflow.
-
+- Corrected the legacy privacy migration to write the `ownerUid` required by Firebase rules and added a count-only preview before any records are changed.
