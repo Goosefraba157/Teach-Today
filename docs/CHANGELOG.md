@@ -14,3 +14,5 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Published five recovery/privacy commits to GitHub `main`.
 - Added repository-wide continuity instructions, durable decisions, and a private local intake workflow.
 - Added a count-only preview before the legacy privacy migration changes any records; the migration uses `teacherUid` for teacher ownership, while `ownerUid` remains reserved for student-side authentication.
+- Audited the live Firebase project: confirmed the private per-user backup, found no legacy portal collections, deployed strict Firestore rules, blocked the shared legacy path, and verified a successful private sync after deployment.
+- Removed the obsolete legacy student migration button after confirming there were no records requiring that migration.

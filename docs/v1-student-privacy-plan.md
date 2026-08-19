@@ -107,9 +107,10 @@ Record
 - Complete: real roster and school defaults removed from publicly served source.
 - Complete: ordinary profile, report, student-preview, drill, and game navigation changed to use student IDs instead of names in URLs.
 - Complete: student-identifying chart PDFs and named example lesson decks removed from the publishable tree; recovery commits retain them privately for rollback.
-- Prepared, not deployed: owner-scoped Firestore and Storage rules.
-- Prepared, not run: teacher-controlled migration that adds `teacherUid` to matched legacy student, code, and link documents and records a local receipt.
-- Still required before strict rules deploy: publish the migration-capable app, sign in as the teacher, run **Secure legacy student records**, and verify nonzero expected counts.
+- Complete: owner-scoped Firestore rules deployed on 2026-08-18. The private `/users/{uid}` sync remains readable/writable only by that signed-in user, and client access to the legacy shared path is denied.
+- Verified: the current private user backup existed before the rule change and a post-deployment private sync completed successfully.
+- Verified: no `students`, `studentCodes`, or `studentLinks` collections existed, so no legacy portal records required ownership migration. The obsolete migration control was removed.
+- Not applicable on the current Spark project: Firebase Storage is not enabled. The prepared Storage rules remain source-controlled for any future activation.
 - Still required for historical removal: rewrite the public Git repository history or replace the repository after preserving a private backup. Removing files from the current branch alone does not erase old commits.
 
 ## Completion Criteria

@@ -30,8 +30,11 @@
 ## Privacy Checkpoints
 - `7142fe2` — privacy migration design and safety boundary.
 - `4beaecd` — permanent private student IDs, school-year metadata, and removal of real public roster defaults.
-- Owner-scoped Firebase rules and the legacy ownership migration are published in application source but must not be deployed/run out of order. GitHub push is complete. Next: allow GitHub Pages to publish, run the signed-in migration, verify its receipt, and only then deploy strict Firebase rules.
-- A live preflight returned `permission-denied`, proving the strict Firebase rules are already deployed; no migration write ran. The migration must use `teacherUid` for teacher ownership (`ownerUid` is student-side ownership). The count preview remains, but legacy records require a narrowly scoped administrative migration because current rules correctly deny unowned collection scans.
+- Complete on 2026-08-18: strict Firestore rules were published in Firebase Console.
+- Verified before deployment: the current private backup existed at the authenticated `/users/{uid}/teachTodaySync/main` path and was newer than the retained legacy backup.
+- Verified after deployment: a private Firebase sync completed successfully at 10:54 PM with no console errors.
+- The legacy shared backup remains stored for recovery but application access to `/teachTodaySync/**` is denied. No data was deleted.
+- No `students`, `studentCodes`, or `studentLinks` collections existed, so no portal-record ownership migration was necessary. Firebase Storage is not enabled on the Spark project.
 
 ## Private Input Workflow
 - Private rosters, reports, screenshots, PDFs, and spreadsheets may be attached to a chat or placed in `private-input/` for a specific task.
@@ -56,10 +59,9 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
-- Confirm GitHub Pages has published the privacy baseline.
-- Run the signed-in legacy ownership migration and verify its receipt and record counts.
-- Deploy and verify strict Firebase rules only after migration verification.
-- Then audit the V1 presentation flow, inventory slides for opening and Sections 1-10, and improve it incrementally.
+- Push and publish the final privacy-rollout status/cleanup commit.
+- Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
+- Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 
 ---
 
