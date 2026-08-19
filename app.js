@@ -1262,7 +1262,7 @@ function buildLessonScript(data) {
   const extraText = extraWords.length ? `\n\nExtra page words for extension\n${listWords(extraWords.slice(0, 10))}` : "";
 
   return [
-    `WRS LESSON PLAN - SUBSTEP ${skill.id}`,
+    `TEACH TODAY LESSON PLAN - SUBSTEP ${skill.id}`,
     `Group: ${group.name}`,
     `Lesson ${lessonNumber}`,
     `Reader ${skill.reader} | Level ${wordlistPage.level}`,

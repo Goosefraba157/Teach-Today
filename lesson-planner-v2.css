@@ -1,0 +1,1405 @@
+:root {
+  --ink: #102033;
+  --muted: #5c6b7a;
+  --line: #d9e2ea;
+  --paper: #ffffff;
+  --soft: #f5f8fb;
+  --teal: #0f766e;
+  --green: #15803d;
+  --blue: #2563eb;
+  --amber: #b45309;
+  --rose: #be123c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef3f7;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+select,
+textarea,
+input {
+  font: inherit;
+}
+
+button,
+.lbv2-actions a,
+.preview-toolbar a {
+  min-height: 36px;
+  border: 1px solid #b8c6d4;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button:hover,
+.lbv2-actions a:hover,
+.preview-toolbar a:hover {
+  border-color: #7d8da1;
+}
+
+.lbv2-shell {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 18px 0 32px;
+}
+
+.lbv2-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 68px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 16px;
+  background: var(--paper);
+}
+
+.lbv2-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lbv2-brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.lbv2-brand p,
+.section-head p,
+.recommend-panel p,
+.evidence-panel p,
+.lesson-anchor p {
+  margin: 0;
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.lbv2-brand h1,
+.section-head h2,
+.lesson-anchor h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.lbv2-actions,
+.preview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.lbv2-statusbar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.lbv2-statusbar span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.lbv2-statusbar .is-done {
+  border-color: #b7dec7;
+  background: #edf9f1;
+  color: #166534;
+}
+
+.lbv2-statusbar .is-ready {
+  border-color: #a7c3ff;
+  background: #edf4ff;
+  color: #1d4ed8;
+}
+
+.lbv2-workbench {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr) 300px;
+  gap: 12px;
+  align-items: start;
+}
+
+.lbv2-setup,
+.lbv2-main,
+.lbv2-side,
+.lesson-anchor,
+.load-grid,
+.part-board,
+.recommend-panel,
+.evidence-panel,
+.pdf-preview,
+.preview-toolbar {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.lbv2-setup,
+.recommend-panel,
+.evidence-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.lbv2-main {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.lbv2-side {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+}
+
+.field-stack {
+  display: grid;
+  gap: 5px;
+}
+
+.field-stack label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.field-stack select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #b8c6d4;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 750;
+}
+
+.setup-summary {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--soft);
+}
+
+.setup-summary span,
+.setup-summary em,
+.save-status {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.setup-summary strong {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.setup-actions {
+  display: grid;
+  gap: 8px;
+}
+
+#lbv2Save,
+#lbv2Present {
+  border-color: #14532d;
+  background: var(--green);
+  color: #fff;
+}
+
+#lbv2PreviewPdf {
+  border-color: #1d4ed8;
+  background: var(--blue);
+  color: #fff;
+}
+
+.save-status {
+  min-height: 20px;
+  margin: 0;
+}
+
+.lesson-anchor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 14px;
+  padding: 16px;
+}
+
+.lesson-anchor strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.lesson-anchor span {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.integrity-meter {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+
+.integrity-meter span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.integrity-meter strong {
+  margin: 0;
+  color: var(--green);
+  font-size: 40px;
+}
+
+.integrity-meter em {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #166534;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.integrity-meter i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.load-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+}
+
+.load-grid article {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-height: 78px;
+  border-right: 1px solid var(--line);
+  padding: 12px;
+  background: #fff;
+}
+
+.load-grid article:last-child {
+  border-right: 0;
+}
+
+.load-grid b {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcfce7;
+}
+
+.load-grid b::before {
+  content: "\2713";
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.load-grid span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.part-board {
+  padding: 14px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.section-head span {
+  border: 1px solid #b7dec7;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #edf9f1;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.part-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.part-card {
+  display: grid;
+  gap: 8px;
+  min-height: 126px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.part-card.is-off {
+  border-color: #f3c3cf;
+  background: #fff5f7;
+}
+
+.part-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.part-card b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 13px;
+}
+
+.part-card label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.part-card input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--green);
+}
+
+.part-card strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.part-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.recommend-panel strong {
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.recommend-panel span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+#lbv2EvidenceRows {
+  display: grid;
+  gap: 8px;
+}
+
+.evidence-row {
+  display: grid;
+  gap: 3px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.evidence-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.evidence-row strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.evidence-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.preview-toolbar {
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.pdf-preview {
+  margin-top: 12px;
+  padding: 18px;
+  background: #dde5ee;
+}
+
+.pdf-page {
+  width: min(860px, 100%);
+  min-height: 720px;
+  margin: 0 auto;
+  border: 1px solid #b8c6d4;
+  border-radius: 4px;
+  padding: 34px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(16, 32, 51, 0.16);
+}
+
+.pdf-page header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 14px;
+}
+
+.pdf-page h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 30px;
+}
+
+.pdf-page h3 {
+  margin: 18px 0 8px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.pdf-page p,
+.pdf-page li {
+  color: #27384a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pdf-page ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.pdf-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+body.lbv2-presenting {
+  overflow: hidden;
+}
+
+.present-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  background: #0b1117;
+  color: #f8fafc;
+}
+
+.present-stage[hidden] {
+  display: none;
+}
+
+.present-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.present-mode-switch,
+.present-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.present-topbar button {
+  border-color: rgba(248, 250, 252, 0.22);
+  background: rgba(248, 250, 252, 0.08);
+  color: #f8fafc;
+}
+
+.present-topbar button.active {
+  border-color: #99f6e4;
+  background: #ccfbf1;
+  color: #134e4a;
+}
+
+.present-frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-areas:
+    "head drawer"
+    "content drawer"
+    "nav drawer";
+  gap: 10px;
+  width: min(100%, 1600px);
+  height: min(calc(100vh - 82px), calc((100vw - 24px) * 0.5625));
+  min-height: 540px;
+  align-self: center;
+  justify-self: center;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(226, 232, 240, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fafc;
+  color: var(--ink);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.present-slide-head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.present-slide-head p {
+  margin: 0;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.present-slide-head h2 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.present-slide-head strong {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.present-slide-content {
+  grid-area: content;
+  min-height: 0;
+  overflow: auto;
+}
+
+.present-teacher-drawer {
+  grid-area: drawer;
+  min-height: 0;
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+
+.student-mode .present-frame,
+.drawer-collapsed .present-frame {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "content"
+    "nav";
+}
+
+.student-mode .present-teacher-drawer,
+.drawer-collapsed .present-teacher-drawer {
+  display: none;
+}
+
+.present-slide-nav {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.present-slide-nav button {
+  min-width: 124px;
+}
+
+.present-slide-nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.present-overview {
+  position: absolute;
+  inset: 74px auto 72px 14px;
+  z-index: 4;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  width: min(360px, calc(100% - 28px));
+  border: 1px solid #b8c6d4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+  overflow: auto;
+}
+
+.present-overview[hidden] {
+  display: none;
+}
+
+.present-overview-head,
+.present-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.present-overview-head strong,
+.present-drawer-head strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.present-overview > button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+}
+
+.present-overview > button.active {
+  border-color: #14b8a6;
+  background: #ecfeff;
+}
+
+.present-overview > button.is-off {
+  opacity: 0.65;
+}
+
+.present-overview b,
+.present-overview-card b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--teal);
+  color: #fff;
+}
+
+.present-overview span,
+.present-overview-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.present-overview em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.present-opening {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+.present-opening-copy,
+.present-opening-overview,
+.present-focus-panel,
+.present-question-panel,
+.present-passage {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.present-opening-copy {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: 26px;
+}
+
+.present-opening-copy p,
+.present-passage span,
+.present-card-display span,
+.present-sentence-display span,
+.present-dictation-card span,
+.present-page-label {
+  margin: 0;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.present-opening-copy h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 46px;
+  line-height: 1.05;
+}
+
+.present-opening-copy strong {
+  color: #14532d;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.present-opening-copy span {
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.present-opening-copy button {
+  width: fit-content;
+  min-height: 46px;
+  border-color: #14532d;
+  background: var(--green);
+  color: #fff;
+  font-size: 16px;
+}
+
+.present-opening-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+  padding: 12px;
+  overflow: auto;
+}
+
+.present-overview-card {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  text-align: left;
+}
+
+.present-overview-card.is-off {
+  opacity: 0.65;
+}
+
+.present-activity {
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.present-activity.two-panel,
+.present-activity.comprehension,
+.present-chart-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.present-focus-panel,
+.present-question-panel,
+.present-passage {
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
+}
+
+.present-focus-panel h3,
+.present-chart-column h3,
+.present-question-panel h3,
+.present-drawer-section h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.present-token-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.present-token-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.present-token,
+.present-chart-word {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-height: 70px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  color: var(--ink);
+  text-align: center;
+}
+
+.present-token span,
+.present-chart-word span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 28px;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.present-token em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.present-mark-badge {
+  display: none;
+}
+
+.teacher-mode .present-token.is-marked,
+.teacher-mode .present-chart-word.is-marked {
+  border-color: #ef4444;
+  background: #fff1f2;
+}
+
+.teacher-mode .present-token.is-marked .present-mark-badge,
+.teacher-mode .present-chart-word.is-marked .present-mark-badge {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  display: inline;
+  color: #be123c;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.present-empty {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.present-stepper {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) 112px;
+  gap: 12px;
+  align-items: stretch;
+  min-height: 100%;
+}
+
+.present-stepper > button {
+  align-self: center;
+  min-height: 64px;
+}
+
+.present-step-main {
+  display: grid;
+  gap: 10px;
+  min-height: 100%;
+}
+
+.present-step-main > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.present-card-display,
+.present-sentence-display,
+.present-dictation-card {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  min-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  background: #fff;
+  text-align: center;
+}
+
+.present-card-display strong,
+.present-dictation-card strong {
+  max-width: 100%;
+  color: #0f172a;
+  font-size: 76px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.present-card-display.word-card strong {
+  font-size: 88px;
+}
+
+.present-card-display.reverse strong {
+  color: #7c2d12;
+}
+
+.present-dictation-card.student-clean strong {
+  color: #334155;
+  font-size: 58px;
+}
+
+.present-dictation-card em {
+  color: var(--muted);
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.present-sentence-display strong {
+  max-width: 1120px;
+  color: #0f172a;
+  font-size: 46px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.present-activity.charting {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.present-page-label {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.present-chart-layout {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.present-chart-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.present-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+}
+
+.present-chart-word {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 56px;
+  text-align: left;
+}
+
+.present-chart-word b {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+}
+
+.present-chart-word span {
+  font-size: 22px;
+}
+
+.present-passage {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.present-passage p {
+  margin: 0;
+  color: #111827;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.present-phrase-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.present-phrase-strip span {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.present-question-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.present-question-panel p {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.present-question-panel b {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 14px;
+}
+
+.present-drawer-section {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.present-drawer-section:first-of-type {
+  border-top: 0;
+}
+
+.present-drawer-section p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.present-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.present-mini-list span {
+  border: 1px solid #d9e2ea;
+  border-radius: 8px;
+  padding: 5px 7px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.present-note {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.present-note span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.present-note textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #b8c6d4;
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--ink);
+}
+
+.present-done {
+  width: 100%;
+  border-color: #14532d;
+  background: var(--green);
+  color: #fff;
+}
+
+@media (max-width: 1180px) {
+  .lbv2-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .lbv2-side {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .part-grid,
+  .present-opening-overview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .load-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .load-grid article {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 760px) {
+  .lbv2-shell {
+    width: min(100% - 20px, 1440px);
+  }
+
+  .lbv2-topbar,
+  .section-head,
+  .lesson-anchor,
+  .pdf-page header {
+    grid-template-columns: 1fr;
+  }
+
+  .lbv2-topbar {
+    display: grid;
+  }
+
+  .lbv2-actions,
+  .preview-toolbar {
+    justify-content: stretch;
+  }
+
+  .lbv2-actions a,
+  .preview-toolbar a,
+  .preview-toolbar button {
+    flex: 1 1 160px;
+    text-align: center;
+  }
+
+  .lbv2-statusbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lbv2-side,
+  .part-grid,
+  .present-opening-overview,
+  .load-grid,
+  .pdf-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .load-grid article {
+    border-right: 0;
+  }
+
+  .integrity-meter {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 14px 0 0;
+  }
+
+  .lesson-anchor strong {
+    font-size: 28px;
+  }
+
+  .present-stage {
+    padding: 8px;
+  }
+
+  .present-topbar {
+    align-items: stretch;
+  }
+
+  .present-mode-switch,
+  .present-top-actions {
+    flex: 1 1 100%;
+  }
+
+  .present-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "content"
+      "nav";
+    height: calc(100vh - 128px);
+    min-height: 0;
+    aspect-ratio: auto;
+    padding: 10px;
+  }
+
+  .teacher-mode .present-teacher-drawer {
+    position: absolute;
+    top: 74px;
+    right: 10px;
+    bottom: 64px;
+    z-index: 3;
+    display: block;
+    width: min(300px, calc(100% - 20px));
+    border: 1px solid #b8c6d4;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8fafc;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+  }
+
+  .student-mode .present-teacher-drawer,
+  .drawer-collapsed .present-teacher-drawer {
+    display: none;
+  }
+
+  .present-slide-head {
+    align-items: flex-start;
+  }
+
+  .present-slide-head h2 {
+    font-size: 22px;
+  }
+
+  .present-opening,
+  .present-activity.two-panel,
+  .present-activity.comprehension,
+  .present-chart-layout,
+  .present-stepper {
+    grid-template-columns: 1fr;
+  }
+
+  .present-stepper {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .present-card-display strong,
+  .present-card-display.word-card strong,
+  .present-dictation-card strong {
+    font-size: 46px;
+  }
+
+  .present-sentence-display strong,
+  .present-opening-copy h3 {
+    font-size: 30px;
+  }
+
+  .present-passage p,
+  .present-question-panel p {
+    font-size: 20px;
+  }
+
+  .present-token-grid,
+  .present-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}

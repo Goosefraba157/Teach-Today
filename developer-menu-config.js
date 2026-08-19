@@ -20,6 +20,12 @@
           status: "Core"
         },
         {
+          title: "Try New Lesson Builder",
+          description: "Preview route for the isolated Lesson Builder V2 flow: group, substep, charting page, lesson ready, preview, and present mode.",
+          href: "lesson-planner-v2.html?feature=lesson-builder-v2&substep=5.3",
+          status: "Preview"
+        },
+        {
           title: "Live Lesson Flow",
           description: "Full live-teaching view with Sections 1-10, presentation controls, charting, dictation, and pacing.",
           href: "TeachToday.html?devRoute=lesson-flow",

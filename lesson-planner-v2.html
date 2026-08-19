@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>New Lesson Builder | Teach Today</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
+    <link rel="stylesheet" href="lesson-planner-v2.css?v=lesson-builder-v2-presenter-5">
+    <script src="app-nav.js?v=data-diagnostic-1" defer></script>
+  </head>
+  <body data-app-surface="teacher">
+    <main class="lbv2-shell">
+      <header class="lbv2-topbar">
+        <div class="lbv2-brand">
+          <img src="assets/morrocoy-logo.png" alt="">
+          <div>
+            <p>Preview Route</p>
+            <h1>New Lesson Builder</h1>
+          </div>
+        </div>
+        <nav class="lbv2-actions" aria-label="Lesson builder navigation">
+          <a href="TeachToday.html?devRoute=planner">Classic Lesson Planner</a>
+          <a href="TeachToday.html">Teacher Home</a>
+          <a href="DeveloperDashboard.html">Dev Menu</a>
+        </nav>
+      </header>
+
+      <section class="lbv2-statusbar" aria-label="Builder flow">
+        <span class="is-done">Group + Substep</span>
+        <span class="is-done">Recommended Charting Page</span>
+        <span class="is-done">10 Parts Selected</span>
+        <span class="is-ready">Lesson Ready</span>
+        <span>PDF Preview</span>
+        <span>Present Mode</span>
+      </section>
+
+      <section class="lbv2-workbench" aria-label="Lesson builder workspace">
+        <aside class="lbv2-setup" aria-label="Lesson setup">
+          <div class="field-stack">
+            <label for="lbv2Group">Group</label>
+            <select id="lbv2Group"></select>
+          </div>
+          <div class="field-stack">
+            <label for="lbv2Substep">Substep</label>
+            <select id="lbv2Substep"></select>
+          </div>
+          <div class="field-stack">
+            <label for="lbv2Level">Reader Level</label>
+            <select id="lbv2Level">
+              <option value="AB">AB</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="N">N</option>
+            </select>
+          </div>
+          <div class="setup-summary" aria-label="Active selection">
+            <span>Selected Group</span>
+            <strong id="lbv2GroupMeta">--</strong>
+            <em id="lbv2StudentMeta">--</em>
+          </div>
+          <div class="setup-actions">
+            <button id="lbv2AutoSelect" type="button">Select All 10 Parts</button>
+            <button id="lbv2Save" type="button">Save Compatible Lesson</button>
+          </div>
+          <p id="lbv2SaveStatus" class="save-status" aria-live="polite">No V2 lesson saved yet.</p>
+        </aside>
+
+        <section class="lbv2-main" aria-label="Lesson readiness">
+          <section class="lesson-anchor" aria-labelledby="lbv2AnchorTitle">
+            <div>
+              <p>Lesson Anchor</p>
+              <h2 id="lbv2AnchorTitle">Step --</h2>
+              <strong id="lbv2ChartingPage">Charting Page --</strong>
+              <span id="lbv2ReaderPage">Reader page --</span>
+            </div>
+            <div class="integrity-meter" aria-label="Lesson integrity">
+              <span>Lesson Integrity</span>
+              <strong id="lbv2IntegrityScore">100%</strong>
+              <em id="lbv2IntegrityLabel"><i></i> Fully Aligned</em>
+            </div>
+          </section>
+
+          <section class="load-grid" aria-label="Loaded lesson resources">
+            <article><b></b><span>Reading Set Loaded</span></article>
+            <article><b></b><span>Word Cards Loaded</span></article>
+            <article><b></b><span>Dictation Loaded</span></article>
+            <article><b></b><span>Reader Loaded</span></article>
+            <article><b></b><span>Fluency Loaded</span></article>
+            <article><b></b><span>Vocabulary Loaded</span></article>
+            <article><b></b><span>Comprehension Loaded</span></article>
+          </section>
+
+          <section class="part-board" aria-label="Auto-selected lesson parts">
+            <div class="section-head">
+              <div>
+                <p>Auto-selected Wilson Lesson Parts</p>
+                <h2>All 10 Lesson Parts</h2>
+              </div>
+              <span id="lbv2PartCount">10 selected</span>
+            </div>
+            <div id="lbv2Parts" class="part-grid"></div>
+          </section>
+        </section>
+
+        <aside class="lbv2-side" aria-label="Recommended content">
+          <section class="recommend-panel">
+            <p>Recommended Charting Page</p>
+            <strong id="lbv2RecommendTitle">--</strong>
+            <span id="lbv2RecommendMeta">--</span>
+          </section>
+          <section class="evidence-panel">
+            <p>Group Evidence</p>
+            <div id="lbv2EvidenceRows"></div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="preview-toolbar" aria-label="Preview controls">
+        <button id="lbv2PreviewPdf" type="button">PDF Preview</button>
+        <button id="lbv2Present" type="button">Present Mode</button>
+        <a href="TeachToday.html?devRoute=planner">Return to Classic Lesson Planner</a>
+      </section>
+
+      <section id="lbv2Preview" class="pdf-preview" aria-label="PDF preview">
+        <div class="pdf-page" id="lbv2PdfPage"></div>
+      </section>
+    </main>
+
+    <section id="lbv2PresentStage" class="present-stage teacher-mode" hidden aria-label="Present mode">
+      <div class="present-topbar" aria-label="Presentation controls">
+        <div class="present-mode-switch" role="group" aria-label="Display mode">
+          <button id="lbv2TeacherMode" class="active" type="button">Teacher Display</button>
+          <button id="lbv2StudentMode" type="button">Student Display</button>
+        </div>
+        <div class="present-top-actions">
+          <button id="lbv2DrawerToggle" type="button">Teacher Panel</button>
+          <button id="lbv2OverviewToggle" type="button">Section Overview</button>
+          <button id="lbv2FullscreenPresent" type="button">Full Screen</button>
+          <button id="lbv2ExitPresent" type="button">Classic Builder</button>
+        </div>
+      </div>
+      <div class="present-frame">
+        <aside id="lbv2SlideOverview" class="present-overview" hidden aria-label="Section overview"></aside>
+        <header class="present-slide-head">
+          <div>
+            <p id="lbv2SlideEyebrow">Lesson Ready</p>
+            <h2 id="lbv2SlideTitle">Step --</h2>
+          </div>
+          <strong id="lbv2SlideProgress">Opening</strong>
+        </header>
+        <div id="lbv2SlideContent" class="present-slide-content"></div>
+        <aside id="lbv2TeacherDrawer" class="present-teacher-drawer" aria-label="Teacher controls"></aside>
+        <footer class="present-slide-nav" aria-label="Slide navigation">
+          <button id="lbv2PrevSlide" type="button">Previous</button>
+          <button id="lbv2NextSlide" type="button">Next</button>
+        </footer>
+      </div>
+    </section>
+
+    <script src="reader-chart-index.js"></script>
+    <script src="reader-sentence-index.js"></script>
+    <script src="dictation-index.js"></script>
+    <script src="dictation-phrase-index.js"></script>
+    <script src="dictation-sentence-index.js"></script>
+    <script src="wilson-hfw-data.js"></script>
+    <script src="lesson-planner-v2-presenter.js?v=lesson-builder-v2-presenter-5"></script>
+    <script src="lesson-planner-v2.js?v=lesson-builder-v2-presenter-5"></script>
+  </body>
+</html>

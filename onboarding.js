@@ -12,7 +12,7 @@
     {
       icon: '📚',
       title: 'Welcome to Teach Today!',
-      body: 'This app generates Wilson Reading System lessons in seconds and keeps student records as you teach. Here\'s a quick tour to get you started.'
+      body: 'This app generates structured literacy lessons in seconds and keeps student records as you teach. Here\'s a quick tour to get you started.'
     },
     {
       icon: '👥',
@@ -65,7 +65,7 @@
     btnContinue?.addEventListener('click', () => dismissLogin(screen));
 
     // Auto-dismiss if Firebase restores a signed-in session
-    if (userBadge) {
+    if (userBadge && userBadge.nodeType === 1) {
       const obs = new MutationObserver(() => {
         if (!userBadge.hidden && !screen.classList.contains('tt-hidden')) {
           dismissLogin(screen);

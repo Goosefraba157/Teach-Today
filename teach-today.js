@@ -28,6 +28,8 @@ let ttPickerSelections = {};      // { pickerId: string[] }  — ordered selecte
 let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — word pools per substep
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttPlannerHomeScrollPositions = {};
+let ttPlannerCustomizeOpen = false;
+let ttAssistantNotice = "";
 let ttLessonLaunchTimer = null;
 let ttPresentationMenuTimer = null;
 let ttPaceGuideTimer = null;
@@ -4580,7 +4582,466 @@ function ttRenderPlannerPanel() {
   ttById("ttPlannerSections").innerHTML = ttPlannerSectionsHtml(group, skill, lesson);
   ttBindPlannerChips();
   ttRenderPlannerPreview(group, skill, lesson);
+  ttRenderLessonAssistant(group, skill, lesson);
+  ttRenderPlannerCustomizeState();
   ttUpdateHomeReferenceLinks();
+}
+
+function ttRenderPlannerCustomizeState() {
+  const panel = ttById("ttPlannerCustomizePanel");
+  const toggle = ttById("ttPlannerCustomizeToggle");
+  if (panel) panel.hidden = !ttPlannerCustomizeOpen;
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", ttPlannerCustomizeOpen ? "true" : "false");
+    toggle.classList.toggle("active", ttPlannerCustomizeOpen);
+    toggle.textContent = ttPlannerCustomizeOpen ? "Hide Customize" : "Customize";
+  }
+}
+
+function ttInstructionalLessonType(group, lesson) {
+  const records = ttGroupChartRecords(group).filter((record) => !lesson?.substep || record.substep === lesson.substep);
+  const latest = records.at(-1);
+  const misses = ttAssistantTroubleItems(group, lesson, 8);
+  if (!records.length) return "Introduction";
+  if (misses.length || Number(latest?.correct || 0) < 12) return "Accuracy";
+  if (latest && !latest.automaticity) return "Fluency";
+  return "Review";
+}
+
+function ttPlannerFormatLabel(lessonType = ttPlannerDraft.lessonType || "full") {
+  return {
+    full: "Full 1:1",
+    full45: "Quick 1:1",
+    group: "Group days",
+    part1: "Group days",
+    part2: "Group days",
+    flash: "Custom"
+  }[lessonType] || "Full 1:1";
+}
+
+function ttPlannerRecommendedMinutes(lessonType = ttPlannerDraft.lessonType || "full") {
+  if (lessonType === "full45") return 45;
+  if (lessonType === "group" || lessonType === "part1" || lessonType === "part2") return 90;
+  if (lessonType === "flash") {
+    const selected = new Set(ttPlannerDraft.flashSections || []);
+    return TT_LESSON_SECTIONS.filter((section) => selected.has(section.id)).reduce((sum, section) => sum + section.mins, 0);
+  }
+  return 60;
+}
+
+function ttAssistantLatestRecords(group, lesson) {
+  const currentSubstep = lesson?.substep || group?.substep || "";
+  const records = ttGroupChartRecords(group)
+    .filter((record) => !currentSubstep || record.substep === currentSubstep)
+    .sort((a, b) => ttRecordTime(a) - ttRecordTime(b));
+  const latest = records.at(-1) || null;
+  const recent = records.slice(-5);
+  const dictation = (group.dictationMisses || []).filter((record) => !currentSubstep || record.substep === currentSubstep).slice(-12);
+  const encoding = (group.encodingObservations || []).filter((record) => !currentSubstep || record.substep === currentSubstep).slice(-12);
+  return { records, recent, latest, dictation, encoding };
+}
+
+function ttAssistantTroubleItems(group, lesson, limit = 6) {
+  const data = ttAssistantLatestRecords(group, lesson);
+  const chartMisses = data.recent.flatMap(ttMissWordsFromChartRecord);
+  const marked = data.dictation.concat(data.encoding)
+    .map((record) => record.item || record.note || record.category || "")
+    .filter(Boolean);
+  return uniqueWords([].concat(group.trouble || [], chartMisses, marked)).slice(0, limit);
+}
+
+function ttAssistantReadiness(group, lesson) {
+  const missing = [];
+  if (!(group.students || []).length) missing.push("students");
+  if (!lesson?.realWords?.length && !lesson?.nonsenseWords?.length) missing.push("word list");
+  if (!lesson?.readerSentences?.length) missing.push("sentence page");
+  if (!lesson?.section9Story?.title && !lesson?.passage) missing.push("connected text");
+  const data = ttAssistantLatestRecords(group, lesson);
+  const needsReview = Boolean(
+    data.latest && (Number(data.latest.correct || 0) < 12 || !data.latest.automaticity)
+  ) || ttAssistantTroubleItems(group, lesson, 1).length > 0;
+  const status = missing.length ? "Missing Data" : needsReview ? "Needs Review" : "Ready";
+  const details = missing.length
+    ? `Add ${missing.join(", ")} before teaching.`
+    : needsReview
+      ? "Review items are included before new work."
+      : "Core decoding, encoding, and connected text are selected.";
+  return { status, details, missing, needsReview };
+}
+
+function ttAssistantRecommendation(group, lesson, skill) {
+  const data = ttAssistantLatestRecords(group, lesson);
+  const trouble = ttAssistantTroubleItems(group, lesson, 6);
+  const reasonParts = [];
+  if (data.latest) {
+    const score = `${data.latest.correct ?? "--"}/${data.latest.total || 15}`;
+    if (Number(data.latest.correct || 0) < 12) reasonParts.push(`last chart was ${score}, below mastery`);
+    else if (!data.latest.automaticity) reasonParts.push(`last chart was accurate but automaticity is still building`);
+    else reasonParts.push(`recent charting shows ${score} with automaticity`);
+  }
+  if (trouble.length) reasonParts.push(`${trouble.length} trouble spot${trouble.length === 1 ? "" : "s"} are being reviewed`);
+  if (!reasonParts.length) reasonParts.push(`smart defaults use ${skill.id} and the group’s current lesson data`);
+  const reviewSource = priorSubstep(skill.id);
+  const title = `${ttPlannerFormatLabel()} ${ttInstructionalLessonType(group, lesson)} lesson for ${skill.id}`;
+  return {
+    title,
+    reason: `Recommended because ${reasonParts.join(" and ")}.`,
+    support: `Current work comes from ${skill.id}; maintenance review pulls from ${reviewSource} and older mastered substeps when data is available.`
+  };
+}
+
+function ttAssistantContentList(values = [], fallback = "Selected in lesson") {
+  const items = uniqueWords(values || []).filter(Boolean).slice(0, 8);
+  if (!items.length) return fallback;
+  const suffix = values.length > items.length ? ` +${values.length - items.length} more` : "";
+  return `${items.join(", ")}${suffix}`;
+}
+
+function ttAssistantEvidenceText(sectionId, group, lesson) {
+  const data = ttAssistantLatestRecords(group, lesson);
+  if (sectionId === "4") return data.latest ? `Last chart: ${data.latest.correct ?? "--"}/${data.latest.total || 15}${data.latest.seconds ? ` in ${data.latest.seconds}s` : ""}` : "Charting record";
+  if (sectionId === "8") return data.dictation.length ? `${data.dictation.length} recent dictation mark${data.dictation.length === 1 ? "" : "s"}` : "Dictation accuracy";
+  if (sectionId === "9") return "Fluency/rate and passage notes";
+  if (sectionId === "10") return "Comprehension response";
+  return data.recent.length ? "Recent accuracy and automaticity" : "Teacher observation";
+}
+
+function ttAssistantMasteryText(sectionId, group, lesson) {
+  const data = ttAssistantLatestRecords(group, lesson);
+  if (!data.latest) return "Not enough data yet";
+  if (sectionId === "4" || sectionId === "9") {
+    if (data.latest.automaticity) return "Automatic";
+    if (data.latest.accuracy) return "Accurate, building speed";
+    return "Needs accuracy review";
+  }
+  if (ttAssistantTroubleItems(group, lesson, 1).length) return "Needs review";
+  return "On track";
+}
+
+function ttAssistantSectionRows(group, lesson, skill) {
+  const dictation = ttActiveDictationPlan(lesson, skill);
+  const block = (label) => dictation.find((item) => item.label.toLowerCase().includes(label))?.values || [];
+  const sectionSeven = ttSectionSevenSetsForLesson(lesson, skill);
+  const passageTitle = lesson.section9Story?.title || lesson.passage || "Select connected text";
+  const trouble = ttAssistantTroubleItems(group, lesson, 5);
+  const masteryContent = [
+    `Decoding: ${ttAssistantEvidenceText("4", group, lesson)}`,
+    `Encoding: ${block("real words").length || sectionSeven.current?.length || 0} planned words`,
+    `Trouble spots: ${trouble.join(", ") || "none flagged"}`,
+    "Comprehension: passage response and notes"
+  ];
+  return [
+    { id: "1", title: "Decoding Warm-Up", target: "sound-symbol automaticity", mins: 3, content: `${soundsForSubstep(skill.id).vowels}; ${soundsForSubstep(skill.id).consonants}`, edit: "1" },
+    { id: "2", title: "New / Review Skill", target: skill.title, mins: 5, content: `Review: ${ttAssistantContentList(lesson.sectionTwoReviewWords || [])}. Current: ${ttAssistantContentList(lesson.sectionTwoCurrentWords || [])}`, edit: "2" },
+    { id: "4", title: "Word Reading", target: "single-word decoding accuracy", mins: ttPlannerDraft.lessonType === "full45" ? 5 : 10, content: `Reader ${lesson.reader}, p. ${lesson.wordlistPageNumber || "--"} - ${ttAssistantContentList([].concat(lesson.realWords || [], lesson.nonsenseWords || []), "charting page")}`, edit: "4" },
+    { id: "3", title: "Word Cards", target: "word recognition and vocabulary", mins: 5, content: `Review: ${ttAssistantContentList(section3ReviewCards(lesson))}. Current: ${ttAssistantContentList(section3CurrentCards(lesson))}`, edit: "3" },
+    { id: "5", title: "Sentence Reading", target: "decoding in connected sentences", mins: ttPlannerDraft.lessonType === "full45" ? 3 : 5, content: `Reader ${lesson.reader}, p. ${lesson.sentencePageNumber || "--"} - ${ttAssistantContentList(lesson.readerSentences || [], "sentence page")}`, edit: "5" },
+    { id: "6", title: "Encoding Warm-Up", target: "sound production for spelling", mins: 3, content: ttAssistantContentList((lesson.reverseDrillOverride || []).map((item) => item.value), "reverse quick drill"), edit: "6" },
+    { id: "7", title: "Encoding / Spelling", target: "spelling with word structure", mins: 10, content: `Review: ${ttAssistantContentList(sectionSeven.review || [])}. Current: ${ttAssistantContentList(sectionSeven.current || [])}`, edit: "7" },
+    { id: "8", title: "Dictation", target: "sounds, words, phrases, and sentences", mins: ttPlannerDraft.lessonType === "full45" ? 10 : 20, content: `Words: ${ttAssistantContentList(block("real words"))}. Sentences: ${ttAssistantContentList(block("sentences"), "dictation sentences")}`, edit: "8" },
+    { id: "9", title: "Passage / Fluency", target: "controlled text reading", mins: 10, content: `${passageTitle} - ${ttSection9ApproachLabel(lesson.section9Story?.approach)}`, edit: "9" },
+    { id: "10", title: "Comprehension", target: "retell, vocabulary, and response", mins: 10, content: "Vocabulary, follow-up questions, comprehension response, and teacher notes", edit: "10" },
+    { id: "M", title: "Mastery Evidence", target: "repeat, review, or advance decision", mins: 0, content: masteryContent.join(". "), edit: "M", evidenceOnly: true }
+  ];
+}
+
+function ttAssistantSectionCardHtml(section, group, lesson, skill, index) {
+  const evidence = ttAssistantEvidenceText(section.id, group, lesson);
+  const mastery = ttAssistantMasteryText(section.id, group, lesson);
+  const open = index < 2 ? " open" : "";
+  return `<details class="assistant-section-card" data-assistant-section="${escapeHtml(section.id)}"${open}>
+    <summary>
+      <span class="assistant-sec-num">${escapeHtml(section.id)}</span>
+      <span class="assistant-sec-title">
+        <strong>${escapeHtml(section.title)}</strong>
+        <em>${escapeHtml(section.content)}</em>
+      </span>
+      <span class="assistant-sec-min">${section.mins ? `${section.mins}m` : "evidence"}</span>
+    </summary>
+    <div class="assistant-section-body">
+      <div class="assistant-tags">
+        <span>Step ${escapeHtml(String(skill.id).split(".")[0] || "")}</span>
+        <span>Substep ${escapeHtml(skill.id)}</span>
+        <span>${escapeHtml(section.target)}</span>
+        <span>${escapeHtml(mastery)}</span>
+      </div>
+      <p><strong>Selected content:</strong> ${escapeHtml(section.content)}</p>
+      <p><strong>Evidence collected:</strong> ${escapeHtml(evidence)}</p>
+      <div class="assistant-section-actions">
+        <button type="button" data-assistant-edit="${escapeHtml(section.edit)}">Edit</button>
+        <button type="button" data-assistant-regenerate="${escapeHtml(section.id)}">Regenerate</button>
+      </div>
+    </div>
+  </details>`;
+}
+
+function ttAssistantTimelineHtml(group, lesson, skill) {
+  const lessonType = ttPlannerDraft.lessonType || "full";
+  const rows = ttAssistantSectionRows(group, lesson, skill).filter((section) => !section.evidenceOnly && section.mins > 0);
+  const selected = lessonType === "flash" ? new Set(ttPlannerDraft.flashSections || []) : null;
+  const visibleRows = selected ? rows.filter((section) => selected.has(section.id)) : rows;
+  const plannedMinutes = ttPlannerRecommendedMinutes(lessonType);
+  const hasDecoding = !selected || ["1", "2", "3", "4", "5"].some((id) => selected.has(id));
+  const hasEncoding = !selected || ["6", "7", "8"].some((id) => selected.has(id));
+  const hasText = !selected || ["5", "9", "10"].some((id) => selected.has(id));
+  const warnings = [
+    !hasDecoding ? "missing decoding" : "",
+    !hasEncoding ? "missing encoding" : "",
+    !hasText ? "missing connected text" : ""
+  ].filter(Boolean);
+  const locked = lessonType === "flash" ? "Custom order follows selected sections" : "Order locked for structured lesson flow";
+  return `<div class="assistant-timeline-head">
+      <div><strong>${plannedMinutes} min</strong><span>Total recommended lesson time</span></div>
+      <em class="${warnings.length ? "warning" : ""}">${warnings.length ? `Warning: ${warnings.join(", ")}` : locked}</em>
+    </div>
+    <div class="assistant-timeline-track">
+      ${visibleRows.map((section) => `<span style="--tl-color:${escapeHtml(TT_LESSON_SECTIONS.find((item) => item.id === section.id)?.color || "#64748b")}" draggable="${lessonType === "flash" ? "true" : "false"}"><b>${escapeHtml(section.id)}</b>${escapeHtml(section.mins)}m</span>`).join("")}
+    </div>`;
+}
+
+function ttAssistantStudentPanelHtml(group, lesson) {
+  const currentSubstep = lesson?.substep || group.substep || "";
+  const rows = (group.students || []).map((student) => {
+    const records = typeof recordsForStudent === "function"
+      ? recordsForStudent(student).filter((record) => record.groupId === group.id || record.group === group.name)
+      : (appState.masterRecords || []).filter((record) => record.student === student && (record.groupId === group.id || record.group === group.name));
+    const last = records.at(-1);
+    const status = typeof performanceStatus === "function" ? performanceStatus(records) : { color: "gray", label: "No data yet" };
+    const misses = uniqueWords(records.slice(-3).flatMap(ttMissWordsFromChartRecord)).slice(0, 3);
+    const score = last ? `${last.correct ?? "--"}/${last.total || 15}${last.seconds ? `, ${last.seconds}s` : ""}` : "No chart yet";
+    return `<article class="assistant-student-row">
+      <div><strong><span class="status-dot ${escapeHtml(status.color)}"></span>${escapeHtml(student)}</strong><span>${escapeHtml(currentSubstep)}</span></div>
+      <div><b>${escapeHtml(score)}</b><span>${escapeHtml(misses.join(", ") || "No recent misses")}</span></div>
+      <em>${escapeHtml(status.label)}</em>
+    </article>`;
+  }).join("");
+  const trouble = ttAssistantTroubleItems(group, lesson, 6);
+  return `<div class="assistant-panel-head">
+      <span>Teacher Panel</span>
+      <strong>${escapeHtml(group.students?.length || 0)} student${(group.students || []).length === 1 ? "" : "s"}</strong>
+      <em>${escapeHtml(currentSubstep)}</em>
+    </div>
+    <div class="assistant-panel-trouble">
+      <strong>Trouble spots</strong>
+      <p>${escapeHtml(trouble.join(", ") || "No trouble spots flagged yet.")}</p>
+    </div>
+    <div class="assistant-student-list">${rows || "<p class=\"planner-empty\">Add students to see readiness by student.</p>"}</div>
+    <label class="assistant-note-box">Notes<textarea readonly>${escapeHtml(group.note || "No notes yet.")}</textarea></label>`;
+}
+
+function ttPlannerFiltersHtml() {
+  const filters = [
+    ["step", "Step"],
+    ["substep", "Substep"],
+    ["skill", "Skill"],
+    ["real", "Real words"],
+    ["nonsense", "Nonsense words"],
+    ["hfw", "High frequency"],
+    ["sentence", "Sentence reading"],
+    ["dictation", "Dictation"],
+    ["fluency", "Fluency"],
+    ["comprehension", "Comprehension"]
+  ];
+  return `<div class="planner-filter-head"><strong>Filters</strong><span>Advanced controls stay here until needed.</span></div>
+    <div class="planner-filter-chips">
+      ${filters.map(([id, label]) => `<label><input type="checkbox" data-planner-filter="${id}" checked>${escapeHtml(label)}</label>`).join("")}
+    </div>`;
+}
+
+function ttRenderLessonAssistant(group, skill, fallbackLesson) {
+  const planned = ttPlannerDraftLessonWithSelections(group);
+  const lesson = planned.lesson || fallbackLesson;
+  const activeSkill = planned.skill || skill;
+  const recommendation = ttAssistantRecommendation(group, lesson, activeSkill);
+  const readiness = ttAssistantReadiness(group, lesson);
+  const summary = ttById("ttAssistantSummary");
+  if (summary) {
+    summary.innerHTML = [
+      ["Group", group.name || "Group"],
+      ["Step/Substep", `${String(activeSkill.id).split(".")[0] || "--"} / ${activeSkill.id}`],
+      ["Lesson type", ttInstructionalLessonType(group, lesson)],
+      ["Length", `${ttPlannerRecommendedMinutes()} min`],
+      ["Readiness", readiness.status]
+    ].map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
+  }
+  const rec = ttById("ttAssistantRecommendation");
+  if (rec) {
+    rec.innerHTML = `<span>Today's Recommended Lesson</span>
+      <strong>${escapeHtml(recommendation.title)}</strong>
+      <p>${escapeHtml(recommendation.reason)}</p>
+      <em>${escapeHtml(recommendation.support)}</em>
+      ${ttAssistantNotice ? `<small>${escapeHtml(ttAssistantNotice)}</small>` : ""}`;
+  }
+  const ready = ttById("ttAssistantReadiness");
+  if (ready) {
+    ready.className = `assistant-readiness ${readiness.status.toLowerCase().replace(/\s+/g, "-")}`;
+    ready.innerHTML = `<span>${escapeHtml(readiness.status)}</span><p>${escapeHtml(readiness.details)}</p>`;
+  }
+  const filters = ttById("ttPlannerFilters");
+  if (filters && !filters.innerHTML) filters.innerHTML = ttPlannerFiltersHtml();
+  ttBindPlannerFilters();
+  const timeline = ttById("ttAssistantTimeline");
+  if (timeline) timeline.innerHTML = ttAssistantTimelineHtml(group, lesson, activeSkill);
+  const sections = ttById("ttAssistantSections");
+  if (sections) {
+    const cards = ttAssistantSectionRows(group, lesson, activeSkill)
+      .map((section, index) => ttAssistantSectionCardHtml(section, group, lesson, activeSkill, index))
+      .join("");
+    sections.innerHTML = cards;
+  }
+  const panel = ttById("ttAssistantTeacherPanel");
+  if (panel) panel.innerHTML = ttAssistantStudentPanelHtml(group, lesson);
+  ttBindLessonAssistantActions();
+}
+
+function ttBindLessonAssistantActions() {
+  ttById("ttAssistantSections")?.querySelectorAll("[data-assistant-edit]").forEach((button) => {
+    button.addEventListener("click", () => ttAssistantEditSection(button.dataset.assistantEdit));
+  });
+  ttById("ttAssistantSections")?.querySelectorAll("[data-assistant-regenerate]").forEach((button) => {
+    button.addEventListener("click", () => ttAssistantRegenerateSection(button.dataset.assistantRegenerate));
+  });
+}
+
+function ttAssistantEditSection(sectionId) {
+  ttPlannerCustomizeOpen = true;
+  ttRenderPlannerCustomizeState();
+  const safeSectionId = String(sectionId || "").replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+  const target = ttById("ttPlannerSections")?.querySelector(`[data-sec="${safeSectionId}"]`)
+    || ttById("ttPlannerCustomizePanel");
+  target?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ttAssistantRegenerateSection(sectionId) {
+  const pickerMap = {
+    "2": ["section2Review", "section2Current", "section2ReviewB2", "section2CurrentB2"],
+    "3": ["section3Review", "section3Current"],
+    "6": ["section6Vowels", "section6Consonants", "section6Welded", "section6Elements", "dictationSounds", "dictationElements"],
+    "7": ["section7Review", "section7Current", "section7Nonsense"],
+    "8": ["dictationSounds", "dictationElements", "dictationReal", "dictationNonsense", "dictationPhrases", "dictationSentences", "readerSentences"]
+  };
+  (pickerMap[sectionId] || []).forEach((id) => { delete ttPickerSelections[id]; });
+  if (sectionId === "8") ttSection8RealSlots = [];
+  if (sectionId === "M") {
+    ttAssistantNotice = "Mastery evidence refreshes automatically from saved lesson data.";
+  } else {
+    ttAssistantNotice = `Regenerated Section ${sectionId}.`;
+  }
+  window.setTimeout(() => {
+    ttAssistantNotice = "";
+    ttRenderPlannerPanel();
+  }, 1800);
+  ttRenderPlannerPanel();
+}
+
+function ttBindPlannerFilters() {
+  const filters = ttById("ttPlannerFilters");
+  if (!filters || filters.dataset.bound === "true") return;
+  filters.dataset.bound = "true";
+  filters.querySelectorAll("[data-planner-filter]").forEach((input) => {
+    input.addEventListener("change", () => ttApplyPlannerFilters());
+  });
+  ttApplyPlannerFilters();
+}
+
+function ttApplyPlannerFilters() {
+  const filters = ttById("ttPlannerFilters");
+  const rows = ttById("ttPlannerSections");
+  if (!filters || !rows) return;
+  const checked = new Set([...filters.querySelectorAll("[data-planner-filter]:checked")].map((input) => input.dataset.plannerFilter));
+  const allOn = checked.size === filters.querySelectorAll("[data-planner-filter]").length;
+  const sectionFilters = {
+    "2": ["step", "substep", "skill", "real"],
+    "2B": ["step", "substep", "skill", "real"],
+    "3": ["skill", "real", "hfw"],
+    "6": ["skill", "dictation"],
+    "7": ["skill", "real", "nonsense", "dictation"],
+    "8": ["real", "nonsense", "hfw", "sentence", "dictation"]
+  };
+  rows.querySelectorAll(".planner-section-row").forEach((row) => {
+    if (allOn) {
+      row.hidden = false;
+      return;
+    }
+    const keys = sectionFilters[row.dataset.sec] || [];
+    row.hidden = keys.length ? !keys.some((key) => checked.has(key)) : false;
+  });
+}
+
+function ttSavePlannerTemplate() {
+  const group = ttPlannerGroup();
+  if (!group) return;
+  const planned = ttPlannerDraftLessonWithSelections(group);
+  group.lessonTemplates ||= [];
+  const now = new Date();
+  group.lessonTemplates.unshift({
+    id: `template-${Date.now()}`,
+    title: `${group.name || "Group"} ${planned.lesson.substep} ${ttPlannerFormatLabel()} template`,
+    createdAt: now.toISOString(),
+    substep: planned.lesson.substep,
+    lessonType: ttPlannerDraft.lessonType || "full",
+    lesson: ttClone(planned.lesson)
+  });
+  group.lessonTemplates = group.lessonTemplates.slice(0, 12);
+  ttAssistantNotice = "Template saved for this group.";
+  saveState();
+  ttRenderPlannerPanel();
+}
+
+function ttDuplicatePreviousLesson() {
+  const group = ttPlannerGroup();
+  if (!group) return;
+  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]);
+  const previous = lastPlan?.lessons?.[0];
+  if (!previous) {
+    ttAssistantNotice = "No previous lesson to duplicate yet.";
+    ttRenderPlannerPanel();
+    return;
+  }
+  const skill = scopeMap.find((item) => item.id === previous.substep) || activeStep(group);
+  ttPlannerDraft = {
+    groupId: group.id,
+    substep: previous.substep || group.substep,
+    level: previous.readerLevel || group.readerLevel || "AB",
+    wordlist: previous.wordlistPageNumber || "",
+    sentence: previous.sentencePageNumber || "",
+    passageId: previous.section9Story?.passageId || previous.section9Story?.id || "",
+    passageApproach: previous.section9Story?.approach || "comprehension-sos",
+    reviewSubsteps: [priorSubstep(previous.substep || group.substep)],
+    lessonType: previous.lessonType || "full",
+    flashSections: (previous.flashSections || ["1", "2", "3", "5"]).slice()
+  };
+  ttPickerSelections = {
+    section2Review: (previous.sectionTwoReviewWords || []).slice(),
+    section2Current: (previous.sectionTwoCurrentWords || []).slice(),
+    section2ReviewB2: (previous.sectionTwoReviewWordsB2 || []).slice(),
+    section2CurrentB2: (previous.sectionTwoCurrentWordsB2 || []).slice(),
+    section3Review: (previous.sectionThreeReviewWords || section3ReviewCards(previous) || []).slice(),
+    section3Current: (previous.sectionThreeCurrentWords || section3CurrentCards(previous) || []).slice(),
+    section7Review: (previous.sectionSevenReviewWords || []).slice(),
+    section7Current: (previous.sectionSevenCurrentWords || []).slice(),
+    section7Nonsense: (previous.sectionSevenNonsenseWords || []).slice()
+  };
+  const dictationPlan = previous.dictationPlanOverride || [];
+  dictationPlan.forEach((block) => {
+    const label = String(block.label || "").toLowerCase();
+    if (label.includes("sounds")) ttPickerSelections.dictationSounds = (block.values || []).slice();
+    if (label.includes("word elements")) ttPickerSelections.dictationElements = (block.values || []).slice();
+    if (label.includes("real words")) ttPickerSelections.dictationReal = (block.values || []).slice();
+    if (label.includes("nonsense")) ttPickerSelections.dictationNonsense = (block.values || []).slice();
+    if (label.includes("phrases")) ttPickerSelections.dictationPhrases = (block.values || []).slice();
+    if (label.includes("sentences")) ttPickerSelections.dictationSentences = (block.values || []).slice();
+  });
+  const realWords = ttPickerSelections.dictationReal || [];
+  ttSection8RealSlots = realWords.slice(0, 5).map((word) => ({ substep: previous.substep || skill.id, word }));
+  ttSectionReviewSubsteps = {
+    section2: [priorSubstep(skill.id)],
+    section3: [priorSubstep(skill.id)],
+    section7: [priorSubstep(skill.id)],
+    section8Real: [skill.id]
+  };
+  ttAssistantNotice = "Previous lesson duplicated into today’s assistant.";
+  ttRenderPlannerPanel();
 }
 
 // ── Mode Picker ──────────────────────────────────────────────────────────────
@@ -5733,6 +6194,15 @@ function ttPlannerSelected(id) {
 }
 
 function ttUsePlannerDefaults() {
+  const group = ttPlannerGroup();
+  if (!group) return;
+  ttPlannerDraft = {};
+  ttPickerSelections = {};
+  ttPickerSubstepCache = {};
+  ttSection8RealSlots = [];
+  ttSectionReviewSubsteps = {};
+  ttAssistantNotice = "Generated the best lesson from current group data.";
+  ttEnsurePlannerDraft(group);
   ttRenderPlannerPanel();
 }
 
@@ -5875,7 +6345,10 @@ function ttRefreshPreview() {
   if (!g) return;
   const draft = ttPlannerDraft;
   const sk = scopeMap.find((s) => s.id === (draft.substep || g.substep)) || activeStep(g);
-  ttRenderPlannerPreview(g, sk, ttPlannerPreviewLesson(g));
+  const lesson = ttPlannerPreviewLesson(g);
+  ttRenderPlannerPreview(g, sk, lesson);
+  ttRenderLessonAssistant(g, sk, lesson);
+  ttRenderPlannerCustomizeState();
 }
 
 function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson = null) {
@@ -8130,8 +8603,8 @@ async function ttOpenWilsonLessonPlanPdf({ fillable = false } = {}) {
     const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate, { fillable });
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
-    const filename = `${ttLessonExportBaseName(group, ttLesson, plan, savedDate)} - ${fillable ? "Fillable WRS" : "WRS"}.pdf`;
-    const label = fillable ? "Fillable Wilson LP" : "Wilson LP";
+    const filename = `${ttLessonExportBaseName(group, ttLesson, plan, savedDate)} - ${fillable ? "Fillable Teach Today" : "Teach Today"}.pdf`;
+    const label = fillable ? "Fillable Teach Today LP" : "Teach Today LP";
     ttOpenExportViewer({
       url,
       title: group?.name ? `${group.name} — ${label}` : label,
@@ -8140,7 +8613,7 @@ async function ttOpenWilsonLessonPlanPdf({ fillable = false } = {}) {
     });
   } catch (error) {
     console.error(error);
-    alert(`Could not create the ${fillable ? "fillable Wilson PDF" : "Wilson LP"}: ${error.message || error}`);
+    alert(`Could not create the ${fillable ? "fillable lesson PDF" : "lesson plan PDF"}: ${error.message || error}`);
   }
 }
 
@@ -8682,7 +9155,7 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
       <div class="cover">TT Lesson Plan | ${escapeHtml(skill.id)} | ${escapeHtml(group.name)} | ${escapeHtml(lesson.readerLevel || "AB")} | ${escapeHtml(date)}</div>
       <header class="hero">
         <div>
-          <p class="eyebrow">Wilson Reading System Inspired Lesson</p>
+          <p class="eyebrow">Teach Today Structured Literacy Lesson</p>
           <h1>Substep ${escapeHtml(skill.id)} <span class="small">${escapeHtml(skill.title)}</span></h1>
           <p class="subtitle">${escapeHtml(skill.pattern)} | ${escapeHtml(lesson.day || "Lesson")}</p>
           <div class="skill-strip">Skill focus: ${escapeHtml(skill.teacherCue || lesson.focus || "Use controlled reading and spelling from today's substep.")}</div>
@@ -11577,6 +12050,12 @@ function ttBind() {
     // Apply all planner selections then open — same as "Build lesson" but goes straight to teach flow
     ttBuildPlannerLesson();
   });
+  ttById("ttPlannerCustomizeToggle")?.addEventListener("click", () => {
+    ttPlannerCustomizeOpen = !ttPlannerCustomizeOpen;
+    ttRenderPlannerCustomizeState();
+  });
+  ttById("ttPlannerSaveTemplate")?.addEventListener("click", () => ttSavePlannerTemplate());
+  ttById("ttPlannerDuplicatePrevious")?.addEventListener("click", () => ttDuplicatePreviousLesson());
   ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence", "ttPlannerPassage", "ttPlannerPassageApproach"].forEach((id) => {
     ttById(id)?.addEventListener("change", () => {
       const group = ttPlannerGroup();

@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=stage-section4-page-5">
+    <link rel="stylesheet" href="teach-today.css?v=lesson-assistant-3">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -122,8 +122,8 @@
           <span class="ribbon-label">Export</span>
           <div class="ribbon-buttons">
             <button id="ttPdfPlan" type="button" title="Export PDF lesson plan">PDF</button>
-            <button id="ttWilsonPlan" type="button" title="Wilson lesson plan">Wilson LP</button>
-            <button id="ttWilsonFillablePlan" type="button" title="Fillable Wilson PDF">Fillable</button>
+            <button id="ttWilsonPlan" type="button" title="Structured lesson plan">Template LP</button>
+            <button id="ttWilsonFillablePlan" type="button" title="Fillable lesson PDF">Fillable</button>
           </div>
         </div>
         <div class="ribbon-sep"></div>
@@ -332,30 +332,50 @@
       </header>
       <div id="ttHomeGroups" class="home-groups"></div>
       <section id="ttQuickPlanner" class="quick-planner" hidden>
-        <div class="planner-head">
+        <div class="planner-head lesson-assistant-head">
           <div>
-            <p class="eyebrow">Lesson builder</p>
+            <p class="eyebrow">Lesson Assistant</p>
             <h2 id="ttPlannerTitle">Select a group</h2>
             <span id="ttPlannerLastLesson"></span>
           </div>
+          <div id="ttAssistantSummary" class="assistant-summary" aria-label="Recommended lesson summary"></div>
           <div class="planner-actions">
-            <button id="ttPlannerUseDefaults" type="button">Use smart defaults</button>
-            <button id="ttPlannerBuild" type="button">Build lesson</button>
-            <button id="ttPlannerOpen" type="button">Start teaching</button>
+            <button id="ttPlannerOpen" class="assistant-start-btn" type="button">Start Lesson</button>
+            <button id="ttPlannerUseDefaults" type="button">Generate Best Lesson</button>
+            <button id="ttPlannerCustomizeToggle" type="button" aria-expanded="false">Customize</button>
           </div>
         </div>
-        <div id="ttPlannerModePicker" class="planner-mode-picker-wrap"></div>
-        <div class="planner-core">
-          <label>Substep<select id="ttPlannerSubstep"></select></label>
-          <label>Reader level<select id="ttPlannerLevel"></select></label>
-          <label>Wordlist page<select id="ttPlannerWordlist"></select></label>
-          <label>Sentence page<select id="ttPlannerSentence"></select></label>
-          <label>Section 9 story<select id="ttPlannerPassage"></select></label>
-          <label>Section 9 approach<select id="ttPlannerPassageApproach"></select></label>
+        <div class="assistant-command-row">
+          <article id="ttAssistantRecommendation" class="assistant-recommendation"></article>
+          <div id="ttAssistantReadiness" class="assistant-readiness"></div>
+          <div class="assistant-utility-actions">
+            <button id="ttPlannerBuild" type="button">Build Lesson</button>
+            <button id="ttPlannerSaveTemplate" type="button">Save as Template</button>
+            <button id="ttPlannerDuplicatePrevious" type="button">Duplicate Previous</button>
+          </div>
         </div>
-        <div class="planner-workspace">
-          <div id="ttPlannerSections" class="planner-sections"></div>
-          <aside id="ttPlannerPreview" class="planner-preview" aria-label="Lesson preview"></aside>
+        <div class="assistant-layout">
+          <section class="assistant-main" aria-label="Today recommended lesson">
+            <div id="ttAssistantTimeline" class="assistant-timeline"></div>
+            <div id="ttAssistantSections" class="assistant-sections"></div>
+          </section>
+          <aside id="ttAssistantTeacherPanel" class="assistant-teacher-panel" aria-label="Teacher panel"></aside>
+        </div>
+        <div id="ttPlannerCustomizePanel" class="planner-customize-panel" hidden>
+          <div id="ttPlannerModePicker" class="planner-mode-picker-wrap"></div>
+          <div class="planner-core">
+            <label>Substep<select id="ttPlannerSubstep"></select></label>
+            <label>Reader level<select id="ttPlannerLevel"></select></label>
+            <label>Wordlist page<select id="ttPlannerWordlist"></select></label>
+            <label>Sentence page<select id="ttPlannerSentence"></select></label>
+            <label>Passage<select id="ttPlannerPassage"></select></label>
+            <label>Passage approach<select id="ttPlannerPassageApproach"></select></label>
+          </div>
+          <div id="ttPlannerFilters" class="planner-filters" aria-label="Lesson filters"></div>
+          <div class="planner-workspace">
+            <div id="ttPlannerSections" class="planner-sections"></div>
+            <aside id="ttPlannerPreview" class="planner-preview" aria-label="Lesson preview"></aside>
+          </div>
         </div>
       </section>
     </section>
@@ -807,7 +827,7 @@
             <img src="assets/morrocoy-logo.png" alt="" class="tt-login-logo">
           </div>
           <h1 class="tt-login-app-name">Teach Today</h1>
-          <p class="tt-login-tagline">Wilson Reading lesson planner</p>
+          <p class="tt-login-tagline">Structured literacy lesson planner</p>
         </div>
         <div class="tt-login-divider"></div>
         <div class="tt-login-actions">
@@ -911,12 +931,12 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=connection-audio-1"></script>
+    <script src="app.js?v=lesson-assistant-3"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=stage-section4-page-5"></script>
+    <script src="teach-today.js?v=lesson-assistant-3"></script>
     <script src="pwa-register.js"></script>
-    <script src="onboarding.js"></script>
+    <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>
   </body>
 </html>
