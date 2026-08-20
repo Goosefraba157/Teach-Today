@@ -384,12 +384,12 @@ function selectedContext() {
   const profileGroup = student && !(group.students || []).includes(student)
     ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
     : group;
-  const records = (data.masterRecords || []).filter((record) => record.student === student && (
-    !profileGroup.id
-    || record.groupId === profileGroup.id
-    || record.group === profileGroup.name
-    || (record.type === "soundsDrill" && !record.groupId && !record.group)
-  ));
+  const resolvedStudentId = studentId || privateStudentId(data, profileGroup, student);
+  const records = (data.masterRecords || []).filter((record) => {
+    const identityMatch = resolvedStudentId ? record.studentId === resolvedStudentId : record.student === student;
+    return identityMatch && (!profileGroup.id || record.groupId === profileGroup.id || record.group === profileGroup.name
+      || record.historicalBaseline || (record.type === "soundsDrill" && !record.groupId && !record.group));
+  });
   const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
   const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
   return { data, group: profileGroup, student, studentId: studentId || privateStudentId(data, profileGroup, student), records, dictationMisses, encodingObservations };
@@ -645,7 +645,11 @@ function renderProfileStudentButtons(data, group, activeStudent) {
 }
 
 function recordsForStudent(data, student, group, scope = comparisonScope) {
-  return (data.masterRecords || []).filter((record) => record.student === student && (scope === "all" || record.groupId === group.id || record.group === group.name));
+  const studentId = privateStudentId(data, group, student);
+  return (data.masterRecords || []).filter((record) => {
+    const identityMatch = studentId ? record.studentId === studentId : record.student === student;
+    return identityMatch && (scope === "all" || record.groupId === group.id || record.group === group.name || record.historicalBaseline);
+  });
 }
 
 function encodingForStudent(data, student, group, scope = comparisonScope) {
@@ -989,12 +993,13 @@ function trendDelta(n, unit = "", lowerIsBetter = false) {
 
 function renderTrend(records) {
   const chart = byId("trendChart");
-  if (records.length < 2) {
+  const trendRecords = records.filter((record) => !record.excludeFromTrend && (record.date || record.displayDate));
+  if (trendRecords.length < 2) {
     chart.innerHTML = "<p>Save two or more records to show progress over time.</p>";
     return;
   }
 
-  const sorted = records.slice().sort((a, b) =>
+  const sorted = trendRecords.slice().sort((a, b) =>
     new Date(a.date || a.displayDate || 0) - new Date(b.date || b.displayDate || 0)
   );
   const first = sorted[0];

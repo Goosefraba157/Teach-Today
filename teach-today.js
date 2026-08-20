@@ -7673,7 +7673,12 @@ function section3CurrentCards(lesson) {
 }
 
 function ttGroupChartRecords(group = ttActiveGroup()) {
-  const matching = (record) => record && (record.groupId === group.id || record.group === group.name);
+  const studentIds = new Set(Object.values(group.studentIds || {}).filter(Boolean));
+  const matching = (record) => record && (
+    record.groupId === group.id
+    || record.group === group.name
+    || (record.historicalBaseline && record.studentId && studentIds.has(record.studentId))
+  );
   return (appState.masterRecords || [])
     .filter(matching)
     .concat(group.chartResults || [])
@@ -10007,6 +10012,80 @@ function ttBackupData() {
   link.click();
   URL.revokeObjectURL(url);
   localStorage.setItem("teachToday.lastBackupAt", now.toISOString());
+  ttRenderDataCenter();
+}
+
+function ttHistoricalDay(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value).trim().toLowerCase() : date.toISOString().slice(0, 10);
+}
+
+function ttHistoricalFingerprint(record) {
+  const misses = (record.wrongWords || []).map((word) => String(word).toLowerCase()).sort().join("|");
+  return [record.studentId || "", ttHistoricalDay(record.date || record.displayDate || record.dateRaw), record.substep || "", record.wordlistPage || "", record.chartHalf || "", record.correct ?? "", misses].join("::");
+}
+
+function ttHistoricalIdentity(record) {
+  return [record.studentId || "", ttHistoricalDay(record.date || record.displayDate || record.dateRaw), record.substep || "", record.wordlistPage || "", record.chartHalf || ""].join("::");
+}
+
+function ttHistoricalStudent(entry) {
+  const aliases = (entry.matchNames || [entry.studentName]).filter(Boolean).map((name) => String(name).trim().toLowerCase());
+  return (appState.rosterStudents || []).find((student) => [student.name, student.fullName, student.displayName]
+    .filter(Boolean).some((name) => aliases.includes(String(name).trim().toLowerCase()))) || null;
+}
+
+function ttHistoricalGroup(studentId, schoolYearId, aliases) {
+  const names = aliases.map((name) => String(name).trim().toLowerCase());
+  return (appState.groups || []).find((group) => group.schoolYearId === schoolYearId && (
+    Object.values(group.studentIds || {}).includes(studentId)
+    || (group.students || []).some((name) => names.includes(String(name).trim().toLowerCase()))
+  )) || null;
+}
+
+async function ttImportHistoricalWrsFile(file) {
+  if (!file) return;
+  let payload;
+  try { payload = JSON.parse(await file.text()); } catch { alert("This historical WRS file is not valid JSON."); return; }
+  if (payload?.kind !== "TeachTodayHistoricalWrsImport" || !Array.isArray(payload.students)) {
+    alert("This is not a Teach Today historical WRS import file."); return;
+  }
+  const proposed = [], proposedNotes = [], unmatched = [];
+  payload.students.forEach((entry) => {
+    const student = ttHistoricalStudent(entry);
+    if (!student) { unmatched.push(entry.studentName || "Unknown student"); return; }
+    const aliases = (entry.matchNames || [entry.studentName]).filter(Boolean);
+    const group = ttHistoricalGroup(student.studentId, payload.schoolYearId, aliases);
+    (entry.reviewNotes || []).forEach((note, index) => {
+      const id = `historical-wrs-note-${student.studentId}-${index}-${payload.schoolYearId}`;
+      proposedNotes.push({ ...note, id, studentId: student.studentId, schoolYearId: payload.schoolYearId, source: "historical-wrs-import" });
+    });
+    (entry.records || []).forEach((incoming) => proposed.push({ ...incoming,
+      student: student.name || student.displayName, studentId: student.studentId,
+      group: group?.name || `Historical WRS ${payload.schoolYearId}`, groupId: group?.id || null,
+      groupIdAtTime: group?.id || null, schoolYearId: payload.schoolYearId,
+      historicalBaseline: true, source: "historical-wrs-import", importedAt: new Date().toISOString()
+    }));
+  });
+  const existing = new Set((appState.masterRecords || []).map(ttHistoricalIdentity)), seen = new Set();
+  const additions = proposed.filter((record) => {
+    const identity = ttHistoricalIdentity(record), key = ttHistoricalFingerprint(record);
+    if ((ttHistoricalDay(record.date || record.displayDate || record.dateRaw) && existing.has(identity)) || seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  const skipped = proposed.length - additions.length;
+  if (!confirm(`Historical WRS preview\n\n${additions.length} new charting records\n${skipped} duplicates skipped\n${unmatched.length} unmatched students\n\nAdds charting evidence only—no lessons, attendance, dictation, or recordings.\n\nContinue?`)) return;
+  ttBackupData();
+  appState.masterRecords ||= [];
+  appState.masterRecords.push(...additions);
+  appState.historicalWrsReviewNotes ||= [];
+  const existingNoteIds = new Set(appState.historicalWrsReviewNotes.map((item) => item.id));
+  appState.historicalWrsReviewNotes.push(...proposedNotes.filter((item) => !existingNoteIds.has(item.id)));
+  appState.masterRecords.sort((a, b) => ttRecordTime(a) - ttRecordTime(b));
+  saveState();
+  await ttFirebaseSyncWrite(`Imported ${additions.length} historical WRS charting records.`);
+  alert(`Import complete: ${additions.length} added, ${skipped} duplicates skipped.${unmatched.length ? ` ${unmatched.length} unmatched.` : ""}`);
   ttRenderDataCenter();
 }
 
@@ -12439,6 +12518,8 @@ function ttBind() {
 
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
+  ttById("ttImportHistoricalWrs").addEventListener("click", () => ttById("ttHistoricalWrsFile").click());
+  ttById("ttHistoricalWrsFile").addEventListener("change", (event) => ttImportHistoricalWrsFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
   ttById("ttCloseSentenceDisplay").addEventListener("click", () => ttCloseSentenceDisplay());
   ttById("ttEditSection2Cards").addEventListener("click", () => ttEditSection2Cards());
