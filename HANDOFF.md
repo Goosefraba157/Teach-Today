@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-18
+2026-08-19
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -59,7 +59,9 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
-- Publish the historical WRS importer and longitudinal profile updates, then use the private generated payload to import and verify the 2025-2026 baseline. The payload and source transcription remain outside Git.
+- Complete on 2026-08-19: published the historical WRS importer and imported the private 2025-2026 baseline into the authenticated hosted app. A backup was created first; 259 new charting records were added, one existing duplicate was skipped, Firebase sync completed, and the app now holds 321 charting records. The private payload and source transcription remained outside Git.
+- Verified imported longitudinal profiles, graphs, group comparisons, and record tables on multiple current-year students. Historical evidence is visible across school years, while lessons, attendance, dictation, and recordings remain unchanged and are not fabricated.
+- The ChatGPT in-app browser produced one false `navigator.onLine` offline warning even while Firebase was successfully syncing. Treat the Records panel's Firebase status as authoritative for now; improve connection detection separately so it attempts a real cloud check before showing an offline warning.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 
