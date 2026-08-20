@@ -14,6 +14,12 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Reason:** The existing app looks and works well, so changes must preserve known-good flows.
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.
 
+## Lesson planning defaults
+
+- **Decision:** Lesson format is a per-group preference, shown immediately after group selection and preserved when generating a recommended lesson.
+- **Default:** Groups without a saved preference begin with the 45+45 group-days format; selecting another format updates only that group.
+- **Boundary:** “Generate Best Lesson” may optimize instructional content but must not change the teacher-selected lesson format.
+
 ## Student identity and school years
 
 - **Decision:** Use permanent private student IDs to connect records across school years while keeping each year's groups and activity separate.
@@ -38,4 +44,3 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 - **Decision:** Private files may be supplied as chat attachments or placed temporarily in `private-input/`, but must not be committed.
 - **Decision:** Imports must minimize fields, preview mappings/counts, avoid exposing identifiers in logs, and preserve source data until verification succeeds.
-

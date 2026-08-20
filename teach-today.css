@@ -1664,6 +1664,64 @@ body.lesson-flow-enter .teach-flow {
   margin-bottom: 12px;
 }
 
+.home-lesson-type {
+  margin: 0 0 12px;
+  padding: 12px 14px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.home-lesson-type-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.home-lesson-type-copy small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.home-lesson-type .mode-pick-btn.compact {
+  min-height: 68px;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  column-gap: 7px;
+  padding: 9px 12px;
+}
+
+.home-lesson-type .mode-pick-btn.compact .mode-icon {
+  margin: 0;
+  font-size: 20px;
+}
+
+.home-lesson-type .mode-pick-btn.compact em {
+  flex-basis: 100%;
+  margin-top: -2px;
+}
+
+.home-group-preference {
+  color: var(--group-color) !important;
+}
+
+@media (max-width: 720px) {
+  .home-lesson-type-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .home-lesson-type .mode-pick-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .home-school-year-bar {
   display: flex;
   align-items: center;

@@ -4518,6 +4518,7 @@ function ttRenderHomeScreen() {
       if (typeof ttOpenNewGroupModal === "function") ttOpenNewGroupModal();
     });
   }
+  ttRenderHomeModePicker(!viewingArchive);
   ttRenderPlannerPanel();
   ttUpdateHomeReferenceLinks();
 }
@@ -4556,6 +4557,7 @@ function ttHomeGroupCardHtml(group, editable = true) {
   const chartText = lastRecord
     ? `${lastRecord.student}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
     : "No charting saved";
+  const preferredType = ttPlannerFormatLabel(ttPreferredLessonType(group));
   return `<div class="home-group-card-shell" style="--group-color: ${color};">
     <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}">
       <span>${escapeHtml(group.time || "Group")}</span>
@@ -4564,6 +4566,7 @@ function ttHomeGroupCardHtml(group, editable = true) {
       <em>${escapeHtml(students || "No students yet")}</em>
       <small>Last lesson: ${escapeHtml(lastText)}</small>
       <small>Last chart: ${escapeHtml(chartText)}</small>
+      <small class="home-group-preference">Preferred: ${escapeHtml(preferredType)}</small>
     </button>
     ${editable ? `<button type="button" class="home-group-edit" data-edit-group="${escapeHtml(group.id)}" aria-label="Edit ${escapeHtml(group.name || "group")}" title="Edit group">Edit</button>` : ""}
   </div>`;
@@ -4571,6 +4574,65 @@ function ttHomeGroupCardHtml(group, editable = true) {
 
 function ttPlannerGroup() {
   return (appState.groups || []).find((group) => group.id === ttPlannerGroupId) || ttActiveGroup();
+}
+
+function ttNormalizeLessonType(value) {
+  const normalized = value === "part1" || value === "part2" ? "group" : value;
+  return ["full", "full45", "group", "flash"].includes(normalized) ? normalized : "group";
+}
+
+function ttPreferredLessonType(group) {
+  if (!group) return "group";
+  if (group.preferredLessonType) return ttNormalizeLessonType(group.preferredLessonType);
+  return "group";
+}
+
+function ttModeButtonsHtml(activeType, compact = false) {
+  const current = ttNormalizeLessonType(activeType);
+  const modeButton = (value, icon, headline, sub, color) => `<button type="button" class="mode-pick-btn${current === value ? " active" : ""}${compact ? " compact" : ""}"
+    style="--mode-color:${color}" data-mode-pick="${value}">
+    <span class="mode-icon">${icon}</span>
+    <strong>${headline}</strong>
+    <em>${sub}</em>
+  </button>`;
+  return `${modeButton("full", "🎯", "60 min", "Full 1:1", "#2563eb")}
+    ${modeButton("full45", "⚡", "45 min", "Quick 1:1", "#0891b2")}
+    ${modeButton("group", "👥", "45+45", "Group days", "#7c3aed")}
+    ${modeButton("flash", "🎮", "Flash", "Build your own", "#e11d48")}`;
+}
+
+function ttSetPlannerLessonType(value) {
+  const group = ttPlannerGroup();
+  if (!group) return;
+  ttEnsurePlannerDraft(group);
+  const lessonType = ttNormalizeLessonType(value);
+  ttPlannerDraft.lessonType = lessonType;
+  group.preferredLessonType = lessonType;
+  if (lessonType === "flash") ttPlannerDraft.flashSections ||= ["1", "2", "3", "5"];
+  const groupCard = [...ttById("ttHomeGroups")?.querySelectorAll("[data-home-group]") || []]
+    .find((button) => button.dataset.homeGroup === group.id);
+  const preference = groupCard?.querySelector(".home-group-preference");
+  if (preference) preference.textContent = `Preferred: ${ttPlannerFormatLabel(lessonType)}`;
+  ttRenderPlannerPanel();
+  ttRenderHomeModePicker(true);
+  saveState();
+}
+
+function ttRenderHomeModePicker(enabled = true) {
+  const container = ttById("ttHomeLessonType");
+  const group = ttPlannerGroup();
+  if (!container) return;
+  container.hidden = !enabled || !group;
+  if (container.hidden) return;
+  const lessonType = ttEnsurePlannerDraft(group).lessonType || ttPreferredLessonType(group);
+  container.innerHTML = `<div class="home-lesson-type-copy">
+      <span class="mode-pick-eyebrow">Lesson type for ${escapeHtml(group.name || "selected group")}</span>
+      <small>Generate Best Lesson will keep this format.</small>
+    </div>
+    <div class="mode-pick-row">${ttModeButtonsHtml(lessonType, true)}</div>`;
+  container.querySelectorAll("[data-mode-pick]").forEach((button) => {
+    button.addEventListener("click", () => ttSetPlannerLessonType(button.dataset.modePick));
+  });
 }
 
 function ttEnsurePlannerDraft(group) {
@@ -4587,7 +4649,7 @@ function ttEnsurePlannerDraft(group) {
     passageId: ttDefaultPassageFor(group, skill)?.id || "",
     passageApproach: group.section9Story?.approach || "comprehension-sos",
     reviewSubsteps: [priorSubstep(skill.id)],
-    lessonType: "full",
+    lessonType: ttPreferredLessonType(group),
     flashSections: ["1", "2", "3", "5"]
   };
   const priorStep = priorSubstep(skill.id);
@@ -5078,6 +5140,8 @@ function ttDuplicatePreviousLesson() {
     section7: [priorSubstep(skill.id)],
     section8Real: [skill.id]
   };
+  group.preferredLessonType = ttNormalizeLessonType(ttPlannerDraft.lessonType);
+  saveState();
   ttAssistantNotice = "Previous lesson duplicated into today’s assistant.";
   ttRenderPlannerPanel();
 }
@@ -5092,27 +5156,13 @@ function ttRenderModePicker() {
   const rawLt = draft.lessonType || "full";
   const lt = (rawLt === "part1" || rawLt === "part2") ? "group" : rawLt;
   if (rawLt === "part1" || rawLt === "part2") draft.lessonType = "group";
-  const isGroup = lt === "group";
   const isFlash = lt === "flash";
-
-  const modeBtn = (value, icon, headline, sub, color) => {
-    const isActive = value === "group" ? isGroup : lt === value;
-    return `<button type="button" class="mode-pick-btn${isActive ? " active" : ""}"
-      style="--mode-color:${color}" data-mode-pick="${value}">
-      <span class="mode-icon">${icon}</span>
-      <strong>${headline}</strong>
-      <em>${sub}</em>
-    </button>`;
-  };
 
   let html = `<div class="mode-pick-header">
     <span class="mode-pick-eyebrow">What type of lesson today?</span>
   </div>
   <div class="mode-pick-row">
-    ${modeBtn("full",   "🎯", "60 min", "Full 1:1",        "#2563eb")}
-    ${modeBtn("full45", "⚡", "45 min", "Quick 1:1",       "#0891b2")}
-    ${modeBtn("group",  "👥", "45+45",  "Group days",      "#7c3aed")}
-    ${modeBtn("flash",  "🎮", "Flash",  "Build your own",  "#e11d48")}
+    ${ttModeButtonsHtml(lt)}
   </div>`;
 
   // No sub-picker — group mode shows the full two-day flow in one unified lesson
@@ -5160,17 +5210,7 @@ function ttRenderModePicker() {
   container.innerHTML = html;
 
   container.querySelectorAll("[data-mode-pick]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const group = ttPlannerGroup();
-      if (!group) return;
-      ttEnsurePlannerDraft(group);
-      const val = btn.dataset.modePick;
-      ttPlannerDraft.lessonType = val; // "group" is now a first-class type
-      if (val === "flash") {
-        ttPlannerDraft.flashSections ||= ["1", "2", "3", "5"];
-      }
-      ttRenderPlannerPanel();
-    });
+    btn.addEventListener("click", () => ttSetPlannerLessonType(btn.dataset.modePick));
   });
 
   container.querySelectorAll("[data-flash-sec]").forEach((btn) => {
@@ -6234,6 +6274,7 @@ function ttPlannerSelected(id) {
 function ttUsePlannerDefaults() {
   const group = ttPlannerGroup();
   if (!group) return;
+  const lessonType = ttNormalizeLessonType(ttPlannerDraft.lessonType || ttPreferredLessonType(group));
   ttPlannerDraft = {};
   ttPickerSelections = {};
   ttPickerSubstepCache = {};
@@ -6241,13 +6282,18 @@ function ttUsePlannerDefaults() {
   ttSectionReviewSubsteps = {};
   ttAssistantNotice = "Generated the best lesson from current group data.";
   ttEnsurePlannerDraft(group);
+  ttPlannerDraft.lessonType = lessonType;
+  group.preferredLessonType = lessonType;
+  saveState();
   ttRenderPlannerPanel();
+  ttRenderHomeModePicker(true);
 }
 
 function ttBuildPlannerLesson(options = {}) {
   const group = ttPlannerGroup();
   if (!group) return;
   const draft = ttEnsurePlannerDraft(group);
+  group.preferredLessonType = ttNormalizeLessonType(draft.lessonType || ttPreferredLessonType(group));
   appState.selectedGroupId = group.id;
   group.substep = draft.substep || group.substep;
   group.readerLevel = draft.level || group.readerLevel || "AB";
