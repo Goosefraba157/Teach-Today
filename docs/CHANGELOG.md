@@ -52,3 +52,5 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Consolidated Home planning into a compact data-driven Recommended Plan plus the authoritative Customize editor, removing duplicate format controls, redundant section summaries, Build Lesson, and the unfinished template action.
 - Replaced exact lesson duplication with same-charting-page reteach planning that preserves history while refreshing Section 2/2B current words and prior-concept review words, and removed a duplicate Section 8 Sounds picker.
 - Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.
+- Added presentation-wide floating pen/highlighter tools for every lesson section, including color, size, undo, clear, and an interaction mode, while preserving Section 9's independent passage annotation tools.
+- Added a non-persistent presentation laser directly below Notes with a bright red point and short fading tail.

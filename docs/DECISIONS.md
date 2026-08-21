@@ -15,6 +15,8 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.
 - **Layout:** The regular teaching workspace should use available laptop and desktop width responsively, while Section 9 may remain wider for passage reading and mobile screens retain compact gutters.
 - **45+45 parity:** Section 2B uses its own Day 2 word-building deck and interaction state, mirroring the essential Section 2 student display without sharing or overwriting Day 1 navigation.
+- **Presentation-wide ink:** Present mode may provide one session-only annotation layer across all lesson sections. Its marks must clear when Present mode ends and must remain separate from Section 9's specialized passage annotation canvas and saved passage state.
+- **Laser pointer:** The presentation laser is a transient red point with a fading trail. It is never persisted, exported, or treated as student/lesson evidence.
 
 ## Lesson planning defaults
 

@@ -14,6 +14,20 @@ let ttHfwIndex = 0;
 let ttNotesEnabled = false;
 let ttNotesDrawing = false;
 let ttNotesLastPoint = null;
+let ttGlobalInkState = {
+  open: false,
+  active: false,
+  mode: "pen",
+  color: "#ef4444",
+  size: 5,
+  strokes: [],
+  drawing: false,
+  activeStroke: null
+};
+let ttLaserEnabled = false;
+let ttLaserDrawing = false;
+let ttLaserPoints = [];
+let ttLaserFrame = null;
 let ttWhiteboardMode = "move";
 let ttWhiteboardDrawing = false;
 let ttWhiteboardLastPoint = null;
@@ -12509,8 +12523,13 @@ async function ttTogglePresentation(force = null, options = {}) {
   if (shouldPresent) {
     document.body.classList.remove("legacy-full-lesson-mode");
     ttSetPresentationMenu(false);
+    requestAnimationFrame(ttResizeGlobalPresentationCanvases);
   } else {
     ttTogglePresentDisplayTray(false);
+    ttToggleGlobalInkPalette(false);
+    ttToggleLaser(false);
+    ttToggleNotes(false);
+    ttClearGlobalInk();
     document.body.classList.remove("present-menu-open");
     if (ttPresentationMenuTimer) {
       clearTimeout(ttPresentationMenuTimer);
@@ -12532,6 +12551,10 @@ async function ttTogglePresentation(force = null, options = {}) {
 
 function ttToggleNotes(force = null, clearWhenOff = true) {
   ttNotesEnabled = force ?? !ttNotesEnabled;
+  if (ttNotesEnabled) {
+    if (ttLaserEnabled) ttToggleLaser(false);
+    ttSetGlobalInkActive(false);
+  }
   document.body.classList.toggle("notes-mode", ttNotesEnabled);
   ttById("ttNotesToggle")?.classList.toggle("active", ttNotesEnabled);
   if (ttNotesEnabled) {
@@ -12637,6 +12660,218 @@ function ttNotesEnd(event) {
   event.preventDefault();
   ttNotesDrawing = false;
   ttNotesLastPoint = null;
+}
+
+function ttResizeGlobalPresentationCanvases() {
+  ttResizeCanvas("ttGlobalInkCanvas");
+  ttResizeCanvas("ttLaserCanvas");
+  ttRedrawGlobalInk();
+}
+
+function ttGlobalInkPoint(event) {
+  const point = ttCanvasPoint(event);
+  return {
+    x: point.x / Math.max(1, window.innerWidth),
+    y: point.y / Math.max(1, window.innerHeight)
+  };
+}
+
+function ttDrawGlobalInkStroke(ctx, stroke) {
+  const points = stroke?.points || [];
+  if (!ctx || !points.length) return;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = stroke.color || "#ef4444";
+  ctx.fillStyle = stroke.color || "#ef4444";
+  ctx.lineWidth = Number(stroke.size || 5);
+  if (stroke.mode === "highlight") {
+    ctx.globalAlpha = 0.26;
+    ctx.globalCompositeOperation = "multiply";
+    ctx.lineWidth = Math.max(10, Number(stroke.size || 14));
+  }
+  if (points.length === 1) {
+    ctx.beginPath();
+    ctx.arc(points[0].x * window.innerWidth, points[0].y * window.innerHeight, ctx.lineWidth / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      const x = point.x * window.innerWidth;
+      const y = point.y * window.innerHeight;
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function ttRedrawGlobalInk() {
+  const canvas = ttById("ttGlobalInkCanvas");
+  const ctx = canvas?.getContext("2d");
+  if (!ctx) return;
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  (ttGlobalInkState.strokes || []).forEach((stroke) => ttDrawGlobalInkStroke(ctx, stroke));
+  if (ttGlobalInkState.activeStroke) ttDrawGlobalInkStroke(ctx, ttGlobalInkState.activeStroke);
+}
+
+function ttSetGlobalInkActive(active) {
+  ttGlobalInkState.active = Boolean(active);
+  document.body.classList.toggle("global-ink-mode", ttGlobalInkState.active);
+  document.querySelectorAll("[data-global-ink-mode]").forEach((button) => {
+    button.classList.toggle("active", ttGlobalInkState.active && button.dataset.globalInkMode === ttGlobalInkState.mode);
+  });
+  ttById("ttGlobalInkInteract")?.classList.toggle("active", !ttGlobalInkState.active);
+}
+
+function ttSetGlobalInkMode(mode) {
+  if (ttNotesEnabled) ttToggleNotes(false, false);
+  if (ttLaserEnabled) ttToggleLaser(false);
+  ttGlobalInkState.mode = mode === "highlight" ? "highlight" : "pen";
+  if (ttGlobalInkState.mode === "highlight" && ttGlobalInkState.size < 10) {
+    ttGlobalInkState.size = 14;
+    const size = ttById("ttGlobalInkSize");
+    if (size) size.value = "14";
+  }
+  ttSetGlobalInkActive(true);
+}
+
+function ttToggleGlobalInkPalette(force = null) {
+  const palette = ttById("ttGlobalInkPalette");
+  const shouldOpen = force ?? !ttGlobalInkState.open;
+  ttGlobalInkState.open = shouldOpen;
+  if (palette) palette.hidden = !shouldOpen;
+  ttById("ttGlobalInkToggle")?.classList.toggle("active", shouldOpen);
+  ttById("ttGlobalInkToggle")?.setAttribute("aria-expanded", String(shouldOpen));
+  if (shouldOpen) ttResizeGlobalPresentationCanvases();
+  else ttSetGlobalInkActive(false);
+}
+
+function ttGlobalInkStart(event) {
+  if (!ttGlobalInkState.active || (event.pointerType === "mouse" && event.button !== 0)) return;
+  event.preventDefault();
+  ttResizeGlobalPresentationCanvases();
+  ttGlobalInkState.drawing = true;
+  ttGlobalInkState.activeStroke = {
+    mode: ttGlobalInkState.mode,
+    color: ttGlobalInkState.color,
+    size: ttGlobalInkState.size,
+    points: [ttGlobalInkPoint(event)]
+  };
+  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+  ttRedrawGlobalInk();
+}
+
+function ttGlobalInkMove(event) {
+  if (!ttGlobalInkState.active || !ttGlobalInkState.drawing || !ttGlobalInkState.activeStroke) return;
+  event.preventDefault();
+  ttGlobalInkState.activeStroke.points.push(ttGlobalInkPoint(event));
+  ttRedrawGlobalInk();
+}
+
+function ttGlobalInkEnd(event) {
+  if (!ttGlobalInkState.drawing || !ttGlobalInkState.activeStroke) return;
+  event.preventDefault();
+  try { event.currentTarget.releasePointerCapture(event.pointerId); } catch {}
+  ttGlobalInkState.strokes.push(ttGlobalInkState.activeStroke);
+  ttGlobalInkState.activeStroke = null;
+  ttGlobalInkState.drawing = false;
+  ttRedrawGlobalInk();
+}
+
+function ttUndoGlobalInk() {
+  ttGlobalInkState.strokes.pop();
+  ttRedrawGlobalInk();
+}
+
+function ttClearGlobalInk() {
+  ttGlobalInkState.strokes = [];
+  ttGlobalInkState.activeStroke = null;
+  ttGlobalInkState.drawing = false;
+  ttRedrawGlobalInk();
+}
+
+function ttRenderLaser(now = performance.now()) {
+  const canvas = ttById("ttLaserCanvas");
+  const ctx = canvas?.getContext("2d");
+  if (!ctx) return;
+  const lifetime = 720;
+  ttLaserPoints = ttLaserPoints.filter((point) => now - point.time < lifetime);
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  if (ttLaserPoints.length) {
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 7;
+    ctx.shadowColor = "rgba(239, 68, 68, 0.75)";
+    ctx.shadowBlur = 12;
+    for (let index = 1; index < ttLaserPoints.length; index += 1) {
+      const from = ttLaserPoints[index - 1];
+      const to = ttLaserPoints[index];
+      const alpha = Math.max(0, 1 - ((now - to.time) / lifetime));
+      ctx.strokeStyle = `rgba(239, 68, 68, ${alpha * 0.8})`;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    }
+    const tip = ttLaserPoints.at(-1);
+    const tipAlpha = Math.max(0, 1 - ((now - tip.time) / lifetime));
+    ctx.fillStyle = `rgba(220, 38, 38, ${tipAlpha})`;
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  if (ttLaserPoints.length || ttLaserDrawing) {
+    ttLaserFrame = requestAnimationFrame(ttRenderLaser);
+  } else {
+    ttLaserFrame = null;
+  }
+}
+
+function ttAddLaserPoint(event) {
+  const point = ttCanvasPoint(event);
+  ttLaserPoints.push({ x: point.x, y: point.y, time: performance.now() });
+  if (ttLaserPoints.length > 80) ttLaserPoints.splice(0, ttLaserPoints.length - 80);
+  if (!ttLaserFrame) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
+}
+
+function ttLaserStart(event) {
+  if (!ttLaserEnabled || (event.pointerType === "mouse" && event.button !== 0)) return;
+  event.preventDefault();
+  ttLaserDrawing = true;
+  ttAddLaserPoint(event);
+  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+}
+
+function ttLaserMove(event) {
+  if (!ttLaserEnabled || !ttLaserDrawing) return;
+  event.preventDefault();
+  ttAddLaserPoint(event);
+}
+
+function ttLaserEnd(event) {
+  if (!ttLaserDrawing) return;
+  event.preventDefault();
+  ttLaserDrawing = false;
+  ttAddLaserPoint(event);
+  try { event.currentTarget.releasePointerCapture(event.pointerId); } catch {}
+}
+
+function ttToggleLaser(force = null) {
+  ttLaserEnabled = force ?? !ttLaserEnabled;
+  if (ttLaserEnabled) {
+    if (ttNotesEnabled) ttToggleNotes(false, false);
+    ttSetGlobalInkActive(false);
+    ttResizeGlobalPresentationCanvases();
+  } else {
+    ttLaserDrawing = false;
+  }
+  document.body.classList.toggle("laser-mode", ttLaserEnabled);
+  ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
+  ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
 
 function ttOpenWhiteboard() {
@@ -13191,12 +13426,36 @@ function ttBind() {
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
+  ttById("ttLaserToggle")?.addEventListener("click", () => ttToggleLaser());
+  ttById("ttGlobalInkToggle")?.addEventListener("click", () => ttToggleGlobalInkPalette());
+  ttById("ttGlobalInkClose")?.addEventListener("click", () => ttToggleGlobalInkPalette(false));
+  ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));
+  ttById("ttGlobalInkUndo")?.addEventListener("click", () => ttUndoGlobalInk());
+  ttById("ttGlobalInkClear")?.addEventListener("click", () => ttClearGlobalInk());
+  ttById("ttGlobalInkPalette")?.querySelectorAll("[data-global-ink-mode]").forEach((button) => {
+    button.addEventListener("click", () => ttSetGlobalInkMode(button.dataset.globalInkMode));
+  });
+  ttById("ttGlobalInkPalette")?.querySelectorAll("[data-global-ink-color]").forEach((button) => {
+    button.addEventListener("click", () => {
+      ttGlobalInkState.color = button.dataset.globalInkColor || ttGlobalInkState.color;
+      ttById("ttGlobalInkPalette")?.querySelectorAll("[data-global-ink-color]").forEach((item) => {
+        item.classList.toggle("active", item === button);
+      });
+    });
+  });
+  ttById("ttGlobalInkSize")?.addEventListener("input", (event) => {
+    ttGlobalInkState.size = Number(event.target.value) || 5;
+  });
   ttById("ttDockPrevSection")?.addEventListener("click", () => ttGoToTeachingSection(-1));
   ttById("ttDockNextSection")?.addEventListener("click", () => ttGoToTeachingSection(1));
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && document.body.classList.contains("present-menu-open")) {
       ttSetPresentationMenu(false);
+    } else if (event.key === "Escape" && ttLaserEnabled) {
+      ttToggleLaser(false);
+    } else if (event.key === "Escape" && ttGlobalInkState.active) {
+      ttSetGlobalInkActive(false);
     }
   });
   const notesCanvas = ttById("ttNotesCanvas");
@@ -13207,6 +13466,16 @@ function ttBind() {
   notesCanvas.addEventListener("touchstart", ttNotesStart, { passive: false });
   notesCanvas.addEventListener("touchmove", ttNotesMove, { passive: false });
   notesCanvas.addEventListener("touchend", ttNotesEnd, { passive: false });
+  const globalInkCanvas = ttById("ttGlobalInkCanvas");
+  globalInkCanvas?.addEventListener("pointerdown", ttGlobalInkStart);
+  globalInkCanvas?.addEventListener("pointermove", ttGlobalInkMove);
+  globalInkCanvas?.addEventListener("pointerup", ttGlobalInkEnd);
+  globalInkCanvas?.addEventListener("pointercancel", ttGlobalInkEnd);
+  const laserCanvas = ttById("ttLaserCanvas");
+  laserCanvas?.addEventListener("pointerdown", ttLaserStart);
+  laserCanvas?.addEventListener("pointermove", ttLaserMove);
+  laserCanvas?.addEventListener("pointerup", ttLaserEnd);
+  laserCanvas?.addEventListener("pointercancel", ttLaserEnd);
   window.addEventListener("resize", () => {
     if (ttNotesEnabled) {
       ttResizeNotesCanvas();
@@ -13214,6 +13483,9 @@ function ttBind() {
     }
     if (!ttById("ttWhiteboard")?.hidden) {
       ttResizeWhiteboardCanvases();
+    }
+    if (document.body.classList.contains("presentation-mode")) {
+      ttResizeGlobalPresentationCanvases();
     }
   });
   window.addEventListener("scroll", () => {

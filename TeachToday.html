@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260821-home-planner-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260821-global-ink-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -265,6 +265,8 @@
       <button id="ttDockNextSection" type="button" title="Next section" aria-label="Next section">↓</button>
       <button id="ttDockDisplay" type="button" title="Presenter stage">Stage</button>
       <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
+      <button id="ttLaserToggle" type="button" title="Temporary laser pointer" aria-pressed="false">Laser</button>
+      <button id="ttGlobalInkToggle" type="button" title="Open presentation ink tools" aria-expanded="false">Ink</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
       <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Presenter stage controls">
         <button type="button" data-display-mode="private">Privacy</button>
@@ -279,6 +281,29 @@
     </aside>
 
     <canvas id="ttNotesCanvas" class="notes-canvas" aria-hidden="true"></canvas>
+    <canvas id="ttGlobalInkCanvas" class="global-ink-canvas" aria-label="Presentation ink layer"></canvas>
+    <canvas id="ttLaserCanvas" class="laser-canvas" aria-label="Temporary laser pointer layer"></canvas>
+    <aside id="ttGlobalInkPalette" class="global-ink-palette" aria-label="Presentation ink tools" hidden>
+      <div class="global-ink-tool-row" role="group" aria-label="Ink mode">
+        <button type="button" data-global-ink-mode="pen">Pen</button>
+        <button type="button" data-global-ink-mode="highlight">Hi</button>
+        <button id="ttGlobalInkInteract" type="button" title="Interact with the lesson">↖</button>
+      </div>
+      <div class="global-ink-colors" role="group" aria-label="Ink color">
+        <button type="button" class="active" data-global-ink-color="#ef4444" style="--global-ink:#ef4444" aria-label="Red"></button>
+        <button type="button" data-global-ink-color="#f97316" style="--global-ink:#f97316" aria-label="Orange"></button>
+        <button type="button" data-global-ink-color="#facc15" style="--global-ink:#facc15" aria-label="Yellow"></button>
+        <button type="button" data-global-ink-color="#16a34a" style="--global-ink:#16a34a" aria-label="Green"></button>
+        <button type="button" data-global-ink-color="#14b8a6" style="--global-ink:#14b8a6" aria-label="Teal"></button>
+        <button type="button" data-global-ink-color="#2563eb" style="--global-ink:#2563eb" aria-label="Blue"></button>
+        <button type="button" data-global-ink-color="#7c3aed" style="--global-ink:#7c3aed" aria-label="Purple"></button>
+        <button type="button" data-global-ink-color="#0f172a" style="--global-ink:#0f172a" aria-label="Black"></button>
+      </div>
+      <label>Size<input id="ttGlobalInkSize" type="range" min="1" max="24" value="5"></label>
+      <button id="ttGlobalInkUndo" type="button" title="Undo last mark">Undo</button>
+      <button id="ttGlobalInkClear" type="button" title="Clear presentation ink">Clear</button>
+      <button id="ttGlobalInkClose" type="button" title="Close ink tools">×</button>
+    </aside>
 
     <div id="ttPaceGuide" class="pace-guide" hidden aria-hidden="true">
       <span class="pace-line pace-line-lesson"><i></i></span>
@@ -964,7 +989,7 @@
     <script src="app.js?v=lesson-assistant-3"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260821-home-planner-1"></script>
+    <script src="teach-today.js?v=20260821-global-ink-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

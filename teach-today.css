@@ -1303,6 +1303,20 @@ button:hover:not(:disabled) {
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
 }
 
+.presentation-dock #ttLaserToggle.active {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
+}
+
+.presentation-dock #ttGlobalInkToggle.active {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
 .notes-canvas {
   position: fixed;
   inset: 0;
@@ -1325,6 +1339,119 @@ body.notes-mode .notes-canvas {
 
 body.notes-mode {
   cursor: crosshair;
+}
+
+.global-ink-canvas,
+.laser-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  touch-action: none;
+}
+
+body.presentation-mode .global-ink-canvas {
+  display: block;
+}
+
+body.presentation-mode.global-ink-mode .global-ink-canvas {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.laser-canvas {
+  z-index: 29;
+}
+
+body.presentation-mode.laser-mode .laser-canvas {
+  display: block;
+  pointer-events: auto;
+  cursor: none;
+}
+
+.global-ink-palette {
+  position: fixed;
+  left: 8px;
+  top: 112px;
+  z-index: 31;
+  display: grid;
+  width: 48px;
+  gap: 6px;
+  border: 1px solid rgba(15, 118, 110, 0.34);
+  border-radius: 14px;
+  padding: 6px;
+  background: rgba(240, 253, 250, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.global-ink-palette[hidden] {
+  display: none;
+}
+
+.global-ink-palette button {
+  min-width: 0;
+  min-height: 30px;
+  border-radius: 8px;
+  padding: 3px;
+  background: #fff;
+  color: #0f766e;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.global-ink-tool-row,
+.global-ink-colors {
+  display: grid;
+  gap: 5px;
+}
+
+.global-ink-tool-row button.active {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.16);
+}
+
+.global-ink-colors button {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  justify-self: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--global-ink);
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.global-ink-colors button.active {
+  box-shadow: 0 0 0 3px #0f766e;
+}
+
+.global-ink-palette label {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  color: #0f766e;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.global-ink-palette input[type="range"] {
+  width: 22px;
+  height: 78px;
+  margin: 0;
+  direction: rtl;
+  writing-mode: vertical-lr;
+}
+
+#ttGlobalInkClose {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 17px;
 }
 
 .home-screen {
