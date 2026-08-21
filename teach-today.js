@@ -10680,14 +10680,21 @@ async function ttInitFirebaseSync() {
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Checking cloud data…`);
         ttRenderDataCenter();
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
-        await ttFirebaseRestoreIfNewer();
+        const restored = await ttFirebaseRestoreIfNewer();
+        if (restored) return;
         await ttStartFirebaseRevisionListener();
-        ttQueueFirebaseSync();
+        if (ttHasUnsyncedFirebaseChanges()) {
+          ttQueueFirebaseSync();
+        } else {
+          localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Firebase is up to date.`);
+        }
         ttUploadPendingAudioRecordings(); // upload any recordings that didn't make it to Storage yet
         if (!ttDriveAccessToken) {
           localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission for this browser session. Click Google Drive audio in Records.");
         }
-        localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
+        if (ttHasUnsyncedFirebaseChanges()) {
+          localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
+        }
       } else {
         if (ttFirebaseUnsubscribe) ttFirebaseUnsubscribe();
         ttFirebaseUnsubscribe = null;
