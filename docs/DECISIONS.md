@@ -14,6 +14,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Reason:** The existing app looks and works well, so changes must preserve known-good flows.
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.
 - **Layout:** The regular teaching workspace should use available laptop and desktop width responsively, while Section 9 may remain wider for passage reading and mobile screens retain compact gutters.
+- **45+45 parity:** Section 2B uses its own Day 2 word-building deck and interaction state, mirroring the essential Section 2 student display without sharing or overwriting Day 1 navigation.
 
 ## Lesson planning defaults
 

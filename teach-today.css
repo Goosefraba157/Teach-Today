@@ -3270,7 +3270,7 @@ body.whiteboard-mode {
 .wb-tile.suffix,
 .wb-card-tray button.prefix,
 .wb-card-tray button.suffix {
-  background: #ffe13b;
+  background: #ffdc00;
 }
 
 .wb-tile.syllable,
@@ -3804,11 +3804,13 @@ body.presentation-mode .teach-card {
   scroll-margin-top: 64px;
 }
 
-body.presentation-mode #section2 {
+body.presentation-mode #section2,
+body.presentation-mode #section2b {
   padding: 12px;
 }
 
-body.presentation-mode #section2 .section-head {
+body.presentation-mode #section2 .section-head,
+body.presentation-mode #section2b .section-head {
   margin-bottom: 10px;
 }
 
@@ -3841,14 +3843,16 @@ body.presentation-mode .section2-picker h3 {
   color: var(--muted);
 }
 
-body.presentation-mode #section2 .word-row {
+body.presentation-mode #section2 .word-row,
+body.presentation-mode #section2b .word-row {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
 }
 
-body.presentation-mode #section2 .word-row button {
+body.presentation-mode #section2 .word-row button,
+body.presentation-mode #section2b .word-row button {
   min-height: 0;
   width: auto;
   max-width: 100%;
@@ -4734,13 +4738,15 @@ body.section4-stage-preview-open .teach-flow {
   font-weight: 900;
 }
 
-#section2 .word-row {
+#section2 .word-row,
+#section2b .word-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 6px;
 }
 
-#section2 .word-row button {
+#section2 .word-row button,
+#section2b .word-row button {
   min-height: 30px;
   padding: 5px 8px;
   font-size: 13px;
@@ -4808,6 +4814,10 @@ body.section4-stage-preview-open .teach-flow {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   min-width: 0;
+}
+
+.section2b-picker {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .section2-picker article {
@@ -4947,11 +4957,13 @@ body.section4-stage-preview-open .teach-flow {
   overflow: hidden;
 }
 
-#ttSection2Prev {
+#ttSection2Prev,
+#ttSection2BPrev {
   left: 0;
 }
 
-#ttSection2Next {
+#ttSection2Next,
+#ttSection2BNext {
   right: 0;
 }
 
@@ -5127,7 +5139,7 @@ body.section4-stage-preview-open .teach-flow {
   min-width: clamp(120px, 20vw, 200px);
   border-radius: 0;
   border-bottom: 5px solid #737373;
-  background: #ffe13b;
+  background: #ffdc00;
   box-shadow: none;
 }
 

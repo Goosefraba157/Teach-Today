@@ -6,6 +6,9 @@ let ttCardMode = "words";
 let ttSection2Deck = [];
 let ttSection2Index = 0;
 let ttSection2Word = "";
+let ttSection2BDeck = [];
+let ttSection2BIndex = 0;
+let ttSection2BWord = "";
 let ttHfwDeck = [];
 let ttHfwIndex = 0;
 let ttNotesEnabled = false;
@@ -2822,8 +2825,12 @@ function ttRender() {
     onReplace: (word) => ttReplaceSection2Word("current", word)
   });
   // §2b — Day 2 words (only visible in group mode via CSS)
-  ttFillWordRow(ttById("ttReviewWordsB2"), lesson.sectionTwoReviewWordsB2 || []);
-  ttFillWordRow(ttById("ttCurrentWordsB2"), lesson.sectionTwoCurrentWordsB2 || []);
+  ttFillWordRow(ttById("ttReviewWordsB2"), lesson.sectionTwoReviewWordsB2 || [], {
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id)
+  });
+  ttFillWordRow(ttById("ttCurrentWordsB2"), lesson.sectionTwoCurrentWordsB2 || [], {
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id)
+  });
   ttFillWordRow(ttById("ttLastMissedWords"), lesson.sectionTwoLastMissedWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
     onReplace: (word) => ttReplaceSection2Word("lastMisses", word)
@@ -2834,6 +2841,7 @@ function ttRender() {
   });
   ttFillSection2ReplacementTools(lesson, skill);
   ttFillSection2DisplayDeck(lesson, skill);
+  ttFillSection2BDisplayDeck(lesson, skill);
   ttFillSection3Cards(lesson);
   ttFillWordRow(ttById("ttHfw"), lesson.highFrequencyWords || []);
   ttFillSentences(lesson.readerSentences || []);
@@ -7932,6 +7940,80 @@ function ttFillSection2DisplayDeck(lesson, skill) {
   ttShowSection2Card(preferredIndex >= 0 ? preferredIndex : 0, skill.id);
 }
 
+function ttFillSection2BDisplayDeck(lesson, skill) {
+  const review = lesson.sectionTwoReviewWordsB2 || [];
+  const current = lesson.sectionTwoCurrentWordsB2 || [];
+  ttSection2BDeck = review.map((word) => ({ word, type: "Review", label: "Day 2 review word" }))
+    .concat(current.map((word) => ({ word, type: "Current", label: "Day 2 current word" })));
+  const preferredIndex = ttSection2BDeck.findIndex((card) => card.word === ttSection2BWord);
+  ttShowSection2BCard(preferredIndex >= 0 ? preferredIndex : 0, skill.id);
+}
+
+function ttShowSection2BCard(index, substep = ttLesson?.substep || ttActiveGroup().substep) {
+  if (!ttSection2BDeck.length) {
+    ttSection2BIndex = 0;
+    ttShowSection2BWord("", substep, { preserveDeckIndex: true });
+    return;
+  }
+  ttSection2BIndex = (index + ttSection2BDeck.length) % ttSection2BDeck.length;
+  ttShowSection2BWord(ttSection2BDeck[ttSection2BIndex].word, substep, { preserveDeckIndex: true });
+}
+
+function ttShowSection2BWordByDeck(word, substep = ttLesson?.substep || ttActiveGroup().substep) {
+  const index = ttSection2BDeck.findIndex((card) => card.word === word);
+  if (index >= 0) ttShowSection2BCard(index, substep);
+  else ttShowSection2BWord(word, substep);
+}
+
+function ttShowSection2BWord(word, substep, options = {}) {
+  const display = ttById("ttSection2BDisplay");
+  const hint = ttById("ttSection2BHint");
+  if (!display || !hint) return;
+  if (!options.preserveDeckIndex) {
+    const deckIndex = ttSection2BDeck.findIndex((card) => card.word === word);
+    if (deckIndex >= 0) ttSection2BIndex = deckIndex;
+  }
+  ttSection2BWord = word;
+  display.innerHTML = "";
+  if (!word) {
+    display.innerHTML = "<span>Tap a Day 2 word</span>";
+    ttRenderSection2BCount();
+    hint.textContent = "One-syllable words show sound cards. Multisyllabic words show syllable cards.";
+    ttRenderMarkedWords();
+    return;
+  }
+  const cards = section2CardsForWord(word, substep);
+  display.dataset.mode = cards.mode;
+  display.dataset.count = String(cards.items.length);
+  display.style.setProperty("--tile-count", String(Math.max(cards.items.length, 1)));
+  display.classList.toggle("many-cards", cards.items.length >= 7);
+  display.classList.toggle("crowded-cards", cards.items.length >= 9);
+  display.classList.toggle("multi-syllable-cards", cards.mode === "syllables" && cards.items.length >= 4);
+  display.classList.toggle("long-syllable-cards", cards.mode === "syllables" && cards.items.length >= 5);
+  cards.items.forEach((item) => {
+    const card = document.createElement("span");
+    card.className = `build-card ${item.type}`;
+    card.textContent = section2DisplayCardText(item);
+    display.appendChild(card);
+  });
+  hint.textContent = cards.mode === "sounds"
+    ? "Sound cards: yellow consonants, pink vowels, green glued/welded sounds."
+    : "Syllable / word-part cards: bright yellow affixes and white syllable or Latin-base cards.";
+  ttRenderSection2BCount();
+  ttRenderMarkedWords();
+}
+
+function ttRenderSection2BCount() {
+  const count = ttById("ttSection2BCount");
+  if (!count) return;
+  if (!ttSection2BDeck.length) {
+    count.textContent = "0 of 0";
+    return;
+  }
+  const card = ttSection2BDeck[ttSection2BIndex] || {};
+  count.textContent = `${card.type || "Card"} ${ttSection2BIndex + 1} of ${ttSection2BDeck.length}`;
+}
+
 function ttShowSection2Card(index, substep = ttLesson?.substep || ttActiveGroup().substep) {
   if (!ttSection2Deck.length) {
     ttSection2Index = 0;
@@ -7978,6 +8060,18 @@ function ttRefreshSection(sectionNumber) {
     delete ttLesson.sectionTwoPriorityMissedWords;
     ttEnsureSection2MissIndexes(ttLesson, group, skill);
     ttSection2Word = "";
+  }
+  if (sectionNumber === "2b") {
+    const dayOneReview = new Set(ttLesson.sectionTwoReviewWords || []);
+    const dayOneCurrent = new Set(ttLesson.sectionTwoCurrentWords || []);
+    const reviewPool = uniqueWords(sectionTwoReviewWords(skill, level, true)
+      .concat(dictationReviewWords(skill.id, level), priorDictationWords(skill.id, level)));
+    const currentPool = uniqueWords((ttLesson.realWords || []).concat(ttLesson.nonsenseWords || []));
+    const nextReview = shuffled(reviewPool.filter((word) => !dayOneReview.has(word))).slice(0, 6);
+    const nextCurrent = shuffled(currentPool.filter((word) => !dayOneCurrent.has(word))).slice(0, 6);
+    ttLesson.sectionTwoReviewWordsB2 = nextReview.length ? nextReview : sectionTwoReviewWords(skill, level, true);
+    ttLesson.sectionTwoCurrentWordsB2 = nextCurrent.length ? nextCurrent : sectionTwoCurrentWords(currentPool, true);
+    ttSection2BWord = "";
   }
   if (sectionNumber === "3") {
     delete ttLesson.sectionThreeReviewWords;
@@ -10672,6 +10766,11 @@ function splitNearMiddle(word) {
 
 function ttRenderMarkedWords() {
   document.querySelectorAll(".word-row button").forEach((button) => {
+    if (button.closest("#ttReviewWordsB2, #ttCurrentWordsB2")) {
+      button.classList.remove("marked-word");
+      button.classList.toggle("selected-display-word", button.textContent === ttSection2BWord);
+      return;
+    }
     if (button.closest("#ttReviewWords, #ttCurrentWords")) {
       button.classList.remove("marked-word");
       button.classList.toggle("selected-display-word", button.textContent === ttSection2Word);
@@ -12588,6 +12687,8 @@ function ttBind() {
   ttById("ttOpenWhiteboard").addEventListener("click", () => ttOpenWhiteboard());
   ttById("ttSection2Prev")?.addEventListener("click", () => ttShowSection2Card(ttSection2Index - 1));
   ttById("ttSection2Next")?.addEventListener("click", () => ttShowSection2Card(ttSection2Index + 1));
+  ttById("ttSection2BPrev")?.addEventListener("click", () => ttShowSection2BCard(ttSection2BIndex - 1));
+  ttById("ttSection2BNext")?.addEventListener("click", () => ttShowSection2BCard(ttSection2BIndex + 1));
   ttById("ttCloseWhiteboard").addEventListener("click", () => ttCloseWhiteboard());
   ttById("ttWhiteboardBuildWord").addEventListener("click", () => ttBuildCurrentWordOnWhiteboard());
   ttById("ttWhiteboardAddBlank").addEventListener("click", () => ttAddBlankSyllableCard());

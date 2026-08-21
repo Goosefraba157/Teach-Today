@@ -700,15 +700,31 @@
           <button class="section-refresh" data-refresh-section="2b" type="button" title="New Section 2B set">↻ New set</button>
         </div>
         <span id="ttSection2bRef" class="section-ref-pill"></span>
-        <div class="section2-picker">
-          <article>
-            <h3>Review words (Day 2)</h3>
-            <div id="ttReviewWordsB2" class="word-row"></div>
-          </article>
-          <article>
-            <h3>Current words (Day 2)</h3>
-            <div id="ttCurrentWordsB2" class="word-row"></div>
-          </article>
+        <div class="section2-teach-layout">
+          <div class="section2-picker section2b-picker">
+            <article>
+              <h3>Review words (Day 2)</h3>
+              <div id="ttReviewWordsB2" class="word-row"></div>
+            </article>
+            <article>
+              <h3>Current words (Day 2)</h3>
+              <div id="ttCurrentWordsB2" class="word-row"></div>
+            </article>
+          </div>
+          <div class="section2-display-wrap" aria-live="polite">
+            <div class="section2-tool-row">
+              <p class="mini-label">Tap a Day 2 word to build it for the student</p>
+            </div>
+            <div class="section2-card-stage">
+              <button id="ttSection2BPrev" class="card-arrow section2-arrow" type="button" aria-label="Previous Section 2B word">‹</button>
+              <div id="ttSection2BDisplay" class="section2-display">
+                <span>Tap a Day 2 word</span>
+              </div>
+              <button id="ttSection2BNext" class="card-arrow section2-arrow" type="button" aria-label="Next Section 2B word">›</button>
+            </div>
+            <p id="ttSection2BCount" class="card-count section2-count">0 of 0</p>
+            <p id="ttSection2BHint" class="section2-hint">One-syllable words show sound cards. Multisyllabic words show syllable cards.</p>
+          </div>
         </div>
         <a class="next-link" href="#section6">Next: Section 6</a>
       </section>

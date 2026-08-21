@@ -31,3 +31,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-08-20
 
 - Widened the V1 teaching workspace responsively to use desktop and laptop screens more effectively while retaining Section 9's larger passage layout and compact mobile spacing.
+- Increased the visual contrast of prefix/suffix cards and upgraded 45+45 Section 2B from static word chips to an independent interactive Day 2 word-building deck with navigation and regeneration.
