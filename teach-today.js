@@ -10278,11 +10278,25 @@ async function ttFirebaseReadPayload() {
   const chunks = [];
   for (let index = 0; index < data.chunkCount; index += 1) {
     const id = String(index).padStart(4, "0");
-    const chunkSnapshot = await getDoc(doc(firestoreDb, ...path, "chunks", id));
-    if (!chunkSnapshot.exists()) return null;
+    const chunkPath = data.revisionId
+      ? [...path, "revisions", data.revisionId, "chunks", id]
+      : [...path, "chunks", id];
+    const chunkSnapshot = await getDoc(doc(firestoreDb, ...chunkPath));
+    if (!chunkSnapshot.exists()) {
+      const error = new Error(`Firebase backup chunk ${id} is missing.`);
+      error.code = "teach-today/corrupt-chunks";
+      error.remoteExportedAt = data.exportedAt || "";
+      throw error;
+    }
     chunks.push(chunkSnapshot.data()?.text || "");
   }
-  return JSON.parse(chunks.join(""));
+  try {
+    return JSON.parse(chunks.join(""));
+  } catch (error) {
+    error.code = "teach-today/corrupt-chunks";
+    error.remoteExportedAt = data.exportedAt || "";
+    throw error;
+  }
 }
 
 async function ttFirebaseRestoreIfNewer() {
@@ -10307,45 +10321,76 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     return;
   }
   ttFirebaseBusy = true;
+  let syncConflict = false;
   try {
-    const remotePayload = await ttFirebaseReadPayload();
+    let remotePayload = null;
+    let remoteExportedAt = "";
+    try {
+      remotePayload = await ttFirebaseReadPayload();
+      remoteExportedAt = remotePayload?.exportedAt || "";
+    } catch (readError) {
+      if (readError?.code !== "teach-today/corrupt-chunks") throw readError;
+      remoteExportedAt = readError.remoteExportedAt || "";
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Repairing an interrupted legacy Firebase sync from this browser's intact local copy...");
+      ttRenderDataCenter();
+    }
     if (ttShouldRestorePayload(remotePayload)) {
       await ttFirebaseRestoreIfNewer();
       return;
     }
-    const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+    const { firestoreDb, doc, setDoc, serverTimestamp, runTransaction } = await ttFirebaseSdk();
     const path = ttFirebaseDocPath();
     const now = new Date();
     const payload = ttBackupPayload(now);
     const serialized = JSON.stringify(payload);
     const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
+    const revisionToken = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(16).slice(2, 10);
+    const revisionId = `${now.getTime()}-${revisionToken}`;
     for (let index = 0; index < chunkCount; index += 1) {
       const id = String(index).padStart(4, "0");
-      await setDoc(doc(firestoreDb, ...path, "chunks", id), {
+      await setDoc(doc(firestoreDb, ...path, "revisions", revisionId, "chunks", id), {
         index,
         text: serialized.slice(index * ttFirebaseChunkSize, (index + 1) * ttFirebaseChunkSize)
       });
     }
-    await setDoc(doc(firestoreDb, ...path), {
-      kind: "TeachTodayFirebaseSync",
-      version: 2,
-      updatedAt: serverTimestamp(),
-      exportedAt: payload.exportedAt,
-      chunkCount,
-      chunkSize: ttFirebaseChunkSize,
-      byteLength: new Blob([serialized]).size
+    const mainRef = doc(firestoreDb, ...path);
+    await runTransaction(firestoreDb, async (transaction) => {
+      const currentSnapshot = await transaction.get(mainRef);
+      const currentExportedAt = currentSnapshot.exists() ? (currentSnapshot.data()?.exportedAt || "") : "";
+      if (currentExportedAt !== remoteExportedAt) {
+        const conflict = new Error("Another signed-in browser saved newer Teach Today data.");
+        conflict.code = "teach-today/sync-conflict";
+        throw conflict;
+      }
+      transaction.set(mainRef, {
+        kind: "TeachTodayFirebaseSync",
+        version: 3,
+        revisionId,
+        updatedAt: serverTimestamp(),
+        exportedAt: payload.exportedAt,
+        chunkCount,
+        chunkSize: ttFirebaseChunkSize,
+        byteLength: new Blob([serialized]).size
+      });
     });
     localStorage.setItem("teachToday.lastFirebaseSyncAt", now.toISOString());
     localStorage.setItem("teachToday.firebaseSyncStatus", reason);
   } catch (error) {
     const detail = error?.code || error?.message || "unknown error";
+    if (detail === "teach-today/sync-conflict") {
+      syncConflict = true;
+      ttFirebasePending = false;
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Another signed-in browser saved newer data. This tab did not overwrite it. Refresh before continuing here.");
+      ttShowConnectionNotice("Another signed-in browser saved newer Teach Today data. This tab did not overwrite it. Refresh before continuing here.");
+      return;
+    }
     console.warn("Teach Today Firebase sync failed:", error);
     localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase could not save (${detail}).`);
     ttShowConnectionNotice(`Firebase could not save right now (${detail}). You can keep trying or work offline.`);
   } finally {
     ttFirebaseBusy = false;
     ttRenderDataCenter();
-    if (ttFirebasePending) {
+    if (ttFirebasePending && !syncConflict) {
       ttFirebasePending = false;
       ttQueueFirebaseSync();
     }

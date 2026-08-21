@@ -45,6 +45,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Decision:** Never commit rosters, IDs, student reports, Firebase exports, credentials, or tokens to GitHub.
 - **Decision:** Strict Firebase rules must be deployed only after legacy records receive and verify ownership metadata, to avoid locking the teacher out of existing data.
 - **Decision:** Privacy safeguards support responsible FERPA handling but do not by themselves constitute legal certification; account security, access review, retention, consent, and school policy remain operational responsibilities.
+- **Firebase concurrency:** Large private backups use immutable revision-scoped chunks and atomically update the owner-scoped main pointer only after every chunk is written. A tab must not overwrite metadata changed by another signed-in browser after its initial read; it should stop and request a refresh instead.
 
 ## Cross-chat continuity
 

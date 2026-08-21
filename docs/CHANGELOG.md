@@ -46,4 +46,5 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Gave Complete Lesson As Is and Plan a new lesson distinct high-visibility colors and expanded both confirmation messages to state the resulting lesson status, number, and next date.
 - Made the selected group unmistakable with a stronger card highlight and repeated the group name in the Home continuity heading.
 - Replaced stale fixed V1 asset query strings with deployment-specific versions and made network-first service-worker fetches bypass the browser HTTP cache.
+- Prevented concurrent Firebase chunk corruption by writing immutable revision-scoped backups, atomically switching the private main pointer, blocking stale-browser overwrites, and safely repairing interrupted legacy chunk JSON from an intact signed-in local copy.
 - Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.
