@@ -25,10 +25,11 @@ This file records decisions future chats should not accidentally reverse. Curren
 ## Lesson identity and continuity
 
 - **Decision:** A group may have one explicitly active lesson at a time. The app must identify it by lesson number, group, session day, and a teacher-selected date.
-- **45+45 sessions:** Day 1 and Day 2 belong to the same lesson number but store separate dates; Day 2 may occur on any later date. The teacher may instead complete the lesson after Day 1.
+- **45+45 sessions:** Day 1 and Day 2 belong to the same lesson number but store separate dates. Day 2 defaults to the next Monday-Thursday instructional date and remains editable. The teacher may complete the lesson as-is at any point; unfinished sections are valid.
 - **Switching groups:** Leaving a group preserves its lesson, active day, completed/skipped sections, saved versions, and scroll position. Returning offers a clear choice to continue, complete, or preserve it as incomplete and plan a new lesson.
 - **Teaching action:** Start Teaching is the primary live action and opens Present mode. Building or reviewing a draft does not by itself mean that teaching has started.
 - **Corrections:** Current-year official lesson dates and numbers may be corrected from the selected group's lesson-history control only after explicit confirmation. Corrections do not alter student evidence or instructional content.
+- **Next lesson defaults:** Completing a lesson as-is or preserving it as incomplete and planning another prepares the next automatic lesson number on the next Monday-Thursday instructional date. Teachers may override the date, including Friday when needed.
 - **Test separation:** Demo teaching should use a group explicitly marked as a demo group so test saves do not enter official group continuity. Routine UI must not expose a broad school-year lesson reset.
 
 ## Student identity and school years

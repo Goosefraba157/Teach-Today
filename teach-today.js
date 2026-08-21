@@ -4036,6 +4036,14 @@ function ttTodayKey() {
   return dateKey(new Date());
 }
 
+function ttNextInstructionDateKey(value) {
+  const date = ttDateFromKey(value || ttTodayKey());
+  do {
+    date.setDate(date.getDate() + 1);
+  } while ([0, 5, 6].includes(date.getDay()));
+  return dateKey(date);
+}
+
 function ttDateFromKey(value) {
   const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12) : new Date(value || Date.now());
@@ -4701,14 +4709,14 @@ function ttRenderHomeContinuity(enabled = true) {
   const summary = ttCompletedSectionSummary(lesson);
   const sessionDate = openPlan.sessions?.[day]?.date || openPlan.scheduledDate;
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
-  const plannedDay2Date = openPlan.plannedDay2Date || ttTodayKey();
+  const plannedDay2Date = openPlan.plannedDay2Date || ttNextInstructionDateKey(openPlan.sessions?.["1"]?.date || sessionDate);
   container.innerHTML = `<div class="continuity-copy"><span>Lesson still open</span>
       <strong>Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
       <small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections have been marked finished yet."}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
     <div class="continuity-actions">
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
       <button class="continuity-primary" type="button" data-continuity="resume">Continue where I left off</button>
-      ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete after Day 1</button>` : ""}
+      ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete Lesson As Is</button>` : ""}
       <button type="button" data-continuity="new">Plan a new lesson</button>
     </div>`;
   const saveSessionDate = (date) => {
@@ -4718,6 +4726,11 @@ function ttRenderHomeContinuity(enabled = true) {
     if (day === "1") {
       openPlan.scheduledDate = date;
       openPlan.dailyKey = date;
+      if (canContinueDay2) {
+        openPlan.plannedDay2Date = ttNextInstructionDateKey(date);
+        const day2Input = container.querySelector("[data-continuity-date]");
+        if (day2Input) day2Input.value = openPlan.plannedDay2Date;
+      }
     }
     lesson.scheduledDate = date;
     saveState();
@@ -4755,24 +4768,28 @@ function ttRenderHomeContinuity(enabled = true) {
     ttOpenTeachFlow({ transition: false, presentation: true });
   });
   container.querySelector('[data-continuity="complete-day1"]')?.addEventListener("click", () => {
-    if (!confirm(`Complete Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} after Day 1? Day 2 will not be required.`)) return;
-    const note = prompt("Optional: why is this lesson ending after Day 1?", "") || "";
+    const completedDate = container.querySelector("[data-continuity-session-date]")?.value || sessionDate;
+    saveSessionDate(completedDate);
+    if (!confirm(`Complete Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} as it is now? Unfinished sections are allowed, and the next plan will be Lesson ${Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1}.`)) return;
     openPlan.status = "Complete";
-    openPlan.completionKind = "after-day-1";
+    openPlan.completionKind = "as-is";
     openPlan.completedAt = new Date().toISOString();
-    openPlan.completionNote = note;
     openPlan.sessions["1"].status = "Complete";
     group.activeLessonPlanId = "";
+    ttPlannerDraft = {};
+    ttEnsurePlannerDraft(group).scheduledDate = ttNextInstructionDateKey(completedDate);
     saveState();
     ttRenderHomeScreen();
   });
   container.querySelector('[data-continuity="new"]')?.addEventListener("click", () => {
     if (!confirm(`Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} is unfinished. Preserve it as incomplete and plan a new lesson?`)) return;
+    const nextDate = ttNextInstructionDateKey(openPlan.sessions?.[day]?.date || sessionDate);
     openPlan.status = "Incomplete";
     openPlan.closedAt = new Date().toISOString();
     openPlan.closedReason = "Teacher chose to start a new lesson";
     group.activeLessonPlanId = "";
     ttPlannerDraft = {};
+    ttEnsurePlannerDraft(group).scheduledDate = nextDate;
     saveState();
     ttRenderHomeScreen();
   });
