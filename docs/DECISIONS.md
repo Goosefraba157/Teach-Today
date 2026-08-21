@@ -22,6 +22,13 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Default:** Groups without a saved preference begin with the 45+45 group-days format; selecting another format updates only that group.
 - **Boundary:** “Generate Best Lesson” may optimize instructional content but must not change the teacher-selected lesson format.
 
+## Lesson identity and continuity
+
+- **Decision:** A group may have one explicitly active lesson at a time. The app must identify it by lesson number, group, session day, and a teacher-selected date.
+- **45+45 sessions:** Day 1 and Day 2 belong to the same lesson number but store separate dates; Day 2 may occur on any later date. The teacher may instead complete the lesson after Day 1.
+- **Switching groups:** Leaving a group preserves its lesson, active day, completed/skipped sections, saved versions, and scroll position. Returning offers a clear choice to continue, complete, or preserve it as incomplete and plan a new lesson.
+- **Teaching action:** Start Teaching is the primary live action and opens Present mode. Building or reviewing a draft does not by itself mean that teaching has started.
+
 ## Student identity and school years
 
 - **Decision:** Use permanent private student IDs to connect records across school years while keeping each year's groups and activity separate.
