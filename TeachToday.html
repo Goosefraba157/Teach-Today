@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260821-realtime-sync-2">
+    <link rel="stylesheet" href="teach-today.css?v=20260821-home-planner-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -348,11 +348,10 @@
       <div id="ttHomeGroups" class="home-groups"></div>
       <section id="ttHomeContinuity" class="home-continuity" aria-live="polite" hidden></section>
       <section id="ttHomeLessonHistory" class="home-lesson-history" aria-label="Lesson history corrections" hidden></section>
-      <section id="ttHomeLessonType" class="home-lesson-type" aria-label="Lesson type for selected group" hidden></section>
       <section id="ttQuickPlanner" class="quick-planner" hidden>
         <div class="planner-head lesson-assistant-head">
           <div>
-            <p class="eyebrow">Lesson Assistant</p>
+            <p class="eyebrow">Recommended Plan</p>
             <h2 id="ttPlannerTitle">Select a group</h2>
             <span id="ttPlannerLastLesson"></span>
           </div>
@@ -366,19 +365,16 @@
         <div class="assistant-command-row">
           <article id="ttAssistantRecommendation" class="assistant-recommendation"></article>
           <div id="ttAssistantReadiness" class="assistant-readiness"></div>
-          <div class="assistant-utility-actions">
-            <button id="ttPlannerBuild" type="button">Build Lesson</button>
-            <button id="ttPlannerSaveTemplate" type="button">Save as Template</button>
-            <button id="ttPlannerDuplicatePrevious" type="button">Duplicate Previous</button>
+          <div class="assistant-reteach-action">
+            <button id="ttPlannerDuplicatePrevious" type="button">Redo Charting Page</button>
+            <span>Same Section 4 page, fresh practice words</span>
           </div>
         </div>
-        <div class="assistant-layout">
-          <section class="assistant-main" aria-label="Today recommended lesson">
-            <div id="ttAssistantTimeline" class="assistant-timeline"></div>
-            <div id="ttAssistantSections" class="assistant-sections"></div>
-          </section>
-          <aside id="ttAssistantTeacherPanel" class="assistant-teacher-panel" aria-label="Teacher panel"></aside>
-        </div>
+        <div id="ttAssistantTimeline" class="assistant-timeline"></div>
+        <details class="assistant-evidence">
+          <summary>Evidence used for this recommendation</summary>
+          <div id="ttAssistantTeacherPanel" class="assistant-teacher-panel" aria-label="Student evidence"></div>
+        </details>
         <div id="ttPlannerCustomizePanel" class="planner-customize-panel" hidden>
           <div id="ttPlannerModePicker" class="planner-mode-picker-wrap"></div>
           <div class="planner-core">
@@ -968,7 +964,7 @@
     <script src="app.js?v=lesson-assistant-3"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260821-realtime-sync-2"></script>
+    <script src="teach-today.js?v=20260821-home-planner-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

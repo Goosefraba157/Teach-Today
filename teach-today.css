@@ -2165,7 +2165,7 @@ body.lesson-flow-enter .teach-flow {
 
 .assistant-summary {
   display: grid;
-  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  grid-template-columns: repeat(4, minmax(92px, 1fr));
   gap: 8px;
   align-self: stretch;
 }
@@ -2217,7 +2217,7 @@ body.lesson-flow-enter .teach-flow {
 
 .assistant-command-row {
   display: grid;
-  grid-template-columns: minmax(320px, 1.4fr) minmax(220px, 0.65fr) minmax(260px, 0.75fr);
+  grid-template-columns: minmax(320px, 1.4fr) minmax(220px, 0.65fr) minmax(190px, 0.45fr);
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -2301,6 +2301,33 @@ body.lesson-flow-enter .teach-flow {
   line-height: 1.4;
 }
 
+.assistant-reteach-action {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.assistant-reteach-action button {
+  min-height: 38px;
+  border-color: #c2410c;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.assistant-reteach-action span {
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .assistant-utility-actions {
   display: grid;
   gap: 8px;
@@ -2329,7 +2356,29 @@ body.lesson-flow-enter .teach-flow {
 .assistant-timeline {
   display: grid;
   gap: 10px;
+  margin-bottom: 12px;
   padding: 12px;
+}
+
+.assistant-evidence {
+  margin-bottom: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.assistant-evidence > summary {
+  padding: 11px 14px;
+  color: #334155;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.assistant-evidence[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .assistant-timeline-head {
@@ -2511,11 +2560,12 @@ body.lesson-flow-enter .teach-flow {
 }
 
 .assistant-teacher-panel {
-  position: sticky;
-  top: 86px;
   display: grid;
   gap: 10px;
   padding: 12px;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
 }
 
 .assistant-panel-head {

@@ -18,9 +18,11 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 ## Lesson planning defaults
 
-- **Decision:** Lesson format is a per-group preference, shown immediately after group selection and preserved when generating a recommended lesson.
+- **Decision:** Lesson format is a per-group preference, selected in Customize and preserved when generating a recommended lesson.
 - **Default:** Groups without a saved preference begin with the 45+45 group-days format; selecting another format updates only that group.
 - **Boundary:** “Generate Best Lesson” may optimize instructional content but must not change the teacher-selected lesson format.
+- **Planner hierarchy:** The official open-lesson continuity panel and the proposed Recommended Plan are distinct. Customize is the authoritative lesson editor and owns the single format picker; the compact recommendation layer explains evidence, readiness, and sequence without duplicating every section control.
+- **Same-page reteach:** Redoing a weak charting lesson creates a new lesson that retains the Section 4 charting page while refreshing Section 2/2B current practice words from that page and review words from prior concepts. The original lesson and evidence remain unchanged.
 
 ## Lesson identity and continuity
 

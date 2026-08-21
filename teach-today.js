@@ -5068,6 +5068,12 @@ function ttRenderPlannerPanel() {
   ttRenderPlannerPreview(group, skill, lesson);
   ttRenderLessonAssistant(group, skill, lesson);
   ttRenderPlannerCustomizeState();
+  const reteachButton = ttById("ttPlannerDuplicatePrevious");
+  if (reteachButton) {
+    const unavailable = !ttPreviousTeachPlan(group);
+    reteachButton.hidden = unavailable;
+    reteachButton.closest(".assistant-reteach-action").hidden = unavailable;
+  }
   ttUpdateHomeReferenceLinks();
 }
 
@@ -5341,9 +5347,8 @@ function ttRenderLessonAssistant(group, skill, fallbackLesson) {
   const summary = ttById("ttAssistantSummary");
   if (summary) {
     summary.innerHTML = [
-      ["Group", group.name || "Group"],
       ["Step/Substep", `${String(activeSkill.id).split(".")[0] || "--"} / ${activeSkill.id}`],
-      ["Lesson type", ttInstructionalLessonType(group, lesson)],
+      ["Instruction", ttInstructionalLessonType(group, lesson)],
       ["Length", `${ttPlannerRecommendedMinutes()} min`],
       ["Readiness", readiness.status]
     ].map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
@@ -5472,52 +5477,74 @@ function ttSavePlannerTemplate() {
   ttRenderPlannerPanel();
 }
 
+function ttPreviousTeachPlan(group) {
+  return (group?.history || []).slice().reverse().find((plan) =>
+    plan.source === "TeachToday" && plan.lessons?.[0] && !plan.excludedFromLessonSequence
+  ) || null;
+}
+
+function ttFreshReteachSelection(pool, excluded, count) {
+  const cleanPool = uniqueWords(pool || []).filter(Boolean);
+  const blocked = new Set(uniqueWords(excluded || []).map((word) => String(word).toLowerCase()));
+  const fresh = shuffled(cleanPool.filter((word) => !blocked.has(String(word).toLowerCase())));
+  const fallback = shuffled(cleanPool.filter((word) => !fresh.includes(word)));
+  return uniqueWords(fresh.concat(fallback)).slice(0, count);
+}
+
 function ttDuplicatePreviousLesson() {
   const group = ttPlannerGroup();
   if (!group) return;
-  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]);
+  const lastPlan = ttPreviousTeachPlan(group);
   const previous = lastPlan?.lessons?.[0];
   if (!previous) {
-    ttAssistantNotice = "No previous lesson to duplicate yet.";
+    ttAssistantNotice = "No previous charting-page lesson is available to redo yet.";
     ttRenderPlannerPanel();
     return;
   }
   const skill = scopeMap.find((item) => item.id === previous.substep) || activeStep(group);
+  const level = previous.readerLevel || group.readerLevel || "AB";
+  const previousDate = lastPlan.sessions?.[lastPlan.activeDay || "1"]?.date
+    || lastPlan.scheduledDate
+    || previous.scheduledDate
+    || ttTodayKey();
   ttPlannerDraft = {
     groupId: group.id,
     substep: previous.substep || group.substep,
-    level: previous.readerLevel || group.readerLevel || "AB",
+    level,
     wordlist: previous.wordlistPageNumber || "",
     sentence: previous.sentencePageNumber || "",
     passageId: previous.section9Story?.passageId || previous.section9Story?.id || "",
     passageApproach: previous.section9Story?.approach || "comprehension-sos",
     reviewSubsteps: [priorSubstep(previous.substep || group.substep)],
     lessonType: previous.lessonType || "full",
+    scheduledDate: ttNextInstructionDateKey(previousDate),
     flashSections: (previous.flashSections || ["1", "2", "3", "5"]).slice()
   };
+  ttPickerSelections = {};
+  ttPickerSubstepCache = {};
+  ttSection8RealSlots = [];
+  const preview = ttPlannerPreviewLesson(group);
+  const chartPool = uniqueWords([].concat(preview.realWords || [], preview.nonsenseWords || []));
+  const oldCurrent = uniqueWords([].concat(previous.sectionTwoCurrentWords || [], previous.sectionTwoCurrentWordsB2 || []));
+  const currentDay1 = ttFreshReteachSelection(chartPool, oldCurrent, 6);
+  const isGroupReteach = ttNormalizeLessonType(ttPlannerDraft.lessonType) === "group";
+  const currentDay2 = isGroupReteach
+    ? ttFreshReteachSelection(chartPool, oldCurrent.concat(currentDay1), 6)
+    : [];
+  const skillIndex = scopeMap.findIndex((item) => item.id === skill.id);
+  const priorSubsteps = scopeMap.slice(Math.max(0, skillIndex - 8), Math.max(0, skillIndex)).map((item) => item.id);
+  const reviewPool = ttPlannerReviewWordPool(priorSubsteps, level);
+  const oldReview = uniqueWords([].concat(previous.sectionTwoReviewWords || [], previous.sectionTwoReviewWordsB2 || []));
+  const reviewDay1 = ttFreshReteachSelection(reviewPool, oldReview.concat(currentDay1, currentDay2), 6);
+  const reviewDay2 = isGroupReteach
+    ? ttFreshReteachSelection(reviewPool, oldReview.concat(reviewDay1, currentDay1, currentDay2), 6)
+    : [];
   ttPickerSelections = {
-    section2Review: (previous.sectionTwoReviewWords || []).slice(),
-    section2Current: (previous.sectionTwoCurrentWords || []).slice(),
-    section2ReviewB2: (previous.sectionTwoReviewWordsB2 || []).slice(),
-    section2CurrentB2: (previous.sectionTwoCurrentWordsB2 || []).slice(),
-    section3Review: (previous.sectionThreeReviewWords || section3ReviewCards(previous) || []).slice(),
-    section3Current: (previous.sectionThreeCurrentWords || section3CurrentCards(previous) || []).slice(),
-    section7Review: (previous.sectionSevenReviewWords || []).slice(),
-    section7Current: (previous.sectionSevenCurrentWords || []).slice(),
-    section7Nonsense: (previous.sectionSevenNonsenseWords || []).slice()
+    section2Current: currentDay1,
+    section2CurrentB2: currentDay2,
+    section2Review: reviewDay1,
+    section2ReviewB2: reviewDay2
   };
-  const dictationPlan = previous.dictationPlanOverride || [];
-  dictationPlan.forEach((block) => {
-    const label = String(block.label || "").toLowerCase();
-    if (label.includes("sounds")) ttPickerSelections.dictationSounds = (block.values || []).slice();
-    if (label.includes("word elements")) ttPickerSelections.dictationElements = (block.values || []).slice();
-    if (label.includes("real words")) ttPickerSelections.dictationReal = (block.values || []).slice();
-    if (label.includes("nonsense")) ttPickerSelections.dictationNonsense = (block.values || []).slice();
-    if (label.includes("phrases")) ttPickerSelections.dictationPhrases = (block.values || []).slice();
-    if (label.includes("sentences")) ttPickerSelections.dictationSentences = (block.values || []).slice();
-  });
-  const realWords = ttPickerSelections.dictationReal || [];
-  ttSection8RealSlots = realWords.slice(0, 5).map((word) => ({ substep: previous.substep || skill.id, word }));
   ttSectionReviewSubsteps = {
     section2: [priorSubstep(skill.id)],
     section3: [priorSubstep(skill.id)],
@@ -5526,7 +5553,15 @@ function ttDuplicatePreviousLesson() {
   };
   group.preferredLessonType = ttNormalizeLessonType(ttPlannerDraft.lessonType);
   saveState();
-  ttAssistantNotice = "Previous lesson duplicated into today’s assistant.";
+  ttPlannerCustomizeOpen = true;
+  const freshCount = currentDay1.filter((word) => !oldCurrent.includes(word)).length
+    + currentDay2.filter((word) => !oldCurrent.includes(word)).length;
+  const freshReviewCount = reviewDay1.filter((word) => !oldReview.includes(word)).length
+    + reviewDay2.filter((word) => !oldReview.includes(word)).length;
+  ttAssistantNotice = freshCount === currentDay1.length + currentDay2.length
+      && freshReviewCount === reviewDay1.length + reviewDay2.length
+    ? "Prepared the same charting page with fresh Section 2 practice words."
+    : "Prepared the same charting page with as many fresh practice words as the indexed page allows.";
   ttRenderPlannerPanel();
 }
 
@@ -13015,7 +13050,6 @@ function ttBind() {
   ttById("ttHomeFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   ttById("ttHomeFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
-  ttById("ttPlannerBuild")?.addEventListener("click", () => ttBuildPlannerLesson());
   ttById("ttPlannerOpen")?.addEventListener("click", () => {
     // Apply all planner selections then open — same as "Build lesson" but goes straight to teach flow
     ttBuildPlannerLesson({ startTeaching: true });
@@ -13024,7 +13058,6 @@ function ttBind() {
     ttPlannerCustomizeOpen = !ttPlannerCustomizeOpen;
     ttRenderPlannerCustomizeState();
   });
-  ttById("ttPlannerSaveTemplate")?.addEventListener("click", () => ttSavePlannerTemplate());
   ttById("ttPlannerDuplicatePrevious")?.addEventListener("click", () => ttDuplicatePreviousLesson());
   ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence", "ttPlannerPassage", "ttPlannerPassageApproach"].forEach((id) => {
     ttById(id)?.addEventListener("change", () => {

@@ -49,4 +49,6 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Prevented concurrent Firebase chunk corruption by writing immutable revision-scoped backups, atomically switching the private main pointer, blocking stale-browser overwrites, and safely repairing interrupted legacy chunk JSON from an intact signed-in local copy.
 - Added the existing Firebase account/sync control to Home and realtime private-revision detection so idle devices can load completed changes promptly while browsers with unsynced edits are protected from automatic replacement.
 - Stopped signed-in startup from publishing unchanged Firebase revisions, preventing two open devices from repeatedly reloading identical data.
+- Consolidated Home planning into a compact data-driven Recommended Plan plus the authoritative Customize editor, removing duplicate format controls, redundant section summaries, Build Lesson, and the unfinished template action.
+- Replaced exact lesson duplication with same-charting-page reteach planning that preserves history while refreshing Section 2/2B current words and prior-concept review words, and removed a duplicate Section 8 Sounds picker.
 - Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.
