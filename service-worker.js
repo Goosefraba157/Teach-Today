@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-21-selected-group-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-21-asset-cache-bust-1";
 
 const APP_SHELL = [
   "./",
@@ -512,7 +512,7 @@ self.addEventListener("fetch", (event) => {
 
   if (networkFirst) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-store" })
         .then((response) => {
           if (response && response.ok) {
             const copy = response.clone();
