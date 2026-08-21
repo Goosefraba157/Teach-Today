@@ -8814,6 +8814,32 @@ body.home-mode .home-screen {
   box-shadow: 0 9px 24px rgba(91, 33, 182, .1);
 }
 .home-continuity[hidden] { display: none; }
+.home-lesson-history {
+  display: grid;
+  gap: 10px;
+  margin-top: -4px;
+  border: 1px solid #d8dee9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.home-lesson-history[hidden] { display: none; }
+.lesson-history-heading,
+.lesson-history-controls,
+.lesson-history-editor { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; }
+.lesson-history-heading { justify-content: space-between; }
+.lesson-history-heading > div:first-child { display: grid; gap: 2px; }
+.lesson-history-heading span { color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.lesson-history-heading strong { color: #111827; font-size: 16px; }
+.lesson-history-controls select { min-width: 260px; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 9px; background: #fff; }
+.lesson-history-controls button,
+.lesson-history-editor button { min-height: 38px; }
+.lesson-history-reset { border-color: #fecaca; background: #fff1f2; color: #9f1239; }
+.lesson-history-editor { border-top: 1px solid #e5e7eb; padding-top: 10px; }
+.lesson-history-editor label { display: grid; gap: 3px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.lesson-history-editor input { min-height: 36px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 8px; background: #fff; }
+.home-group-demo-card { border-color: #a7f3d0; background: #f0fdf4; }
+.home-group-demo-card .home-group-add-icon { color: #047857; }
 .continuity-copy { display: grid; gap: 4px; min-width: 260px; }
 .continuity-copy span { color: #6d28d9; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .continuity-copy strong { color: #111827; font-size: 19px; }
@@ -8833,4 +8859,6 @@ body.home-mode .home-screen {
   .home-continuity { align-items: stretch; flex-direction: column; }
   .lesson-identity-status { text-align: left; }
   .continuity-actions { justify-content: flex-start; }
+  .lesson-history-heading { align-items: stretch; flex-direction: column; }
+  .lesson-history-controls select { min-width: min(100%, 260px); }
 }

@@ -28,6 +28,8 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **45+45 sessions:** Day 1 and Day 2 belong to the same lesson number but store separate dates; Day 2 may occur on any later date. The teacher may instead complete the lesson after Day 1.
 - **Switching groups:** Leaving a group preserves its lesson, active day, completed/skipped sections, saved versions, and scroll position. Returning offers a clear choice to continue, complete, or preserve it as incomplete and plan a new lesson.
 - **Teaching action:** Start Teaching is the primary live action and opens Present mode. Building or reviewing a draft does not by itself mean that teaching has started.
+- **Corrections:** Current-year official lesson dates and numbers may be corrected from the selected group's lesson-history control only after explicit confirmation. Corrections do not alter student evidence or instructional content.
+- **Test separation:** Resetting a current-year group's lesson sequence preserves generated plans as excluded test records and returns the official sequence to zero. Demo teaching should use a group explicitly marked as a demo group so test saves do not enter official group continuity.
 
 ## Student identity and school years
 

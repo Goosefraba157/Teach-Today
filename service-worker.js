@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-21-lesson-one-reset-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-21-lesson-history-tools-1";
 
 const APP_SHELL = [
   "./",

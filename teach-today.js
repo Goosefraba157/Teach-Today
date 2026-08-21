@@ -32,6 +32,7 @@ let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — wor
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttPlannerHomeScrollPositions = {};
 let ttPlannerCustomizeOpen = false;
+let ttLessonHistoryEditPlanId = "";
 let ttAssistantNotice = "";
 let ttLessonLaunchTimer = null;
 let ttPresentationMenuTimer = null;
@@ -4639,7 +4640,13 @@ function ttRenderHomeScreen() {
       <strong>New Group</strong>
       <em>Create a teaching group</em>
     </button>`;
-    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group, !viewingArchive)).join("") + (viewingArchive ? "" : addCard);
+    const hasDemoGroup = groups.some((group) => group.isDemoGroup);
+    const demoCard = hasDemoGroup ? "" : `<button type="button" class="home-group-card home-group-add-card home-group-demo-card" id="ttHomeAddDemoGroup" title="Create a demo group" aria-label="Create a demo group">
+      <span class="home-group-add-icon">D</span>
+      <strong>Demo Group</strong>
+      <em>Maya, Jordan, and Eli</em>
+    </button>`;
+    list.innerHTML = groups.map((group) => ttHomeGroupCardHtml(group, !viewingArchive)).join("") + (viewingArchive ? "" : `${addCard}${demoCard}`);
     list.querySelectorAll("[data-home-group]").forEach((button) => {
       button.addEventListener("click", () => {
         ttPlannerGroupId = button.dataset.homeGroup;
@@ -4655,8 +4662,10 @@ function ttRenderHomeScreen() {
     list.querySelector("#ttHomeAddGroup")?.addEventListener("click", () => {
       if (typeof ttOpenNewGroupModal === "function") ttOpenNewGroupModal();
     });
+    list.querySelector("#ttHomeAddDemoGroup")?.addEventListener("click", () => ttCreateDemoGroup());
   }
   ttRenderHomeContinuity(!viewingArchive);
+  ttRenderHomeLessonHistory(!viewingArchive);
   ttRenderHomeModePicker(!viewingArchive);
   ttRenderPlannerPanel();
   ttUpdateHomeReferenceLinks();
@@ -4773,6 +4782,127 @@ function ttRenderHomeContinuity(enabled = true) {
     openPlan.closedAt = new Date().toISOString();
     openPlan.closedReason = "Teacher chose to start a new lesson";
     group.activeLessonPlanId = "";
+    ttPlannerDraft = {};
+    saveState();
+    ttRenderHomeScreen();
+  });
+}
+
+function ttCreateDemoGroup() {
+  const existing = (appState.groups || []).find((group) => group.schoolYearId === appState.activeSchoolYearId && group.isDemoGroup);
+  if (existing) {
+    ttPlannerGroupId = existing.id;
+    ttRenderHomeScreen();
+    return;
+  }
+  const group = createGroup("Demo Group");
+  const names = ["Maya", "Jordan", "Eli"];
+  group.isDemoGroup = true;
+  group.lessonTypePreference = "group";
+  group.students = names;
+  group.studentIds = {};
+  appState.rosterStudents ||= [];
+  names.forEach((name) => {
+    let student = appState.rosterStudents.find((item) => typeof item !== "string" && item.isDemoStudent && item.name === name);
+    if (!student) {
+      student = { name, displayName: name, studentId: privateRandomId("demo-stu"), isDemoStudent: true, status: "active", createdAt: new Date().toISOString() };
+      appState.rosterStudents.push(student);
+    }
+    group.studentIds[name] = student.studentId;
+  });
+  group.activeStudent = names[0];
+  appState.groups.push(group);
+  appState.selectedGroupId = group.id;
+  ttPlannerGroupId = group.id;
+  ttPlannerDraft = {};
+  saveState();
+  ttRenderHomeScreen();
+}
+
+function ttOfficialLessonPlans(group) {
+  return (group?.history || []).filter((plan) => plan.source === "TeachToday" && plan.lessons?.[0] && !plan.excludedFromLessonSequence && plan.status !== "Test");
+}
+
+function ttRecalculateLessonSerial(group) {
+  group.lessonSerial = ttOfficialLessonPlans(group).reduce((highest, plan) => {
+    return Math.max(highest, Number(plan.lessonNumber || plan.lessons?.[0]?.lessonSequence || 0));
+  }, 0);
+}
+
+function ttRenderHomeLessonHistory(enabled = true) {
+  const container = ttById("ttHomeLessonHistory");
+  const group = ttPlannerGroup();
+  if (!container) return;
+  const plans = ttOfficialLessonPlans(group).slice().reverse();
+  container.hidden = !enabled || !group || (!plans.length && !Number(group.lessonSerial || 0));
+  if (container.hidden) return;
+  const editingPlan = plans.find((plan) => plan.id === ttLessonHistoryEditPlanId) || null;
+  const options = plans.map((plan) => {
+    const lesson = plan.lessons[0];
+    const day = ttPlanSessionDay(plan, lesson);
+    const date = plan.sessions?.[day]?.date || plan.scheduledDate;
+    return `<option value="${escapeHtml(plan.id)}">Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(plan.status || "Saved")} · ${escapeHtml(ttLongLessonDate(date))}</option>`;
+  }).join("");
+  const editHtml = editingPlan ? (() => {
+    const lesson = editingPlan.lessons[0];
+    const isGroup = ["group", "part1", "part2"].includes(lesson.lessonType);
+    return `<div class="lesson-history-editor">
+      <label>Lesson number<input type="number" min="1" step="1" value="${escapeHtml(ttPlanLessonNumber(editingPlan, lesson, group))}" data-history-number></label>
+      <label>Day 1 date<input type="date" value="${escapeHtml(editingPlan.sessions?.["1"]?.date || editingPlan.scheduledDate || "")}" data-history-day1></label>
+      ${isGroup && editingPlan.sessions?.["2"] ? `<label>Day 2 date<input type="date" value="${escapeHtml(editingPlan.sessions["2"].date || "")}" data-history-day2></label>` : ""}
+      <button type="button" data-history-save>Save correction</button>
+      <button type="button" data-history-cancel>Cancel</button>
+    </div>`;
+  })() : "";
+  container.innerHTML = `<div class="lesson-history-heading"><div><span>Group records</span><strong>Lesson history</strong></div>
+    <div class="lesson-history-controls">${plans.length ? `<select aria-label="Previous lesson">${options}</select><button type="button" data-history-edit>Edit date / number</button>` : `<span>No official lessons yet</span>`}
+      <button type="button" class="lesson-history-reset" data-history-reset>Reset this school year</button></div></div>${editHtml}`;
+  container.querySelector("[data-history-edit]")?.addEventListener("click", () => {
+    ttLessonHistoryEditPlanId = container.querySelector("select")?.value || "";
+    ttRenderHomeLessonHistory(enabled);
+  });
+  container.querySelector("[data-history-cancel]")?.addEventListener("click", () => {
+    ttLessonHistoryEditPlanId = "";
+    ttRenderHomeLessonHistory(enabled);
+  });
+  container.querySelector("[data-history-save]")?.addEventListener("click", () => {
+    if (!editingPlan) return;
+    const lesson = editingPlan.lessons[0];
+    const number = Math.max(1, Number(container.querySelector("[data-history-number]")?.value || 1));
+    const day1 = container.querySelector("[data-history-day1]")?.value || editingPlan.scheduledDate;
+    const day2 = container.querySelector("[data-history-day2]")?.value || "";
+    const duplicate = ttOfficialLessonPlans(group).find((plan) => plan.id !== editingPlan.id && Number(plan.lessonNumber || plan.lessons?.[0]?.lessonSequence) === number);
+    const duplicateWarning = duplicate ? ` Another official record already uses Lesson ${number}.` : "";
+    if (!confirm(`Correct this official record to Lesson ${number}, Day 1 ${ttLongLessonDate(day1)}${day2 ? `, Day 2 ${ttLongLessonDate(day2)}` : ""}?${duplicateWarning}`)) return;
+    editingPlan.lessonNumber = number;
+    lesson.lessonSequence = number;
+    editingPlan.scheduledDate = day1;
+    editingPlan.dailyKey = day1;
+    editingPlan.sessions ||= {};
+    editingPlan.sessions["1"] = { ...editingPlan.sessions["1"], date: day1 };
+    if (day2) editingPlan.sessions["2"] = { ...editingPlan.sessions["2"], date: day2 };
+    if (String(editingPlan.activeDay || "1") === "1") lesson.scheduledDate = day1;
+    else if (day2) lesson.scheduledDate = day2;
+    ttRecalculateLessonSerial(group);
+    ttLessonHistoryEditPlanId = "";
+    saveState();
+    ttRenderHomeScreen();
+  });
+  container.querySelector("[data-history-reset]")?.addEventListener("click", () => {
+    if (!confirm(`Reset ${group.name}'s lesson sequence for ${group.schoolYearId} to zero? Existing plans will be retained as test records; student profiles and assessment records will not change.`)) return;
+    const resetIds = new Set();
+    (group.history || []).forEach((plan) => {
+      if (plan.source !== "TeachToday") return;
+      plan.status = "Test";
+      plan.excludedFromLessonSequence = true;
+      resetIds.add(plan.id);
+    });
+    group.lessonSerial = 0;
+    group.activeLessonPlanId = "";
+    appState.openLessonTabs = (appState.openLessonTabs || []).filter((id) => !resetIds.has(id));
+    if (ttLesson?.savedPlanId && resetIds.has(ttLesson.savedPlanId)) ttLesson = null;
+    delete appState.lessonDrafts?.[ttDraftKey(group)];
+    ttLessonHistoryEditPlanId = "";
     ttPlannerDraft = {};
     saveState();
     ttRenderHomeScreen();
