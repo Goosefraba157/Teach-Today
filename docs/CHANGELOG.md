@@ -47,4 +47,5 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Made the selected group unmistakable with a stronger card highlight and repeated the group name in the Home continuity heading.
 - Replaced stale fixed V1 asset query strings with deployment-specific versions and made network-first service-worker fetches bypass the browser HTTP cache.
 - Prevented concurrent Firebase chunk corruption by writing immutable revision-scoped backups, atomically switching the private main pointer, blocking stale-browser overwrites, and safely repairing interrupted legacy chunk JSON from an intact signed-in local copy.
+- Added the existing Firebase account/sync control to Home and realtime private-revision detection so idle devices can load completed changes promptly while browsers with unsynced edits are protected from automatic replacement.
 - Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.

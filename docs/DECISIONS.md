@@ -46,6 +46,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Decision:** Strict Firebase rules must be deployed only after legacy records receive and verify ownership metadata, to avoid locking the teacher out of existing data.
 - **Decision:** Privacy safeguards support responsible FERPA handling but do not by themselves constitute legal certification; account security, access review, retention, consent, and school policy remain operational responsibilities.
 - **Firebase concurrency:** Large private backups use immutable revision-scoped chunks and atomically update the owner-scoped main pointer only after every chunk is written. A tab must not overwrite metadata changed by another signed-in browser after its initial read; it should stop and request a refresh instead.
+- **Cross-device refresh:** Signed-in clients listen only to the private owner-scoped revision pointer. A clean client may automatically load a newer completed whole-app revision; a client with unsynced local edits must preserve them and require attention instead of attempting an automatic merge or last-write-wins replacement.
 
 ## Cross-chat continuity
 

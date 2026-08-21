@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-21-firebase-revisions-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-21-realtime-sync-1";
 
 const APP_SHELL = [
   "./",

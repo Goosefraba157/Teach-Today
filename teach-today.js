@@ -4608,6 +4608,7 @@ function ttOpenTeachFlow(options = {}) {
 function ttRenderHomeScreen() {
   const home = ttById("ttHomeScreen");
   if (!home || home.hidden) return;
+  ttUpdateHomeFirebaseStatus();
   const yearSelect = ttById("ttHomeSchoolYear");
   const activeYearId = appState.activeSchoolYearId || currentSchoolYearId();
   const schoolYears = (appState.schoolYears || []).slice().sort((a, b) => b.id.localeCompare(a.id));
@@ -9953,6 +9954,8 @@ let ttFirebaseTimer = null;
 let ttFirebaseBusy = false;
 let ttFirebasePending = false;
 let ttFirebaseUser = null; // set after Google sign-in
+let ttFirebaseUnsubscribe = null;
+let ttFirebaseWritingRevisionId = "";
 let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
@@ -10299,16 +10302,18 @@ async function ttFirebaseReadPayload() {
   }
 }
 
-async function ttFirebaseRestoreIfNewer() {
+async function ttFirebaseRestoreIfNewer(options = {}) {
   const payload = await ttFirebaseReadPayload();
   const restoredState = payload?.appState || payload;
   if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  if (!ttShouldRestorePayload(payload)) return false;
+  if (!options.force && !ttShouldRestorePayload(payload)) return false;
   localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
   if (payload.section2CardOverrides) {
     localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
   }
   localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
+  localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", restoredState.lastSavedAt || payload.exportedAt || new Date().toISOString());
+  if (options.revisionId) localStorage.setItem("teachToday.lastFirebaseRevisionId", options.revisionId);
   localStorage.setItem("teachToday.firebaseSyncStatus", "Loaded newer Firebase data.");
   location.reload();
   return true;
@@ -10321,6 +10326,7 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     return;
   }
   ttFirebaseBusy = true;
+  ttUpdateHomeFirebaseStatus();
   let syncConflict = false;
   try {
     let remotePayload = null;
@@ -10346,6 +10352,7 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
     const revisionToken = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(16).slice(2, 10);
     const revisionId = `${now.getTime()}-${revisionToken}`;
+    ttFirebaseWritingRevisionId = revisionId;
     for (let index = 0; index < chunkCount; index += 1) {
       const id = String(index).padStart(4, "0");
       await setDoc(doc(firestoreDb, ...path, "revisions", revisionId, "chunks", id), {
@@ -10374,6 +10381,8 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
       });
     });
     localStorage.setItem("teachToday.lastFirebaseSyncAt", now.toISOString());
+    localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", payload.appState?.lastSavedAt || payload.exportedAt);
+    localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
     localStorage.setItem("teachToday.firebaseSyncStatus", reason);
   } catch (error) {
     const detail = error?.code || error?.message || "unknown error";
@@ -10388,8 +10397,10 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase could not save (${detail}).`);
     ttShowConnectionNotice(`Firebase could not save right now (${detail}). You can keep trying or work offline.`);
   } finally {
+    ttFirebaseWritingRevisionId = "";
     ttFirebaseBusy = false;
     ttRenderDataCenter();
+    ttUpdateHomeFirebaseStatus();
     if (ttFirebasePending && !syncConflict) {
       ttFirebasePending = false;
       ttQueueFirebaseSync();
@@ -10504,6 +10515,10 @@ async function ttSecureLegacyStudentData() {
 
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
+  if (ttFirebaseUser) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Changes saved locally. Syncing automatically...");
+    ttUpdateHomeFirebaseStatus();
+  }
   ttFirebaseTimer = setTimeout(() => ttFirebaseSyncWrite(), 1200);
 }
 
@@ -10515,6 +10530,34 @@ async function ttSyncFirebaseAndLocalNow() {
 }
 
 // --- Auth UI helpers ---
+function ttUpdateHomeFirebaseStatus() {
+  const signInBtn = ttById("ttHomeFirebaseSignIn");
+  const signOutBtn = ttById("ttHomeFirebaseSignOut");
+  const badge = ttById("ttHomeFirebaseUserBadge");
+  const message = localStorage.getItem("teachToday.firebaseSyncStatus") || "Firebase sync is ready.";
+  const needsAttention = /could not|failed|conflict|newer data|refresh|not overwrite/i.test(message);
+  if (ttFirebaseUser) {
+    if (signInBtn) signInBtn.hidden = true;
+    if (signOutBtn) {
+      signOutBtn.hidden = false;
+      signOutBtn.dataset.state = needsAttention ? "attention" : "ready";
+      signOutBtn.title = message;
+    }
+    if (badge) {
+      badge.textContent = ttFirebaseUser.displayName || ttFirebaseUser.email;
+      badge.hidden = false;
+      badge.title = message;
+    }
+  } else {
+    if (signInBtn) {
+      signInBtn.hidden = false;
+      signInBtn.title = message;
+    }
+    if (signOutBtn) signOutBtn.hidden = true;
+    if (badge) badge.hidden = true;
+  }
+}
+
 function ttUpdateFirebaseAuthUI() {
   const badge = document.getElementById("ttFirebaseUserBadge");
   const signInBtn = document.getElementById("ttFirebaseSignIn");
@@ -10528,6 +10571,55 @@ function ttUpdateFirebaseAuthUI() {
     if (signInBtn) signInBtn.hidden = false;
     if (signOutBtn) signOutBtn.hidden = true;
   }
+  ttUpdateHomeFirebaseStatus();
+}
+
+function ttHasUnsyncedFirebaseChanges() {
+  const localSave = new Date(appState?.lastSavedAt || 0).getTime() || 0;
+  const syncedSave = new Date(localStorage.getItem("teachToday.lastFirebaseSyncedLocalSaveAt") || 0).getTime() || 0;
+  return localSave > syncedSave + 1000;
+}
+
+async function ttStartFirebaseRevisionListener() {
+  if (ttFirebaseUnsubscribe) {
+    ttFirebaseUnsubscribe();
+    ttFirebaseUnsubscribe = null;
+  }
+  if (!ttFirebaseUser) return;
+  const { firestoreDb, doc, onSnapshot } = await ttFirebaseSdk();
+  const mainRef = doc(firestoreDb, ...ttFirebaseDocPath());
+  let receivedInitialSnapshot = false;
+  ttFirebaseUnsubscribe = onSnapshot(mainRef, async (snapshot) => {
+    if (!snapshot.exists()) return;
+    const revisionId = snapshot.data()?.revisionId || "";
+    if (!receivedInitialSnapshot) {
+      receivedInitialSnapshot = true;
+      if (revisionId && !localStorage.getItem("teachToday.lastFirebaseRevisionId")) {
+        localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
+      }
+      return;
+    }
+    if (!revisionId || revisionId === localStorage.getItem("teachToday.lastFirebaseRevisionId")) return;
+    if (revisionId === ttFirebaseWritingRevisionId) {
+      localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
+      return;
+    }
+    if (ttFirebaseBusy || ttHasUnsyncedFirebaseChanges()) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data is available from another device. Your local edits were not overwritten. Refresh or Sync now after reviewing this device.");
+      ttShowConnectionNotice("Another device saved newer Teach Today data. This device kept its local edits and did not overwrite anything.");
+      ttRenderDataCenter();
+      ttUpdateHomeFirebaseStatus();
+      return;
+    }
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data detected. Updating this device...");
+    ttUpdateHomeFirebaseStatus();
+    await ttFirebaseRestoreIfNewer({ force: true, revisionId });
+  }, (error) => {
+    const detail = error?.code || error?.message || "unknown error";
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase change detection paused (${detail}). Local saves are still protected.`);
+    ttRenderDataCenter();
+    ttUpdateHomeFirebaseStatus();
+  });
 }
 
 async function ttFirebaseSignIn() {
@@ -10589,6 +10681,7 @@ async function ttInitFirebaseSync() {
         ttRenderDataCenter();
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
         await ttFirebaseRestoreIfNewer();
+        await ttStartFirebaseRevisionListener();
         ttQueueFirebaseSync();
         ttUploadPendingAudioRecordings(); // upload any recordings that didn't make it to Storage yet
         if (!ttDriveAccessToken) {
@@ -10596,6 +10689,8 @@ async function ttInitFirebaseSync() {
         }
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
       } else {
+        if (ttFirebaseUnsubscribe) ttFirebaseUnsubscribe();
+        ttFirebaseUnsubscribe = null;
         localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
       }
       ttRenderDataCenter();
@@ -12910,6 +13005,8 @@ function ttBind() {
     ttShowHomeScreen();
   });
   ttById("ttHomeOpenCurrent")?.addEventListener("click", () => ttOpenTeachFlow());
+  ttById("ttHomeFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
+  ttById("ttHomeFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
   ttById("ttPlannerBuild")?.addEventListener("click", () => ttBuildPlannerLesson());
   ttById("ttPlannerOpen")?.addEventListener("click", () => {

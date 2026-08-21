@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260821-firebase-revisions-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260821-realtime-sync-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -333,6 +333,11 @@
           <strong>Game Quest</strong>
           <em>Cursive, syllables, and decoding</em>
         </a>
+        <div class="home-account-control" aria-label="Firebase account and sync">
+          <button id="ttHomeFirebaseSignIn" class="firebase-sign-in-btn" type="button" title="Sign in to sync across devices">☁ Sync</button>
+          <button id="ttHomeFirebaseSignOut" class="firebase-sign-out-btn" type="button" title="Sign out of cloud sync" hidden>Sign out</button>
+          <span id="ttHomeFirebaseUserBadge" class="firebase-user-badge" hidden></span>
+        </div>
         <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
       </header>
       <div class="home-school-year-bar" aria-label="School year view">
@@ -963,7 +968,7 @@
     <script src="app.js?v=lesson-assistant-3"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260821-firebase-revisions-1"></script>
+    <script src="teach-today.js?v=20260821-realtime-sync-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>
