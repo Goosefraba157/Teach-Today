@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-20
+2026-08-21
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -66,9 +66,10 @@
 - The V1 teaching workspace now expands responsively up to 1320px instead of remaining locked to 820px, using wide screens more effectively while preserving Section 9's larger reading layout and a compact mobile gutter.
 - Section 2 affix cards now use a brighter yellow for clearer contrast from consonant cards. In 45+45 lessons, Section 2B has an independent interactive Day 2 card deck with chip selection, previous/next navigation, counts, and a working distinct “New set” action; Section 2 Day 1 behavior remains unchanged.
 - Section 2 and 2B prefix/suffix cards retain their existing appearance but now share a consistent responsive rectangular width (136-176px), sized to fit longer affixes such as `-able` and `-ness` while remaining distinct from sound cards.
-- A dated, numbered lesson-continuity workflow is implemented locally and awaits the user's commit/push. Each group remembers its open lesson, active Day 1/Day 2, separate session dates, finished/skipped sections, scroll position, and saved-version notes. Home offers Continue, later-date Day 2, complete after Day 1, or preserve as incomplete and plan new. Start Teaching is now the primary action and opens Present mode; Plan New and Finish are explicitly named.
+- The dated, numbered lesson-continuity workflow is committed and pushed on `main` at `2a16ab9`. Each group remembers its open lesson, active Day 1/Day 2, separate session dates, finished/skipped sections, scroll position, and saved-version notes. Home offers Continue, later-date Day 2, complete after Day 1, or preserve as incomplete and plan new. Start Teaching is now the primary action and opens Present mode; Plan New and Finish are explicitly named.
 - Browser verification on a local-only server confirmed: Day 1 started as Lesson 1 with an explicit long date; finished Section 2 persisted; switching to another group and back restored the same lesson; Day 2 continued on a later chosen date under the same lesson number; Day 1's date remained visible; Day 2-only sections displayed; saved versions accumulated without replacing the prior record.
-- Exact next step: review the local diff, commit and push the continuity change, then wait for GitHub Pages/service-worker refresh and smoke-test the hosted Start Teaching → Home → Continue path.
+- V1 Present mode now has previous/next section arrows in the existing dock. Navigation and pace tracking use the visible teaching sequence, including Day 2 Sections 1B and 2B instead of skipping them. Local browser verification confirmed Day 1 moves from Section 1 to 2, Day 2 exposes 1B/2B/6-10, and Day 2 moves from 1B to 2B with no console warnings or errors.
+- Exact next step: commit and push the presentation-navigation change, wait for GitHub Pages/service-worker refresh, then smoke-test the hosted Start Teaching → Day 1/Day 2 → previous/next section path. Continue the opening and Sections 1-10 presentation inventory afterward.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 

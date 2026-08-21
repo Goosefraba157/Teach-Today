@@ -2771,6 +2771,7 @@ function ttRender() {
   // Restore the active group day (if any) after lesson type class swap
   document.body.classList.remove("group-day-1", "group-day-2");
   if (lessonTypeKey === "group" && ttGroupDay) document.body.classList.add(`group-day-${ttGroupDay}`);
+  ttUpdateGroupDayButtons();
   // For flash mode, show/hide individual sections based on selection
   for (let i = 1; i <= 10; i++) {
     const sec = ttById(`section${i}`);
@@ -3554,15 +3555,19 @@ function ttShowGroupDayPicker(group, callback) {
   modal.querySelector("[data-gdp-day]")?.focus();
 }
 
+function ttUpdateGroupDayButtons() {
+  document.querySelectorAll("[data-group-day]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.groupDay === ttGroupDay);
+  });
+}
+
 function ttSetGroupDay(day) {
   // Toggle: clicking the already-active day clears the selection (show full lesson)
   ttGroupDay = ttGroupDay === day ? null : day;
   document.body.classList.remove("group-day-1", "group-day-2");
   if (ttGroupDay) document.body.classList.add(`group-day-${ttGroupDay}`);
   // Update all day-toggle button states (ribbon + dock)
-  document.querySelectorAll("[data-group-day]").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.groupDay === ttGroupDay);
-  });
+  ttUpdateGroupDayButtons();
   if (ttLesson && ttGroupDay) {
     ttLesson.activeGroupDay = ttGroupDay;
     const plan = ttCurrentPlan();
@@ -12046,8 +12051,21 @@ function ttHandlePresentationMenuOutsidePointer(event) {
   ttSetPresentationMenu(false);
 }
 
+function ttAllTeachingSectionIds() {
+  return [
+    "section1", "section2", "section3", "section4", "section5",
+    "section1b", "section2b", "section6", "section7", "section8",
+    "section9", "section10"
+  ];
+}
+
+function ttIsTeachingSectionVisible(section) {
+  if (!section || section.hidden) return false;
+  return window.getComputedStyle(section).display !== "none";
+}
+
 function ttPaceGuideSectionIds() {
-  return Array.from({ length: 10 }, (_, index) => `section${index + 1}`);
+  return ttAllTeachingSectionIds().filter((id) => ttIsTeachingSectionVisible(ttById(id)));
 }
 
 function ttCurrentPaceSectionId() {
@@ -12066,7 +12084,24 @@ function ttCurrentPaceSectionId() {
       current = id;
     }
   });
-  return current || ttPaceGuideState.activeSectionId || "section1";
+  const sectionIds = ttPaceGuideSectionIds();
+  const priorSection = sectionIds.includes(ttPaceGuideState.activeSectionId)
+    ? ttPaceGuideState.activeSectionId
+    : "";
+  return current || priorSection || sectionIds[0] || "section1";
+}
+
+function ttGoToTeachingSection(direction) {
+  const sectionIds = ttPaceGuideSectionIds();
+  if (!sectionIds.length) return;
+  const currentId = ttCurrentPaceSectionId();
+  const currentIndex = Math.max(0, sectionIds.indexOf(currentId));
+  const targetIndex = Math.max(0, Math.min(sectionIds.length - 1, currentIndex + direction));
+  const targetId = sectionIds[targetIndex];
+  ttById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  ttPaceGuideState.activeSectionId = targetId;
+  ttPaceGuideState.sectionStartedAt = Date.now();
+  ttUpdatePaceGuide();
 }
 
 function ttSetPaceGuideLine(line, progressLeft) {
@@ -12812,6 +12847,8 @@ function ttBind() {
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
+  ttById("ttDockPrevSection")?.addEventListener("click", () => ttGoToTeachingSection(-1));
+  ttById("ttDockNextSection")?.addEventListener("click", () => ttGoToTeachingSection(1));
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && document.body.classList.contains("present-menu-open")) {
