@@ -5179,6 +5179,15 @@ body.section4-stage-preview-open .teach-flow {
   max-width: calc((100% - 36px) / var(--tile-count, 5));
 }
 
+/* Wilson affix cards use one wider rectangular footprint, including -able/-ness. */
+.section2-display .build-card:is(.prefix, .suffix) {
+  width: clamp(136px, 15vw, 176px);
+  min-width: clamp(136px, 15vw, 176px);
+  max-width: clamp(136px, 15vw, 176px);
+  flex: 0 0 clamp(136px, 15vw, 176px);
+  padding-inline: 14px;
+}
+
 .section2-hint {
   margin: 8px 0 0;
   color: var(--muted);
