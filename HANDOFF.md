@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-19
+2026-08-20
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -63,6 +63,7 @@
 - Verified imported longitudinal profiles, graphs, group comparisons, and record tables on multiple current-year students. Historical evidence is visible across school years, while lessons, attendance, dictation, and recordings remain unchanged and are not fabricated.
 - The ChatGPT in-app browser produced one false `navigator.onLine` offline warning even while Firebase was successfully syncing. Treat the Records panel's Firebase status as authoritative for now; improve connection detection separately so it attempts a real cloud check before showing an offline warning.
 - Lesson format is now selected immediately after the group cards and remembered per group. Groups without a saved preference default to 45+45; Generate Best Lesson preserves the selected format, and the lower Customize selector stays synchronized.
+- The V1 teaching workspace now expands responsively up to 1320px instead of remaining locked to 820px, using wide screens more effectively while preserving Section 9's larger reading layout and a compact mobile gutter.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 

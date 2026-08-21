@@ -13,6 +13,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Decision:** Improve V1 slides incrementally rather than replacing the application wholesale.
 - **Reason:** The existing app looks and works well, so changes must preserve known-good flows.
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.
+- **Layout:** The regular teaching workspace should use available laptop and desktop width responsively, while Section 9 may remain wider for passage reading and mobile screens retain compact gutters.
 
 ## Lesson planning defaults
 
