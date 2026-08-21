@@ -1817,8 +1817,10 @@ body.lesson-flow-enter .teach-flow {
 
 .home-group-card.active {
   border-color: var(--group-color);
-  background: #f8fafc;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08), 0 10px 24px rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--group-color) 9%, #fff);
+  outline: 4px solid color-mix(in srgb, var(--group-color) 72%, #fff);
+  outline-offset: 2px;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--group-color) 24%, transparent);
 }
 
 .home-group-card span {

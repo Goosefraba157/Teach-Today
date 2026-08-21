@@ -44,4 +44,5 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Removed the broad school-year reset and “Restart as Lesson 1” controls after review; official date/number corrections remain available through the guarded history editor.
 - Defaulted Day 2 and newly planned lessons to the next Monday-Thursday instructional date, renamed completion to “Complete Lesson As Is,” and made incomplete sections valid when completing a lesson.
 - Gave Complete Lesson As Is and Plan a new lesson distinct high-visibility colors and expanded both confirmation messages to state the resulting lesson status, number, and next date.
+- Made the selected group unmistakable with a stronger card highlight and repeated the group name in the Home continuity heading.
 - Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.

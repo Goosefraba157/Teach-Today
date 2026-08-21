@@ -4695,7 +4695,7 @@ function ttRenderHomeContinuity(enabled = true) {
     const lesson = latestComplete.lessons[0];
     ttEnsureLessonWorkflow(latestComplete, lesson, group);
     container.innerHTML = `<div class="continuity-copy"><span>Last lesson completed</span>
-        <strong>Lesson ${escapeHtml(ttPlanLessonNumber(latestComplete, lesson, group))} · ${escapeHtml(ttLongLessonDate(latestComplete.sessions?.[latestComplete.activeDay || "1"]?.date || latestComplete.scheduledDate))}</strong>
+        <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(latestComplete, lesson, group))} · ${escapeHtml(ttLongLessonDate(latestComplete.sessions?.[latestComplete.activeDay || "1"]?.date || latestComplete.scheduledDate))}</strong>
         <small>Your next saved lesson will be Lesson ${escapeHtml((Number(latestComplete.lessonNumber || lesson.lessonSequence || group.lessonSerial || 0) + 1))}.</small></div>
       <div class="continuity-actions"><button type="button" data-continuity="review">Review completed lesson</button></div>`;
     container.querySelector('[data-continuity="review"]')?.addEventListener("click", () => {
@@ -4711,7 +4711,7 @@ function ttRenderHomeContinuity(enabled = true) {
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
   const plannedDay2Date = openPlan.plannedDay2Date || ttNextInstructionDateKey(openPlan.sessions?.["1"]?.date || sessionDate);
   container.innerHTML = `<div class="continuity-copy"><span>Lesson still open</span>
-      <strong>Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
+      <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
       <small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections have been marked finished yet."}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
     <div class="continuity-actions">
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
@@ -4735,7 +4735,7 @@ function ttRenderHomeContinuity(enabled = true) {
     lesson.scheduledDate = date;
     saveState();
     const heading = container.querySelector(".continuity-copy strong");
-    if (heading) heading.textContent = `Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} · Day ${day} · ${ttLongLessonDate(date)}`;
+    if (heading) heading.textContent = `${group.name} · Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} · Day ${day} · ${ttLongLessonDate(date)}`;
   };
   const sessionDateInput = container.querySelector("[data-continuity-session-date]");
   ["input", "change"].forEach((eventName) => sessionDateInput?.addEventListener(eventName, (event) => saveSessionDate(event.target.value)));
@@ -4935,7 +4935,7 @@ function ttHomeGroupCardHtml(group, editable = true) {
     : "No charting saved";
   const preferredType = ttPlannerFormatLabel(ttPreferredLessonType(group));
   return `<div class="home-group-card-shell" style="--group-color: ${color};">
-    <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}">
+    <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}" aria-pressed="${group.id === ttPlannerGroupId ? "true" : "false"}">
       <span>${escapeHtml(group.time || "Group")}</span>
       <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
       ${ttSubstepProgressBar(group)}
