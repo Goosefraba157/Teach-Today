@@ -4081,8 +4081,12 @@ function ttActiveOpenPlan(group = ttPlannerGroup()) {
   let plan = group.activeLessonPlanId
     ? (group.history || []).find((item) => item.id === group.activeLessonPlanId)
     : null;
+  if (plan && (plan.excludedFromLessonSequence || ["Complete", "Incomplete", "Test"].includes(plan.status))) {
+    group.activeLessonPlanId = "";
+    plan = null;
+  }
   if (!plan) {
-    plan = (group.history || []).slice().reverse().find((item) => item.source === "TeachToday" && item.lessons?.[0] && !["Complete", "Incomplete"].includes(item.status));
+    plan = (group.history || []).slice().reverse().find((item) => item.source === "TeachToday" && item.lessons?.[0] && !item.excludedFromLessonSequence && !["Complete", "Incomplete", "Test"].includes(item.status));
     if (plan) group.activeLessonPlanId = plan.id;
   }
   if (!plan || plan.status === "Complete") return null;
@@ -4688,14 +4692,31 @@ function ttRenderHomeContinuity(enabled = true) {
   const summary = ttCompletedSectionSummary(lesson);
   const sessionDate = openPlan.sessions?.[day]?.date || openPlan.scheduledDate;
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
+  const canRestartSequence = Number(ttPlanLessonNumber(openPlan, lesson, group)) > 1
+    && !summary.done.length && !summary.skipped.length && !openPlan.hasStudentData;
   container.innerHTML = `<div class="continuity-copy"><span>Lesson still open</span>
       <strong>Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
       <small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections have been marked finished yet."}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
     <div class="continuity-actions">
+      <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
       <button class="continuity-primary" type="button" data-continuity="resume">Continue where I left off</button>
       ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${ttTodayKey()}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete after Day 1</button>` : ""}
+      ${canRestartSequence ? `<button type="button" data-continuity="restart-one">Restart as Lesson 1</button>` : ""}
       <button type="button" data-continuity="new">Plan a new lesson</button>
     </div>`;
+  container.querySelector("[data-continuity-session-date]")?.addEventListener("change", (event) => {
+    const date = event.target.value;
+    if (!date) return;
+    openPlan.sessions ||= {};
+    openPlan.sessions[day] = { ...openPlan.sessions[day], date };
+    if (day === "1") {
+      openPlan.scheduledDate = date;
+      openPlan.dailyKey = date;
+    }
+    lesson.scheduledDate = date;
+    saveState();
+    ttRenderHomeScreen();
+  });
   container.querySelector('[data-continuity="resume"]')?.addEventListener("click", () => {
     ttOpenPlanInApp(openPlan.id);
     if (lesson.activeGroupDay || openPlan.activeDay) ttSetGroupDay(String(openPlan.activeDay || lesson.activeGroupDay));
@@ -4722,6 +4743,27 @@ function ttRenderHomeContinuity(enabled = true) {
     openPlan.completionNote = note;
     openPlan.sessions["1"].status = "Complete";
     group.activeLessonPlanId = "";
+    saveState();
+    ttRenderHomeScreen();
+  });
+  container.querySelector('[data-continuity="restart-one"]')?.addEventListener("click", () => {
+    if (!confirm("Restart this group's lesson numbering at Lesson 1? Earlier generated plans will be kept as test records.")) return;
+    (group.history || []).forEach((plan) => {
+      if (plan.id === openPlan.id || plan.source !== "TeachToday") return;
+      plan.status = "Test";
+      plan.excludedFromLessonSequence = true;
+    });
+    const date = container.querySelector("[data-continuity-session-date]")?.value || sessionDate || ttTodayKey();
+    group.lessonSerial = 1;
+    openPlan.lessonNumber = 1;
+    openPlan.status = "Saved";
+    openPlan.scheduledDate = date;
+    openPlan.dailyKey = date;
+    openPlan.sessions ||= {};
+    openPlan.sessions[day] = { ...openPlan.sessions[day], date, status: "Planned" };
+    delete openPlan.sessions[day].startedAt;
+    lesson.lessonSequence = 1;
+    lesson.scheduledDate = date;
     saveState();
     ttRenderHomeScreen();
   });
@@ -4757,7 +4799,9 @@ function ttSubstepProgressBar(group) {
 function ttHomeGroupCardHtml(group, editable = true) {
   const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
   const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
-  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]) || (group.history || []).at(-1);
+  const recentHistory = (group.history || []).slice().reverse();
+  const lastPlan = recentHistory.find((plan) => plan.source === "TeachToday" && plan.lessons?.[0] && !plan.excludedFromLessonSequence)
+    || recentHistory.find((plan) => !plan.excludedFromLessonSequence);
   const lastLesson = lastPlan?.lessons?.[0];
   const records = (appState.masterRecords || [])
     .filter((record) => record.groupId === group.id || record.group === group.name)

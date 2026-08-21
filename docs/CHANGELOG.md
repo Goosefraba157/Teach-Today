@@ -39,3 +39,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-08-21
 
 - Added previous/next section controls to the V1 presentation dock and made presentation navigation and pace tracking follow the currently visible Day 1 or Day 2 sequence, including interactive Sections 1B and 2B.
+- Added editable dates for open lesson sessions and a guarded way to restart an untouched test lesson at Lesson 1 while retaining earlier generated plans as test records outside normal continuity.
