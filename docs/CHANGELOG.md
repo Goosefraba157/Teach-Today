@@ -41,3 +41,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added previous/next section controls to the V1 presentation dock and made presentation navigation and pace tracking follow the currently visible Day 1 or Day 2 sequence, including interactive Sections 1B and 2B.
 - Added editable dates for open lesson sessions and a guarded way to restart an untouched test lesson at Lesson 1 while retaining earlier generated plans as test records outside normal continuity.
 - Added confirmed official lesson-history corrections for lesson numbers and Day 1/Day 2 dates, a non-destructive current-year group lesson-sequence reset, and a one-click synthetic Demo Group for isolated workflow testing.
+- Changed service-worker handling for app code to network-first with offline fallback so GitHub Pages updates appear promptly; large curriculum assets remain cache-first.
