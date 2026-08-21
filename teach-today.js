@@ -4701,20 +4701,17 @@ function ttRenderHomeContinuity(enabled = true) {
   const summary = ttCompletedSectionSummary(lesson);
   const sessionDate = openPlan.sessions?.[day]?.date || openPlan.scheduledDate;
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
-  const canRestartSequence = Number(ttPlanLessonNumber(openPlan, lesson, group)) > 1
-    && !summary.done.length && !summary.skipped.length && !openPlan.hasStudentData;
+  const plannedDay2Date = openPlan.plannedDay2Date || ttTodayKey();
   container.innerHTML = `<div class="continuity-copy"><span>Lesson still open</span>
       <strong>Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
       <small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections have been marked finished yet."}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
     <div class="continuity-actions">
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
       <button class="continuity-primary" type="button" data-continuity="resume">Continue where I left off</button>
-      ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${ttTodayKey()}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete after Day 1</button>` : ""}
-      ${canRestartSequence ? `<button type="button" data-continuity="restart-one">Restart as Lesson 1</button>` : ""}
+      ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete after Day 1</button>` : ""}
       <button type="button" data-continuity="new">Plan a new lesson</button>
     </div>`;
-  container.querySelector("[data-continuity-session-date]")?.addEventListener("change", (event) => {
-    const date = event.target.value;
+  const saveSessionDate = (date) => {
     if (!date) return;
     openPlan.sessions ||= {};
     openPlan.sessions[day] = { ...openPlan.sessions[day], date };
@@ -4724,21 +4721,35 @@ function ttRenderHomeContinuity(enabled = true) {
     }
     lesson.scheduledDate = date;
     saveState();
-    ttRenderHomeScreen();
-  });
+    const heading = container.querySelector(".continuity-copy strong");
+    if (heading) heading.textContent = `Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} · Day ${day} · ${ttLongLessonDate(date)}`;
+  };
+  const sessionDateInput = container.querySelector("[data-continuity-session-date]");
+  ["input", "change"].forEach((eventName) => sessionDateInput?.addEventListener(eventName, (event) => saveSessionDate(event.target.value)));
+  const plannedDay2Input = container.querySelector("[data-continuity-date]");
+  const savePlannedDay2Date = (event) => {
+    if (!event.target.value) return;
+    openPlan.plannedDay2Date = event.target.value;
+    saveState();
+  };
+  ["input", "change"].forEach((eventName) => plannedDay2Input?.addEventListener(eventName, savePlannedDay2Date));
   container.querySelector('[data-continuity="resume"]')?.addEventListener("click", () => {
+    saveSessionDate(container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
     ttOpenPlanInApp(openPlan.id);
     if (lesson.activeGroupDay || openPlan.activeDay) ttSetGroupDay(String(openPlan.activeDay || lesson.activeGroupDay));
     ttOpenTeachFlow({ transition: false });
   });
   container.querySelector('[data-continuity="day2"]')?.addEventListener("click", () => {
-    const date = container.querySelector("[data-continuity-date]")?.value || ttTodayKey();
+    const date = container.querySelector("[data-continuity-date]")?.value || openPlan.plannedDay2Date || ttTodayKey();
+    openPlan.plannedDay2Date = date;
+    saveState();
     ttOpenPlanInApp(openPlan.id);
     ttLesson.activeGroupDay = "2";
     ttLesson.scheduledDate = date;
     openPlan.activeDay = "2";
     openPlan.sessions ||= {};
     openPlan.sessions["2"] = { date, status: "In progress", startedAt: new Date().toISOString() };
+    delete openPlan.plannedDay2Date;
     ttSetGroupDay("2");
     ttSaveCurrentLesson({ render: false, starting: true, reason: "Started Day 2" });
     ttOpenTeachFlow({ transition: false, presentation: true });
@@ -4752,27 +4763,6 @@ function ttRenderHomeContinuity(enabled = true) {
     openPlan.completionNote = note;
     openPlan.sessions["1"].status = "Complete";
     group.activeLessonPlanId = "";
-    saveState();
-    ttRenderHomeScreen();
-  });
-  container.querySelector('[data-continuity="restart-one"]')?.addEventListener("click", () => {
-    if (!confirm("Restart this group's lesson numbering at Lesson 1? Earlier generated plans will be kept as test records.")) return;
-    (group.history || []).forEach((plan) => {
-      if (plan.id === openPlan.id || plan.source !== "TeachToday") return;
-      plan.status = "Test";
-      plan.excludedFromLessonSequence = true;
-    });
-    const date = container.querySelector("[data-continuity-session-date]")?.value || sessionDate || ttTodayKey();
-    group.lessonSerial = 1;
-    openPlan.lessonNumber = 1;
-    openPlan.status = "Saved";
-    openPlan.scheduledDate = date;
-    openPlan.dailyKey = date;
-    openPlan.sessions ||= {};
-    openPlan.sessions[day] = { ...openPlan.sessions[day], date, status: "Planned" };
-    delete openPlan.sessions[day].startedAt;
-    lesson.lessonSequence = 1;
-    lesson.scheduledDate = date;
     saveState();
     ttRenderHomeScreen();
   });
@@ -4855,8 +4845,7 @@ function ttRenderHomeLessonHistory(enabled = true) {
     </div>`;
   })() : "";
   container.innerHTML = `<div class="lesson-history-heading"><div><span>Group records</span><strong>Lesson history</strong></div>
-    <div class="lesson-history-controls">${plans.length ? `<select aria-label="Previous lesson">${options}</select><button type="button" data-history-edit>Edit date / number</button>` : `<span>No official lessons yet</span>`}
-      <button type="button" class="lesson-history-reset" data-history-reset>Reset this school year</button></div></div>${editHtml}`;
+    <div class="lesson-history-controls">${plans.length ? `<select aria-label="Previous lesson">${options}</select><button type="button" data-history-edit>Edit date / number</button>` : `<span>No official lessons yet</span>`}</div></div>${editHtml}`;
   container.querySelector("[data-history-edit]")?.addEventListener("click", () => {
     ttLessonHistoryEditPlanId = container.querySelector("select")?.value || "";
     ttRenderHomeLessonHistory(enabled);
@@ -4885,25 +4874,6 @@ function ttRenderHomeLessonHistory(enabled = true) {
     else if (day2) lesson.scheduledDate = day2;
     ttRecalculateLessonSerial(group);
     ttLessonHistoryEditPlanId = "";
-    saveState();
-    ttRenderHomeScreen();
-  });
-  container.querySelector("[data-history-reset]")?.addEventListener("click", () => {
-    if (!confirm(`Reset ${group.name}'s lesson sequence for ${group.schoolYearId} to zero? Existing plans will be retained as test records; student profiles and assessment records will not change.`)) return;
-    const resetIds = new Set();
-    (group.history || []).forEach((plan) => {
-      if (plan.source !== "TeachToday") return;
-      plan.status = "Test";
-      plan.excludedFromLessonSequence = true;
-      resetIds.add(plan.id);
-    });
-    group.lessonSerial = 0;
-    group.activeLessonPlanId = "";
-    appState.openLessonTabs = (appState.openLessonTabs || []).filter((id) => !resetIds.has(id));
-    if (ttLesson?.savedPlanId && resetIds.has(ttLesson.savedPlanId)) ttLesson = null;
-    delete appState.lessonDrafts?.[ttDraftKey(group)];
-    ttLessonHistoryEditPlanId = "";
-    ttPlannerDraft = {};
     saveState();
     ttRenderHomeScreen();
   });

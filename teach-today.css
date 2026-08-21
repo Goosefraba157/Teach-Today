@@ -8834,7 +8834,6 @@ body.home-mode .home-screen {
 .lesson-history-controls select { min-width: 260px; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 9px; background: #fff; }
 .lesson-history-controls button,
 .lesson-history-editor button { min-height: 38px; }
-.lesson-history-reset { border-color: #fecaca; background: #fff1f2; color: #9f1239; }
 .lesson-history-editor { border-top: 1px solid #e5e7eb; padding-top: 10px; }
 .lesson-history-editor label { display: grid; gap: 3px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
 .lesson-history-editor input { min-height: 36px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 8px; background: #fff; }
