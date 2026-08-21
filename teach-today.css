@@ -8846,6 +8846,18 @@ body.home-mode .home-screen {
 .continuity-actions { display: flex; align-items: end; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .continuity-actions button { min-height: 39px; }
 .continuity-actions .continuity-primary { background: #6d28d9; border-color: #6d28d9; color: white; font-weight: 900; }
+.continuity-actions [data-continuity="complete-day1"] {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 900;
+}
+.continuity-actions [data-continuity="new"] {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 900;
+}
 .continuity-actions label,
 .home-lesson-date,
 .gdp-date { display: grid; gap: 3px; color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }

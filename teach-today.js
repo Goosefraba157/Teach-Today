@@ -4770,7 +4770,7 @@ function ttRenderHomeContinuity(enabled = true) {
   container.querySelector('[data-continuity="complete-day1"]')?.addEventListener("click", () => {
     const completedDate = container.querySelector("[data-continuity-session-date]")?.value || sessionDate;
     saveSessionDate(completedDate);
-    if (!confirm(`Complete Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} as it is now? Unfinished sections are allowed, and the next plan will be Lesson ${Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1}.`)) return;
+    if (!confirm(`Save Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} as complete exactly as it is now? Unfinished sections are allowed. The next plan will be Lesson ${Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1}.`)) return;
     openPlan.status = "Complete";
     openPlan.completionKind = "as-is";
     openPlan.completedAt = new Date().toISOString();
@@ -4782,8 +4782,9 @@ function ttRenderHomeContinuity(enabled = true) {
     ttRenderHomeScreen();
   });
   container.querySelector('[data-continuity="new"]')?.addEventListener("click", () => {
-    if (!confirm(`Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} is unfinished. Preserve it as incomplete and plan a new lesson?`)) return;
     const nextDate = ttNextInstructionDateKey(openPlan.sessions?.[day]?.date || sessionDate);
+    const nextNumber = Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1;
+    if (!confirm(`Keep Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} marked incomplete and prepare Lesson ${nextNumber} for ${ttLongLessonDate(nextDate)}?`)) return;
     openPlan.status = "Incomplete";
     openPlan.closedAt = new Date().toISOString();
     openPlan.closedReason = "Teacher chose to start a new lesson";
