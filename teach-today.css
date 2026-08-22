@@ -1368,8 +1368,12 @@ body.presentation-mode.global-ink-mode .global-ink-canvas {
 
 body.presentation-mode.laser-mode .laser-canvas {
   display: block;
-  pointer-events: auto;
-  cursor: none;
+  pointer-events: none;
+}
+
+body.presentation-mode.laser-mode,
+body.presentation-mode.laser-mode * {
+  cursor: none !important;
 }
 
 .global-ink-palette {

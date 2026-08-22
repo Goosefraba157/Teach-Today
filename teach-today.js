@@ -25,8 +25,8 @@ let ttGlobalInkState = {
   activeStroke: null
 };
 let ttLaserEnabled = false;
-let ttLaserDrawing = false;
 let ttLaserPoints = [];
+let ttLaserCurrentPoint = null;
 let ttLaserFrame = null;
 let ttWhiteboardMode = "move";
 let ttWhiteboardDrawing = false;
@@ -12799,7 +12799,7 @@ function ttRenderLaser(now = performance.now()) {
   const lifetime = 720;
   ttLaserPoints = ttLaserPoints.filter((point) => now - point.time < lifetime);
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  if (ttLaserPoints.length) {
+  if (ttLaserPoints.length || ttLaserCurrentPoint) {
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -12816,15 +12816,16 @@ function ttRenderLaser(now = performance.now()) {
       ctx.lineTo(to.x, to.y);
       ctx.stroke();
     }
-    const tip = ttLaserPoints.at(-1);
-    const tipAlpha = Math.max(0, 1 - ((now - tip.time) / lifetime));
-    ctx.fillStyle = `rgba(220, 38, 38, ${tipAlpha})`;
-    ctx.beginPath();
-    ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
-    ctx.fill();
+    const tip = ttLaserCurrentPoint;
+    if (tip) {
+      ctx.fillStyle = "rgba(220, 38, 38, 1)";
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
-  if (ttLaserPoints.length || ttLaserDrawing) {
+  if (ttLaserPoints.length) {
     ttLaserFrame = requestAnimationFrame(ttRenderLaser);
   } else {
     ttLaserFrame = null;
@@ -12833,41 +12834,37 @@ function ttRenderLaser(now = performance.now()) {
 
 function ttAddLaserPoint(event) {
   const point = ttCanvasPoint(event);
+  ttLaserCurrentPoint = { x: point.x, y: point.y };
   ttLaserPoints.push({ x: point.x, y: point.y, time: performance.now() });
   if (ttLaserPoints.length > 80) ttLaserPoints.splice(0, ttLaserPoints.length - 80);
   if (!ttLaserFrame) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
 }
 
-function ttLaserStart(event) {
-  if (!ttLaserEnabled || (event.pointerType === "mouse" && event.button !== 0)) return;
-  event.preventDefault();
-  ttLaserDrawing = true;
-  ttAddLaserPoint(event);
-  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
-}
-
 function ttLaserMove(event) {
-  if (!ttLaserEnabled || !ttLaserDrawing) return;
-  event.preventDefault();
+  if (!ttLaserEnabled) return;
   ttAddLaserPoint(event);
 }
 
-function ttLaserEnd(event) {
-  if (!ttLaserDrawing) return;
-  event.preventDefault();
-  ttLaserDrawing = false;
-  ttAddLaserPoint(event);
-  try { event.currentTarget.releasePointerCapture(event.pointerId); } catch {}
+function ttLaserLeave() {
+  if (!ttLaserEnabled) return;
+  ttLaserCurrentPoint = null;
+  ttLaserPoints = [];
+  ttClearCanvas("ttLaserCanvas");
 }
 
-function ttToggleLaser(force = null) {
+function ttToggleLaser(force = null, event = null) {
   ttLaserEnabled = force ?? !ttLaserEnabled;
   if (ttLaserEnabled) {
     if (ttNotesEnabled) ttToggleNotes(false, false);
     ttSetGlobalInkActive(false);
     ttResizeGlobalPresentationCanvases();
+    if (event) ttAddLaserPoint(event);
   } else {
-    ttLaserDrawing = false;
+    ttLaserCurrentPoint = null;
+    ttLaserPoints = [];
+    if (ttLaserFrame) cancelAnimationFrame(ttLaserFrame);
+    ttLaserFrame = null;
+    ttClearCanvas("ttLaserCanvas");
   }
   document.body.classList.toggle("laser-mode", ttLaserEnabled);
   ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
@@ -13426,7 +13423,7 @@ function ttBind() {
   });
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
-  ttById("ttLaserToggle")?.addEventListener("click", () => ttToggleLaser());
+  ttById("ttLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
   ttById("ttGlobalInkToggle")?.addEventListener("click", () => ttToggleGlobalInkPalette());
   ttById("ttGlobalInkClose")?.addEventListener("click", () => ttToggleGlobalInkPalette(false));
   ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));
@@ -13471,11 +13468,9 @@ function ttBind() {
   globalInkCanvas?.addEventListener("pointermove", ttGlobalInkMove);
   globalInkCanvas?.addEventListener("pointerup", ttGlobalInkEnd);
   globalInkCanvas?.addEventListener("pointercancel", ttGlobalInkEnd);
-  const laserCanvas = ttById("ttLaserCanvas");
-  laserCanvas?.addEventListener("pointerdown", ttLaserStart);
-  laserCanvas?.addEventListener("pointermove", ttLaserMove);
-  laserCanvas?.addEventListener("pointerup", ttLaserEnd);
-  laserCanvas?.addEventListener("pointercancel", ttLaserEnd);
+  window.addEventListener("pointermove", ttLaserMove, { passive: true });
+  document.documentElement.addEventListener("pointerleave", ttLaserLeave);
+  window.addEventListener("blur", ttLaserLeave);
   window.addEventListener("resize", () => {
     if (ttNotesEnabled) {
       ttResizeNotesCanvas();
