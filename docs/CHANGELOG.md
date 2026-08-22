@@ -64,3 +64,10 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added an optional native iPad Stage bridge hook while leaving the existing browser presentation and Firebase/student-record formats unchanged.
 - Expanded Follow Lesson with approved student renderers for Section 2/2B built-word cards, the active Section 3 card, and the active Section 5 sentence, plus a manual Cards display for selected Section 7 spelling words.
 - Verified the new card and sentence Stage payloads at projector size, live cross-window switching, and the main V1 page in headless Chrome with no console or page errors.
+
+## 2026-08-22
+
+- Installed Xcode and the iOS platform, enabled Developer Mode on the target iPad, and configured local Personal Team signing without storing the team identifier in Git.
+- Added an isolated, data-free UIKit Stage proof with separate private iPad and noninteractive external-display scenes.
+- Built, signed, installed, and launched the proof on the target non-M1 iPad.
+- Verified the split-display path over AirPlay Screen Mirroring: the iPad retained the teal teacher `A` scene while the Mac receiver displayed the blue student `B` scene after reopening the app with mirroring connected. USB-C/HDMI remains the fallback.

@@ -9,6 +9,11 @@ private-input/*
 # macOS
 .DS_Store
 
+# Xcode per-user state and local build output
+**/xcuserdata/
+**/*.xcuserstate
+DerivedData/
+
 # Local backup files
 Teach Today Local BackUps/
 

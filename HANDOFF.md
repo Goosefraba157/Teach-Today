@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-21
+2026-08-22
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -93,9 +93,11 @@
 - Section 7 still follows to the clean magnetic journal by default. A manual `Cards` Stage choice displays the selected Section 7 spelling word with its card split; selecting another spelling word updates that display immediately.
 - The Stage payload is minimized for projection: it uses a generic Teach Today label and does not include the active student, scoring controls, errors, records, or teacher notes. A dormant `window.webkit.messageHandlers.teachTodayStage` hook is ready for a future native iPad shell; ordinary browsers ignore it.
 - Local browser verification with a synthetic test lesson confirmed Follow transitions for Sections 4, 6, 7, and 8, privacy fallback, manual override, Day 1/Day 2 navigation, and unchanged Present ink/dock layout with no console errors. No Firebase or student-record format changed.
-- Full Xcode is not installed on the current Mac, so the native external-display proof of concept cannot yet be compiled or installed. Command Line Tools alone are insufficient.
+- Full Xcode 26.6 and the iOS 26.5 platform are installed on the current Mac. The target iPad (A16, iPadOS 26.6) has Developer Mode enabled and trusts the local Personal Team profile.
+- Added the isolated `ios/TeachTodayStageProof/` UIKit project. It has separate main and `windowExternalDisplayNonInteractive` scenes, contains no Teach Today/Firebase/student data, compiles for physical iPad, and is installed on the target iPad.
+- Hardware-path proof succeeded over AirPlay Screen Mirroring to the Mac: the iPad retained teal `A / Teacher Screen` while the receiver showed blue `B / Student Stage`. For this tested route, start mirroring and then close/reopen Stage Proof so iPadOS connects the external scene. AirPlay is the preferred classroom path for Newline/Promethean boards; USB-C/HDMI remains the fallback.
 - Until the Firebase revision update is visibly loaded on every open Teach Today tab, use one signed-in browser at a time. After deployment, simultaneous tabs no longer mix chunk JSON; a losing tab will show a refresh-required conflict instead of overwriting newer cloud data.
-- Exact next step: after GitHub Pages publishes, verify the new Section 2/2B cards, Section 3 active card, Section 5 sentence, and manual Section 7 Cards display in Follow Lesson. Then install full Xcode and build a minimal two-color external-display proof of concept on the exact iPad/projector connection before embedding Teach Today or changing any additional Present behavior. Full Xcode is still absent as of 2026-08-21; `xcodebuild` points only to Command Line Tools and no iPhoneOS SDK is available.
+- Exact next step: preserve the successful A/B proof and evolve the native shell incrementally so the iPad main scene hosts the existing V1 teacher experience while the external scene consumes the sanitized Stage payload. Test AirPlay reconnection/foregrounding before classroom use, keep the browser Present/Stage flow working, and do not introduce Firebase or student data into the native proof until the shell boundary is reviewed.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 
