@@ -55,3 +55,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added presentation-wide floating pen/highlighter tools for every lesson section, including color, size, undo, clear, and an interaction mode, while preserving Section 9's independent passage annotation tools.
 - Added a non-persistent presentation laser directly below Notes with a bright red point and short fading tail.
 - Made the presentation laser follow the mouse without clicking and pass all clicks through to the lesson controls beneath it.
+- Prevented moved touch gestures from scrolling Present mode while Laser is active, preserving taps for controls and drags for visible syllable scoops.

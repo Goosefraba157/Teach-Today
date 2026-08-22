@@ -12842,6 +12842,7 @@ function ttAddLaserPoint(event) {
 
 function ttLaserMove(event) {
   if (!ttLaserEnabled) return;
+  if (event.pointerType === "touch" && event.cancelable) event.preventDefault();
   ttAddLaserPoint(event);
 }
 
@@ -13468,7 +13469,7 @@ function ttBind() {
   globalInkCanvas?.addEventListener("pointermove", ttGlobalInkMove);
   globalInkCanvas?.addEventListener("pointerup", ttGlobalInkEnd);
   globalInkCanvas?.addEventListener("pointercancel", ttGlobalInkEnd);
-  window.addEventListener("pointermove", ttLaserMove, { passive: true });
+  window.addEventListener("pointermove", ttLaserMove, { passive: false });
   document.documentElement.addEventListener("pointerleave", ttLaserLeave);
   window.addEventListener("blur", ttLaserLeave);
   window.addEventListener("resize", () => {
