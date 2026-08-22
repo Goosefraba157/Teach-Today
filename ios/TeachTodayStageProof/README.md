@@ -10,7 +10,7 @@ This project wraps the hosted V1 teacher app in an iPad `WKWebView` and renders 
 - `Mirror Teacher` can deliberately show the exact teacher webview on the connected display for live modeling. It requires a privacy warning, keeps no frame history, and ends whenever a Stage choice is selected or the app leaves the foreground.
 - The shell contains no Firebase configuration, credentials, roster, student result, or lesson-record code. Firebase remains owned by the hosted V1 app.
 
-Open `TeachTodayStageProof.xcodeproj`, choose a Personal Team under Signing & Capabilities, select the connected iPad, and run. The Personal Team stays in local Xcode settings and is not committed.
+Open `TeachTodayStageProof.xcodeproj`, choose a Personal Team under Signing & Capabilities, select the connected iPad, and run. Approve the macOS Keychain prompt if the development certificate requests signing-key access. The Personal Team stays in local Xcode settings and is not committed.
 
 The browser-based Present and Student Stage flow remains unchanged. Inside the native shell, the existing Stage `Follow Lesson` control drives the external scene without opening a second teacher-facing window. `Mirror Teacher` is shown only in the native shell.
 
