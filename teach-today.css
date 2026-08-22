@@ -1376,10 +1376,6 @@ body.presentation-mode.laser-mode * {
   cursor: none !important;
 }
 
-body.presentation-mode.laser-mode {
-  touch-action: none;
-}
-
 .global-ink-palette {
   position: fixed;
   left: 8px;

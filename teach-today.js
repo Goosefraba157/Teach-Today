@@ -12842,7 +12842,8 @@ function ttAddLaserPoint(event) {
 
 function ttLaserMove(event) {
   if (!ttLaserEnabled) return;
-  if (event.pointerType === "touch" && event.cancelable) event.preventDefault();
+  if (event.pointerType === "touch") return;
+  if (event.pointerType === "pen" && event.cancelable) event.preventDefault();
   ttAddLaserPoint(event);
 }
 

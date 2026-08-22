@@ -56,3 +56,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added a non-persistent presentation laser directly below Notes with a bright red point and short fading tail.
 - Made the presentation laser follow the mouse without clicking and pass all clicks through to the lesson controls beneath it.
 - Prevented moved touch gestures from scrolling Present mode while Laser is active, preserving taps for controls and drags for visible syllable scoops.
+- Refined Laser input for stylus teaching: finger gestures scroll the lesson while mouse/stylus movement controls the laser, so Laser can remain enabled during navigation.
