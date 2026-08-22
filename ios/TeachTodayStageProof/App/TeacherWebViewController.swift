@@ -239,6 +239,31 @@ extension TeacherWebViewController: WKScriptMessageHandler {
 extension TeacherWebViewController: WKUIDelegate {
     func webView(
         _ webView: WKWebView,
+        runJavaScriptConfirmPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        guard frame.isMainFrame,
+              TeachTodayWeb.isTrustedAppURL(frame.request.url),
+              viewIfLoaded?.window != nil,
+              presentedViewController == nil
+        else {
+            completionHandler(false)
+            return
+        }
+
+        let alert = UIAlertController(title: "Confirm", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+            completionHandler(false)
+        })
+        alert.addAction(UIAlertAction(title: "Continue", style: .default) { _ in
+            completionHandler(true)
+        })
+        present(alert, animated: true)
+    }
+
+    func webView(
+        _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures

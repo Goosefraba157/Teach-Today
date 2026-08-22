@@ -80,3 +80,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added a native-only, confirmation-gated Mirror Teacher mode that projects transient snapshots of the exact teacher webview for sections that need live modeling, without storing frames or changing browser presentation behavior.
 - Kept sanitized Stage as the default and made every Stage selection, app background transition, and web-process restart end teacher mirroring immediately.
 - Hid Mirror Teacher unless the matching native projection bridge is present, preventing older installed shell builds from showing a control they cannot execute.
+- Added trusted-origin JavaScript confirmation handling to the native teacher webview so approving the Mirror Teacher privacy warning actually activates projection; untrusted and subframe dialogs fail closed.
