@@ -57,3 +57,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Made the presentation laser follow the mouse without clicking and pass all clicks through to the lesson controls beneath it.
 - Prevented moved touch gestures from scrolling Present mode while Laser is active, preserving taps for controls and drags for visible syllable scoops.
 - Refined Laser input for stylus teaching: finger gestures scroll the lesson while mouse/stylus movement controls the laser, so Laser can remain enabled during navigation.
+- Added an explicit Laser Scoop/Scroll mode for generic capacitive styluses that iPad reports as touch; Scoop captures their movement and Scroll restores page navigation without disabling Laser.

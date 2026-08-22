@@ -25,6 +25,7 @@ let ttGlobalInkState = {
   activeStroke: null
 };
 let ttLaserEnabled = false;
+let ttLaserTouchMode = "scoop";
 let ttLaserPoints = [];
 let ttLaserCurrentPoint = null;
 let ttLaserFrame = null;
@@ -12842,8 +12843,8 @@ function ttAddLaserPoint(event) {
 
 function ttLaserMove(event) {
   if (!ttLaserEnabled) return;
-  if (event.pointerType === "touch") return;
-  if (event.pointerType === "pen" && event.cancelable) event.preventDefault();
+  if (event.pointerType === "touch" && ttLaserTouchMode !== "scoop") return;
+  if ((event.pointerType === "touch" || event.pointerType === "pen") && event.cancelable) event.preventDefault();
   ttAddLaserPoint(event);
 }
 
@@ -12852,6 +12853,21 @@ function ttLaserLeave() {
   ttLaserCurrentPoint = null;
   ttLaserPoints = [];
   ttClearCanvas("ttLaserCanvas");
+}
+
+function ttSetLaserTouchMode(mode) {
+  ttLaserTouchMode = mode === "scroll" ? "scroll" : "scoop";
+  const scoopMode = ttLaserTouchMode === "scoop";
+  document.body.classList.toggle("laser-scoop-mode", ttLaserEnabled && scoopMode);
+  const button = ttById("ttLaserInputMode");
+  if (button) {
+    button.textContent = scoopMode ? "Scoop" : "Scroll";
+    button.title = scoopMode
+      ? "Laser captures touch gestures for scooping"
+      : "Finger and touch stylus gestures scroll the lesson";
+    button.setAttribute("aria-pressed", String(scoopMode));
+    button.classList.toggle("active", scoopMode);
+  }
 }
 
 function ttToggleLaser(force = null, event = null) {
@@ -12869,6 +12885,7 @@ function ttToggleLaser(force = null, event = null) {
     ttClearCanvas("ttLaserCanvas");
   }
   document.body.classList.toggle("laser-mode", ttLaserEnabled);
+  ttSetLaserTouchMode(ttLaserTouchMode);
   ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
   ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
@@ -13426,6 +13443,9 @@ function ttBind() {
   ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
   ttById("ttLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
+  ttById("ttLaserInputMode")?.addEventListener("click", () => {
+    ttSetLaserTouchMode(ttLaserTouchMode === "scoop" ? "scroll" : "scoop");
+  });
   ttById("ttGlobalInkToggle")?.addEventListener("click", () => ttToggleGlobalInkPalette());
   ttById("ttGlobalInkClose")?.addEventListener("click", () => ttToggleGlobalInkPalette(false));
   ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));

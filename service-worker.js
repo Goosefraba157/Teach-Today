@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-21-laser-stylus-4";
+const CACHE_NAME = "teach-today-offline-v2026-08-21-laser-modes-5";
 
 const APP_SHELL = [
   "./",

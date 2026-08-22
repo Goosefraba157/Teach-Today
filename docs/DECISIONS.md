@@ -16,7 +16,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Layout:** The regular teaching workspace should use available laptop and desktop width responsively, while Section 9 may remain wider for passage reading and mobile screens retain compact gutters.
 - **45+45 parity:** Section 2B uses its own Day 2 word-building deck and interaction state, mirroring the essential Section 2 student display without sharing or overwriting Day 1 navigation.
 - **Presentation-wide ink:** Present mode may provide one session-only annotation layer across all lesson sections. Its marks must clear when Present mode ends and must remain separate from Section 9's specialized passage annotation canvas and saved passage state.
-- **Laser pointer:** The presentation laser is a passive, transient red pointer that follows mouse or stylus movement without requiring a click, leaves a fading trail, and preserves normal taps/clicks. With Laser active, finger gestures remain available for page scrolling while stylus movement controls the pointer for scooping. It is never persisted, exported, or treated as student/lesson evidence.
+- **Laser pointer:** The presentation laser is a passive, transient red pointer with a fading trail that preserves normal taps/clicks. Because generic iPad styluses may be reported as ordinary touch, Laser exposes explicit `Scoop` and `Scroll` modes: Scoop captures all touch movement for pointing, while Scroll restores touch page navigation without requiring Laser to be turned off. It is never persisted, exported, or treated as student/lesson evidence.
 
 ## Lesson planning defaults
 
