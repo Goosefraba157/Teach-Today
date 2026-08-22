@@ -81,3 +81,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Kept sanitized Stage as the default and made every Stage selection, app background transition, and web-process restart end teacher mirroring immediately.
 - Hid Mirror Teacher unless the matching native projection bridge is present, preventing older installed shell builds from showing a control they cannot execute.
 - Added trusted-origin JavaScript confirmation handling to the native teacher webview so approving the Mirror Teacher privacy warning actually activates projection; untrusted and subframe dialogs fail closed.
+- Compiled, signed, installed, and launched the corrected confirmation-handler build on the connected iPad for hardware Mirror testing.
