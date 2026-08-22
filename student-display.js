@@ -154,6 +154,59 @@ function renderHfw(payload) {
   `);
 }
 
+function renderSoundReference(payload) {
+  const groups = (payload.soundReference?.groups || []).filter((group) => group.items?.length);
+  return renderShell(payload, "Sound Reference", `
+    <article class="sound-reference-stage">
+      ${groups.map((group) => `
+        <section class="sound-reference-group">
+          <h2>${escapeHtml(group.title)}</h2>
+          <div class="sound-reference-row">
+            ${group.items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </article>
+  `, "Section 6");
+}
+
+function renderJournal(payload) {
+  const consonants = "bcdfghjklmnpqrstvwxyz".split("");
+  const vowels = "aeiou".split("");
+  return renderShell(payload, "Magnetic Journal", `
+    <article class="journal-stage">
+      <p>${escapeHtml(payload.journal?.prompt || "Build the word your teacher dictates.")}</p>
+      <div class="journal-workspace" aria-label="Magnetic journal workspace">
+        ${Array.from({ length: 8 }, () => `<span></span>`).join("")}
+      </div>
+      <div class="journal-tile-bank" aria-label="Letter tiles">
+        <div class="journal-tile-row consonants">
+          ${consonants.map((letter) => `<span>${letter}</span>`).join("")}
+        </div>
+        <div class="journal-tile-row vowels">
+          ${vowels.map((letter) => `<span>${letter}</span>`).join("")}
+        </div>
+      </div>
+    </article>
+  `, "Section 7");
+}
+
+function renderDictationPaper(payload) {
+  const rows = (count) => Array.from({ length: count }, (_, index) => `
+    <div class="dictation-line"><span>${index + 1}</span></div>
+  `).join("");
+  return renderShell(payload, "Dictation Paper", `
+    <article class="dictation-paper-stage">
+      <p>${escapeHtml(payload.dictationPaper?.prompt || "Listen, repeat, tap the sounds, and write.")}</p>
+      <div class="dictation-paper">
+        <section><h2>Sounds</h2>${rows(5)}</section>
+        <section><h2>Words</h2>${rows(5)}</section>
+        <section class="dictation-sentences"><h2>Sentences</h2>${rows(3)}</section>
+      </div>
+    </article>
+  `, "Section 8");
+}
+
 function renderChart(payload) {
   const chart = payload.chart || {};
   const hasChartWords = []
@@ -244,6 +297,9 @@ function render(payload) {
   if (payload.mode === "poster") root.innerHTML = renderPoster(payload);
   else if (payload.mode === "hfw") root.innerHTML = renderHfw(payload);
   else if (payload.mode === "chart") root.innerHTML = renderChart(payload);
+  else if (payload.mode === "sounds") root.innerHTML = renderSoundReference(payload);
+  else if (payload.mode === "journal") root.innerHTML = renderJournal(payload);
+  else if (payload.mode === "dictation-paper") root.innerHTML = renderDictationPaper(payload);
   else if (payload.mode === "passage") root.innerHTML = renderPassage(payload);
   else if (payload.mode === "game") root.innerHTML = renderGame(payload);
   else root.innerHTML = renderPrivate(payload);
@@ -295,11 +351,14 @@ function payloadInkKey(payload) {
   if (payload.mode === "passage" && payload.passagePdf?.passageId) return `passage:${payload.passagePdf.passageId}`;
   if (payload.mode === "poster" && payload.poster?.src) return `poster:${payload.poster.src}`;
   if (payload.mode === "hfw") return `hfw:${payload.substep || ""}:${(payload.highFrequencyWords || []).join("|")}`;
+  if (payload.mode === "sounds") return payload.soundReference?.key || `sounds:${payload.substep || ""}`;
+  if (payload.mode === "journal") return payload.journal?.key || `journal:${payload.lessonId || payload.substep || "current"}`;
+  if (payload.mode === "dictation-paper") return payload.dictationPaper?.key || `dictation:${payload.lessonId || payload.substep || "current"}`;
   return `${payload.mode || "stage"}:${payload.lessonId || payload.substep || payload.groupName || "current"}`;
 }
 
 function stageSupportsInk(payload) {
-  return ["poster", "hfw", "chart", "passage"].includes(payload?.mode);
+  return ["poster", "hfw", "chart", "sounds", "journal", "dictation-paper", "passage"].includes(payload?.mode);
 }
 
 function readStoredPayload() {

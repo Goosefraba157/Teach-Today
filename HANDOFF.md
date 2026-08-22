@@ -42,7 +42,7 @@
 - Extract only the necessary fields, preview matches/counts, write only to the authorized private destination, and never commit source student records.
 
 ## Current Baseline (as of 2026-06-08 Codex session)
-- **Student display** — privacy, poster, HFW, passage, and game modes; teacher can open/project from toolbar and presentation dock
+- **Student display** — manual privacy/poster/HFW/chart/passage/game modes plus Follow Lesson and student-safe Section 6 sound reference, Section 7 magnetic journal, and Section 8 dictation paper
 - **PDF reference page** — Wilson Readers and Dictation books with dashboard links to current reader/charting and dictation pages
 - **Lesson launch** — "Lesson ready" overlay, smoother home-to-teaching-mode handoff
 - **Card navigation** — counts for Section 2 word cards and Section 7 HFW
@@ -88,8 +88,12 @@
 - A `Laser` control now sits directly below Notes in the presentation dock. The bright red point follows pointer movement, leaves a short fading tail, and allows normal clicks on lesson buttons because its canvas is visual-only. When Laser is active, a small mode control defaults to `Scoop`, capturing all touch-style styluses without scrolling; switching it to `Scroll` restores finger/passive-stylus page scrolling without turning Laser off. This explicit fallback is required because iPad browsers report many generic capacitive styluses as ordinary touch. Laser never enters lesson records or permanent annotation state. Notes, laser, and active global ink are mutually exclusive.
 - Section 9's existing passage-specific Pen/Highlighter canvas and controls remain unchanged and independent from the new presentation-wide ink layer.
 - On wide or zoomed-out screens, the always-visible Ink palette and right presentation dock are anchored just outside the centered 1480px lesson workspace rather than drifting to the browser edges. Narrow screens retain safe viewport-edge fallbacks.
+- Stage now has an additive `Follow Lesson` mode that tracks the visible Present section without rerendering the teacher page. Section 4 projects only the clean charting wordlist, Section 6 a sound reference, Section 7 a blank magnetic journal, Section 8 clean dictation paper, and Section 9 the passage; sections without an approved student renderer fail closed to the neutral privacy screen. Manual Stage choices remain overrides.
+- The Stage payload is minimized for projection: it uses a generic Teach Today label and does not include the active student, scoring controls, errors, records, or teacher notes. A dormant `window.webkit.messageHandlers.teachTodayStage` hook is ready for a future native iPad shell; ordinary browsers ignore it.
+- Local browser verification with a synthetic test lesson confirmed Follow transitions for Sections 4, 6, 7, and 8, privacy fallback, manual override, Day 1/Day 2 navigation, and unchanged Present ink/dock layout with no console errors. No Firebase or student-record format changed.
+- Full Xcode is not installed on the current Mac, so the native external-display proof of concept cannot yet be compiled or installed. Command Line Tools alone are insufficient.
 - Until the Firebase revision update is visibly loaded on every open Teach Today tab, use one signed-in browser at a time. After deployment, simultaneous tabs no longer mix chunk JSON; a losing tab will show a refresh-required conflict instead of overwriting newer cloud data.
-- Exact next step: after GitHub Pages publishes, refresh the hosted app and verify Present mode Ink and Laser with a mouse and touch/stylus across several sections, then confirm Section 9's original annotation tools still work independently. Also finish the hosted Demo Group checks for Recommended Plan, Customize, Redo Charting Page, and two-browser Firebase stability.
+- Exact next step: after GitHub Pages publishes, verify Follow Lesson with the Demo Group in the hosted app. Then install full Xcode and build a minimal two-color external-display proof of concept on the exact iPad/projector connection before embedding Teach Today or changing any additional Present behavior.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 

@@ -59,3 +59,6 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Refined Laser input for stylus teaching: finger gestures scroll the lesson while mouse/stylus movement controls the laser, so Laser can remain enabled during navigation.
 - Added an explicit Laser Scoop/Scroll mode for generic capacitive styluses that iPad reports as touch; Scoop captures their movement and Scroll restores page navigation without disabling Laser.
 - Made the presentation Ink palette always visible in arrow/interact mode, retired the redundant visible Notes and Ink-toggle controls, and anchored both floating toolbars beside the centered lesson workspace on wide screens.
+- Added a privacy-first Follow Lesson mode to Student Stage. It follows the visible Present section without refreshing the teacher page, preserves all manual Stage overrides, and falls back to a neutral screen when a section has no approved student renderer.
+- Added separate student-facing Stage renderers for Section 6 sound reference, Section 7 magnetic journal, and Section 8 dictation paper; Section 4 continues to project only its clean charting wordlist.
+- Added an optional native iPad Stage bridge hook while leaving the existing browser presentation and Firebase/student-record formats unchanged.

@@ -78,6 +78,8 @@ let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
 const ttStudentDisplayChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayStudentDisplay.v1") : null;
 let ttStudentDisplayScreens = [];
+let ttStudentDisplayFollowFrame = null;
+let ttStudentDisplayFollowKey = "";
 const ttPaceGuideLessonMsFull = 60 * 60 * 1000;
 const ttPaceGuideLessonMsPart = 45 * 60 * 1000;
 function ttPaceGuideLessonMs() {
@@ -2875,25 +2877,96 @@ function ttRender() {
   ttSyncStudentDisplay();
 }
 
+function ttStudentDisplayCurrentSectionId() {
+  if (document.body.classList.contains("home-mode")) return "";
+  return ttCurrentPaceSectionId();
+}
+
+function ttStudentDisplayFollowResolution(sectionId) {
+  const modes = {
+    section1: "poster",
+    section1b: "poster",
+    section4: "chart",
+    section6: "sounds",
+    section7: "journal",
+    section8: "dictation-paper",
+    section9: "passage"
+  };
+  return modes[sectionId] || "private";
+}
+
+function ttStudentDisplaySectionLabel(sectionId) {
+  const labels = {
+    section1: "Section 1",
+    section1b: "Section 1B",
+    section2: "Section 2",
+    section2b: "Section 2B",
+    section3: "Section 3",
+    section4: "Section 4",
+    section5: "Section 5",
+    section6: "Section 6",
+    section7: "Section 7",
+    section8: "Section 8",
+    section9: "Section 9",
+    section10: "Section 10"
+  };
+  return labels[sectionId] || "Lesson";
+}
+
+function ttStudentDisplaySoundReferencePayload(skill) {
+  return {
+    key: `sounds-${skill.id}`,
+    groups: [
+      { title: "Vowels", items: vowelSoundList(skill.id) },
+      { title: "Consonants", items: consonantSoundList(skill.id) },
+      {
+        title: "Welded / glued sounds",
+        items: knownWeldedAndExceptions
+          .filter(([introduced]) => isAtLeastSubstep(skill.id, introduced))
+          .map(([, value]) => value)
+      },
+      { title: "Word elements", items: wordElementList(skill.id) }
+    ].map((group) => ({
+      title: group.title,
+      items: [...new Set(group.items)].filter(Boolean).slice(0, 36)
+    }))
+  };
+}
+
 function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const group = ttActiveGroup();
   const lesson = ttLesson || ttBuildLesson();
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+  const displayMode = mode || "private";
+  const sourceSection = displayMode === "follow" ? ttStudentDisplayCurrentSectionId() : "";
+  const resolvedMode = displayMode === "follow" ? ttStudentDisplayFollowResolution(sourceSection) : displayMode;
   const poster = ttSection1PhotoForSubstep(skill.id);
   const hfwWords = hfwWordsForSubstep(skill.id, lesson).filter(Boolean).slice(0, 12);
   const passage = ttPassageById(lesson.section9Story?.passageId);
   const passageText = lesson.passage || `Use Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"} for Section #9.`;
   return {
-    mode,
+    mode: resolvedMode,
+    displayMode,
+    sourceSection,
+    sectionLabel: ttStudentDisplaySectionLabel(sourceSection),
     updatedAt: new Date().toISOString(),
     lessonId: lesson.id || "",
-    groupName: group.name || "Group",
+    groupName: "Teach Today",
     substep: skill.id,
     skillTitle: skill.title || "",
     poster,
     highFrequencyWords: hfwWords,
     notebookSentence: "Copy the sentence your teacher gives you.",
     chart: ttStudentDisplayChartPayload(lesson, skill),
+    soundReference: ttStudentDisplaySoundReferencePayload(skill),
+    journal: {
+      key: `journal-${lesson.id || skill.id}`,
+      prompt: "Build the word your teacher dictates."
+    },
+    dictationPaper: {
+      key: `dictation-${lesson.id || skill.id}`,
+      prompt: "Listen, repeat, tap the sounds, and write."
+    },
     passageTitle: passage ? ttPassageLabel(passage) : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
     passageText,
     passagePdf: lesson.section9Story || null,
@@ -3470,13 +3543,19 @@ function ttRedrawPassageInk(extraStroke = null) {
 }
 
 function ttSendStudentDisplay(payload = ttStudentDisplayPayload()) {
+  const displayMode = payload.displayMode || payload.mode || "private";
   localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
-  localStorage.setItem("teachToday.studentDisplayMode", payload.mode);
+  localStorage.setItem("teachToday.studentDisplayMode", displayMode);
   ttStudentDisplayChannel?.postMessage(payload);
   if (ttStudentDisplayWindow && !ttStudentDisplayWindow.closed) {
     ttStudentDisplayWindow.postMessage({ type: "teachTodayStudentDisplay", payload }, window.location.origin);
   }
-  ttUpdateStudentDisplayStatus(payload.mode);
+  try {
+    window.webkit?.messageHandlers?.teachTodayStage?.postMessage(payload);
+  } catch {
+    /* The native Stage bridge is optional in ordinary browsers. */
+  }
+  ttUpdateStudentDisplayStatus(displayMode, payload);
 }
 
 function ttStudentDisplayWindowFeatures(screen = null) {
@@ -3501,6 +3580,7 @@ function ttOpenStudentDisplay(mode = ttStudentDisplayMode, options = {}) {
 
 function ttSetStudentDisplayMode(mode) {
   ttStudentDisplayMode = mode || "private";
+  ttStudentDisplayFollowKey = "";
   if (!ttStudentDisplayWindow || ttStudentDisplayWindow.closed) {
     ttOpenStudentDisplay(ttStudentDisplayMode);
     return;
@@ -3512,7 +3592,45 @@ function ttSyncStudentDisplay() {
   const payload = ttStudentDisplayPayload(ttStudentDisplayMode);
   localStorage.setItem(ttStudentDisplayStorageKey, JSON.stringify(payload));
   if (ttStudentDisplayWindow && !ttStudentDisplayWindow.closed) ttSendStudentDisplay(payload);
-  else ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
+  else {
+    try {
+      window.webkit?.messageHandlers?.teachTodayStage?.postMessage(payload);
+    } catch {
+      /* The native Stage bridge is optional in ordinary browsers. */
+    }
+    ttUpdateStudentDisplayStatus(ttStudentDisplayMode, payload);
+  }
+}
+
+function ttStudentDisplayFollowSignature(payload) {
+  return [
+    payload.lessonId,
+    payload.sourceSection,
+    payload.mode,
+    payload.substep,
+    payload.chart?.key,
+    payload.soundReference?.key,
+    payload.journal?.key,
+    payload.dictationPaper?.key,
+    payload.passagePdf?.passageId
+  ].filter(Boolean).join("|");
+}
+
+function ttSyncFollowingStudentDisplay({ force = false } = {}) {
+  if (ttStudentDisplayMode !== "follow") return;
+  const payload = ttStudentDisplayPayload("follow");
+  const signature = ttStudentDisplayFollowSignature(payload);
+  if (!force && signature === ttStudentDisplayFollowKey) return;
+  ttStudentDisplayFollowKey = signature;
+  ttSendStudentDisplay(payload);
+}
+
+function ttQueueStudentDisplayFollowSync() {
+  if (ttStudentDisplayMode !== "follow" || ttStudentDisplayFollowFrame) return;
+  ttStudentDisplayFollowFrame = requestAnimationFrame(() => {
+    ttStudentDisplayFollowFrame = null;
+    ttSyncFollowingStudentDisplay();
+  });
 }
 
 function ttShowGroupDayPicker(group, callback) {
@@ -3632,17 +3750,24 @@ function ttToggleSectionDone(sectionId) {
   ttRenderLessonIdentity();
 }
 
-function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode) {
+function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode, payload = null) {
   const status = ttById("ttDisplayStatus");
   const labels = {
+    follow: "Following the lesson",
     private: "Privacy screen ready",
     poster: "Showing Section 1 poster",
     hfw: "Showing high-frequency words",
     chart: "Showing Section 4 chart",
+    sounds: "Showing sound reference",
+    journal: "Showing magnetic journal",
+    "dictation-paper": "Showing dictation paper",
     passage: "Showing Section 9 passage",
     game: "Showing game hub"
   };
-  if (status) status.textContent = labels[mode] || "Student display ready";
+  const followStatus = mode === "follow" && payload?.sourceSection
+    ? `Following ${payload.sectionLabel}: ${labels[payload.mode] || "student-safe display"}`
+    : "";
+  if (status) status.textContent = followStatus || labels[mode] || "Student display ready";
   ttById("ttDisplayPanel")?.querySelectorAll("[data-display-mode]").forEach((button) => {
     button.classList.toggle("active", button.dataset.displayMode === mode);
   });
@@ -12461,6 +12586,7 @@ function ttGoToTeachingSection(direction) {
   ttPaceGuideState.activeSectionId = targetId;
   ttPaceGuideState.sectionStartedAt = Date.now();
   ttUpdatePaceGuide();
+  ttQueueStudentDisplayFollowSync();
 }
 
 function ttSetPaceGuideLine(line, progressLeft) {
@@ -12527,6 +12653,7 @@ async function ttTogglePresentation(force = null, options = {}) {
     ttToggleGlobalInkPalette(true);
     ttSetGlobalInkActive(false);
     requestAnimationFrame(ttResizeGlobalPresentationCanvases);
+    requestAnimationFrame(() => ttSyncFollowingStudentDisplay({ force: true }));
   } else {
     ttTogglePresentDisplayTray(false);
     ttToggleGlobalInkPalette(false);
@@ -12538,6 +12665,8 @@ async function ttTogglePresentation(force = null, options = {}) {
       clearTimeout(ttPresentationMenuTimer);
       ttPresentationMenuTimer = null;
     }
+    ttStudentDisplayFollowKey = "";
+    ttSyncFollowingStudentDisplay({ force: true });
   }
   const button = ttById("ttPresent");
   if (button) button.textContent = shouldPresent ? "Exit" : "Present";
@@ -13799,6 +13928,8 @@ ttInitFirebaseSync();
 ttInitConnectionMonitor();
 ttBind();
 window.addEventListener("beforeunload", ttFinalizeActivePassageStroke);
+window.addEventListener("scroll", ttQueueStudentDisplayFollowSync, { passive: true });
+window.addEventListener("resize", ttQueueStudentDisplayFollowSync, { passive: true });
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
 ttHandleDeveloperRoute();
