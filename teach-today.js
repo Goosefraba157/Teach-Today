@@ -3614,7 +3614,8 @@ function ttSendStudentDisplay(payload = ttStudentDisplayPayload()) {
 }
 
 function ttIsNativeIpadShell() {
-  return document.documentElement.dataset.teachTodayNative === "ipad";
+  return document.documentElement.dataset.teachTodayNative === "ipad"
+    && Boolean(window.webkit?.messageHandlers?.teachTodayProjectionMode);
 }
 
 function ttSetNativeProjectionMode(mode = "stage") {
