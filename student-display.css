@@ -233,6 +233,8 @@ body.stage-inking .stage-ink-canvas {
 }
 
 .privacy-stage,
+.cards-stage,
+.sentence-stage,
 .hfw-stage,
 .poster-stage,
 .passage-stage,
@@ -247,6 +249,100 @@ body.stage-inking .stage-ink-canvas {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 22px 70px rgba(15, 23, 42, 0.12);
+}
+
+.cards-stage,
+.sentence-stage {
+  align-content: center;
+  gap: clamp(18px, 3vw, 40px);
+  padding: clamp(22px, 4vw, 64px);
+  text-align: center;
+}
+
+.stage-build-cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: center;
+  gap: clamp(8px, 1.2vw, 18px);
+  width: min(1320px, 100%);
+  border-bottom: clamp(5px, 0.5vw, 8px) solid #475569;
+  padding: 0 clamp(12px, 2vw, 30px);
+}
+
+.stage-build-card {
+  display: grid;
+  min-width: clamp(82px, 10vw, 156px);
+  min-height: clamp(112px, 14vw, 220px);
+  place-items: center;
+  border: 2px solid #e5b82e;
+  border-radius: 7px 7px 2px 2px;
+  padding: clamp(8px, 1.4vw, 20px);
+  background: #fde68a;
+  color: #111827;
+  font-family: Georgia, serif;
+  font-size: clamp(46px, 8vw, 118px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stage-build-card.vowel {
+  border-color: #e89d96;
+  background: #fecaca;
+}
+
+.stage-build-card.welded,
+.stage-build-card.glued {
+  border-color: #86b97b;
+  background: #d9efc8;
+}
+
+.stage-build-card.prefix,
+.stage-build-card.suffix,
+.stage-build-card.affix {
+  background: #facc15;
+}
+
+.stage-single-card {
+  display: grid;
+  width: min(1050px, 88%);
+  min-height: clamp(300px, 44vh, 620px);
+  place-items: center;
+  border-left: clamp(18px, 2vw, 32px) solid #f97316;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.13);
+  color: #111827;
+  font-family: Georgia, serif;
+  font-size: clamp(72px, 13vw, 190px);
+  line-height: 1;
+}
+
+.stage-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 20px;
+  color: #475569;
+  font-size: clamp(18px, 2vw, 30px);
+}
+
+.stage-card-meta strong {
+  color: #0f172a;
+  font-size: 1.35em;
+}
+
+.stage-card-meta em {
+  font-style: normal;
+  font-weight: 800;
+}
+
+.sentence-stage p {
+  max-width: 1480px;
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(48px, 7vw, 108px);
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .sound-reference-stage {

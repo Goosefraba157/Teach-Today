@@ -2886,13 +2886,63 @@ function ttStudentDisplayFollowResolution(sectionId) {
   const modes = {
     section1: "poster",
     section1b: "poster",
+    section2: "cards",
+    section2b: "cards",
+    section3: "cards",
     section4: "chart",
+    section5: "sentence",
     section6: "sounds",
     section7: "journal",
     section8: "dictation-paper",
     section9: "passage"
   };
   return modes[sectionId] || "private";
+}
+
+function ttStudentDisplayCardPayload(sectionId, lesson, skill) {
+  const stageSection = sectionId || ttStudentDisplayCurrentSectionId();
+  if (stageSection === "section2" || stageSection === "section2b") {
+    const isDay2 = stageSection === "section2b";
+    const word = isDay2 ? ttSection2BWord : ttSection2Word;
+    const cards = word ? section2CardsForWord(word, skill.id) : null;
+    return {
+      key: `${stageSection}-${lesson.id || skill.id}-${word || "empty"}`,
+      sectionLabel: ttStudentDisplaySectionLabel(stageSection),
+      word,
+      label: isDay2 ? "Day 2 word building" : "Word building",
+      position: isDay2
+        ? `${ttSection2BIndex + 1} of ${ttSection2BDeck.length}`
+        : `${ttSection2Index + 1} of ${ttSection2Deck.length}`,
+      items: (cards?.items || []).map((item) => ({
+        text: section2DisplayCardText(item),
+        type: item.type || "syllable"
+      }))
+    };
+  }
+  if (stageSection === "section7") {
+    const word = document.querySelector("#ttPart7WordCards .section7-word-card.selected-display-word")?.dataset.word || "";
+    const cards = word ? section2CardsForWord(word, skill.id) : null;
+    return {
+      key: `section7-${lesson.id || skill.id}-${word || "empty"}`,
+      sectionLabel: "Section 7",
+      word,
+      label: "Spelling word cards",
+      position: "",
+      items: (cards?.items || []).map((item) => ({
+        text: section2DisplayCardText(item),
+        type: item.type || "syllable"
+      }))
+    };
+  }
+  const card = ttCardDeck[ttCardIndex] || {};
+  return {
+    key: `section3-${lesson.id || skill.id}-${ttCardMode}-${ttCardIndex}-${card.word || "empty"}`,
+    sectionLabel: "Section 3",
+    word: card.word || "",
+    label: card.typeLabel || card.label || "Word card",
+    position: ttCardDeck.length ? `${ttCardIndex + 1} of ${ttCardDeck.length}` : "",
+    items: []
+  };
 }
 
 function ttStudentDisplaySectionLabel(sectionId) {
@@ -2938,7 +2988,9 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const lesson = ttLesson || ttBuildLesson();
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const displayMode = mode || "private";
-  const sourceSection = displayMode === "follow" ? ttStudentDisplayCurrentSectionId() : "";
+  const sourceSection = displayMode === "follow" || displayMode === "cards"
+    ? ttStudentDisplayCurrentSectionId()
+    : "";
   const resolvedMode = displayMode === "follow" ? ttStudentDisplayFollowResolution(sourceSection) : displayMode;
   const poster = ttSection1PhotoForSubstep(skill.id);
   const hfwWords = hfwWordsForSubstep(skill.id, lesson).filter(Boolean).slice(0, 12);
@@ -2955,7 +3007,9 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
     substep: skill.id,
     skillTitle: skill.title || "",
     poster,
+    cardDisplay: ttStudentDisplayCardPayload(sourceSection, lesson, skill),
     highFrequencyWords: hfwWords,
+    sentence: ttById("ttSentenceDisplay")?.querySelector("p")?.textContent || lesson.readerSentences?.[0] || "",
     notebookSentence: "Copy the sentence your teacher gives you.",
     chart: ttStudentDisplayChartPayload(lesson, skill),
     soundReference: ttStudentDisplaySoundReferencePayload(skill),
@@ -3608,6 +3662,8 @@ function ttStudentDisplayFollowSignature(payload) {
     payload.sourceSection,
     payload.mode,
     payload.substep,
+    payload.cardDisplay?.key,
+    payload.sentence,
     payload.chart?.key,
     payload.soundReference?.key,
     payload.journal?.key,
@@ -3756,7 +3812,9 @@ function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode, payload = nul
     follow: "Following the lesson",
     private: "Privacy screen ready",
     poster: "Showing Section 1 poster",
+    cards: "Showing lesson cards",
     hfw: "Showing high-frequency words",
+    sentence: "Showing Section 5 sentence",
     chart: "Showing Section 4 chart",
     sounds: "Showing sound reference",
     journal: "Showing magnetic journal",
@@ -8546,6 +8604,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
     ttRenderSection2BCount();
     hint.textContent = "One-syllable words show sound cards. Multisyllabic words show syllable cards.";
     ttRenderMarkedWords();
+    ttSyncFollowingStudentDisplay({ force: true });
     return;
   }
   const cards = section2CardsForWord(word, substep);
@@ -8567,6 +8626,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
     : "Syllable / word-part cards: bright yellow affixes and white syllable or Latin-base cards.";
   ttRenderSection2BCount();
   ttRenderMarkedWords();
+  ttSyncFollowingStudentDisplay({ force: true });
 }
 
 function ttRenderSection2BCount() {
@@ -8918,6 +8978,7 @@ function ttShowCard(index) {
     ttById("ttCardLabel").textContent = "";
     ttById("ttCardDisplay").dataset.type = "";
     ttById("ttCardCount").textContent = "0 of 0";
+    ttSyncFollowingStudentDisplay({ force: true });
     return;
   }
   ttCardIndex = (index + ttCardDeck.length) % ttCardDeck.length;
@@ -8926,6 +8987,7 @@ function ttShowCard(index) {
   ttById("ttCardLabel").textContent = card.label;
   ttById("ttCardDisplay").dataset.type = /hfw/i.test(card.type) ? "hfw" : card.type.toLowerCase();
   ttById("ttCardCount").textContent = `${ttCardIndex + 1} of ${ttCardDeck.length}`;
+  ttSyncFollowingStudentDisplay({ force: true });
 }
 
 function toggleReviewWord(word, source) {
@@ -8967,6 +9029,7 @@ function ttShowSection2Word(word, substep, options = {}) {
     display.innerHTML = "<span>Tap a word</span>";
     ttRenderSection2Count();
     hint.textContent = "One-syllable words show sound cards. Multisyllabic words show syllable cards.";
+    ttSyncFollowingStudentDisplay({ force: true });
     return;
   }
   const cards = section2CardsForWord(word, substep);
@@ -8988,6 +9051,7 @@ function ttShowSection2Word(word, substep, options = {}) {
     : "Syllable / word-part cards: yellow affixes and white syllable or Latin-base cards.";
   ttRenderSection2Count();
   ttRenderMarkedWords();
+  ttSyncFollowingStudentDisplay({ force: true });
 }
 
 function ttRenderSection2Count() {
@@ -11666,6 +11730,7 @@ function ttSelectPart7Word(word, category) {
   document.querySelectorAll(".section7-word-card").forEach((row) => {
     row.classList.toggle("selected-display-word", row.dataset.word === word);
   });
+  if (ttStudentDisplayMode === "cards") ttSendStudentDisplay(ttStudentDisplayPayload("cards"));
 }
 
 function ttRenderBuildCards(container, word, substep) {
@@ -11868,6 +11933,7 @@ function ttShowSentence(sentence, quiet = false) {
   document.querySelectorAll("#ttSentences button").forEach((button) => {
     button.classList.toggle("active", button.textContent === sentence);
   });
+  ttSyncFollowingStudentDisplay({ force: true });
 }
 
 function ttCloseSentenceDisplay() {

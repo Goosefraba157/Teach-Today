@@ -144,6 +144,34 @@ function renderPoster(payload) {
   `, "Section 1");
 }
 
+function renderCards(payload) {
+  const card = payload.cardDisplay || {};
+  const items = (card.items || []).filter((item) => item?.text);
+  const content = items.length
+    ? `<div class="stage-build-cards">${items.map((item) => `<span class="stage-build-card ${modeClass(item.type)}">${escapeHtml(item.text)}</span>`).join("")}</div>`
+    : card.word
+      ? `<strong class="stage-single-card">${escapeHtml(card.word)}</strong>`
+      : `<p class="stage-note">Choose a word or card in the lesson.</p>`;
+  return renderShell(payload, "Lesson Cards", `
+    <article class="cards-stage">
+      ${content}
+      <div class="stage-card-meta">
+        ${card.word && items.length ? `<strong>${escapeHtml(card.word)}</strong>` : ""}
+        ${card.label ? `<span>${escapeHtml(card.label)}</span>` : ""}
+        ${card.position ? `<em>${escapeHtml(card.position)}</em>` : ""}
+      </div>
+    </article>
+  `, card.sectionLabel || "Lesson");
+}
+
+function renderSentence(payload) {
+  return renderShell(payload, "Sentence Reading", `
+    <article class="sentence-stage">
+      <p>${escapeHtml(payload.sentence || "Choose a sentence in the lesson.")}</p>
+    </article>
+  `, "Section 5");
+}
+
 function renderHfw(payload) {
   return renderShell(payload, "High-Frequency Words", `
     <article class="hfw-stage">
@@ -295,7 +323,9 @@ function render(payload) {
   if (payload.mode === "chart") currentPdfZoom = pdfZoomForKey(nextInkKey);
 
   if (payload.mode === "poster") root.innerHTML = renderPoster(payload);
+  else if (payload.mode === "cards") root.innerHTML = renderCards(payload);
   else if (payload.mode === "hfw") root.innerHTML = renderHfw(payload);
+  else if (payload.mode === "sentence") root.innerHTML = renderSentence(payload);
   else if (payload.mode === "chart") root.innerHTML = renderChart(payload);
   else if (payload.mode === "sounds") root.innerHTML = renderSoundReference(payload);
   else if (payload.mode === "journal") root.innerHTML = renderJournal(payload);
@@ -350,7 +380,9 @@ function payloadInkKey(payload) {
   if (payload.mode === "chart" && payload.chart?.key) return `${payload.chart.key}:chart-page-v5`;
   if (payload.mode === "passage" && payload.passagePdf?.passageId) return `passage:${payload.passagePdf.passageId}`;
   if (payload.mode === "poster" && payload.poster?.src) return `poster:${payload.poster.src}`;
+  if (payload.mode === "cards") return payload.cardDisplay?.key || `cards:${payload.lessonId || payload.substep || "current"}`;
   if (payload.mode === "hfw") return `hfw:${payload.substep || ""}:${(payload.highFrequencyWords || []).join("|")}`;
+  if (payload.mode === "sentence") return `sentence:${payload.lessonId || payload.substep || "current"}:${payload.sentence || ""}`;
   if (payload.mode === "sounds") return payload.soundReference?.key || `sounds:${payload.substep || ""}`;
   if (payload.mode === "journal") return payload.journal?.key || `journal:${payload.lessonId || payload.substep || "current"}`;
   if (payload.mode === "dictation-paper") return payload.dictationPaper?.key || `dictation:${payload.lessonId || payload.substep || "current"}`;
@@ -358,7 +390,7 @@ function payloadInkKey(payload) {
 }
 
 function stageSupportsInk(payload) {
-  return ["poster", "hfw", "chart", "sounds", "journal", "dictation-paper", "passage"].includes(payload?.mode);
+  return ["poster", "cards", "hfw", "sentence", "chart", "sounds", "journal", "dictation-paper", "passage"].includes(payload?.mode);
 }
 
 function readStoredPayload() {
