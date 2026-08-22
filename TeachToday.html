@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260821-laser-modes-5">
+    <link rel="stylesheet" href="teach-today.css?v=20260821-docked-ink-6">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -264,10 +264,9 @@
       <button id="ttDockPrevSection" type="button" title="Previous section" aria-label="Previous section">↑</button>
       <button id="ttDockNextSection" type="button" title="Next section" aria-label="Next section">↓</button>
       <button id="ttDockDisplay" type="button" title="Presenter stage">Stage</button>
-      <button id="ttNotesToggle" type="button" title="Persistent notes">Notes</button>
+      <button id="ttNotesToggle" type="button" title="Legacy drawing notes" hidden aria-hidden="true">Notes</button>
       <button id="ttLaserToggle" type="button" title="Temporary laser pointer" aria-pressed="false">Laser</button>
       <button id="ttLaserInputMode" type="button" title="Laser captures touch gestures for scooping" aria-pressed="true">Scoop</button>
-      <button id="ttGlobalInkToggle" type="button" title="Open presentation ink tools" aria-expanded="false">Ink</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
       <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Presenter stage controls">
         <button type="button" data-display-mode="private">Privacy</button>
@@ -303,7 +302,6 @@
       <label>Size<input id="ttGlobalInkSize" type="range" min="1" max="24" value="5"></label>
       <button id="ttGlobalInkUndo" type="button" title="Undo last mark">Undo</button>
       <button id="ttGlobalInkClear" type="button" title="Clear presentation ink">Clear</button>
-      <button id="ttGlobalInkClose" type="button" title="Close ink tools">×</button>
     </aside>
 
     <div id="ttPaceGuide" class="pace-guide" hidden aria-hidden="true">
@@ -990,7 +988,7 @@
     <script src="app.js?v=lesson-assistant-3"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260821-laser-modes-5"></script>
+    <script src="teach-today.js?v=20260821-docked-ink-6"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

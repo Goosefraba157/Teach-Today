@@ -1056,7 +1056,7 @@ button:hover:not(:disabled) {
 
 .presentation-dock {
   position: fixed;
-  right: 6px;
+  right: max(6px, calc((100vw - min(1480px, calc(100vw - 70px))) / 2 - 60px));
   top: 86px;
   z-index: 30;
   display: none;
@@ -1401,7 +1401,7 @@ body.presentation-mode.laser-mode.laser-scoop-mode {
 
 .global-ink-palette {
   position: fixed;
-  left: 8px;
+  left: max(6px, calc((100vw - min(1480px, calc(100vw - 70px))) / 2 - 60px));
   top: 112px;
   z-index: 31;
   display: grid;
@@ -1472,13 +1472,6 @@ body.presentation-mode.laser-mode.laser-scoop-mode {
   margin: 0;
   direction: rtl;
   writing-mode: vertical-lr;
-}
-
-#ttGlobalInkClose {
-  border-color: #fecaca;
-  background: #fee2e2;
-  color: #991b1b;
-  font-size: 17px;
 }
 
 .home-screen {

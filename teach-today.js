@@ -12524,6 +12524,8 @@ async function ttTogglePresentation(force = null, options = {}) {
   if (shouldPresent) {
     document.body.classList.remove("legacy-full-lesson-mode");
     ttSetPresentationMenu(false);
+    ttToggleGlobalInkPalette(true);
+    ttSetGlobalInkActive(false);
     requestAnimationFrame(ttResizeGlobalPresentationCanvases);
   } else {
     ttTogglePresentDisplayTray(false);
@@ -13446,8 +13448,6 @@ function ttBind() {
   ttById("ttLaserInputMode")?.addEventListener("click", () => {
     ttSetLaserTouchMode(ttLaserTouchMode === "scoop" ? "scroll" : "scoop");
   });
-  ttById("ttGlobalInkToggle")?.addEventListener("click", () => ttToggleGlobalInkPalette());
-  ttById("ttGlobalInkClose")?.addEventListener("click", () => ttToggleGlobalInkPalette(false));
   ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));
   ttById("ttGlobalInkUndo")?.addEventListener("click", () => ttUndoGlobalInk());
   ttById("ttGlobalInkClear")?.addEventListener("click", () => ttClearGlobalInk());

@@ -15,7 +15,8 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.
 - **Layout:** The regular teaching workspace should use available laptop and desktop width responsively, while Section 9 may remain wider for passage reading and mobile screens retain compact gutters.
 - **45+45 parity:** Section 2B uses its own Day 2 word-building deck and interaction state, mirroring the essential Section 2 student display without sharing or overwriting Day 1 navigation.
-- **Presentation-wide ink:** Present mode may provide one session-only annotation layer across all lesson sections. Its marks must clear when Present mode ends and must remain separate from Section 9's specialized passage annotation canvas and saved passage state.
+- **Presentation-wide ink:** Present mode keeps one session-only annotation palette visible across all lesson sections, defaulting to its arrow/interact state so it does not block normal controls. Its marks clear when Present mode ends and remain separate from Section 9's specialized passage annotation canvas and saved passage state. The prior red-only Notes drawing mode is not a second visible annotation tool.
+- **Presentation tool placement:** Floating Ink and presentation controls anchor beside the centered lesson workspace on wide/zoomed-out screens, with viewport-edge fallbacks on narrow screens.
 - **Laser pointer:** The presentation laser is a passive, transient red pointer with a fading trail that preserves normal taps/clicks. Because generic iPad styluses may be reported as ordinary touch, Laser exposes explicit `Scoop` and `Scroll` modes: Scoop captures all touch movement for pointing, while Scroll restores touch page navigation without requiring Laser to be turned off. It is never persisted, exported, or treated as student/lesson evidence.
 
 ## Lesson planning defaults
