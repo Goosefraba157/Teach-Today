@@ -10,8 +10,12 @@ final class ExternalSceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = ProofViewController(role: .student)
+        window.rootViewController = StudentStageViewController()
         window.makeKeyAndVisible()
         self.window = window
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        (window?.rootViewController as? StudentStageViewController)?.reloadIfNeeded()
     }
 }

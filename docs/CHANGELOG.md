@@ -71,3 +71,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added an isolated, data-free UIKit Stage proof with separate private iPad and noninteractive external-display scenes.
 - Built, signed, installed, and launched the proof on the target non-M1 iPad.
 - Verified the split-display path over AirPlay Screen Mirroring: the iPad retained the teal teacher `A` scene while the Mac receiver displayed the blue student `B` scene after reopening the app with mirroring connected. USB-C/HDMI remains the fallback.
+- Evolved the A/B proof into a native iPad web shell: the main scene hosts the existing V1 teacher app and the external scene hosts the student display without changing either browser route.
+- Added trusted-origin native Stage handling, a second Swift payload whitelist, generic projected labels, in-memory-only relay, and rejection of unapproved fields and external asset URLs.
+- Added a nonpersistent, noninteractive student webview with neutral reconnect fallback, retry, and latest-payload replay; Firebase and private records remain owned by hosted V1.
+- Added native popup handling for the hosted sign-in flow and suppressed the redundant browser Student Stage popup when the external scene owns projection.
+- Verified generic physical-iOS and A16 simulator builds, full-size hosted V1 rendering in the simulator, and a standalone sanitizer check. Physical installation of the new shell and Firebase/AirPlay workflow testing remain pending because the current macOS login has no command-line signing identity.

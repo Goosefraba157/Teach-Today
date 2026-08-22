@@ -10,7 +10,7 @@ final class MainSceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = ProofViewController(role: .teacher)
+        window.rootViewController = TeacherWebViewController()
         window.makeKeyAndVisible()
         self.window = window
     }

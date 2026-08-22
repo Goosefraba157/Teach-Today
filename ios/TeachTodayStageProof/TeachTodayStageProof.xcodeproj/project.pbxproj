@@ -11,6 +11,11 @@
 		AA0000010000000000000002 /* MainSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000002 /* MainSceneDelegate.swift */; };
 		AA0000010000000000000003 /* ExternalSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000003 /* ExternalSceneDelegate.swift */; };
 		AA0000010000000000000004 /* ProofViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000004 /* ProofViewController.swift */; };
+		AA0000010000000000000007 /* TeachTodayWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000007 /* TeachTodayWeb.swift */; };
+		AA0000010000000000000008 /* StagePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000008 /* StagePayload.swift */; };
+		AA0000010000000000000009 /* TeacherWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000009 /* TeacherWebViewController.swift */; };
+		AA0000010000000000000010 /* StudentStageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000010 /* StudentStageViewController.swift */; };
+		AA0000010000000000000011 /* PopupWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000011 /* PopupWebViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +25,11 @@
 		AA0000020000000000000004 /* ProofViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProofViewController.swift; sourceTree = "<group>"; };
 		AA0000020000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000020000000000000006 /* TeachTodayStageProof.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeachTodayStageProof.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000020000000000000007 /* TeachTodayWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeachTodayWeb.swift; sourceTree = "<group>"; };
+		AA0000020000000000000008 /* StagePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StagePayload.swift; sourceTree = "<group>"; };
+		AA0000020000000000000009 /* TeacherWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeacherWebViewController.swift; sourceTree = "<group>"; };
+		AA0000020000000000000010 /* StudentStageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentStageViewController.swift; sourceTree = "<group>"; };
+		AA0000020000000000000011 /* PopupWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupWebViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +58,11 @@
 				AA0000020000000000000002 /* MainSceneDelegate.swift */,
 				AA0000020000000000000003 /* ExternalSceneDelegate.swift */,
 				AA0000020000000000000004 /* ProofViewController.swift */,
+				AA0000020000000000000007 /* TeachTodayWeb.swift */,
+				AA0000020000000000000008 /* StagePayload.swift */,
+				AA0000020000000000000009 /* TeacherWebViewController.swift */,
+				AA0000020000000000000010 /* StudentStageViewController.swift */,
+				AA0000020000000000000011 /* PopupWebViewController.swift */,
 				AA0000020000000000000005 /* Info.plist */,
 			);
 			path = App;
@@ -133,6 +148,11 @@
 				AA0000010000000000000002 /* MainSceneDelegate.swift in Sources */,
 				AA0000010000000000000003 /* ExternalSceneDelegate.swift in Sources */,
 				AA0000010000000000000004 /* ProofViewController.swift in Sources */,
+				AA0000010000000000000007 /* TeachTodayWeb.swift in Sources */,
+				AA0000010000000000000008 /* StagePayload.swift in Sources */,
+				AA0000010000000000000009 /* TeacherWebViewController.swift in Sources */,
+				AA0000010000000000000010 /* StudentStageViewController.swift in Sources */,
+				AA0000010000000000000011 /* PopupWebViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
