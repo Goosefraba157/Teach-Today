@@ -15,12 +15,15 @@ private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
 
 final class TeacherWebViewController: UIViewController {
     private let messageName = "teachTodayStage"
+    private let projectionMessageName = "teachTodayProjectionMode"
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
     private let errorView = UIView()
     private let errorLabel = UILabel()
     private var progressObservation: NSKeyValueObservation?
     private weak var popupController: PopupWebViewController?
+    private var mirrorTimer: Timer?
+    private var snapshotInFlight = false
 
     init() {
         let configuration = WKWebViewConfiguration()
@@ -34,6 +37,7 @@ final class TeacherWebViewController: UIViewController {
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init(nibName: nil, bundle: nil)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: messageName)
+        configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: projectionMessageName)
     }
 
     @available(*, unavailable)
@@ -42,7 +46,9 @@ final class TeacherWebViewController: UIViewController {
     }
 
     deinit {
+        mirrorTimer?.invalidate()
         webView.configuration.userContentController.removeScriptMessageHandler(forName: messageName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: projectionMessageName)
     }
 
     override func viewDidLoad() {
@@ -135,9 +141,57 @@ final class TeacherWebViewController: UIViewController {
         loadTeachToday()
     }
 
+    func secureProjectionForBackground() {
+        setExternalProjectionMode(.stage, notifyWeb: true)
+    }
+
     private func showLoadError(_ error: Error) {
         errorLabel.text = error.localizedDescription
         errorView.isHidden = false
+    }
+
+    private func setExternalProjectionMode(_ mode: ExternalProjectionMode, notifyWeb: Bool = false) {
+        mirrorTimer?.invalidate()
+        mirrorTimer = nil
+        snapshotInFlight = false
+        StageCoordinator.shared.setProjectionMode(mode)
+
+        if mode == .mirror {
+            captureTeacherSnapshot()
+            let timer = Timer(timeInterval: 0.16, repeats: true) { [weak self] _ in
+                self?.captureTeacherSnapshot()
+            }
+            mirrorTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        }
+
+        if notifyWeb {
+            let value = mode == .mirror ? "mirror" : "stage"
+            webView.evaluateJavaScript(
+                "window.dispatchEvent(new CustomEvent('teachTodayNativeProjectionMode', { detail: { mode: '\(value)' } }));"
+            )
+        }
+    }
+
+    private func captureTeacherSnapshot() {
+        guard StageCoordinator.shared.projectionMode == .mirror,
+              !snapshotInFlight,
+              webView.window != nil,
+              !webView.bounds.isEmpty
+        else { return }
+
+        snapshotInFlight = true
+        let configuration = WKSnapshotConfiguration()
+        configuration.rect = webView.bounds
+        configuration.snapshotWidth = NSNumber(value: min(1_400, max(900, webView.bounds.width)))
+        webView.takeSnapshot(with: configuration) { [weak self] image, _ in
+            guard let self else { return }
+            snapshotInFlight = false
+            guard StageCoordinator.shared.projectionMode == .mirror,
+                  let image = image?.cgImage
+            else { return }
+            StageCoordinator.shared.displayTeacherSnapshot(image)
+        }
     }
 }
 
@@ -158,17 +212,27 @@ extension TeacherWebViewController: WKNavigationDelegate {
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        setExternalProjectionMode(.stage, notifyWeb: true)
         loadTeachToday()
     }
 }
 
 extension TeacherWebViewController: WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == messageName,
-              message.frameInfo.isMainFrame,
+        guard message.frameInfo.isMainFrame,
               TeachTodayWeb.isTrustedAppURL(message.frameInfo.request.url)
         else { return }
-        StageCoordinator.shared.receive(message.body)
+
+        if message.name == messageName {
+            StageCoordinator.shared.receive(message.body)
+            return
+        }
+
+        if message.name == projectionMessageName,
+           let command = message.body as? [String: Any],
+           let mode = command["mode"] as? String {
+            setExternalProjectionMode(mode == "mirror" ? .mirror : .stage)
+        }
     }
 }
 

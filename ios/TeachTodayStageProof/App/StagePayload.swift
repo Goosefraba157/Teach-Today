@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 enum StagePayloadSanitizer {
     private static let allowedModes: Set<String> = [
@@ -168,6 +169,13 @@ enum StagePayloadSanitizer {
 @MainActor
 protocol StagePayloadReceiver: AnyObject {
     func displayStagePayload(_ payload: [String: Any])
+    func setProjectionMode(_ mode: ExternalProjectionMode)
+    func displayTeacherSnapshot(_ image: CGImage)
+}
+
+enum ExternalProjectionMode {
+    case stage
+    case mirror
 }
 
 @MainActor
@@ -175,6 +183,7 @@ final class StageCoordinator {
     static let shared = StageCoordinator()
 
     private(set) var latestPayload = StagePayloadSanitizer.privatePayload
+    private(set) var projectionMode = ExternalProjectionMode.stage
     private weak var receiver: StagePayloadReceiver?
 
     private init() {}
@@ -182,12 +191,30 @@ final class StageCoordinator {
     func receive(_ body: Any) {
         guard let payload = StagePayloadSanitizer.sanitize(body) else { return }
         latestPayload = payload
-        receiver?.displayStagePayload(payload)
+        if projectionMode == .stage {
+            receiver?.displayStagePayload(payload)
+        }
+    }
+
+    func setProjectionMode(_ mode: ExternalProjectionMode) {
+        projectionMode = mode
+        receiver?.setProjectionMode(mode)
+        if mode == .stage {
+            receiver?.displayStagePayload(latestPayload)
+        }
+    }
+
+    func displayTeacherSnapshot(_ image: CGImage) {
+        guard projectionMode == .mirror else { return }
+        receiver?.displayTeacherSnapshot(image)
     }
 
     func attach(_ receiver: StagePayloadReceiver) {
         self.receiver = receiver
-        receiver.displayStagePayload(latestPayload)
+        receiver.setProjectionMode(projectionMode)
+        if projectionMode == .stage {
+            receiver.displayStagePayload(latestPayload)
+        }
     }
 
     func detach(_ receiver: StagePayloadReceiver) {

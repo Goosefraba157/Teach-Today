@@ -14,4 +14,8 @@ final class MainSceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         self.window = window
     }
+
+    func sceneWillResignActive(_ scene: UIScene) {
+        (window?.rootViewController as? TeacherWebViewController)?.secureProjectionForBackground()
+    }
 }

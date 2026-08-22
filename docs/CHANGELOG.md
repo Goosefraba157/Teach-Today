@@ -75,4 +75,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added trusted-origin native Stage handling, a second Swift payload whitelist, generic projected labels, in-memory-only relay, and rejection of unapproved fields and external asset URLs.
 - Added a nonpersistent, noninteractive student webview with neutral reconnect fallback, retry, and latest-payload replay; Firebase and private records remain owned by hosted V1.
 - Added native popup handling for the hosted sign-in flow and suppressed the redundant browser Student Stage popup when the external scene owns projection.
-- Verified generic physical-iOS and A16 simulator builds, full-size hosted V1 rendering in the simulator, and a standalone sanitizer check. Physical installation of the new shell and Firebase/AirPlay workflow testing remain pending because the current macOS login has no command-line signing identity.
+- Verified generic physical-iOS and A16 simulator builds, full-size hosted V1 rendering in the simulator, and a standalone sanitizer check.
+- Installed and hardware-tested the native webview shell on the target iPad; the hosted teacher app retained its existing Present flow while Screen Mirroring received the separate student display.
+- Added a native-only, confirmation-gated Mirror Teacher mode that projects transient snapshots of the exact teacher webview for sections that need live modeling, without storing frames or changing browser presentation behavior.
+- Kept sanitized Stage as the default and made every Stage selection, app background transition, and web-process restart end teacher mirroring immediately.

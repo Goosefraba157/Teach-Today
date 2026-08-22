@@ -74,6 +74,7 @@ let ttPassageGestureListenersBound = false;
 let ttPassageStageActive = false;
 let ttStudentDisplayWindow = null;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
+let ttNativeProjectionMode = "stage";
 let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
 const ttStudentDisplayStorageKey = "teachToday.studentDisplayPayload.v1";
 const ttStudentDisplayChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayStudentDisplay.v1") : null;
@@ -3612,6 +3613,32 @@ function ttSendStudentDisplay(payload = ttStudentDisplayPayload()) {
   ttUpdateStudentDisplayStatus(displayMode, payload);
 }
 
+function ttIsNativeIpadShell() {
+  return document.documentElement.dataset.teachTodayNative === "ipad";
+}
+
+function ttSetNativeProjectionMode(mode = "stage") {
+  if (!ttIsNativeIpadShell()) return false;
+  const nextMode = mode === "mirror" ? "mirror" : "stage";
+  try {
+    window.webkit?.messageHandlers?.teachTodayProjectionMode?.postMessage({ mode: nextMode });
+  } catch {
+    return false;
+  }
+  ttNativeProjectionMode = nextMode;
+  ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
+  return true;
+}
+
+function ttEnableNativeTeacherMirror() {
+  if (!ttIsNativeIpadShell()) return;
+  const confirmed = window.confirm(
+    "Mirror Teacher will project everything visible on this iPad, including student names, scores, notes, or open records. Continue only when the teacher screen is safe for students to see."
+  );
+  if (!confirmed) return;
+  ttSetNativeProjectionMode("mirror");
+}
+
 function ttStudentDisplayWindowFeatures(screen = null) {
   if (!screen) return "";
   const width = Math.max(320, Math.round(screen.availWidth || screen.width || 1280));
@@ -3633,6 +3660,7 @@ function ttOpenStudentDisplay(mode = ttStudentDisplayMode, options = {}) {
 }
 
 function ttSetStudentDisplayMode(mode) {
+  ttSetNativeProjectionMode("stage");
   ttStudentDisplayMode = mode || "private";
   ttStudentDisplayFollowKey = "";
   if (!ttStudentDisplayWindow || ttStudentDisplayWindow.closed) {
@@ -3825,12 +3853,19 @@ function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode, payload = nul
   const followStatus = mode === "follow" && payload?.sourceSection
     ? `Following ${payload.sectionLabel}: ${labels[payload.mode] || "student-safe display"}`
     : "";
-  if (status) status.textContent = followStatus || labels[mode] || "Student display ready";
+  if (status) {
+    status.textContent = ttNativeProjectionMode === "mirror"
+      ? "Mirroring the visible teacher screen"
+      : followStatus || labels[mode] || "Student display ready";
+  }
   ttById("ttDisplayPanel")?.querySelectorAll("[data-display-mode]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.displayMode === mode);
+    button.classList.toggle("active", ttNativeProjectionMode === "stage" && button.dataset.displayMode === mode);
   });
   ttById("ttPresentDisplayTray")?.querySelectorAll("[data-display-mode]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.displayMode === mode);
+    button.classList.toggle("active", ttNativeProjectionMode === "stage" && button.dataset.displayMode === mode);
+  });
+  document.querySelectorAll("[data-native-projection-mode='mirror']").forEach((button) => {
+    button.classList.toggle("active", ttNativeProjectionMode === "mirror");
   });
   ttById("ttDockDisplay")?.classList.toggle("active", !ttById("ttPresentDisplayTray")?.hidden);
 }
@@ -13630,6 +13665,14 @@ function ttBind() {
   ttById("ttDisplayProjector")?.addEventListener("click", () => ttProjectStudentDisplay());
   ttById("ttDisplayPanel")?.querySelectorAll("[data-display-mode]").forEach((button) => {
     button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
+  });
+  document.querySelectorAll("[data-native-projection-mode='mirror']").forEach((button) => {
+    button.hidden = !ttIsNativeIpadShell();
+    button.addEventListener("click", () => ttEnableNativeTeacherMirror());
+  });
+  window.addEventListener("teachTodayNativeProjectionMode", (event) => {
+    ttNativeProjectionMode = event.detail?.mode === "mirror" ? "mirror" : "stage";
+    ttUpdateStudentDisplayStatus(ttStudentDisplayMode);
   });
   ttById("ttDockDisplay")?.addEventListener("click", () => ttTogglePresentDisplayTray());
   ttById("ttPresentDisplayOpen")?.addEventListener("click", () => ttOpenStudentDisplay(ttStudentDisplayMode));

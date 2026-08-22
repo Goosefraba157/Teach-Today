@@ -3,10 +3,14 @@ import WebKit
 
 final class StudentStageViewController: UIViewController, StagePayloadReceiver {
     private let webView: WKWebView
+    private let mirrorImageView = UIImageView()
     private let fallbackView = UIView()
+    private let fallbackTitle = UILabel()
+    private let fallbackDetail = UILabel()
     private var stageIsReady = false
     private var pendingPayload: [String: Any]?
     private var retryWorkItem: DispatchWorkItem?
+    private var projectionMode = ExternalProjectionMode.stage
 
     init() {
         let configuration = WKWebViewConfiguration()
@@ -34,12 +38,17 @@ final class StudentStageViewController: UIViewController, StagePayloadReceiver {
         if #available(iOS 16.4, *) { webView.isInspectable = true }
 #endif
         view.addSubview(webView)
+        configureMirrorView()
         configureFallbackView()
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: view.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            mirrorImageView.topAnchor.constraint(equalTo: view.topAnchor),
+            mirrorImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            mirrorImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            mirrorImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
         StageCoordinator.shared.attach(self)
@@ -53,8 +62,24 @@ final class StudentStageViewController: UIViewController, StagePayloadReceiver {
 
     func displayStagePayload(_ payload: [String: Any]) {
         pendingPayload = payload
-        guard stageIsReady else { return }
+        guard projectionMode == .stage, stageIsReady else { return }
         sendPendingPayload()
+    }
+
+    func setProjectionMode(_ mode: ExternalProjectionMode) {
+        projectionMode = mode
+        if mode == .stage {
+            mirrorImageView.image = nil
+            pendingPayload = StageCoordinator.shared.latestPayload
+            if stageIsReady { sendPendingPayload() }
+        }
+        updateVisibility()
+    }
+
+    func displayTeacherSnapshot(_ image: CGImage) {
+        guard projectionMode == .mirror else { return }
+        mirrorImageView.image = UIImage(cgImage: image)
+        updateVisibility()
     }
 
     private func sendPendingPayload() {
@@ -75,23 +100,29 @@ final class StudentStageViewController: UIViewController, StagePayloadReceiver {
         }
     }
 
+    private func configureMirrorView() {
+        mirrorImageView.translatesAutoresizingMaskIntoConstraints = false
+        mirrorImageView.backgroundColor = .black
+        mirrorImageView.contentMode = .scaleAspectFit
+        mirrorImageView.isHidden = true
+        view.addSubview(mirrorImageView)
+    }
+
     private func configureFallbackView() {
         fallbackView.translatesAutoresizingMaskIntoConstraints = false
         fallbackView.backgroundColor = UIColor(red: 0.90, green: 0.99, blue: 0.97, alpha: 1)
 
-        let title = UILabel()
-        title.text = "Classroom Stage"
-        title.font = .systemFont(ofSize: 48, weight: .black)
-        title.textColor = UIColor(red: 0.04, green: 0.28, blue: 0.28, alpha: 1)
-        title.textAlignment = .center
+        fallbackTitle.text = "Classroom Stage"
+        fallbackTitle.font = .systemFont(ofSize: 48, weight: .black)
+        fallbackTitle.textColor = UIColor(red: 0.04, green: 0.28, blue: 0.28, alpha: 1)
+        fallbackTitle.textAlignment = .center
 
-        let detail = UILabel()
-        detail.text = "Reconnecting..."
-        detail.font = .systemFont(ofSize: 24, weight: .semibold)
-        detail.textColor = UIColor(red: 0.18, green: 0.36, blue: 0.38, alpha: 1)
-        detail.textAlignment = .center
+        fallbackDetail.text = "Reconnecting..."
+        fallbackDetail.font = .systemFont(ofSize: 24, weight: .semibold)
+        fallbackDetail.textColor = UIColor(red: 0.18, green: 0.36, blue: 0.38, alpha: 1)
+        fallbackDetail.textAlignment = .center
 
-        let stack = UIStackView(arrangedSubviews: [title, detail])
+        let stack = UIStackView(arrangedSubviews: [fallbackTitle, fallbackDetail])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .vertical
         stack.spacing = 18
@@ -110,9 +141,25 @@ final class StudentStageViewController: UIViewController, StagePayloadReceiver {
 
     private func loadStudentStage() {
         retryWorkItem?.cancel()
-        fallbackView.isHidden = false
         stageIsReady = false
+        updateVisibility()
         webView.load(URLRequest(url: TeachTodayWeb.studentURL, cachePolicy: .reloadRevalidatingCacheData))
+    }
+
+    private func updateVisibility() {
+        let showingMirror = projectionMode == .mirror
+        webView.isHidden = showingMirror
+        mirrorImageView.isHidden = !showingMirror || mirrorImageView.image == nil
+
+        if showingMirror {
+            fallbackTitle.text = "Teacher Mirror"
+            fallbackDetail.text = "Starting projection..."
+            fallbackView.isHidden = mirrorImageView.image != nil
+        } else {
+            fallbackTitle.text = "Classroom Stage"
+            fallbackDetail.text = "Reconnecting..."
+            fallbackView.isHidden = stageIsReady
+        }
     }
 
     private func scheduleRetry() {
@@ -128,26 +175,26 @@ final class StudentStageViewController: UIViewController, StagePayloadReceiver {
 extension StudentStageViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         stageIsReady = false
-        fallbackView.isHidden = false
+        updateVisibility()
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         retryWorkItem?.cancel()
         stageIsReady = true
-        fallbackView.isHidden = true
         pendingPayload = StageCoordinator.shared.latestPayload
-        sendPendingPayload()
+        if projectionMode == .stage { sendPendingPayload() }
+        updateVisibility()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         stageIsReady = false
-        fallbackView.isHidden = false
+        updateVisibility()
         scheduleRetry()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         stageIsReady = false
-        fallbackView.isHidden = false
+        updateVisibility()
         scheduleRetry()
     }
 
