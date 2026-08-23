@@ -96,3 +96,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Made local-folder syncing backup-only: it continues writing dated full backups but never auto-restores during an ordinary save or folder connection.
 - Published and verified the revision-4 authoritative sync release on GitHub Pages, including the versioned recovery helper and updated offline cache.
 - Replaced Section 4 Stage's recreated word sheet with the authentic embedded Reader PDF page, full-page projector fitting, a generated-page loading/error fallback, strict Reader/page path derivation, and offline caching for all Reader PDFs.
+- Fixed iPad Stage opening the Reader cover by replacing raw Section 4 PDF embedding with 583 exact lossless page images generated from the official Reader PDFs. The correct Reader/page now fills Student Stage consistently in browsers and `WKWebView`; strict path derivation, the clean generated fallback, and runtime offline caching remain intact.

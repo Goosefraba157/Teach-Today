@@ -240,7 +240,7 @@ function renderChart(payload) {
   const hasChartWords = []
     .concat(chart.topWords || [], chart.bottomWords || [])
     .some(Boolean);
-  const pdfSrc = chartPdfStageSrc(chart);
+  const pageImageSrc = chartPageImageSrc(chart);
   const detail = chart.reader && chart.page
     ? `Reader ${chart.reader}, p. ${chart.page}${chart.level ? ` - ${chart.level}` : ""}`
     : "Section 4";
@@ -269,7 +269,7 @@ function renderChart(payload) {
         <section class="chart-stage">
           <article class="chart-pdf-panel">
             ${fallbackPage}
-            ${pdfSrc ? `<iframe class="chart-pdf-frame" title="${escapeHtml(detail)}" data-chart-pdf-src="${escapeHtml(pdfSrc)}"></iframe>` : ""}
+            ${pageImageSrc ? `<img class="chart-page-image" alt="${escapeHtml(detail)}" data-chart-page-src="${escapeHtml(pageImageSrc)}">` : ""}
           </article>
         </section>
       </div>
@@ -341,7 +341,7 @@ function render(payload) {
 
   currentInkKey = nextInkKey;
   bindStageControls(payload);
-  setupChartPdfFrame();
+  setupChartPageImage();
   setupStageInk(payload);
 }
 
@@ -358,29 +358,24 @@ function stageUrl(url) {
   return `${url}${url.includes("?") ? "&" : "?"}stage=1`;
 }
 
-function chartPdfStageSrc(chart = {}) {
+function chartPageImageSrc(chart = {}) {
   const reader = Number(chart.reader || 0);
   const chartPage = Number(chart.page || 0);
   if (!Number.isInteger(reader) || reader < 1 || reader > 12 || !Number.isInteger(chartPage) || chartPage < 1) return "";
-  const pdfFile = `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf`;
-  const pdfPage = chartPage + 2;
-  const params = [
-    `page=${encodeURIComponent(pdfPage)}`,
-    currentPdfZoom === "page-fit" ? "view=Fit" : `zoom=${encodeURIComponent(Math.round(currentPdfZoom))}`,
-    "toolbar=0",
-    "navpanes=0",
-    "scrollbar=0"
-  ].join("&");
-  return `${pdfFile}#${params}`;
+  return `Reader%20Pages%20for%20Charting%20Section%204/rendered-pages/reader${reader}-page-${String(chartPage).padStart(3, "0")}.webp`;
 }
 
-function setupChartPdfFrame() {
-  const frame = root.querySelector(".chart-pdf-frame[data-chart-pdf-src]");
-  const panel = frame?.closest(".chart-pdf-panel");
-  if (!frame || !panel) return;
-  frame.addEventListener("load", () => panel.classList.add("chart-pdf-ready"), { once: true });
-  frame.addEventListener("error", () => panel.classList.add("chart-pdf-failed"), { once: true });
-  frame.src = frame.dataset.chartPdfSrc || "";
+function setupChartPageImage() {
+  const image = root.querySelector(".chart-page-image[data-chart-page-src]");
+  const panel = image?.closest(".chart-pdf-panel");
+  if (!image || !panel) return;
+  const scale = currentPdfZoom === "page-fit"
+    ? 1
+    : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100));
+  image.style.setProperty("--chart-view-scale", String(scale));
+  image.addEventListener("load", () => panel.classList.add("chart-pdf-ready"), { once: true });
+  image.addEventListener("error", () => panel.classList.add("chart-pdf-failed"), { once: true });
+  image.src = image.dataset.chartPageSrc || "";
 }
 
 function payloadInkKey(payload) {
@@ -505,8 +500,8 @@ function setStagePdfZoom(delta) {
   savePdfZoomForKey();
   const sheet = root.querySelector(".chart-page-sheet");
   if (sheet) sheet.style.setProperty("--chart-scale", String(Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
-  const frame = root.querySelector(".chart-pdf-frame");
-  if (frame && currentPayload?.chart) frame.src = chartPdfStageSrc(currentPayload.chart);
+  const image = root.querySelector(".chart-page-image");
+  if (image) image.style.setProperty("--chart-view-scale", String(Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
 }
 
 function setupStageInk(payload) {
@@ -644,8 +639,8 @@ window.addEventListener("storage", (event) => {
     currentPdfZoom = pdfZoomForKey();
     const sheet = root.querySelector(".chart-page-sheet");
     if (sheet) sheet.style.setProperty("--chart-scale", String(currentPdfZoom === "page-fit" ? 1 : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
-    const frame = root.querySelector(".chart-pdf-frame");
-    if (frame) frame.src = chartPdfStageSrc(currentPayload.chart);
+    const image = root.querySelector(".chart-page-image");
+    if (image) image.style.setProperty("--chart-view-scale", String(currentPdfZoom === "page-fit" ? 1 : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))));
   }
 });
 

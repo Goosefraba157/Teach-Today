@@ -14,6 +14,8 @@ Open `TeachTodayStageProof.xcodeproj`, choose a Personal Team under Signing & Ca
 
 The browser-based Present and Student Stage flow remains unchanged. Inside the native shell, the existing Stage `Follow Lesson` control drives the external scene without opening a second teacher-facing window. `Mirror Teacher` is shown only in the native shell.
 
+Section 4 Follow Lesson uses exact lossless page images generated from the official Reader PDFs. Do not restore raw PDF embedding: iPad `WKWebView` may ignore the requested page fragment and show the Reader cover instead.
+
 ## Verified
 
 - The original A/B scene proof succeeded on the target non-M1 A16 iPad over AirPlay Screen Mirroring.

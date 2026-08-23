@@ -660,7 +660,7 @@ body.stage-inking .stage-ink-canvas {
   white-space: nowrap;
 }
 
-.chart-pdf-frame {
+.chart-page-image {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -668,11 +668,14 @@ body.stage-inking .stage-ink-canvas {
   min-height: 0;
   border: 0;
   background: #202124;
+  object-fit: contain;
   opacity: 0;
+  transform: scale(var(--chart-view-scale, 1));
+  transform-origin: top center;
   transition: opacity 160ms ease;
 }
 
-.chart-pdf-ready .chart-pdf-frame {
+.chart-pdf-ready .chart-page-image {
   opacity: 1;
 }
 
