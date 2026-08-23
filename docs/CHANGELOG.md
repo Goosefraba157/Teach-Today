@@ -89,3 +89,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Replaced Section 4's recent-performance dots with current-lesson charting status so each student shows a neutral unfinished state or a green `Saved` marker without exposing performance at the live teaching surface.
 - Gave Start, Pause, and Stop distinct control colors and unified Section 4 finalization so Stop, student changes, section navigation, and scrolling into the next section automatically preserve meaningful charting data.
 - Added page-hide/unload chart-data protection, refreshed V1 asset/cache versions, and verified the scroll-to-Section-5 autosave flow locally with synthetic data and no console errors.
+- Replaced the ambiguous Firebase conflict retry with explicit backup-first choices: save the device's local copy, deliberately load the cloud copy after confirmation, or keep the device offline. Ordinary connection failures retain the normal retry action.

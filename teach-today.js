@@ -4052,18 +4052,60 @@ function ttRenderDataCenter() {
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
 }
 
-function ttShowConnectionNotice(message, title = "Cloud connection issue") {
+function ttShowConnectionNotice(message, title = "Cloud connection issue", options = {}) {
   if (ttWorkOffline) return;
   const panel = ttById("ttConnectionNotice");
   if (!panel) return;
+  const conflict = options.conflict ?? /another (?:signed-in browser|device) saved newer/i.test(message);
+  ttConnectionConflict = Boolean(conflict);
+  panel.dataset.mode = conflict ? "conflict" : "connection";
   ttById("ttConnectionTitle").textContent = title;
   ttById("ttConnectionMessage").textContent = message;
+  const retry = ttById("ttConnectionRetry");
+  const offline = ttById("ttConnectionOffline");
+  const backup = ttById("ttConnectionBackup");
+  if (retry) retry.textContent = conflict ? "Load cloud copy" : "Keep trying";
+  if (offline) offline.textContent = conflict ? "Keep this device offline" : "Work offline";
+  if (backup) backup.hidden = !conflict;
   panel.hidden = false;
 }
 
 function ttHideConnectionNotice() {
   const panel = ttById("ttConnectionNotice");
-  if (panel) panel.hidden = true;
+  if (panel) {
+    panel.hidden = true;
+    panel.dataset.mode = "connection";
+  }
+  ttConnectionConflict = false;
+}
+
+async function ttResolveFirebaseConflictFromCloud() {
+  const approved = window.confirm(
+    "Load the newer Firebase copy on this device? This replaces this device's unsynced local lesson copy. Use 'Save this device backup' first if you may need those local changes."
+  );
+  if (!approved) return;
+  ttWorkOffline = false;
+  localStorage.setItem("teachToday.workOffline", "false");
+  localStorage.setItem("teachToday.firebaseSyncStatus", "Loading the selected Firebase copy...");
+  ttRenderDataCenter();
+  try {
+    const restored = await ttFirebaseRestoreIfNewer({ force: true });
+    if (!restored) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "No usable Firebase copy was found. This device was not changed.");
+      ttShowConnectionNotice("No usable Firebase copy was found. This device was not changed.");
+    }
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase copy could not load (${detail}). This device was not changed.`);
+    ttShowConnectionNotice(`Firebase copy could not load (${detail}). This device was not changed.`);
+  } finally {
+    ttRenderDataCenter();
+  }
+}
+
+function ttHandleConnectionPrimaryAction() {
+  if (ttConnectionConflict) return ttResolveFirebaseConflictFromCloud();
+  return ttRetryCloudConnections();
 }
 
 function ttSetWorkOffline(value) {
@@ -10234,6 +10276,7 @@ let ttFirebaseWritingRevisionId = "";
 let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
+let ttConnectionConflict = false;
 
 // Returns the Firestore doc path: per-user when signed in, legacy path as fallback
 function ttFirebaseDocPath() {
@@ -10665,7 +10708,11 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
       syncConflict = true;
       ttFirebasePending = false;
       localStorage.setItem("teachToday.firebaseSyncStatus", "Another signed-in browser saved newer data. This tab did not overwrite it. Refresh before continuing here.");
-      ttShowConnectionNotice("Another signed-in browser saved newer Teach Today data. This tab did not overwrite it. Refresh before continuing here.");
+      ttShowConnectionNotice(
+        "Another signed-in browser saved newer Teach Today data. This tab did not overwrite it. Save this device backup before choosing which copy to keep.",
+        "Two lesson copies need your choice",
+        { conflict: true }
+      );
       return;
     }
     console.warn("Teach Today Firebase sync failed:", error);
@@ -10881,7 +10928,11 @@ async function ttStartFirebaseRevisionListener() {
     }
     if (ttFirebaseBusy || ttHasUnsyncedFirebaseChanges()) {
       localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data is available from another device. Your local edits were not overwritten. Refresh or Sync now after reviewing this device.");
-      ttShowConnectionNotice("Another device saved newer Teach Today data. This device kept its local edits and did not overwrite anything.");
+      ttShowConnectionNotice(
+        "Another device saved newer Teach Today data. This device kept its local edits and did not overwrite anything. Save this device backup before choosing which copy to keep.",
+        "Two lesson copies need your choice",
+        { conflict: true }
+      );
       ttRenderDataCenter();
       ttUpdateHomeFirebaseStatus();
       return;
@@ -13835,7 +13886,8 @@ function ttBind() {
   }));
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   ttById("ttSecureLegacyStudentData")?.addEventListener("click", () => ttSecureLegacyStudentData());
-  ttById("ttConnectionRetry")?.addEventListener("click", () => ttRetryCloudConnections());
+  ttById("ttConnectionBackup")?.addEventListener("click", () => ttBackupData());
+  ttById("ttConnectionRetry")?.addEventListener("click", () => ttHandleConnectionPrimaryAction());
   ttById("ttConnectionOffline")?.addEventListener("click", () => ttSetWorkOffline(true));
   document.getElementById("ttFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   document.getElementById("ttFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());

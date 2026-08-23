@@ -119,15 +119,27 @@ button:hover:not(:disabled) {
   justify-content: flex-end;
 }
 
-.connection-actions button:first-child {
+.connection-actions #ttConnectionRetry {
   border-color: var(--teal);
   background: var(--teal);
   color: #fff;
 }
 
-.connection-actions button:last-child {
+.connection-actions #ttConnectionOffline {
   border-color: #f59e0b;
   color: #92400e;
+}
+
+.connection-notice[data-mode="conflict"] #ttConnectionBackup {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.connection-notice[data-mode="conflict"] #ttConnectionRetry {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 /* ═══════════════════════════════════════════════════════
