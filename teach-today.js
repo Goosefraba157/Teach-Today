@@ -4041,6 +4041,7 @@ function ttRenderDataCenter() {
   const driveStatusEl = ttById("ttDriveSyncStatus");
   const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
   const secureLegacyButton = ttById("ttSecureLegacyStudentData");
+  const recoveryButton = ttById("ttDownloadRecovery");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
@@ -4050,6 +4051,7 @@ function ttRenderDataCenter() {
   if (driveStatusEl) driveStatusEl.textContent = `${driveStatus} Local browser storage is still saved first.`;
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
+  if (recoveryButton) recoveryButton.hidden = !ttRecoveryIndex().length;
 }
 
 function ttShowConnectionNotice(message, title = "Cloud connection issue", options = {}) {
@@ -4081,7 +4083,7 @@ function ttHideConnectionNotice() {
 
 async function ttResolveFirebaseConflictFromCloud() {
   const approved = window.confirm(
-    "Load the newer Firebase copy on this device? This replaces this device's unsynced local lesson copy. Use 'Save this device backup' first if you may need those local changes."
+    "Load the Firebase copy on this device? Teach Today will automatically preserve this device's current lesson copy in Recovery before replacing it."
   );
   if (!approved) return;
   ttWorkOffline = false;
@@ -10264,6 +10266,12 @@ const ttFirebaseConfig = {
 };
 const ttFirebaseSdkVersion = "10.12.5";
 const ttFirebaseChunkSize = 350000;
+const ttFirebaseSafetyDbName = "teachTodayFirebaseSafety.v1";
+const ttFirebaseSafetyStore = "snapshots";
+const ttFirebaseBaselineKey = "firebase-baseline";
+const ttFirebaseSharedSignatureKey = "teachToday.firebaseSharedSignature.v1";
+const ttFirebaseRecoveryIndexKey = "teachToday.firebaseRecoveryIndex.v1";
+const ttFirebaseDeviceIdKey = "teachToday.firebaseDeviceId.v1";
 const ttDriveScope = "https://www.googleapis.com/auth/drive.file";
 const ttDriveFolderName = "Teach Today Recordings";
 let ttFirebaseSdkPromise = null;
@@ -10277,6 +10285,16 @@ let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
 let ttConnectionConflict = false;
+let ttFirebaseSafetyDbPromise = null;
+
+function ttFirebaseDeviceId() {
+  let value = localStorage.getItem(ttFirebaseDeviceIdKey);
+  if (!value) {
+    value = crypto.randomUUID?.() || `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(ttFirebaseDeviceIdKey, value);
+  }
+  return value;
+}
 
 // Returns the Firestore doc path: per-user when signed in, legacy path as fallback
 function ttFirebaseDocPath() {
@@ -10292,6 +10310,130 @@ function ttBackupPayload(now = new Date()) {
     appState,
     section2CardOverrides: section2CardOverrides()
   };
+}
+
+function ttFirebaseSafety() {
+  return window.TeachTodaySyncSafety;
+}
+
+function ttFirebasePayload(now = new Date(), state = appState, overrides = section2CardOverrides()) {
+  const safety = ttFirebaseSafety();
+  return {
+    kind: "TeachTodayFirebaseShared",
+    version: 2,
+    exportedAt: now.toISOString(),
+    appState: safety ? safety.sharedState(state) : state,
+    section2CardOverrides: overrides || {}
+  };
+}
+
+function ttNormalizeFirebasePayload(payload) {
+  if (!payload) return null;
+  const state = payload.appState || payload;
+  if (!state?.groups || !Array.isArray(state.groups)) return null;
+  const safety = ttFirebaseSafety();
+  return {
+    kind: "TeachTodayFirebaseShared",
+    version: 2,
+    exportedAt: payload.exportedAt || state.lastSavedAt || new Date().toISOString(),
+    appState: safety ? safety.sharedState(state) : state,
+    section2CardOverrides: payload.section2CardOverrides || {}
+  };
+}
+
+function ttFirebasePayloadSignature(payload) {
+  const normalized = ttNormalizeFirebasePayload(payload);
+  if (!normalized) return "";
+  return ttFirebaseSafety().signature({
+    appState: normalized.appState,
+    section2CardOverrides: normalized.section2CardOverrides
+  });
+}
+
+function ttCurrentFirebaseSignature() {
+  return ttFirebasePayloadSignature(ttFirebasePayload());
+}
+
+function ttFirebaseSafetyDb() {
+  if (ttFirebaseSafetyDbPromise) return ttFirebaseSafetyDbPromise;
+  ttFirebaseSafetyDbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(ttFirebaseSafetyDbName, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(ttFirebaseSafetyStore)) {
+        request.result.createObjectStore(ttFirebaseSafetyStore);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  return ttFirebaseSafetyDbPromise;
+}
+
+async function ttFirebaseSafetySet(key, value) {
+  const db = await ttFirebaseSafetyDb();
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(ttFirebaseSafetyStore, "readwrite");
+    transaction.objectStore(ttFirebaseSafetyStore).put(value, key);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function ttFirebaseSafetyGet(key) {
+  const db = await ttFirebaseSafetyDb();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(ttFirebaseSafetyStore, "readonly").objectStore(ttFirebaseSafetyStore).get(key);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function ttRecoveryIndex() {
+  try {
+    return JSON.parse(localStorage.getItem(ttFirebaseRecoveryIndexKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+async function ttPreserveLocalRecovery(reason = "Before cloud reconciliation") {
+  const now = new Date();
+  const key = `recovery:${now.toISOString()}:${ttFirebaseDeviceId()}`;
+  const entry = { key, savedAt: now.toISOString(), reason, payload: ttBackupPayload(now) };
+  await ttFirebaseSafetySet(key, entry);
+  const index = [{ key, savedAt: entry.savedAt, reason }, ...ttRecoveryIndex().filter((item) => item.key !== key)].slice(0, 50);
+  localStorage.setItem(ttFirebaseRecoveryIndexKey, JSON.stringify(index));
+  localStorage.setItem("teachToday.lastRecoveryAt", entry.savedAt);
+  ttRenderDataCenter();
+  return entry;
+}
+
+async function ttStoreFirebaseBaseline(envelope) {
+  if (!envelope?.payload) return;
+  await ttFirebaseSafetySet(ttFirebaseBaselineKey, {
+    revisionId: envelope.revisionId || "",
+    payload: ttNormalizeFirebasePayload(envelope.payload),
+    savedAt: new Date().toISOString()
+  });
+}
+
+function ttDownloadPayload(payload, fileName) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function ttDownloadLatestRecovery() {
+  const latest = ttRecoveryIndex()[0];
+  if (!latest) return;
+  const entry = await ttFirebaseSafetyGet(latest.key);
+  if (!entry?.payload) return;
+  const stamp = latest.savedAt.slice(0, 16).replace("T", "-").replace(":", "");
+  ttDownloadPayload(entry.payload, `teach-today-recovery-${stamp}.json`);
 }
 
 function ttBackupFileStamp(date = new Date()) {
@@ -10587,14 +10729,21 @@ async function ttSavePendingAudioToSyncFolder() {
   }
 }
 
-async function ttFirebaseReadPayload() {
+async function ttFirebaseReadEnvelope() {
   if (!ttFirebaseUser) return null;
   const { firestoreDb, doc, getDoc } = await ttFirebaseSdk();
   const path = ttFirebaseDocPath();
   const snapshot = await getDoc(doc(firestoreDb, ...path));
   if (!snapshot.exists()) return null;
   const data = snapshot.data();
-  if (data?.payload) return data.payload;
+  if (data?.payload) {
+    return {
+      payload: ttNormalizeFirebasePayload(data.payload),
+      revisionId: data.revisionId || "",
+      exportedAt: data.exportedAt || data.payload?.exportedAt || "",
+      version: data.version || 1
+    };
+  }
   if (!data?.chunkCount) return null;
   const chunks = [];
   for (let index = 0; index < data.chunkCount; index += 1) {
@@ -10607,34 +10756,171 @@ async function ttFirebaseReadPayload() {
       const error = new Error(`Firebase backup chunk ${id} is missing.`);
       error.code = "teach-today/corrupt-chunks";
       error.remoteExportedAt = data.exportedAt || "";
+      error.remoteRevisionId = data.revisionId || "";
       throw error;
     }
     chunks.push(chunkSnapshot.data()?.text || "");
   }
   try {
-    return JSON.parse(chunks.join(""));
+    return {
+      payload: ttNormalizeFirebasePayload(JSON.parse(chunks.join(""))),
+      revisionId: data.revisionId || "",
+      exportedAt: data.exportedAt || "",
+      version: data.version || 1
+    };
   } catch (error) {
     error.code = "teach-today/corrupt-chunks";
     error.remoteExportedAt = data.exportedAt || "";
+    error.remoteRevisionId = data.revisionId || "";
     throw error;
   }
 }
 
-async function ttFirebaseRestoreIfNewer(options = {}) {
-  const payload = await ttFirebaseReadPayload();
-  const restoredState = payload?.appState || payload;
-  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  if (!options.force && !ttShouldRestorePayload(payload)) return false;
-  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
-  if (payload.section2CardOverrides) {
-    localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
+async function ttInstallFirebaseEnvelope(envelope, options = {}) {
+  const payload = ttNormalizeFirebasePayload(envelope?.payload);
+  if (!payload) return false;
+  if (options.preserveLocal) {
+    const recoveryReason = options.reason || "Before loading cloud data";
+    await ttPreserveLocalRecovery(recoveryReason);
+    if (ttFirebaseUser && options.archiveLocal !== false) {
+      await ttArchiveFirebaseBranch(
+        ttFirebasePayload(),
+        recoveryReason,
+        localStorage.getItem("teachToday.lastFirebaseRevisionId") || ""
+      );
+    }
   }
+  const safety = ttFirebaseSafety();
+  const restoredState = safety.applySharedState(appState, payload.appState);
+  restoredState.lastSavedAt = payload.exportedAt || new Date().toISOString();
+  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
+  localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides || {}));
   localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
-  localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", restoredState.lastSavedAt || payload.exportedAt || new Date().toISOString());
-  if (options.revisionId) localStorage.setItem("teachToday.lastFirebaseRevisionId", options.revisionId);
-  localStorage.setItem("teachToday.firebaseSyncStatus", "Loaded newer Firebase data.");
-  location.reload();
+  localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", restoredState.lastSavedAt);
+  localStorage.setItem("teachToday.lastFirebaseRevisionId", envelope.revisionId || "");
+  localStorage.setItem(ttFirebaseSharedSignatureKey, ttFirebasePayloadSignature(payload));
+  await ttStoreFirebaseBaseline({ ...envelope, payload });
+  localStorage.setItem("teachToday.firebaseSyncStatus", options.status || "Loaded the authoritative Firebase copy.");
+  if (options.reload !== false) location.reload();
   return true;
+}
+
+async function ttFirebaseRestoreIfNewer(options = {}) {
+  const envelope = await ttFirebaseReadEnvelope();
+  if (!envelope?.payload) return false;
+  const remoteSignature = ttFirebasePayloadSignature(envelope.payload);
+  const localSignature = ttCurrentFirebaseSignature();
+  const knownRevision = localStorage.getItem("teachToday.lastFirebaseRevisionId") || "";
+  if (remoteSignature === localSignature) {
+    localStorage.setItem("teachToday.lastFirebaseRevisionId", envelope.revisionId || "");
+    localStorage.setItem(ttFirebaseSharedSignatureKey, remoteSignature);
+    localStorage.setItem("teachToday.lastFirebaseSyncAt", envelope.exportedAt || new Date().toISOString());
+    await ttStoreFirebaseBaseline(envelope);
+    return false;
+  }
+  const baseline = await ttFirebaseSafetyGet(ttFirebaseBaselineKey);
+  if (!options.force && baseline?.payload && baseline.revisionId === knownRevision) {
+    const baselineSignature = ttFirebasePayloadSignature(baseline.payload);
+    if (localSignature !== baselineSignature) return false;
+  }
+  return ttInstallFirebaseEnvelope(envelope, {
+    preserveLocal: localSignature !== ttFirebasePayloadSignature(baseline?.payload),
+    reason: "Before loading a different Firebase copy",
+    status: "Loaded Firebase data. The previous device copy was preserved in Recovery."
+  });
+}
+
+async function ttWriteFirebaseRevisionDocuments(payload, metadata = {}) {
+  const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+  const path = ttFirebaseDocPath();
+  const now = new Date();
+  const serialized = JSON.stringify(payload);
+  const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
+  const revisionToken = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(16).slice(2, 10);
+  const revisionId = `${now.getTime()}-${revisionToken}`;
+  for (let index = 0; index < chunkCount; index += 1) {
+    const id = String(index).padStart(4, "0");
+    await setDoc(doc(firestoreDb, ...path, "revisions", revisionId, "chunks", id), {
+      index,
+      text: serialized.slice(index * ttFirebaseChunkSize, (index + 1) * ttFirebaseChunkSize)
+    });
+  }
+  const manifest = {
+    kind: metadata.kind || "TeachTodayFirebaseRevision",
+    version: 4,
+    revisionId,
+    createdAt: serverTimestamp(),
+    exportedAt: payload.exportedAt,
+    chunkCount,
+    chunkSize: ttFirebaseChunkSize,
+    byteLength: new Blob([serialized]).size,
+    deviceId: ttFirebaseDeviceId(),
+    parentRevisionId: metadata.parentRevisionId || "",
+    mergeParentRevisionIds: metadata.mergeParentRevisionIds || [],
+    reason: metadata.reason || "Automatic sync"
+  };
+  await setDoc(doc(firestoreDb, ...path, "revisions", revisionId), manifest);
+  return { revisionId, manifest };
+}
+
+async function ttArchiveFirebaseBranch(payload, reason, parentRevisionId = "") {
+  const revision = await ttWriteFirebaseRevisionDocuments(payload, {
+    kind: "TeachTodayFirebaseRecoveryRevision",
+    parentRevisionId,
+    reason
+  });
+  const { firestoreDb, doc, setDoc, serverTimestamp } = await ttFirebaseSdk();
+  await setDoc(doc(firestoreDb, ...ttFirebaseDocPath(), "devices", ttFirebaseDeviceId()), {
+    latestRecoveryRevisionId: revision.revisionId,
+    latestRecoveryAt: serverTimestamp(),
+    reason
+  }, { merge: true });
+  return revision.revisionId;
+}
+
+async function ttCommitFirebaseRevision(payload, expectedRevisionId, metadata = {}) {
+  const { firestoreDb, doc, setDoc, serverTimestamp, runTransaction } = await ttFirebaseSdk();
+  const path = ttFirebaseDocPath();
+  const revision = await ttWriteFirebaseRevisionDocuments(payload, metadata);
+  ttFirebaseWritingRevisionId = revision.revisionId;
+  const mainRef = doc(firestoreDb, ...path);
+  await runTransaction(firestoreDb, async (transaction) => {
+    const currentSnapshot = await transaction.get(mainRef);
+    const currentRevisionId = currentSnapshot.exists() ? (currentSnapshot.data()?.revisionId || "") : "";
+    if (currentRevisionId !== (expectedRevisionId || "")) {
+      const conflict = new Error("Another signed-in device saved newer Teach Today data.");
+      conflict.code = "teach-today/sync-conflict";
+      throw conflict;
+    }
+    transaction.set(mainRef, {
+      kind: "TeachTodayFirebaseSync",
+      version: 4,
+      revisionId: revision.revisionId,
+      updatedAt: serverTimestamp(),
+      exportedAt: payload.exportedAt,
+      chunkCount: revision.manifest.chunkCount,
+      chunkSize: ttFirebaseChunkSize,
+      byteLength: revision.manifest.byteLength,
+      deviceId: ttFirebaseDeviceId(),
+      parentRevisionId: metadata.parentRevisionId || "",
+      mergeParentRevisionIds: metadata.mergeParentRevisionIds || []
+    });
+  });
+  await setDoc(doc(firestoreDb, ...path, "devices", ttFirebaseDeviceId()), {
+    latestRevisionId: revision.revisionId,
+    latestSyncAt: serverTimestamp()
+  }, { merge: true });
+  return revision.revisionId;
+}
+
+async function ttMarkFirebaseSynced(envelope, reason) {
+  const payload = ttNormalizeFirebasePayload(envelope.payload);
+  localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
+  localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", appState.lastSavedAt || payload.exportedAt);
+  localStorage.setItem("teachToday.lastFirebaseRevisionId", envelope.revisionId || "");
+  localStorage.setItem(ttFirebaseSharedSignatureKey, ttFirebasePayloadSignature(payload));
+  localStorage.setItem("teachToday.firebaseSyncStatus", reason);
+  await ttStoreFirebaseBaseline({ ...envelope, payload });
 }
 
 async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
@@ -10645,74 +10931,66 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
   }
   ttFirebaseBusy = true;
   ttUpdateHomeFirebaseStatus();
-  let syncConflict = false;
   try {
-    let remotePayload = null;
-    let remoteExportedAt = "";
+    let remoteEnvelope = null;
+    let corruptRemoteRevisionId = "";
     try {
-      remotePayload = await ttFirebaseReadPayload();
-      remoteExportedAt = remotePayload?.exportedAt || "";
+      remoteEnvelope = await ttFirebaseReadEnvelope();
     } catch (readError) {
       if (readError?.code !== "teach-today/corrupt-chunks") throw readError;
-      remoteExportedAt = readError.remoteExportedAt || "";
+      corruptRemoteRevisionId = readError.remoteRevisionId || "";
       localStorage.setItem("teachToday.firebaseSyncStatus", "Repairing an interrupted legacy Firebase sync from this browser's intact local copy...");
       ttRenderDataCenter();
     }
-    if (ttShouldRestorePayload(remotePayload)) {
-      await ttFirebaseRestoreIfNewer();
+    let localPayload = ttFirebasePayload();
+    const localSignature = ttFirebasePayloadSignature(localPayload);
+    const remoteSignature = ttFirebasePayloadSignature(remoteEnvelope?.payload);
+    const knownRevision = localStorage.getItem("teachToday.lastFirebaseRevisionId") || "";
+
+    if (remoteEnvelope && localSignature === remoteSignature) {
+      await ttMarkFirebaseSynced(remoteEnvelope, reason);
       return;
     }
-    const { firestoreDb, doc, setDoc, serverTimestamp, runTransaction } = await ttFirebaseSdk();
-    const path = ttFirebaseDocPath();
-    const now = new Date();
-    const payload = ttBackupPayload(now);
-    const serialized = JSON.stringify(payload);
-    const chunkCount = Math.ceil(serialized.length / ttFirebaseChunkSize);
-    const revisionToken = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(16).slice(2, 10);
-    const revisionId = `${now.getTime()}-${revisionToken}`;
-    ttFirebaseWritingRevisionId = revisionId;
-    for (let index = 0; index < chunkCount; index += 1) {
-      const id = String(index).padStart(4, "0");
-      await setDoc(doc(firestoreDb, ...path, "revisions", revisionId, "chunks", id), {
-        index,
-        text: serialized.slice(index * ttFirebaseChunkSize, (index + 1) * ttFirebaseChunkSize)
-      });
-    }
-    const mainRef = doc(firestoreDb, ...path);
-    await runTransaction(firestoreDb, async (transaction) => {
-      const currentSnapshot = await transaction.get(mainRef);
-      const currentExportedAt = currentSnapshot.exists() ? (currentSnapshot.data()?.exportedAt || "") : "";
-      if (currentExportedAt !== remoteExportedAt) {
-        const conflict = new Error("Another signed-in browser saved newer Teach Today data.");
-        conflict.code = "teach-today/sync-conflict";
-        throw conflict;
+
+    if (remoteEnvelope && remoteEnvelope.revisionId !== knownRevision) {
+      const baseline = await ttFirebaseSafetyGet(ttFirebaseBaselineKey);
+      await ttPreserveLocalRecovery("Before reconciling with a newer Firebase revision");
+      await ttArchiveFirebaseBranch(localPayload, "Preserved device branch before reconciliation", knownRevision);
+      if (!baseline?.payload || baseline.revisionId !== knownRevision) {
+        await ttInstallFirebaseEnvelope(remoteEnvelope, {
+          preserveLocal: false,
+          status: "Firebase is authoritative online. This device's previous copy was preserved in Recovery."
+        });
+        return;
       }
-      transaction.set(mainRef, {
-        kind: "TeachTodayFirebaseSync",
-        version: 3,
-        revisionId,
-        updatedAt: serverTimestamp(),
-        exportedAt: payload.exportedAt,
-        chunkCount,
-        chunkSize: ttFirebaseChunkSize,
-        byteLength: new Blob([serialized]).size
+      const merged = ttFirebaseSafety().mergePayloads(baseline.payload, localPayload, remoteEnvelope.payload);
+      localPayload = ttFirebasePayload(new Date(), merged.appState, merged.section2CardOverrides);
+      const revisionId = await ttCommitFirebaseRevision(localPayload, remoteEnvelope.revisionId, {
+        parentRevisionId: remoteEnvelope.revisionId,
+        mergeParentRevisionIds: [knownRevision, remoteEnvelope.revisionId].filter(Boolean),
+        reason: "Automatic three-way reconciliation"
       });
+      const mergedEnvelope = { payload: localPayload, revisionId, exportedAt: localPayload.exportedAt, version: 4 };
+      const mergeStatus = merged.conflicts.length
+        ? `Merged device changes. ${merged.conflicts.length} same-field choice(s) used the cloud value; the device branch is preserved in Recovery.`
+        : "Merged changes from both devices without losing records.";
+      await ttMarkFirebaseSynced(mergedEnvelope, mergeStatus);
+      await ttInstallFirebaseEnvelope(mergedEnvelope, { reload: true, preserveLocal: false, status: mergeStatus });
+      return;
+    }
+
+    const expectedRevisionId = remoteEnvelope?.revisionId || corruptRemoteRevisionId || "";
+    const revisionId = await ttCommitFirebaseRevision(localPayload, expectedRevisionId, {
+      parentRevisionId: expectedRevisionId,
+      reason
     });
-    localStorage.setItem("teachToday.lastFirebaseSyncAt", now.toISOString());
-    localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", payload.appState?.lastSavedAt || payload.exportedAt);
-    localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
-    localStorage.setItem("teachToday.firebaseSyncStatus", reason);
+    await ttMarkFirebaseSynced({ payload: localPayload, revisionId, exportedAt: localPayload.exportedAt, version: 4 }, reason);
   } catch (error) {
     const detail = error?.code || error?.message || "unknown error";
     if (detail === "teach-today/sync-conflict") {
-      syncConflict = true;
       ttFirebasePending = false;
-      localStorage.setItem("teachToday.firebaseSyncStatus", "Another signed-in browser saved newer data. This tab did not overwrite it. Refresh before continuing here.");
-      ttShowConnectionNotice(
-        "Another signed-in browser saved newer Teach Today data. This tab did not overwrite it. Save this device backup before choosing which copy to keep.",
-        "Two lesson copies need your choice",
-        { conflict: true }
-      );
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Another device saved during reconciliation. Retrying without overwriting either copy.");
+      ttFirebasePending = true;
       return;
     }
     console.warn("Teach Today Firebase sync failed:", error);
@@ -10723,7 +11001,7 @@ async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
     ttFirebaseBusy = false;
     ttRenderDataCenter();
     ttUpdateHomeFirebaseStatus();
-    if (ttFirebasePending && !syncConflict) {
+    if (ttFirebasePending) {
       ttFirebasePending = false;
       ttQueueFirebaseSync();
     }
@@ -10837,6 +11115,11 @@ async function ttSecureLegacyStudentData() {
 
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
+  if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase is up to date.");
+    ttUpdateHomeFirebaseStatus();
+    return;
+  }
   if (ttFirebaseUser) {
     localStorage.setItem("teachToday.firebaseSyncStatus", "Changes saved locally. Syncing automatically...");
     ttUpdateHomeFirebaseStatus();
@@ -10897,6 +11180,8 @@ function ttUpdateFirebaseAuthUI() {
 }
 
 function ttHasUnsyncedFirebaseChanges() {
+  const syncedSignature = localStorage.getItem(ttFirebaseSharedSignatureKey);
+  if (syncedSignature) return ttCurrentFirebaseSignature() !== syncedSignature;
   const localSave = new Date(appState?.lastSavedAt || 0).getTime() || 0;
   const syncedSave = new Date(localStorage.getItem("teachToday.lastFirebaseSyncedLocalSaveAt") || 0).getTime() || 0;
   return localSave > syncedSave + 1000;
@@ -10916,9 +11201,6 @@ async function ttStartFirebaseRevisionListener() {
     const revisionId = snapshot.data()?.revisionId || "";
     if (!receivedInitialSnapshot) {
       receivedInitialSnapshot = true;
-      if (revisionId && !localStorage.getItem("teachToday.lastFirebaseRevisionId")) {
-        localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
-      }
       return;
     }
     if (!revisionId || revisionId === localStorage.getItem("teachToday.lastFirebaseRevisionId")) return;
@@ -10926,15 +11208,13 @@ async function ttStartFirebaseRevisionListener() {
       localStorage.setItem("teachToday.lastFirebaseRevisionId", revisionId);
       return;
     }
-    if (ttFirebaseBusy || ttHasUnsyncedFirebaseChanges()) {
-      localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data is available from another device. Your local edits were not overwritten. Refresh or Sync now after reviewing this device.");
-      ttShowConnectionNotice(
-        "Another device saved newer Teach Today data. This device kept its local edits and did not overwrite anything. Save this device backup before choosing which copy to keep.",
-        "Two lesson copies need your choice",
-        { conflict: true }
-      );
-      ttRenderDataCenter();
-      ttUpdateHomeFirebaseStatus();
+    if (ttFirebaseBusy) {
+      ttFirebasePending = true;
+      return;
+    }
+    if (ttHasUnsyncedFirebaseChanges()) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Another device changed Firebase. Reconciling both copies safely...");
+      ttQueueFirebaseSync();
       return;
     }
     localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data detected. Updating this device...");
@@ -11039,14 +11319,8 @@ async function ttInitFirebaseSync() {
 function ttBackupData() {
   const now = new Date();
   const payload = ttBackupPayload(now);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
   const stamp = now.toISOString().slice(0, 16).replace("T", "-").replace(":", "");
-  link.download = `teach-today-backup-${stamp}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  ttDownloadPayload(payload, `teach-today-backup-${stamp}.json`);
   localStorage.setItem("teachToday.lastBackupAt", now.toISOString());
   ttRenderDataCenter();
 }
@@ -11166,59 +11440,6 @@ async function ttCloudSyncPermission(handle, write = false, request = false) {
   return (await handle.requestPermission(options)) === "granted";
 }
 
-async function ttCloudSyncReadPayload(handle) {
-  try {
-    const fileHandle = await handle.getFileHandle(ttCloudSyncFileName);
-    const file = await fileHandle.getFile();
-    return JSON.parse(await file.text());
-  } catch {
-    return null;
-  }
-}
-
-function ttPayloadTime(payload) {
-  const state = payload?.appState || payload;
-  return new Date(state?.lastSavedAt || payload?.exportedAt || 0).getTime() || 0;
-}
-
-function ttLocalSaveTime() {
-  return new Date(appState?.lastSavedAt || 0).getTime() || 0;
-}
-
-function ttStateDataScore(state = appState) {
-  const groups = state?.groups || [];
-  return (state?.masterRecords || []).length
-    + groups.reduce((sum, group) =>
-      sum
-      + (group.history || []).length
-      + (group.dictationMisses || []).length
-      + (group.encodingObservations || []).length,
-    0);
-}
-
-function ttShouldRestorePayload(payload) {
-  const restoredState = payload?.appState || payload;
-  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  const remoteScore = ttStateDataScore(restoredState);
-  const localScore = ttStateDataScore(appState);
-  return remoteScore > localScore || ttPayloadTime(payload) > ttLocalSaveTime() + 1000;
-}
-
-async function ttCloudSyncRestoreIfNewer(handle) {
-  const payload = await ttCloudSyncReadPayload(handle);
-  const restoredState = payload?.appState || payload;
-  if (!restoredState?.groups || !Array.isArray(restoredState.groups)) return false;
-  if (!ttShouldRestorePayload(payload)) return false;
-  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
-  if (payload.section2CardOverrides) {
-    localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
-  }
-  localStorage.setItem("teachToday.lastCloudSyncAt", payload.exportedAt || new Date().toISOString());
-  localStorage.setItem("teachToday.cloudSyncStatus", "Loaded newer cloud data.");
-  location.reload();
-  return true;
-}
-
 async function ttCloudSyncWrite(reason = "Saved local backup file.") {
   if (!ttCloudSyncSupported()) {
     localStorage.setItem("teachToday.cloudSyncStatus", "Local folder backup is not supported in this browser.");
@@ -11240,7 +11461,6 @@ async function ttCloudSyncWrite(reason = "Saved local backup file.") {
       localStorage.setItem("teachToday.cloudSyncStatus", "Open Data Center and choose the local folder again to reconnect.");
       return;
     }
-    if (await ttCloudSyncRestoreIfNewer(handle)) return;
     const now = new Date();
     const payload = ttBackupPayload(now);
     const backupText = JSON.stringify(payload, null, 2);
@@ -11287,8 +11507,7 @@ async function ttConnectCloudSync() {
     }
     await ttCloudSyncStoreValue(ttCloudSyncHandleKey, handle);
     localStorage.setItem("teachToday.cloudSyncFolderName", handle.name || "Local backup folder");
-    const restored = await ttCloudSyncRestoreIfNewer(handle);
-    if (!restored) await ttCloudSyncWrite("Connected and saved local backup file.");
+    await ttCloudSyncWrite("Connected and saved local backup file.");
   } catch {
     localStorage.setItem("teachToday.cloudSyncStatus", "Local backup folder was not connected.");
     ttRenderDataCenter();
@@ -11313,7 +11532,6 @@ async function ttInitCloudSync() {
       ttRenderDataCenter();
       return;
     }
-    await ttCloudSyncRestoreIfNewer(handle);
     ttQueueCloudSync();
   } catch {
     localStorage.setItem("teachToday.cloudSyncStatus", "Local file backup is paused. Browser storage is still saved.");
@@ -13878,6 +14096,7 @@ function ttBind() {
   });
   ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
+  ttById("ttDownloadRecovery")?.addEventListener("click", () => ttDownloadLatestRecovery());
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
   ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {

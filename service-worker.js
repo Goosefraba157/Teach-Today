@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-23-conflict-choice-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-23-authoritative-sync-1";
 
 const APP_SHELL = [
   "./",
@@ -29,6 +29,7 @@ const APP_SHELL = [
   "./student-lesson.css",
   "./styles.css",
   "./app.js",
+  "./sync-safety.js",
   "./developer-access.js",
   "./developer-menu-config.js",
   "./developer-dashboard.js",

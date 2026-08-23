@@ -90,3 +90,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Gave Start, Pause, and Stop distinct control colors and unified Section 4 finalization so Stop, student changes, section navigation, and scrolling into the next section automatically preserve meaningful charting data.
 - Added page-hide/unload chart-data protection, refreshed V1 asset/cache versions, and verified the scroll-to-Section-5 autosave flow locally with synthetic data and no console errors.
 - Replaced the ambiguous Firebase conflict retry with explicit backup-first choices: save the device's local copy, deliberately load the cloud copy after confirmation, or keep the device offline. Ordinary connection failures retain the normal retry action.
+- Upgraded private Firebase sync to an authoritative revision-4 workflow with per-device shared-state signatures, immutable revision manifests, transaction retries, and three-way reconciliation from the last confirmed cloud baseline.
+- Separated device-only navigation and student-selection state from shared instructional records so scrolling or changing the active student no longer creates false cross-device conflicts.
+- Added automatic local Recovery snapshots plus immutable private Firebase recovery branches before cloud replacement or reconciliation, with a Records & Data action to download the latest recovery file.
+- Made local-folder syncing backup-only: it continues writing dated full backups but never auto-restores during an ordinary save or folder connection.

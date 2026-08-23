@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>Sync safety browser test</title></head>
+  <body>
+    <pre id="result">running</pre>
+    <script src="../sync-safety.js"></script>
+    <script>
+      const sync = window.TeachTodaySyncSafety;
+      const base = {
+        selectedGroupId: "group-a",
+        lessonScrollPositions: { "group-a": 10 },
+        groups: [{ id: "group-a", students: ["student-a"], activeStudent: "student-a", history: [] }],
+        schoolYears: []
+      };
+      const moved = JSON.parse(JSON.stringify(base));
+      moved.lessonScrollPositions["group-a"] = 500;
+      const passed = Boolean(sync)
+        && sync.signature(sync.sharedState(base)) === sync.signature(sync.sharedState(moved));
+      document.getElementById("result").textContent = passed ? "PASS" : "FAIL";
+    </script>
+  </body>
+</html>
