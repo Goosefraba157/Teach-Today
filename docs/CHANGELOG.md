@@ -95,3 +95,4 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added automatic local Recovery snapshots plus immutable private Firebase recovery branches before cloud replacement or reconciliation, with a Records & Data action to download the latest recovery file.
 - Made local-folder syncing backup-only: it continues writing dated full backups but never auto-restores during an ordinary save or folder connection.
 - Published and verified the revision-4 authoritative sync release on GitHub Pages, including the versioned recovery helper and updated offline cache.
+- Replaced Section 4 Stage's recreated word sheet with the authentic embedded Reader PDF page, full-page projector fitting, a generated-page loading/error fallback, strict Reader/page path derivation, and offline caching for all Reader PDFs.

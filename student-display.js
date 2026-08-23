@@ -240,9 +240,26 @@ function renderChart(payload) {
   const hasChartWords = []
     .concat(chart.topWords || [], chart.bottomWords || [])
     .some(Boolean);
+  const pdfSrc = chartPdfStageSrc(chart);
   const detail = chart.reader && chart.page
     ? `Reader ${chart.reader}, p. ${chart.page}${chart.level ? ` - ${chart.level}` : ""}`
     : "Section 4";
+  const fallbackPage = hasChartWords ? `
+    <div class="chart-page-fallback">
+      <div class="chart-page-sheet" style="--chart-scale:${currentPdfZoom === "page-fit" ? "1" : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))}">
+        <p class="chart-page-kicker">syllable division</p>
+        <div class="chart-page-rule chart-page-rule-top"></div>
+        <div class="chart-page-rule chart-page-rule-middle"></div>
+        <div class="chart-page-rule chart-page-rule-bottom"></div>
+        ${renderChartPositionedWords(chart.topWords || [], chart.bottomWords || [])}
+      </div>
+    </div>
+  ` : `
+    <div class="chart-pdf-empty">
+      <strong>Reader page not ready</strong>
+      <span>Pick or recheck the Section 4 page in Teach Today.</span>
+    </div>
+  `;
   return `
     <section class="stage-shell stage-mode-chart">
       <div class="chart-mini-header">
@@ -251,20 +268,8 @@ function renderChart(payload) {
       <div class="stage-body">
         <section class="chart-stage">
           <article class="chart-pdf-panel">
-            ${hasChartWords ? `
-              <div class="chart-page-sheet" style="--chart-scale:${currentPdfZoom === "page-fit" ? "1" : Math.max(0.5, Math.min(2, Number(currentPdfZoom || 100) / 100))}">
-                <p class="chart-page-kicker">syllable division</p>
-                <div class="chart-page-rule chart-page-rule-top"></div>
-                <div class="chart-page-rule chart-page-rule-middle"></div>
-                <div class="chart-page-rule chart-page-rule-bottom"></div>
-                ${renderChartPositionedWords(chart.topWords || [], chart.bottomWords || [])}
-              </div>
-            ` : `
-              <div class="chart-pdf-empty">
-                <strong>Reader page not ready</strong>
-                <span>Pick or recheck the Section 4 page in Teach Today.</span>
-              </div>
-            `}
+            ${fallbackPage}
+            ${pdfSrc ? `<iframe class="chart-pdf-frame" title="${escapeHtml(detail)}" data-chart-pdf-src="${escapeHtml(pdfSrc)}"></iframe>` : ""}
           </article>
         </section>
       </div>
@@ -336,6 +341,7 @@ function render(payload) {
 
   currentInkKey = nextInkKey;
   bindStageControls(payload);
+  setupChartPdfFrame();
   setupStageInk(payload);
 }
 
@@ -353,26 +359,28 @@ function stageUrl(url) {
 }
 
 function chartPdfStageSrc(chart = {}) {
-  let pdfFile = chart.pdfFile || "";
-  let pdfPage = chart.pdfPage || "";
-  if ((!pdfFile || !pdfPage) && chart.pdfViewerUrl) {
-    try {
-      const query = chart.pdfViewerUrl.includes("?") ? chart.pdfViewerUrl.split("?").slice(1).join("?") : "";
-      const params = new URLSearchParams(query);
-      pdfFile ||= params.get("file") || "";
-      pdfPage ||= params.get("page") || "";
-    } catch (_) {}
-  }
-  if (!pdfFile || !pdfPage) return "";
-  const zoom = currentPdfZoom === "page-fit" ? "page-fit" : `${Math.round(currentPdfZoom)}`;
+  const reader = Number(chart.reader || 0);
+  const chartPage = Number(chart.page || 0);
+  if (!Number.isInteger(reader) || reader < 1 || reader > 12 || !Number.isInteger(chartPage) || chartPage < 1) return "";
+  const pdfFile = `Readers%20in%20PDF%20form/WRS_Student_Reader_${reader}.pdf`;
+  const pdfPage = chartPage + 2;
   const params = [
     `page=${encodeURIComponent(pdfPage)}`,
-    `zoom=${encodeURIComponent(zoom)}`,
+    currentPdfZoom === "page-fit" ? "view=Fit" : `zoom=${encodeURIComponent(Math.round(currentPdfZoom))}`,
     "toolbar=0",
     "navpanes=0",
     "scrollbar=0"
   ].join("&");
   return `${pdfFile}#${params}`;
+}
+
+function setupChartPdfFrame() {
+  const frame = root.querySelector(".chart-pdf-frame[data-chart-pdf-src]");
+  const panel = frame?.closest(".chart-pdf-panel");
+  if (!frame || !panel) return;
+  frame.addEventListener("load", () => panel.classList.add("chart-pdf-ready"), { once: true });
+  frame.addEventListener("error", () => panel.classList.add("chart-pdf-failed"), { once: true });
+  frame.src = frame.dataset.chartPdfSrc || "";
 }
 
 function payloadInkKey(payload) {

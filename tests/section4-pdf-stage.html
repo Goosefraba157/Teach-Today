@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Section 4 PDF Stage Test</title>
+    <style>
+      html,
+      body,
+      iframe {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe id="stage" title="Section 4 PDF Stage test" src="../StudentDisplay.html"></iframe>
+    <script>
+      const payload = {
+        mode: "chart",
+        displayMode: "follow",
+        lessonId: "section4-pdf-test",
+        groupName: "Teach Today",
+        substep: "2.1",
+        chart: {
+          key: "section4-r2-p2-AB",
+          reader: 2,
+          page: 2,
+          level: "AB",
+          topWords: ["long", "song", "rang", "sing", "thing", "sang", "lung", "wing", "rung", "hang", "bang", "king", "gang", "hung", "ring"],
+          bottomWords: ["link", "rink", "rank", "think", "sank", "sink", "honk", "bank", "dunk", "tank", "wink", "thank", "chunk", "junk", "bunk"]
+        }
+      };
+
+      document.getElementById("stage").addEventListener("load", (event) => {
+        event.currentTarget.contentWindow.postMessage({ type: "teachTodayStudentDisplay", payload }, location.origin);
+      });
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-23-authoritative-sync-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-23-section4-reader-pdf-1";
 
 const APP_SHELL = [
   "./",
@@ -58,6 +58,18 @@ const APP_SHELL = [
   "./wilson-lp-template.js",
   "./wilson-hfw-data.js",
   "./vendor/pdf-lib.min.js",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_1.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_2.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_3.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_4.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_5.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_6.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_7.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_8.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_9.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_10.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_11.pdf",
+  "./Readers%20in%20PDF%20form/WRS_Student_Reader_12.pdf",
   "./Part%209%20Reading%20Passages%20from%20Readers/WRS_Student_Reader_1%20-%20Reading%20Passages%20Only.pdf",
   "./Part%209%20Reading%20Passages%20from%20Readers/WRS_Student_Reader_2%20-%20Reading%20Passages%20Only.pdf",
   "./Part%209%20Reading%20Passages%20from%20Readers/WRS_Student_Reader_3%20-%20Reading%20Passages%20Only.pdf",
