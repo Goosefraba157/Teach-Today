@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-22
+2026-08-23
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -105,10 +105,14 @@
 - Mirror is native-only and never automatic. Stage remains the privacy-safe default, ordinary browser behavior is unchanged, and the native shell returns to Stage whenever the teacher scene resigns active or the web process restarts. Connect Screen Mirroring first, then deliberately select Mirror Teacher.
 - The hosted Mirror control also requires the native projection message handler, so it stays hidden in ordinary browsers and older installed shell builds until the matching native binary is installed.
 - Native `window.confirm()` dialogs are handled by the trusted-origin teacher webview. This is required for the Mirror Teacher privacy warning and the V1 app's other guarded actions; untrusted/subframe confirmations fail closed.
-- The confirmation-handler build was compiled, signed through Xcode, installed, and launched on the connected iPad on 2026-08-22. Hardware verification of the resulting Mirror stream is the remaining check.
+- The confirmation-handler build was compiled, signed through Xcode, installed, and launched on the connected iPad on 2026-08-22. Hardware verification then confirmed that Mirror Teacher shows the exact teacher webview and that selecting Follow Lesson returns immediately to the sanitized student display.
 - The Mirror implementation compiles successfully for generic physical iOS with signing disabled and passes JavaScript syntax, plist, diff, and local browser checks. Both command-line signing and Xcode Run reach Apple `codesign` but wait for local Keychain authorization. The Mac account owner must approve the signing-key access when running this native revision; do not commit the local Personal Team setting.
 - Until the Firebase revision update is visibly loaded on every open Teach Today tab, use one signed-in browser at a time. After deployment, simultaneous tabs no longer mix chunk JSON; a losing tab will show a refresh-required conflict instead of overwriting newer cloud data.
-- Exact next step: with Screen Mirroring connected, choose Mirror Teacher in the running iPad app, confirm the native Cancel/Continue privacy dialog appears, tap Continue, and verify the projected screen follows the visible teacher webview. Then choose Follow Lesson (or another Stage mode) and confirm the sanitized display returns immediately. Also verify backgrounding resets Mirror to Stage and assess snapshot smoothness on the classroom board.
+- Section 4 student pills no longer expose recent performance colors. They now show a neutral unfinished circle or a green `Saved` marker based only on whether that student has a charting record for the current official lesson.
+- Section 4 Start, Pause, and Stop controls now use distinct teal, amber, and red states. Stop still saves automatically; changing students now finalizes audio and charting through the same save path; scrolling out of Section 4 or using presentation navigation auto-stops and saves meaningful unsaved charting. Page hiding/unloading retains a synchronous chart-data safety save.
+- Local synthetic browser verification confirmed scrolling from Section 4 to Section 5 auto-saves the active student's current-lesson record, updates only that pill to `Saved`, preserves the existing chart summary, and produces no console errors. No record schema, Firebase rule, or Stage payload changed.
+- The user's local Personal Team signing change remains intentionally uncommitted in `ios/TeachTodayStageProof/TeachTodayStageProof.xcodeproj/project.pbxproj`; do not stage it.
+- Exact next step: deploy this Section 4 revision, then verify on the iPad with Demo Group that Start is visibly active, scrolling into Section 5 stops and saves without tapping Stop, and the charted student's pill changes to `Saved`. Separately verify that backgrounding during Mirror returns the external display to sanitized Stage when convenient.
 - Audit the V1 presentation flow and inventory slides for opening and Sections 1-10.
 - Improve V1 presentation incrementally while preserving the current teacher, student, and Firebase flows.
 

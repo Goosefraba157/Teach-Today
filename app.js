@@ -2463,6 +2463,9 @@ function saveLiveRecord(card, options = {}) {
   }
   card.dataset.lastSavedSignature = liveDataSignature(card);
   syncActiveStudentUi(group);
+  if (typeof window.ttRefreshSection4StudentPills === "function") {
+    window.ttRefreshSection4StudentPills();
+  }
   setRecordingStatus(card, "Saved");
   card.querySelector(".live-score").textContent = `${options.automatic ? "Auto-saved" : "Saved"}: ${student} - ${titleCase(chartHalf)} half - ${correct}/${total} correct, ${wrongCount} wrong - ${recommendation}`;
 }

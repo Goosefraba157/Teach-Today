@@ -82,3 +82,10 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Hid Mirror Teacher unless the matching native projection bridge is present, preventing older installed shell builds from showing a control they cannot execute.
 - Added trusted-origin JavaScript confirmation handling to the native teacher webview so approving the Mirror Teacher privacy warning actually activates projection; untrusted and subframe dialogs fail closed.
 - Compiled, signed, installed, and launched the corrected confirmation-handler build on the connected iPad for hardware Mirror testing.
+
+## 2026-08-23
+
+- Hardware-tested native Mirror Teacher and confirmed that the external display follows the exact teacher webview, then returns to sanitized Follow Lesson when selected.
+- Replaced Section 4's recent-performance dots with current-lesson charting status so each student shows a neutral unfinished state or a green `Saved` marker without exposing performance at the live teaching surface.
+- Gave Start, Pause, and Stop distinct control colors and unified Section 4 finalization so Stop, student changes, section navigation, and scrolling into the next section automatically preserve meaningful charting data.
+- Added page-hide/unload chart-data protection, refreshed V1 asset/cache versions, and verified the scroll-to-Section-5 autosave flow locally with synthetic data and no console errors.

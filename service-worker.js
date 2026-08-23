@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-22-native-mirror-2";
+const CACHE_NAME = "teach-today-offline-v2026-08-23-chart-autosave-1";
 
 const APP_SHELL = [
   "./",

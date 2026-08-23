@@ -12591,18 +12591,46 @@ function ttFillStudentPills(group) {
     button.type = "button";
     button.className = `student-pill${student === group.activeStudent ? " active" : ""}`;
     button.dataset.student = student;
-    const status = performanceStatus(recordsForStudent(student));
-    button.innerHTML = `<span class="status-dot ${status.color}"></span>${escapeHtml(student)}`;
+    const savedCount = ttCurrentLessonChartRecords(student, group).length;
+    const saved = savedCount > 0;
+    button.title = saved
+      ? `${student} has ${savedCount} charting record${savedCount === 1 ? "" : "s"} saved for this lesson.`
+      : `${student} has not been charted for this lesson yet.`;
+    button.setAttribute("aria-label", `${student}. ${saved ? "Charting saved for this lesson" : "Not charted for this lesson"}.`);
+    button.innerHTML = `
+      <span class="lesson-chart-status${saved ? " saved" : ""}" aria-hidden="true">${saved ? "&#10003;" : ""}</span>
+      <span>${escapeHtml(student)}</span>
+      ${saved ? '<span class="lesson-chart-saved-label">Saved</span>' : ""}
+    `;
     button.addEventListener("click", () => ttSelectStudent(student));
     container.appendChild(button);
   });
 }
 
-function ttSelectStudent(student) {
+function ttCurrentLessonChartRecords(student, group = ttActiveGroup()) {
+  const meta = ttCurrentLessonRecordMeta(ttLesson);
+  return (appState.masterRecords || []).filter((record) => {
+    if (record.student !== student) return false;
+    if (record.groupId && record.groupId !== group.id) return false;
+    if (!record.groupId && record.group !== group.name) return false;
+    if (meta.planId) return record.planId === meta.planId;
+    return Boolean(meta.lessonId) && record.lessonId === meta.lessonId;
+  });
+}
+
+window.ttRefreshSection4StudentPills = () => {
+  if (ttById("ttStudentPills")) ttFillStudentPills(ttActiveGroup());
+};
+
+async function ttSelectStudent(student) {
+  if (student !== ttActiveGroup().activeStudent) {
+    await ttFinalizeSection4Record({ automatic: true });
+  }
   selectActiveStudent(student, { sourceCard: ttChartCard, resetSource: true });
   ttById("ttStudent").value = student;
   ttById("ttTitle").textContent = `${ttActiveGroup().name} - ${ttLesson?.substep || ttActiveGroup().substep}`;
   ttFillFrontStudents(ttActiveGroup());
+  ttFillStudentPills(ttActiveGroup());
 }
 
 function ttSchedulePresentationMenuClose(delay = 6500) {
@@ -12684,6 +12712,9 @@ function ttGoToTeachingSection(direction) {
   const currentIndex = Math.max(0, sectionIds.indexOf(currentId));
   const targetIndex = Math.max(0, Math.min(sectionIds.length - 1, currentIndex + direction));
   const targetId = sectionIds[targetIndex];
+  if (currentId === "section4" && targetId !== "section4") {
+    ttFinalizeSection4Record({ automatic: true });
+  }
   ttById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
   ttPaceGuideState.activeSectionId = targetId;
   ttPaceGuideState.sectionStartedAt = Date.now();
@@ -13926,22 +13957,61 @@ function ttBind() {
   });
   ttById("section4").querySelector(".start-timer").addEventListener("click", () => startLiveTimer(ttChartCard, false));
   ttById("section4").querySelector(".pause-timer").addEventListener("click", () => pauseLiveTimer(ttChartCard));
-  ttById("section4").querySelector(".stop-timer").addEventListener("click", async () => {
+  ttById("section4").querySelector(".stop-timer").addEventListener("click", () => {
+    ttFinalizeSection4Record({ automatic: true, force: true });
+  });
+  ttById("section4").querySelector(".mute-toggle")?.addEventListener("click", () => {
+    if (isSpeechMuted) unmuteSpeech(ttChartCard);
+    else muteSpeech(ttChartCard, 8);
+  });
+  ttById("section4").querySelector(".save-live-record").addEventListener("click", () => {
+    ttFinalizeSection4Record({ automatic: false, force: true });
+  });
+}
+
+let ttSection4FinalizePromise = null;
+let ttSection4WasVisible = false;
+
+function ttFinalizeSection4Record({ automatic = true, force = false } = {}) {
+  if (!ttChartCard) return Promise.resolve(false);
+  if (ttSection4FinalizePromise) return ttSection4FinalizePromise;
+
+  ttSection4FinalizePromise = (async () => {
+    const hasActivity = force
+      || ttChartCard.classList.contains("is-timing")
+      || hasUnsavedLiveData(ttChartCard);
+    if (!hasActivity) return false;
     stopLiveTimer(ttChartCard, false);
     if (typeof activeRecognition !== "undefined" && activeRecognition) {
       try { activeRecognition.stop(); } catch (_) {}
       // eslint-disable-next-line no-global-assign
       activeRecognition = null;
     }
-    const blob = await stopAudioRecording(true);
+    const shouldSave = force || hasUnsavedLiveData(ttChartCard);
+    await stopAudioRecording(shouldSave);
+    if (!shouldSave) return false;
     showAudioPlayerInCard(ttChartCard);
-    saveLiveRecord(ttChartCard, { automatic: true });
+    saveLiveRecord(ttChartCard, { automatic });
+    ttFillStudentPills(ttActiveGroup());
+    return true;
+  })().finally(() => {
+    ttSection4FinalizePromise = null;
   });
-  ttById("section4").querySelector(".mute-toggle")?.addEventListener("click", () => {
-    if (isSpeechMuted) unmuteSpeech(ttChartCard);
-    else muteSpeech(ttChartCard, 8);
-  });
-  ttById("section4").querySelector(".save-live-record").addEventListener("click", () => saveLiveRecord(ttChartCard));
+  return ttSection4FinalizePromise;
+}
+
+function ttMonitorSection4AutoSave() {
+  const section = ttChartCard || ttById("section4");
+  if (!section || ttById("ttTeachFlow")?.hidden) {
+    ttSection4WasVisible = false;
+    return;
+  }
+  const rect = section.getBoundingClientRect();
+  const visible = rect.bottom > 120 && rect.top < window.innerHeight - 120;
+  if (ttSection4WasVisible && !visible) {
+    ttFinalizeSection4Record({ automatic: true });
+  }
+  ttSection4WasVisible = visible;
 }
 
 function appStateSwitchGroup(groupId) {
@@ -14037,8 +14107,19 @@ ttInitCloudSync();
 ttInitFirebaseSync();
 ttInitConnectionMonitor();
 ttBind();
-window.addEventListener("beforeunload", ttFinalizeActivePassageStroke);
-window.addEventListener("scroll", ttQueueStudentDisplayFollowSync, { passive: true });
+window.addEventListener("beforeunload", () => {
+  ttFinalizeActivePassageStroke();
+  if (ttChartCard && !ttSection4FinalizePromise) saveLiveRecordIfNeeded(ttChartCard);
+});
+window.addEventListener("scroll", () => {
+  ttQueueStudentDisplayFollowSync();
+  ttMonitorSection4AutoSave();
+}, { passive: true });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && ttChartCard && !ttSection4FinalizePromise) {
+    saveLiveRecordIfNeeded(ttChartCard);
+  }
+});
 window.addEventListener("resize", ttQueueStudentDisplayFollowSync, { passive: true });
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();

@@ -6469,11 +6469,32 @@ body.section4-stage-preview-open .teach-flow {
   color: #fff;
 }
 
-.timer-actions .pause-timer,
+.timer-actions .pause-timer {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .timer-actions .stop-timer {
-  border-color: #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.lesson-card.is-timing .timer-actions .start-timer {
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}
+
+.lesson-card.is-timing .timer-actions .stop-timer {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.timer-actions .pause-timer.active {
+  border-color: #d97706;
+  background: #f59e0b;
+  color: #fff;
 }
 
 .timer-actions .mic-toggle {
@@ -6504,6 +6525,32 @@ body.section4-stage-preview-open .teach-flow {
   border-color: var(--teal);
   background: var(--teal-soft);
   color: var(--teal);
+}
+
+.lesson-chart-status {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  place-items: center;
+  border: 2px solid #94a3b8;
+  border-radius: 999px;
+  background: #fff;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.lesson-chart-status.saved {
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.lesson-chart-saved-label {
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .status-dot {

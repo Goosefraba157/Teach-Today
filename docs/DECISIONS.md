@@ -51,6 +51,11 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Decision:** Teacher-facing labels should use the minimum recognizable name, normally first name plus last initial, rather than full legal names.
 - **Decision:** Archiving ends an active school-year membership; it does not delete historical records.
 
+## Live charting records
+
+- **Current-lesson status:** Section 4 student pills indicate only whether charting has been saved for the current lesson. Longitudinal performance colors belong in private records/profile views, not the live student selector.
+- **Save safety:** Meaningful Section 4 charting is finalized when the teacher presses Stop, changes students, navigates away, or scrolls out of the section. Manual Save remains available, and blank untouched charting must not create a record merely because the teacher scrolls past it.
+
 ## Privacy and hosting
 
 - **Decision:** The public GitHub Pages application contains code and non-sensitive curriculum assets only. Private student records belong in authenticated, owner-scoped Firebase storage.
