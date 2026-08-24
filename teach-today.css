@@ -3278,6 +3278,17 @@ body.whiteboard-mode {
   background: #115e59;
 }
 
+.section-intro-launch.discovery {
+  border-color: #0f766e;
+  background: #fff;
+  color: #0f766e;
+}
+
+.section-intro-launch.discovery:hover,
+.section-intro-launch.discovery:focus-visible {
+  background: #ccfbf1;
+}
+
 body.intro-lesson-open {
   overflow: hidden;
 }
@@ -3428,6 +3439,8 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-scene-enter .intro-build-card,
 .intro-scene-enter .intro-pair,
 .intro-scene-enter .intro-mark-word,
+.intro-scene-enter .intro-keyword-card,
+.intro-scene-enter .intro-notebook-sheet,
 .intro-scene-enter .intro-welcome-mark {
   animation: intro-rise 360ms ease both;
 }
@@ -3510,6 +3523,74 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   font-size: 18px;
   font-weight: 900;
   text-align: center;
+}
+
+.intro-pattern-grid .intro-sound-card {
+  min-height: 190px;
+  grid-template-rows: 1fr;
+}
+
+.intro-pattern-grid .intro-sound-card strong b {
+  display: inline-block;
+  border-bottom: 8px solid #0f766e;
+  color: #0f766e;
+  font-weight: inherit;
+}
+
+.intro-keyword-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: min(1000px, 100%);
+}
+
+.intro-keyword-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 196px auto;
+  justify-items: center;
+  overflow: hidden;
+  border: 2px solid #6aa06b;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.intro-keyword-art {
+  width: 150px;
+  height: 196px;
+  background-image: url("Sounds%20for%20Section%201/2.1%20-%202.2.png");
+  background-repeat: no-repeat;
+  background-size: 1829px 1018px;
+}
+
+.intro-keyword-art.image-ang { background-position: -1076px -235px; }
+.intro-keyword-art.image-ing { background-position: -1224px -235px; }
+.intro-keyword-art.image-ong { background-position: -1372px -235px; }
+.intro-keyword-art.image-ung { background-position: -1520px -235px; }
+.intro-keyword-art.image-ank { background-position: -1076px -439px; }
+.intro-keyword-art.image-ink { background-position: -1224px -439px; }
+.intro-keyword-art.image-onk { background-position: -1372px -439px; }
+.intro-keyword-art.image-unk { background-position: -1520px -439px; }
+
+.intro-keyword-card > div:last-child {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  border-top: 1px solid #bbd5bb;
+  padding: 8px 10px 10px;
+  background: #e9f7df;
+}
+
+.intro-keyword-card > div:last-child strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 32px;
+}
+
+.intro-keyword-card > div:last-child span {
+  color: #285633;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .intro-pair-grid {
@@ -3617,6 +3698,8 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 }
 
 .intro-build-card.suffix {
+  min-width: 218px;
+  min-height: 132px;
   border-color: #d3aa27;
   background: #facc15;
 }
@@ -3676,6 +3759,159 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   border-radius: 4px;
   padding: 0 3px 3px;
   font-weight: inherit;
+}
+
+.intro-listen {
+  display: grid;
+  justify-items: center;
+  gap: 26px;
+}
+
+.intro-listen-bars {
+  height: 170px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.intro-listen-bars i {
+  width: 20px;
+  height: 52px;
+  border-radius: 8px;
+  background: #0f766e;
+}
+
+.intro-listen-bars i:nth-child(2),
+.intro-listen-bars i:nth-child(6) { height: 96px; }
+.intro-listen-bars i:nth-child(3),
+.intro-listen-bars i:nth-child(5) { height: 138px; }
+.intro-listen-bars i:nth-child(4) { height: 170px; }
+
+.intro-listen strong {
+  color: #334155;
+  font-size: 25px;
+}
+
+.intro-contrast {
+  width: min(720px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.intro-contrast .intro-keyword-grid {
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  justify-content: center;
+}
+
+.intro-mouth-cues {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.intro-mouth-cues span {
+  border-left: 5px solid #f59e0b;
+  padding: 10px 14px;
+  background: #fff7d6;
+  color: #334155;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.intro-notebook-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  width: min(1020px, 100%);
+}
+
+.intro-notebook-sheet {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  border: 1px solid #94a3b8;
+  padding: 15px 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.intro-notebook-sheet header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: end;
+  gap: 12px;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 8px;
+}
+
+.intro-notebook-sheet header span,
+.intro-notebook-sheet header em {
+  color: #475569;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.intro-notebook-sheet header strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 37px;
+}
+
+.intro-notebook-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  padding: 12px 0;
+}
+
+.intro-notebook-entries > div {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 7px;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 7px 2px;
+}
+
+.intro-notebook-entries b {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+}
+
+.intro-notebook-entries span,
+.intro-notebook-entries i {
+  color: #475569;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.intro-notebook-sheet footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #94a3b8;
+  padding-top: 9px;
+}
+
+.intro-notebook-sheet footer > span {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.intro-notebook-sheet .intro-mark-word {
+  font-size: 23px;
+}
+
+.intro-notebook-sheet .intro-mark-word b {
+  border-width: 2px;
+  padding: 0 1px 1px;
 }
 
 .intro-finish {
@@ -3809,6 +4045,42 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
     font-size: 13px;
   }
 
+  .intro-keyword-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .intro-keyword-card {
+    grid-template-rows: 100px auto;
+  }
+
+  .intro-keyword-art {
+    width: 76px;
+    height: 100px;
+    background-size: 930px 518px;
+  }
+
+  .intro-keyword-art.image-ang { background-position: -548px -120px; }
+  .intro-keyword-art.image-ing { background-position: -624px -120px; }
+  .intro-keyword-art.image-ong { background-position: -700px -120px; }
+  .intro-keyword-art.image-ung { background-position: -776px -120px; }
+  .intro-keyword-art.image-ank { background-position: -548px -224px; }
+  .intro-keyword-art.image-ink { background-position: -624px -224px; }
+  .intro-keyword-art.image-onk { background-position: -700px -224px; }
+  .intro-keyword-art.image-unk { background-position: -776px -224px; }
+
+  .intro-keyword-card > div:last-child {
+    padding: 4px 6px 6px;
+  }
+
+  .intro-keyword-card > div:last-child strong {
+    font-size: 22px;
+  }
+
+  .intro-keyword-card > div:last-child span {
+    font-size: 10px;
+  }
+
   .intro-pair-grid {
     gap: 8px 12px;
   }
@@ -3833,6 +4105,11 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
     font-size: 48px;
   }
 
+  .intro-build-card.suffix {
+    min-width: 138px;
+    min-height: 84px;
+  }
+
   .intro-build-row {
     gap: 9px;
   }
@@ -3844,6 +4121,40 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
   .intro-mark-word {
     font-size: 38px;
+  }
+
+  .intro-mouth-cues span {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .intro-notebook-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .intro-notebook-sheet {
+    padding: 8px 10px;
+  }
+
+  .intro-notebook-sheet header strong {
+    font-size: 25px;
+  }
+
+  .intro-notebook-entries {
+    padding: 3px 0;
+  }
+
+  .intro-notebook-entries > div {
+    padding: 2px;
+  }
+
+  .intro-notebook-entries b {
+    font-size: 20px;
+  }
+
+  .intro-notebook-sheet .intro-mark-word {
+    font-size: 18px;
   }
 
   .intro-lesson-footer {

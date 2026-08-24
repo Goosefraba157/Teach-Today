@@ -182,14 +182,41 @@ function renderIntro21SoundCards(items = []) {
   `).join("")}</div>`;
 }
 
+function renderIntro21PatternCards(items = []) {
+  return `<div class="stage-intro-sound-grid stage-intro-pattern-grid">${items.map((item) => {
+    const text = String(item.text || "");
+    const mark = String(item.mark || "");
+    const index = mark ? text.indexOf(mark) : -1;
+    const marked = index < 0
+      ? escapeHtml(text)
+      : `${escapeHtml(text.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(text.slice(index + mark.length))}`;
+    return `<article class="stage-intro-sound-card"><strong>${marked}</strong></article>`;
+  }).join("")}</div>`;
+}
+
+function renderIntro21KeywordArt(item) {
+  const imageKey = modeClass(item.imageKey || item.text || "");
+  return `<article class="stage-intro-keyword-card">
+    <div class="stage-intro-keyword-art image-${imageKey}" role="img" aria-label="${escapeHtml(item.keyword || imageKey)} keyword picture"></div>
+    <div><strong>${escapeHtml(item.text || "")}</strong><span>${escapeHtml(item.keyword || "")} - /${escapeHtml(item.text || "")}/</span></div>
+  </article>`;
+}
+
+function renderIntro21KeywordGrid(items = []) {
+  return `<div class="stage-intro-keyword-grid">${items.map(renderIntro21KeywordArt).join("")}</div>`;
+}
+
 function renderIntro21Visual(card) {
   const items = (card.items || []).filter((item) => item?.text);
   if (card.layout === "welcome") {
     return `<div class="stage-intro-welcome"><div><span>i</span><span>n</span><span>k</span></div><strong>See it. Say it. Tap it. Blend it.</strong></div>`;
   }
-  if (card.layout === "family" || card.layout === "focus" || card.layout === "finish") {
-    return renderIntro21SoundCards(items);
+  if (card.layout === "family" || card.layout === "notice" || card.layout === "focus" || card.layout === "finish") {
+    const visibleItems = card.layout === "notice" ? items.map((item) => ({ ...item, keyword: "" })) : items;
+    return renderIntro21SoundCards(visibleItems);
   }
+  if (card.layout === "pattern") return renderIntro21PatternCards(items);
+  if (card.layout === "keywords") return renderIntro21KeywordGrid(items);
   if (card.layout === "pairs") {
     const pairs = new Map();
     items.forEach((item) => {
@@ -215,6 +242,26 @@ function renderIntro21Visual(card) {
   }
   if (card.layout === "mark") {
     return `<div class="stage-intro-mark-grid">${items.map(renderIntro21MarkedWord).join("")}</div>`;
+  }
+  if (card.layout === "listen") {
+    return `<div class="stage-intro-listen"><div aria-hidden="true">${Array.from({ length: 7 }, () => "<i></i>").join("")}</div><strong>Listen. Compare. Tell what changed.</strong></div>`;
+  }
+  if (card.layout === "contrast") {
+    const notes = String(card.wordNote || "").split("|").map((note) => note.trim()).filter(Boolean);
+    return `<div class="stage-intro-contrast">${renderIntro21KeywordGrid(items)}<div class="stage-intro-mouth-cues">${notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("")}</div></div>`;
+  }
+  if (card.layout === "notebook") {
+    const ng = items.filter((item) => String(item.text || "").endsWith("ng"));
+    const nk = items.filter((item) => String(item.text || "").endsWith("nk"));
+    const sheet = (title, page, familyItems, examples) => `<article class="stage-intro-notebook-sheet">
+      <header><span>Welded Sounds</span><strong>${escapeHtml(title)}</strong><em>p. ${escapeHtml(page)}</em></header>
+      <div>${familyItems.map((item) => `<p><b>${escapeHtml(item.text)}</b><span>${escapeHtml(item.keyword)}</span><i>/${escapeHtml(item.text)}/</i></p>`).join("")}</div>
+      <footer><span>Mark Words</span>${examples.map(renderIntro21MarkedWord).join("")}</footer>
+    </article>`;
+    return `<div class="stage-intro-notebook-grid">
+      ${sheet("ng", "6", ng, [{ text: "long", mark: "ong" }, { text: "ring", mark: "ing" }, { text: "hung", mark: "ung" }])}
+      ${sheet("nk", "7", nk, [{ text: "bank", mark: "ank" }, { text: "junk", mark: "unk" }, { text: "think", mark: "ink" }])}
+    </div>`;
   }
   return "";
 }

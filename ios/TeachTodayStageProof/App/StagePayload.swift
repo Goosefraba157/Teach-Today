@@ -40,6 +40,7 @@ enum StagePayloadSanitizer {
         output["cardDisplay"] = dictionary(source["cardDisplay"]) { card in
             compact([
                 "kind": string(card["kind"], maxLength: 32),
+                "variant": string(card["variant"], maxLength: 32),
                 "layout": string(card["layout"], maxLength: 32),
                 "key": string(card["key"], maxLength: 180),
                 "sectionLabel": string(card["sectionLabel"], maxLength: 64),
@@ -54,6 +55,7 @@ enum StagePayloadSanitizer {
                         "text": string(item["text"], maxLength: 80),
                         "type": string(item["type"], maxLength: 32),
                         "keyword": string(item["keyword"], maxLength: 80),
+                        "imageKey": string(item["imageKey"], maxLength: 16),
                         "pair": string(item["pair"], maxLength: 16),
                         "tap": number(item["tap"]),
                         "mark": string(item["mark"], maxLength: 40)

@@ -11,6 +11,7 @@ let ttSection2BIndex = 0;
 let ttSection2BWord = "";
 let ttIntro21Open = false;
 let ttIntro21Index = 0;
+let ttIntro21Variant = "guided";
 let ttHfwDeck = [];
 let ttHfwIndex = 0;
 let ttNotesEnabled = false;
@@ -2824,6 +2825,8 @@ function ttRender() {
   ttById("ttSkill").textContent = `${skill.id} - ${skill.title}`;
   const intro21Button = ttById("ttOpenIntro21");
   if (intro21Button) intro21Button.hidden = skill.id !== "2.1";
+  const intro21DiscoveryButton = ttById("ttOpenIntro21Discovery");
+  if (intro21DiscoveryButton) intro21DiscoveryButton.hidden = skill.id !== "2.1";
   if (ttIntro21Open && skill.id !== "2.1") ttCloseIntro21();
   ttFillGroups(group.id);
   ttFillLessonControls(group);
@@ -8528,17 +8531,17 @@ function ttEnsureSection2MissIndexes(lesson = ttLesson, group = ttActiveGroup(),
 }
 
 const TT_INTRO_21_NG = [
-  { text: "ang", keyword: "fang", type: "welded" },
-  { text: "ing", keyword: "ring", type: "welded" },
-  { text: "ong", keyword: "song", type: "welded" },
-  { text: "ung", keyword: "lung", type: "welded" }
+  { text: "ang", keyword: "fang", imageKey: "ang", type: "welded" },
+  { text: "ing", keyword: "ring", imageKey: "ing", type: "welded" },
+  { text: "ong", keyword: "song", imageKey: "ong", type: "welded" },
+  { text: "ung", keyword: "lung", imageKey: "ung", type: "welded" }
 ];
 
 const TT_INTRO_21_NK = [
-  { text: "ank", keyword: "bank", type: "welded" },
-  { text: "ink", keyword: "pink", type: "welded" },
-  { text: "onk", keyword: "honk", type: "welded" },
-  { text: "unk", keyword: "junk", type: "welded" }
+  { text: "ank", keyword: "bank", imageKey: "ank", type: "welded" },
+  { text: "ink", keyword: "pink", imageKey: "ink", type: "welded" },
+  { text: "onk", keyword: "honk", imageKey: "onk", type: "welded" },
+  { text: "unk", keyword: "junk", imageKey: "unk", type: "welded" }
 ];
 
 const TT_INTRO_21_SCENES = [
@@ -8716,7 +8719,7 @@ const TT_INTRO_21_SCENES = [
     items: [
       { text: "r", type: "consonant", tap: 1 },
       { text: "ing", type: "welded", tap: 3 },
-      { text: "s", type: "suffix", tap: 0 }
+      { text: "-s", type: "suffix", tap: 0 }
     ],
     cue: "Read the base word ring. Then add -s and read rings. Do not tap the suffix."
   },
@@ -8747,17 +8750,286 @@ const TT_INTRO_21_SCENES = [
   }
 ];
 
+const TT_INTRO_21_DISCOVERY_SCENES = [
+  {
+    id: "discover-ng",
+    layout: "notice",
+    kicker: "Visual discovery",
+    headline: "What do you notice?",
+    subhead: "Look across the four cards. What stays the same? What changes?",
+    items: TT_INTRO_21_NG,
+    cue: "Wait. Let students name anything they notice. If needed, ask: What are the last two letters on every card?"
+  },
+  {
+    id: "reveal-ng",
+    layout: "pattern",
+    kicker: "Check the pattern",
+    headline: "The ending stays the same.",
+    subhead: "Each card ends in ng. Only the first vowel changes.",
+    items: TT_INTRO_21_NG.map((item) => ({ ...item, mark: "ng" })),
+    cue: "Trace the shared ng ending from left to right. Have students name the changing vowels: a, i, o, u."
+  },
+  {
+    id: "discover-nk",
+    layout: "notice",
+    kicker: "Visual discovery",
+    headline: "Can you find the next pattern?",
+    subhead: "What stays the same in this row? What changes?",
+    items: TT_INTRO_21_NK,
+    cue: "Pause again. Students should discover the shared nk ending and the changing vowel."
+  },
+  {
+    id: "reveal-nk",
+    layout: "pattern",
+    kicker: "Check the pattern",
+    headline: "The ending is nk this time.",
+    subhead: "The vowels still change in the same order: a, i, o, u.",
+    items: TT_INTRO_21_NK.map((item) => ({ ...item, mark: "nk" })),
+    cue: "Confirm what students noticed. Read only after they have described the visual pattern."
+  },
+  {
+    id: "discover-pairs",
+    layout: "pairs",
+    kicker: "Compare across",
+    headline: "What changes in each pair?",
+    subhead: "The vowel stays put. Look closely at the last letter.",
+    pairs: [["ang", "ank"], ["ing", "ink"], ["ong", "onk"], ["ung", "unk"]],
+    cue: "Students compare each pair. Ask: Which letter changed? What happened to the sound when g became k?"
+  },
+  {
+    id: "reveal-pairs",
+    layout: "pairs",
+    kicker: "Check the pattern",
+    headline: "g changes to k.",
+    subhead: "The vowel matches across every row.",
+    pairs: [["ang", "ank"], ["ing", "ink"], ["ong", "onk"], ["ung", "unk"]],
+    cue: "Point to the matching vowel in each row, then to the final g and k. Read the pairs together."
+  },
+  {
+    id: "keywords-ng",
+    layout: "keywords",
+    kicker: "Keyword check",
+    headline: "Which picture helps each sound?",
+    subhead: "Name the picture, then say the welded sound.",
+    items: TT_INTRO_21_NG,
+    cue: "Invite students to identify the pictures before you say the keywords: fang, ring, song, lung. Then use the routine sound - keyword - sound."
+  },
+  {
+    id: "keywords-nk",
+    layout: "keywords",
+    kicker: "Keyword check",
+    headline: "Match the second family.",
+    subhead: "Use the picture when the vowel sound feels uncertain.",
+    items: TT_INTRO_21_NK,
+    cue: "Students identify bank, pink, honk, and junk. Practice sound - keyword - sound."
+  },
+  {
+    id: "listen-first",
+    layout: "listen",
+    kicker: "Auditory discovery",
+    headline: "Listen without looking.",
+    subhead: "What changes when you hear /ang/, /ing/, /ong/, /ung/?",
+    cue: "Have students close their eyes. Say the four sounds slowly without naming letters. Ask what changed and what stayed alike."
+  },
+  {
+    id: "listen-check",
+    layout: "pattern",
+    kicker: "Connect sound to print",
+    headline: "The vowel changes what we hear.",
+    subhead: "The ng ending stays welded together.",
+    items: TT_INTRO_21_NG.map((item) => ({ ...item, mark: item.text.charAt(0) })),
+    cue: "Reveal the print. Point to each vowel as students repeat the sound they heard."
+  },
+  {
+    id: "ang-ing",
+    layout: "contrast",
+    kicker: "Common mix-up",
+    headline: "Can your mouth show the difference?",
+    subhead: "Compare ang and ing before naming either one.",
+    items: [TT_INTRO_21_NG[0], TT_INTRO_21_NG[1]],
+    wordNote: "ang: open wide for the a sound | ing: smaller mouth for the i sound",
+    cue: "This is a frequent 2.1 error. Students often make ang sound like ing when the mouth does not open enough. Let them observe your mouth, mirror it, then use fang and ring to check."
+  },
+  {
+    id: "ank-ink",
+    layout: "contrast",
+    kicker: "Common mix-up",
+    headline: "Try the same mouth check.",
+    subhead: "Compare ank and ink. Which one needs the wider opening?",
+    items: [TT_INTRO_21_NK[0], TT_INTRO_21_NK[1]],
+    wordNote: "ank: open wide for the a sound | ink: smaller mouth for the i sound",
+    cue: "This is another frequent error. Have students discover that ank begins with the wider a mouth. Use bank and pink as the correction keywords."
+  },
+  {
+    id: "ong-ung",
+    layout: "contrast",
+    kicker: "Listen closely",
+    headline: "Do these vowels sound the same?",
+    subhead: "Compare ong and ung, then use the pictures to check.",
+    items: [TT_INTRO_21_NG[2], TT_INTRO_21_NG[3]],
+    wordNote: "ong: song | ung: lung",
+    cue: "Students also confuse ong and ung. Elicit the difference first, then anchor each response to song or lung rather than overexplaining the mouth position."
+  },
+  {
+    id: "ang-ong",
+    layout: "contrast",
+    kicker: "A less common mix-up",
+    headline: "Which keyword proves it?",
+    subhead: "Compare ang and ong without guessing from the ending.",
+    items: [TT_INTRO_21_NG[0], TT_INTRO_21_NG[2]],
+    wordNote: "ang: fang | ong: song",
+    cue: "Some students occasionally confuse ang and ong. Ask for the keyword that matches each sound, then contrast fang and song."
+  },
+  {
+    id: "tap-sink-discovery",
+    layout: "build",
+    kicker: "Discover the tap",
+    headline: "How many taps will sink need?",
+    subhead: "Decide before the dots confirm it.",
+    word: "sink",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ink", type: "welded", tap: 3 }
+    ],
+    cue: "Ask first. Then point to the dots: one finger for /s/, three fingers together for /ink/. Blend sink."
+  },
+  {
+    id: "build-sang-discovery",
+    layout: "build",
+    kicker: "Build from the pattern",
+    headline: "Which welded card finishes sang?",
+    subhead: "Choose it, tap it, then blend.",
+    word: "sang",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ang", type: "welded", tap: 3 }
+    ],
+    cue: "Let students supply ang before reading the card. Tap and blend only after they explain their choice."
+  },
+  {
+    id: "swap-sank-discovery",
+    layout: "build",
+    kicker: "Change one thing",
+    headline: "How could sang become sank?",
+    subhead: "Find the one letter that must change.",
+    word: "sank",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ank", type: "welded", tap: 3 }
+    ],
+    cue: "Students explain that final g changes to k while the vowel stays a. Then tap and blend sank."
+  },
+  {
+    id: "suffix-rings-discovery",
+    layout: "build",
+    kicker: "Add a suffix",
+    headline: "What changes when -s joins ring?",
+    subhead: "Read the base word first, then add the suffix.",
+    word: "rings",
+    wordNote: "Tap ring only if needed. The suffix is not tapped.",
+    items: [
+      { text: "r", type: "consonant", tap: 1 },
+      { text: "ing", type: "welded", tap: 3 },
+      { text: "-s", type: "suffix", tap: 0 }
+    ],
+    cue: "Notice the wider suffix card and its hyphen. Students read ring, attach -s, and read rings without tapping the suffix."
+  },
+  {
+    id: "mark-ng-question",
+    layout: "mark",
+    kicker: "Your eyes do the work",
+    headline: "Which welded sound should we box?",
+    subhead: "Tell me what you see in each word. The next click checks your answer.",
+    items: [{ text: "long" }, { text: "ring" }, { text: "hung" }],
+    cue: "Do not advance until students name ong, ing, and ung. Ask them to explain where each box begins and ends."
+  },
+  {
+    id: "mark-ng-answer",
+    layout: "mark",
+    kicker: "Check the marking",
+    headline: "Did your boxes match?",
+    subhead: "Each box holds the complete welded sound.",
+    items: [{ text: "long", mark: "ong" }, { text: "ring", mark: "ing" }, { text: "hung", mark: "ung" }],
+    cue: "Confirm or correct. Read each word once after checking the box."
+  },
+  {
+    id: "mark-nk-question",
+    layout: "mark",
+    kicker: "Try the nk family",
+    headline: "Where would your box go?",
+    subhead: "Name the welded sound first. Click Next to reveal it.",
+    items: [{ text: "bank" }, { text: "junk" }, { text: "think" }],
+    cue: "Students identify ank, unk, and ink and describe the box placement before the reveal."
+  },
+  {
+    id: "mark-nk-answer",
+    layout: "mark",
+    kicker: "Check the marking",
+    headline: "The welded unit stays inside the box.",
+    subhead: "Read the whole word after checking the concept.",
+    items: [{ text: "bank", mark: "ank" }, { text: "junk", mark: "unk" }, { text: "think", mark: "ink" }],
+    cue: "Confirm each response and connect it back to the matching keyword if pronunciation needs support."
+  },
+  {
+    id: "notebook",
+    layout: "notebook",
+    kicker: "Add to Notebook",
+    headline: "Record the two welded-sound families.",
+    subhead: "Student Notebook pages 6 and 7",
+    items: TT_INTRO_21_NG.concat(TT_INTRO_21_NK),
+    cue: "Students add or review the ng entry on page 6 and the nk entry on page 7. Include each sound, keyword, and sound pronunciation, then box the welded sounds in the example words shown."
+  },
+  {
+    id: "discovery-finish",
+    layout: "finish",
+    kicker: "Say what you discovered",
+    headline: "What makes these eight sounds a family?",
+    subhead: "Explain the pattern in your own words before practice begins.",
+    items: TT_INTRO_21_NG.concat(TT_INTRO_21_NK),
+    cue: "Listen for: the vowels change; ng or nk stays together; the three-letter welded sound is read as one unit. Then continue with the first 2.1 charting page."
+  }
+];
+
 function ttIntro21Scene() {
-  return TT_INTRO_21_SCENES[ttIntro21Index] || TT_INTRO_21_SCENES[0];
+  const scenes = ttIntro21Scenes();
+  return scenes[ttIntro21Index] || scenes[0];
+}
+
+function ttIntro21Scenes() {
+  return ttIntro21Variant === "discovery" ? TT_INTRO_21_DISCOVERY_SCENES : TT_INTRO_21_SCENES;
 }
 
 function ttIntro21SoundCardsHtml(items = []) {
   return `<div class="intro-family-grid">${items.map((item) => `
     <article class="intro-sound-card">
       <strong>${escapeHtml(item.text)}</strong>
-      <span>${escapeHtml(item.keyword)} - /${escapeHtml(item.text)}/</span>
+      ${item.keyword ? `<span>${escapeHtml(item.keyword)} - /${escapeHtml(item.text)}/</span>` : ""}
     </article>
   `).join("")}</div>`;
+}
+
+function ttIntro21PatternCardsHtml(items = []) {
+  return `<div class="intro-family-grid intro-pattern-grid">${items.map((item) => {
+    const text = String(item.text || "");
+    const mark = String(item.mark || "");
+    const index = mark ? text.indexOf(mark) : -1;
+    const marked = index < 0
+      ? escapeHtml(text)
+      : `${escapeHtml(text.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(text.slice(index + mark.length))}`;
+    return `<article class="intro-sound-card"><strong>${marked}</strong></article>`;
+  }).join("")}</div>`;
+}
+
+function ttIntro21KeywordArtHtml(item, compact = false) {
+  const imageKey = String(item?.imageKey || item?.text || "").toLowerCase();
+  return `<article class="intro-keyword-card ${compact ? "compact" : ""}">
+    <div class="intro-keyword-art image-${escapeHtml(imageKey)}" role="img" aria-label="${escapeHtml(item.keyword || imageKey)} keyword picture"></div>
+    <div><strong>${escapeHtml(item.text || "")}</strong><span>${escapeHtml(item.keyword || "")} - /${escapeHtml(item.text || "")}/</span></div>
+  </article>`;
+}
+
+function ttIntro21KeywordGridHtml(items = [], compact = false) {
+  return `<div class="intro-keyword-grid ${compact ? "compact" : ""}">${items.map((item) => ttIntro21KeywordArtHtml(item, compact)).join("")}</div>`;
 }
 
 function ttIntro21BuildHtml(scene) {
@@ -8787,7 +9059,14 @@ function ttIntro21VisualHtml(scene) {
       <strong>See it. Say it. Tap it. Blend it.</strong>
     </div>`;
   }
-  if (scene.layout === "family") return ttIntro21SoundCardsHtml(scene.items);
+  if (scene.layout === "family" || scene.layout === "notice") {
+    const items = scene.layout === "notice"
+      ? (scene.items || []).map((item) => ({ ...item, keyword: "" }))
+      : scene.items;
+    return ttIntro21SoundCardsHtml(items);
+  }
+  if (scene.layout === "pattern") return ttIntro21PatternCardsHtml(scene.items);
+  if (scene.layout === "keywords") return ttIntro21KeywordGridHtml(scene.items);
   if (scene.layout === "pairs") {
     return `<div class="intro-pair-grid">${scene.pairs.map((pair) => `
       <div class="intro-pair"><span>${escapeHtml(pair[0])}</span><span class="intro-pair-arrow">to</span><span>${escapeHtml(pair[1])}</span></div>
@@ -8803,6 +9082,32 @@ function ttIntro21VisualHtml(scene) {
   if (scene.layout === "mark") {
     return `<div class="intro-mark-grid">${(scene.items || []).map(ttIntro21MarkedWordHtml).join("")}</div>`;
   }
+  if (scene.layout === "listen") {
+    return `<div class="intro-listen" aria-label="Listen carefully">
+      <div class="intro-listen-bars" aria-hidden="true">${Array.from({ length: 7 }, () => "<i></i>").join("")}</div>
+      <strong>Listen. Compare. Tell what changed.</strong>
+    </div>`;
+  }
+  if (scene.layout === "contrast") {
+    const notes = String(scene.wordNote || "").split("|").map((note) => note.trim()).filter(Boolean);
+    return `<div class="intro-contrast">
+      ${ttIntro21KeywordGridHtml(scene.items, true)}
+      <div class="intro-mouth-cues">${notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("")}</div>
+    </div>`;
+  }
+  if (scene.layout === "notebook") {
+    const ng = (scene.items || []).filter((item) => String(item.text || "").endsWith("ng"));
+    const nk = (scene.items || []).filter((item) => String(item.text || "").endsWith("nk"));
+    const sheet = (title, page, items, examples) => `<article class="intro-notebook-sheet">
+      <header><span>Welded Sounds</span><strong>${escapeHtml(title)}</strong><em>p. ${escapeHtml(page)}</em></header>
+      <div class="intro-notebook-entries">${items.map((item) => `<div><b>${escapeHtml(item.text)}</b><span>${escapeHtml(item.keyword)}</span><i>/${escapeHtml(item.text)}/</i></div>`).join("")}</div>
+      <footer><span>Mark Words</span>${examples.map(ttIntro21MarkedWordHtml).join("")}</footer>
+    </article>`;
+    return `<div class="intro-notebook-grid">
+      ${sheet("ng", "6", ng, [{ text: "long", mark: "ong" }, { text: "ring", mark: "ing" }, { text: "hung", mark: "ung" }])}
+      ${sheet("nk", "7", nk, [{ text: "bank", mark: "ank" }, { text: "junk", mark: "unk" }, { text: "think", mark: "ink" }])}
+    </div>`;
+  }
   if (scene.layout === "finish") {
     return `<div class="intro-finish">${ttIntro21SoundCardsHtml(scene.items)}<strong>Ready for word practice</strong></div>`;
   }
@@ -8811,9 +9116,11 @@ function ttIntro21VisualHtml(scene) {
 
 function ttIntro21CardDisplayPayload() {
   const scene = ttIntro21Scene();
+  const scenes = ttIntro21Scenes();
   const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
   return {
     kind: "intro-21",
+    variant: ttIntro21Variant,
     layout: scene.layout,
     key: `intro-21-${scene.id}`,
     sectionLabel: "Section 2 - Intro 2.1",
@@ -8822,11 +9129,12 @@ function ttIntro21CardDisplayPayload() {
     word: scene.word || "",
     wordNote: scene.wordNote || "",
     label: "Welded sounds introduction",
-    position: `${ttIntro21Index + 1} of ${TT_INTRO_21_SCENES.length}`,
+    position: `${ttIntro21Index + 1} of ${scenes.length}`,
     items: (scene.items || pairItems).map((item) => ({
       text: item.text || "",
       type: item.type || "welded",
       keyword: item.keyword || "",
+      imageKey: item.imageKey || "",
       pair: item.pair || "",
       tap: Number(item.tap || 0),
       mark: item.mark || ""
@@ -8839,6 +9147,7 @@ function ttRenderIntro21() {
   const target = ttById("ttIntro21Scene");
   if (!overlay || !target || overlay.hidden) return;
   const scene = ttIntro21Scene();
+  const scenes = ttIntro21Scenes();
   target.classList.remove("intro-scene-enter");
   target.innerHTML = `<div class="intro-scene-inner">
     <header class="intro-scene-heading">
@@ -8850,10 +9159,11 @@ function ttRenderIntro21() {
   </div>`;
   requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
   ttById("ttIntro21Cue").textContent = scene.cue || "";
-  ttById("ttIntro21Progress").textContent = `${ttIntro21Index + 1} of ${TT_INTRO_21_SCENES.length}`;
-  ttById("ttIntro21Dots").innerHTML = TT_INTRO_21_SCENES.map((_, index) => `<i class="${index === ttIntro21Index ? "active" : index < ttIntro21Index ? "complete" : ""}"></i>`).join("");
+  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery" ? "Welded Sounds Visual Discovery" : "Welded Sounds Introduction";
+  ttById("ttIntro21Progress").textContent = `${ttIntro21Index + 1} of ${scenes.length}`;
+  ttById("ttIntro21Dots").innerHTML = scenes.map((_, index) => `<i class="${index === ttIntro21Index ? "active" : index < ttIntro21Index ? "complete" : ""}"></i>`).join("");
   ttById("ttIntro21Back").disabled = ttIntro21Index === 0;
-  ttById("ttIntro21Next").textContent = ttIntro21Index === TT_INTRO_21_SCENES.length - 1 ? "Finish" : "Next";
+  ttById("ttIntro21Next").textContent = ttIntro21Index === scenes.length - 1 ? "Finish" : "Next";
   ttSendStudentDisplay(ttStudentDisplayPayload("follow"));
 }
 
@@ -8876,10 +9186,11 @@ function ttSetIntro21BackgroundInert(active) {
   });
 }
 
-function ttOpenIntro21() {
+function ttOpenIntro21(variant = "guided") {
   const overlay = ttById("ttIntro21");
   if (!overlay) return;
   ttIntro21Index = 0;
+  ttIntro21Variant = variant === "discovery" ? "discovery" : "guided";
   ttIntro21Open = true;
   overlay.hidden = false;
   ttSetIntro21BackgroundInert(true);
@@ -8900,12 +9211,13 @@ function ttCloseIntro21() {
   document.body.classList.remove("intro-lesson-open");
   ttStudentDisplayFollowKey = "";
   ttSyncFollowingStudentDisplay({ force: true });
-  ttById("ttOpenIntro21")?.focus();
+  ttById(ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21")?.focus();
 }
 
 function ttStepIntro21(direction) {
+  const scenes = ttIntro21Scenes();
   const nextIndex = ttIntro21Index + direction;
-  if (nextIndex >= TT_INTRO_21_SCENES.length) {
+  if (nextIndex >= scenes.length) {
     ttCloseIntro21();
     return;
   }
@@ -14325,7 +14637,8 @@ function ttBind() {
     ttToggleSmallDropdown("ttAttendance", { focus: true });
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
-  ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21());
+  ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
+  ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
   ttById("ttIntro21Restart")?.addEventListener("click", () => {
     ttIntro21Index = 0;
