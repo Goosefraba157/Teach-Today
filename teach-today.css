@@ -3256,6 +3256,628 @@ body.whiteboard-mode {
   overflow: hidden;
 }
 
+.section-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-intro-launch {
+  min-height: 38px;
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  padding: 8px 13px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.section-intro-launch:hover,
+.section-intro-launch:focus-visible {
+  background: #115e59;
+}
+
+body.intro-lesson-open {
+  overflow: hidden;
+}
+
+body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
+  display: none;
+}
+
+.intro-lesson-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #f4f9fb;
+  color: #0f172a;
+}
+
+.intro-lesson-overlay[hidden] {
+  display: none;
+}
+
+.intro-lesson-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(90px, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 72px;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 10px 22px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.intro-lesson-topbar > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.intro-lesson-topbar > div:first-child span,
+.intro-teacher-cue span,
+.intro-scene-kicker {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.intro-lesson-topbar > div:first-child strong {
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intro-lesson-topbar > button {
+  justify-self: end;
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 13px;
+  background: #fff;
+  color: #334155;
+  font-weight: 900;
+}
+
+.intro-lesson-progress {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 250px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.intro-lesson-progress > div {
+  display: flex;
+  gap: 4px;
+}
+
+.intro-lesson-progress i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.intro-lesson-progress i.complete {
+  background: #5eead4;
+}
+
+.intro-lesson-progress i.active {
+  width: 18px;
+  border-radius: 4px;
+  background: #0f766e;
+}
+
+.intro-lesson-scene {
+  min-height: 0;
+  overflow: hidden;
+  padding: 24px 72px;
+}
+
+.intro-scene-inner {
+  width: min(1180px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.intro-scene-heading {
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.intro-scene-heading h2 {
+  margin: 5px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 46px;
+  line-height: 1.05;
+}
+
+.intro-scene-heading p {
+  margin: 9px 0 0;
+  color: #475569;
+  font-size: 21px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.intro-scene-visual {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.intro-scene-enter .intro-scene-heading,
+.intro-scene-enter .intro-sound-card,
+.intro-scene-enter .intro-build-card,
+.intro-scene-enter .intro-pair,
+.intro-scene-enter .intro-mark-word,
+.intro-scene-enter .intro-welcome-mark {
+  animation: intro-rise 360ms ease both;
+}
+
+.intro-scene-enter :is(.intro-sound-card, .intro-pair, .intro-mark-word):nth-child(2) { animation-delay: 55ms; }
+.intro-scene-enter :is(.intro-sound-card, .intro-pair, .intro-mark-word):nth-child(3) { animation-delay: 110ms; }
+.intro-scene-enter :is(.intro-sound-card, .intro-pair, .intro-mark-word):nth-child(4) { animation-delay: 165ms; }
+.intro-scene-enter :is(.intro-sound-card, .intro-pair, .intro-mark-word):nth-child(5) { animation-delay: 220ms; }
+.intro-scene-enter :is(.intro-sound-card, .intro-pair, .intro-mark-word):nth-child(6) { animation-delay: 275ms; }
+
+@keyframes intro-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.intro-welcome {
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.intro-welcome-mark {
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  place-items: center;
+  gap: 0;
+  border: 5px solid #3f7f55;
+  border-radius: 8px;
+  padding: 18px 20px;
+  background: #d9efc8;
+  color: #163e24;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 72px;
+  font-weight: 800;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.13);
+}
+
+.intro-welcome-mark span + span {
+  border-left: 1px dashed rgba(22, 62, 36, 0.34);
+}
+
+.intro-welcome strong {
+  max-width: 760px;
+  font-size: 25px;
+  line-height: 1.3;
+}
+
+.intro-family-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 18px;
+  width: min(980px, 100%);
+}
+
+.intro-sound-card {
+  position: relative;
+  min-height: 230px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  border: 3px solid #6aa06b;
+  border-radius: 8px;
+  padding: 20px 14px 14px;
+  background: #d9efc8;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.13);
+}
+
+.intro-sound-card strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 76px;
+  line-height: 1;
+}
+
+.intro-sound-card span {
+  width: 100%;
+  border-top: 1px solid rgba(22, 62, 36, 0.25);
+  padding-top: 11px;
+  color: #285633;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.intro-pair-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 34px;
+  width: min(900px, 100%);
+}
+
+.intro-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.intro-pair > span:not(.intro-pair-arrow) {
+  display: grid;
+  min-height: 104px;
+  place-items: center;
+  border: 3px solid #6aa06b;
+  border-radius: 8px;
+  background: #d9efc8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 48px;
+  font-weight: 800;
+}
+
+.intro-pair-arrow {
+  color: #0f766e;
+  font-size: 28px;
+  font-weight: 950;
+}
+
+.intro-focus-sound {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+}
+
+.intro-focus-sound .intro-sound-card {
+  width: 250px;
+}
+
+.intro-letter-count {
+  display: flex;
+  gap: 18px;
+  color: #334155;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.intro-letter-count span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.intro-letter-count i {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #0f766e;
+  border-radius: 50%;
+  background: #ccfbf1;
+}
+
+.intro-build-stage {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(880px, 100%);
+}
+
+.intro-build-row {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+  border-bottom: 7px solid #475569;
+  padding: 0 24px;
+}
+
+.intro-build-card {
+  position: relative;
+  display: grid;
+  min-width: 154px;
+  min-height: 174px;
+  place-items: center;
+  border: 3px solid #d3aa27;
+  border-radius: 8px 8px 2px 2px;
+  padding: 16px;
+  background: #fde68a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 78px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.intro-build-card.welded {
+  border-color: #6aa06b;
+  background: #d9efc8;
+}
+
+.intro-build-card.suffix {
+  border-color: #d3aa27;
+  background: #facc15;
+}
+
+.intro-tap-cue {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.intro-tap-cue i {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #be123c;
+  border-radius: 50%;
+  background: #fff1f2;
+}
+
+.intro-build-word {
+  color: #0f172a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 58px;
+  font-weight: 800;
+}
+
+.intro-build-word small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.intro-mark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 38px;
+  width: min(900px, 100%);
+}
+
+.intro-mark-word {
+  color: #111827;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 54px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.intro-mark-word b {
+  border: 4px solid #be123c;
+  border-radius: 4px;
+  padding: 0 3px 3px;
+  font-weight: inherit;
+}
+
+.intro-finish {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(1000px, 100%);
+}
+
+.intro-finish .intro-family-grid {
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+}
+
+.intro-finish .intro-sound-card {
+  min-height: 130px;
+  padding: 12px;
+}
+
+.intro-finish .intro-sound-card strong {
+  font-size: 50px;
+}
+
+.intro-finish > strong {
+  color: #0f766e;
+  font-size: 24px;
+}
+
+.intro-lesson-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+  min-height: 94px;
+  border-top: 1px solid #cbd5e1;
+  padding: 12px 22px;
+  background: #fff;
+  box-shadow: 0 -4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.intro-teacher-cue {
+  min-width: 0;
+  border-left: 5px solid #f59e0b;
+  padding-left: 13px;
+}
+
+.intro-teacher-cue p {
+  margin: 3px 0 0;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.intro-lesson-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro-lesson-controls button {
+  min-width: 82px;
+  min-height: 46px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  color: #334155;
+  font-weight: 900;
+}
+
+.intro-lesson-controls #ttIntro21Next {
+  min-width: 110px;
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.intro-lesson-controls button:disabled {
+  opacity: 0.38;
+}
+
+@media (max-width: 760px) {
+  .intro-lesson-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: 60px;
+    padding: 8px 10px;
+  }
+
+  .intro-lesson-progress {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .intro-lesson-progress > div {
+    display: none;
+  }
+
+  .intro-lesson-scene {
+    padding: 14px 12px;
+  }
+
+  .intro-scene-heading h2 {
+    font-size: 32px;
+  }
+
+  .intro-scene-heading p {
+    font-size: 16px;
+  }
+
+  .intro-family-grid,
+  .intro-finish .intro-family-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .intro-sound-card,
+  .intro-finish .intro-sound-card {
+    min-height: 112px;
+    padding: 10px;
+  }
+
+  .intro-sound-card strong,
+  .intro-finish .intro-sound-card strong {
+    font-size: 43px;
+  }
+
+  .intro-sound-card span {
+    padding-top: 6px;
+    font-size: 13px;
+  }
+
+  .intro-pair-grid {
+    gap: 8px 12px;
+  }
+
+  .intro-pair {
+    gap: 5px;
+  }
+
+  .intro-pair > span:not(.intro-pair-arrow) {
+    min-height: 66px;
+    font-size: 30px;
+  }
+
+  .intro-pair-arrow {
+    font-size: 18px;
+  }
+
+  .intro-build-card {
+    min-width: 90px;
+    min-height: 112px;
+    padding: 9px;
+    font-size: 48px;
+  }
+
+  .intro-build-row {
+    gap: 9px;
+  }
+
+  .intro-mark-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .intro-mark-word {
+    font-size: 38px;
+  }
+
+  .intro-lesson-footer {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-height: 124px;
+    padding: 8px 10px;
+  }
+
+  .intro-teacher-cue p {
+    font-size: 12px;
+  }
+
+  .intro-lesson-controls {
+    justify-content: flex-end;
+  }
+
+  .intro-lesson-controls button {
+    min-height: 40px;
+    padding: 7px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-scene-enter .intro-scene-heading,
+  .intro-scene-enter .intro-sound-card,
+  .intro-scene-enter .intro-build-card,
+  .intro-scene-enter .intro-pair,
+  .intro-scene-enter .intro-mark-word,
+  .intro-scene-enter .intro-welcome-mark {
+    animation: none;
+  }
+}
+
 .whiteboard-overlay {
   position: fixed;
   inset: 0;

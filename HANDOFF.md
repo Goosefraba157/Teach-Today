@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-23
+2026-08-24
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -59,6 +59,8 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
+- Complete locally on 2026-08-24: Substep 2.1 Section 2 now has a dedicated 19-scene introductory presentation launched by `Start Intro 2.1`. Next/Back/Restart and keyboard navigation automatically reveal and regroup the eight welded sounds, model the three-finger welded tap, build `sink`, `sang`, and `sank`, provide guided student turns, add suffix `-s` only after the base word, and model boxing the welded sound. Teacher cues remain on the teacher device; Follow Lesson sends a separate student-safe scene to browser and native Stage. Normal Section 2 word-building remains unchanged after Finish.
+- Browser verification covered the opening, paired-sound, tapping, suffix, marking, finish, live Stage synchronization, modal focus isolation, and return to ordinary Section 2 cards. The native Stage shell also built successfully for a generic iOS simulator with signing disabled. Exact next step: teacher-test the Section 2 intro pacing and wording, then revise it before adding the separate, shorter Section 7 spelling introduction.
 - Complete on 2026-08-19: published the historical WRS importer and imported the private 2025-2026 baseline into the authenticated hosted app. A backup was created first; 259 new charting records were added, one existing duplicate was skipped, Firebase sync completed, and the app now holds 321 charting records. The private payload and source transcription remained outside Git.
 - Verified imported longitudinal profiles, graphs, group comparisons, and record tables on multiple current-year students. Historical evidence is visible across school years, while lessons, attendance, dictation, and recordings remain unchanged and are not fabricated.
 - The ChatGPT in-app browser produced one false `navigator.onLine` offline warning even while Firebase was successfully syncing. Treat the Records panel's Firebase status as authoritative for now; improve connection detection separately so it attempts a real cloud check before showing an offline warning.

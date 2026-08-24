@@ -146,6 +146,7 @@ function renderPoster(payload) {
 
 function renderCards(payload) {
   const card = payload.cardDisplay || {};
+  if (card.kind === "intro-21") return renderIntro21Cards(payload, card);
   const items = (card.items || []).filter((item) => item?.text);
   const content = items.length
     ? `<div class="stage-build-cards">${items.map((item) => `<span class="stage-build-card ${modeClass(item.type)}">${escapeHtml(item.text)}</span>`).join("")}</div>`
@@ -162,6 +163,73 @@ function renderCards(payload) {
       </div>
     </article>
   `, card.sectionLabel || "Lesson");
+}
+
+function renderIntro21MarkedWord(item) {
+  const word = String(item?.text || "");
+  const mark = String(item?.mark || "");
+  const index = mark ? word.lastIndexOf(mark) : -1;
+  if (index < 0) return `<span class="stage-intro-mark-word">${escapeHtml(word)}</span>`;
+  return `<span class="stage-intro-mark-word">${escapeHtml(word.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(word.slice(index + mark.length))}</span>`;
+}
+
+function renderIntro21SoundCards(items = []) {
+  return `<div class="stage-intro-sound-grid">${items.map((item) => `
+    <article class="stage-intro-sound-card">
+      <strong>${escapeHtml(item.text)}</strong>
+      ${item.keyword ? `<span>${escapeHtml(item.keyword)} - /${escapeHtml(item.text)}/</span>` : ""}
+    </article>
+  `).join("")}</div>`;
+}
+
+function renderIntro21Visual(card) {
+  const items = (card.items || []).filter((item) => item?.text);
+  if (card.layout === "welcome") {
+    return `<div class="stage-intro-welcome"><div><span>i</span><span>n</span><span>k</span></div><strong>See it. Say it. Tap it. Blend it.</strong></div>`;
+  }
+  if (card.layout === "family" || card.layout === "focus" || card.layout === "finish") {
+    return renderIntro21SoundCards(items);
+  }
+  if (card.layout === "pairs") {
+    const pairs = new Map();
+    items.forEach((item) => {
+      const key = item.pair || "0";
+      if (!pairs.has(key)) pairs.set(key, []);
+      pairs.get(key).push(item.text);
+    });
+    return `<div class="stage-intro-pair-grid">${[...pairs.values()].map((pair) => `
+      <div><span>${escapeHtml(pair[0] || "")}</span><i>to</i><span>${escapeHtml(pair[1] || "")}</span></div>
+    `).join("")}</div>`;
+  }
+  if (card.layout === "build") {
+    return `<div class="stage-intro-build">
+      <div class="stage-intro-build-row">${items.map((item) => `
+        <span class="stage-intro-build-card ${modeClass(item.type)}">
+          ${Number(item.tap || 0) ? `<span class="stage-intro-taps">${Array.from({ length: Number(item.tap) }, () => "<i></i>").join("")}</span>` : ""}
+          ${escapeHtml(item.text)}
+        </span>
+      `).join("")}</div>
+      <strong>${escapeHtml(card.word || "")}</strong>
+      ${card.wordNote ? `<small>${escapeHtml(card.wordNote)}</small>` : ""}
+    </div>`;
+  }
+  if (card.layout === "mark") {
+    return `<div class="stage-intro-mark-grid">${items.map(renderIntro21MarkedWord).join("")}</div>`;
+  }
+  return "";
+}
+
+function renderIntro21Cards(payload, card) {
+  return renderShell(payload, "Welded Sounds", `
+    <article class="stage-intro-lesson stage-intro-layout-${modeClass(card.layout)}">
+      <div class="stage-intro-heading">
+        <h2>${escapeHtml(card.headline || "")}</h2>
+        <p>${escapeHtml(card.subhead || "")}</p>
+      </div>
+      <div class="stage-intro-visual">${renderIntro21Visual(card)}</div>
+      <span class="stage-intro-position">${escapeHtml(card.position || "")}</span>
+    </article>
+  `, "Section 2 - Intro 2.1");
 }
 
 function renderSentence(payload) {

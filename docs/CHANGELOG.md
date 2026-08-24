@@ -97,3 +97,9 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Published and verified the revision-4 authoritative sync release on GitHub Pages, including the versioned recovery helper and updated offline cache.
 - Replaced Section 4 Stage's recreated word sheet with the authentic embedded Reader PDF page, full-page projector fitting, a generated-page loading/error fallback, strict Reader/page path derivation, and offline caching for all Reader PDFs.
 - Fixed iPad Stage opening the Reader cover by replacing raw Section 4 PDF embedding with 583 exact lossless page images generated from the official Reader PDFs. The correct Reader/page now fills Student Stage consistently in browsers and `WKWebView`; strict path derivation, the clean generated fallback, and runtime offline caching remain intact.
+
+## 2026-08-24
+
+- Added a dedicated 19-scene Substep 2.1 Section 2 introductory presentation with automatic card reveals, paired welded-sound reading, three-finger tapping, word building, guided practice, suffix handling, concept marking, teacher cues, keyboard navigation, and a clean return to ongoing Section 2 practice.
+- Extended Follow Lesson and the native Stage sanitizer so the introductory sequence projects as separate student-safe scenes while teacher prompts remain private.
+- Verified the prototype's key scenes, live browser Stage synchronization, finish behavior, and iPad-sized layout; the native iOS Stage shell also builds successfully with the expanded sanitized card payload.

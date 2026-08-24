@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260823-conflict-choice-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260824-intro21-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -432,6 +432,32 @@
       </section>
     </section>
 
+    <section id="ttIntro21" class="intro-lesson-overlay" role="dialog" aria-modal="true" hidden aria-label="Substep 2.1 introductory lesson">
+      <header class="intro-lesson-topbar">
+        <div>
+          <span>Substep 2.1</span>
+          <strong>Welded Sounds Introduction</strong>
+        </div>
+        <div class="intro-lesson-progress" aria-label="Lesson progress">
+          <span id="ttIntro21Progress">1 of 19</span>
+          <div id="ttIntro21Dots" aria-hidden="true"></div>
+        </div>
+        <button id="ttIntro21Close" type="button" title="Return to Section 2" aria-label="Close introductory lesson">Close</button>
+      </header>
+      <main id="ttIntro21Scene" class="intro-lesson-scene" aria-live="polite"></main>
+      <footer class="intro-lesson-footer">
+        <div class="intro-teacher-cue">
+          <span>Teacher cue</span>
+          <p id="ttIntro21Cue"></p>
+        </div>
+        <div class="intro-lesson-controls">
+          <button id="ttIntro21Restart" type="button" title="Restart introduction">Restart</button>
+          <button id="ttIntro21Back" type="button">Back</button>
+          <button id="ttIntro21Next" type="button">Next</button>
+        </div>
+      </footer>
+    </section>
+
     <section id="ttWhiteboard" class="whiteboard-overlay" hidden aria-label="Section 2 whiteboard">
       <header class="whiteboard-topbar">
         <button id="ttCloseWhiteboard" type="button" title="Back to lesson">Back</button>
@@ -553,7 +579,13 @@
       </section>
 
       <section id="section2" class="teach-card">
-        <div class="section-head section-head-with-actions"><div><span>2</span><h2>Teach & Review Concepts</h2></div><button class="section-refresh" data-refresh-section="2" type="button" title="New Section 2 set">↻ New set</button></div>
+        <div class="section-head section-head-with-actions">
+          <div><span>2</span><h2>Teach & Review Concepts</h2></div>
+          <div class="section-head-actions">
+            <button id="ttOpenIntro21" class="section-intro-launch" type="button" hidden>Start Intro 2.1</button>
+            <button class="section-refresh" data-refresh-section="2" type="button" title="New Section 2 set">↻ New set</button>
+          </div>
+        </div>
         <span id="ttSection2Ref" class="section-ref-pill"></span>
         <div class="section2-teach-layout">
           <div class="section2-picker">
@@ -1003,7 +1035,7 @@
     <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260823-authoritative-sync-1"></script>
+    <script src="teach-today.js?v=20260824-intro21-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

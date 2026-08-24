@@ -9,6 +9,8 @@ let ttSection2Word = "";
 let ttSection2BDeck = [];
 let ttSection2BIndex = 0;
 let ttSection2BWord = "";
+let ttIntro21Open = false;
+let ttIntro21Index = 0;
 let ttHfwDeck = [];
 let ttHfwIndex = 0;
 let ttNotesEnabled = false;
@@ -2820,6 +2822,9 @@ function ttRender() {
   ttById("ttLessonFile").textContent = plan?.title || ttLessonFileName(group, lesson);
   if (!plan) ttSetDraftSaveStatus(group, lesson);
   ttById("ttSkill").textContent = `${skill.id} - ${skill.title}`;
+  const intro21Button = ttById("ttOpenIntro21");
+  if (intro21Button) intro21Button.hidden = skill.id !== "2.1";
+  if (ttIntro21Open && skill.id !== "2.1") ttCloseIntro21();
   ttFillGroups(group.id);
   ttFillLessonControls(group);
   if (ttById("ttSubstep")) ttById("ttSubstep").value = lesson.substep;
@@ -2884,6 +2889,7 @@ function ttStudentDisplayCurrentSectionId() {
 }
 
 function ttStudentDisplayFollowResolution(sectionId) {
+  if (ttIntro21Open) return "cards";
   const modes = {
     section1: "poster",
     section1b: "poster",
@@ -2901,6 +2907,7 @@ function ttStudentDisplayFollowResolution(sectionId) {
 }
 
 function ttStudentDisplayCardPayload(sectionId, lesson, skill) {
+  if (ttIntro21Open) return ttIntro21CardDisplayPayload();
   const stageSection = sectionId || ttStudentDisplayCurrentSectionId();
   if (stageSection === "section2" || stageSection === "section2b") {
     const isDay2 = stageSection === "section2b";
@@ -2990,7 +2997,7 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const displayMode = mode || "private";
   const sourceSection = displayMode === "follow" || displayMode === "cards"
-    ? ttStudentDisplayCurrentSectionId()
+    ? (ttIntro21Open ? "section2" : ttStudentDisplayCurrentSectionId())
     : "";
   const resolvedMode = displayMode === "follow" ? ttStudentDisplayFollowResolution(sourceSection) : displayMode;
   const poster = ttSection1PhotoForSubstep(skill.id);
@@ -8520,6 +8527,392 @@ function ttEnsureSection2MissIndexes(lesson = ttLesson, group = ttActiveGroup(),
   return lesson;
 }
 
+const TT_INTRO_21_NG = [
+  { text: "ang", keyword: "fang", type: "welded" },
+  { text: "ing", keyword: "ring", type: "welded" },
+  { text: "ong", keyword: "song", type: "welded" },
+  { text: "ung", keyword: "lung", type: "welded" }
+];
+
+const TT_INTRO_21_NK = [
+  { text: "ank", keyword: "bank", type: "welded" },
+  { text: "ink", keyword: "pink", type: "welded" },
+  { text: "onk", keyword: "honk", type: "welded" },
+  { text: "unk", keyword: "junk", type: "welded" }
+];
+
+const TT_INTRO_21_SCENES = [
+  {
+    id: "welcome",
+    layout: "welcome",
+    kicker: "Listen closely",
+    headline: "Some sounds stick together.",
+    subhead: "We call them welded sounds because their sounds are hard to pull apart.",
+    cue: "Say: Today we will meet sounds that are welded together. Listen first, then say each one with me."
+  },
+  {
+    id: "ang",
+    layout: "family",
+    kicker: "The -ng family",
+    headline: "ang",
+    subhead: "ang - fang - /ang/",
+    items: TT_INTRO_21_NG.slice(0, 1),
+    cue: "Point to ang. Say: ang - fang - /ang/. Have students repeat."
+  },
+  {
+    id: "ing",
+    layout: "family",
+    kicker: "The -ng family",
+    headline: "Add ing",
+    subhead: "ing - ring - /ing/",
+    items: TT_INTRO_21_NG.slice(0, 2),
+    cue: "Point to ing. Say: ing - ring - /ing/. Students repeat, then read ang and ing."
+  },
+  {
+    id: "ong",
+    layout: "family",
+    kicker: "The -ng family",
+    headline: "Add ong",
+    subhead: "ong - song - /ong/",
+    items: TT_INTRO_21_NG.slice(0, 3),
+    cue: "Point to ong. Say: ong - song - /ong/. Students repeat, then read across."
+  },
+  {
+    id: "ung",
+    layout: "family",
+    kicker: "The -ng family",
+    headline: "Add ung",
+    subhead: "ung - lung - /ung/",
+    items: TT_INTRO_21_NG,
+    cue: "Point to ung. Say: ung - lung - /ung/. Model the row once; students repeat and then read it independently."
+  },
+  {
+    id: "ank",
+    layout: "family",
+    kicker: "The -nk family",
+    headline: "ank",
+    subhead: "ank - bank - /ank/",
+    items: TT_INTRO_21_NK.slice(0, 1),
+    cue: "Begin the second family. Point to ank. Say: ank - bank - /ank/. Students repeat."
+  },
+  {
+    id: "ink",
+    layout: "family",
+    kicker: "The -nk family",
+    headline: "Add ink",
+    subhead: "ink - pink - /ink/",
+    items: TT_INTRO_21_NK.slice(0, 2),
+    cue: "Point to ink. Say: ink - pink - /ink/. Students repeat, then read ank and ink."
+  },
+  {
+    id: "onk",
+    layout: "family",
+    kicker: "The -nk family",
+    headline: "Add onk",
+    subhead: "onk - honk - /onk/",
+    items: TT_INTRO_21_NK.slice(0, 3),
+    cue: "Point to onk. Say: onk - honk - /onk/. Students repeat, then read across."
+  },
+  {
+    id: "unk",
+    layout: "family",
+    kicker: "The -nk family",
+    headline: "Add unk",
+    subhead: "unk - junk - /unk/",
+    items: TT_INTRO_21_NK,
+    cue: "Point to unk. Say: unk - junk - /unk/. Model the row once; students repeat and then read it independently."
+  },
+  {
+    id: "pairs",
+    layout: "pairs",
+    kicker: "Read across",
+    headline: "Match the vowel. Notice the ending.",
+    subhead: "/ang/ - /ank/   /ing/ - /ink/   /ong/ - /onk/   /ung/ - /unk/",
+    pairs: [["ang", "ank"], ["ing", "ink"], ["ong", "onk"], ["ung", "unk"]],
+    cue: "Point across each pair and say both sounds. Students repeat, then read all four rows independently."
+  },
+  {
+    id: "one-unit",
+    layout: "focus",
+    kicker: "One welded unit",
+    headline: "Three letters stay together.",
+    subhead: "The sounds are closely welded, so we read the whole green card as one unit.",
+    items: [{ text: "ink", keyword: "pink", type: "welded" }],
+    cue: "Keep the explanation simple. Do not introduce digraph-versus-blend terminology unless a student asks."
+  },
+  {
+    id: "tap-sink",
+    layout: "build",
+    kicker: "Watch the tap",
+    headline: "Tap sink in two parts.",
+    subhead: "/s/ - /ink/ - sink",
+    word: "sink",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ink", type: "welded", tap: 3 }
+    ],
+    cue: "Tap /s/ once. Then bring three fingers down together for /ink/. Blend: sink."
+  },
+  {
+    id: "build-sang",
+    layout: "build",
+    kicker: "Build and blend",
+    headline: "Slide s in front of ang.",
+    subhead: "/s/ - /ang/ - sang",
+    word: "sang",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ang", type: "welded", tap: 3 }
+    ],
+    cue: "Model the two taps, then sweep beneath the cards and blend the word: sang."
+  },
+  {
+    id: "swap-sank",
+    layout: "build",
+    kicker: "Change one card",
+    headline: "Swap ang for ank.",
+    subhead: "/s/ - /ank/ - sank",
+    word: "sank",
+    items: [
+      { text: "s", type: "consonant", tap: 1 },
+      { text: "ank", type: "welded", tap: 3 }
+    ],
+    cue: "Point out that only the welded card changed. Students tap and blend sank."
+  },
+  {
+    id: "turn-hung",
+    layout: "build",
+    kicker: "Your turn",
+    headline: "Tap it. Blend it.",
+    subhead: "What word do these cards make?",
+    word: "hung",
+    items: [
+      { text: "h", type: "consonant", tap: 1 },
+      { text: "ung", type: "welded", tap: 3 }
+    ],
+    cue: "Pause. Let students tap and blend independently. Reveal the spoken word only after they respond."
+  },
+  {
+    id: "turn-pink",
+    layout: "build",
+    kicker: "Your turn",
+    headline: "Tap it. Blend it.",
+    subhead: "What word do these cards make?",
+    word: "pink",
+    items: [
+      { text: "p", type: "consonant", tap: 1 },
+      { text: "ink", type: "welded", tap: 3 }
+    ],
+    cue: "Pause again for an independent response. If accurate, move on without requiring tapping on every later word."
+  },
+  {
+    id: "suffix-rings",
+    layout: "build",
+    kicker: "Add a suffix",
+    headline: "Read the base word first.",
+    subhead: "ring - rings",
+    word: "rings",
+    wordNote: "Tap ring only if needed. The suffix is not tapped.",
+    items: [
+      { text: "r", type: "consonant", tap: 1 },
+      { text: "ing", type: "welded", tap: 3 },
+      { text: "s", type: "suffix", tap: 0 }
+    ],
+    cue: "Read the base word ring. Then add -s and read rings. Do not tap the suffix."
+  },
+  {
+    id: "box-it",
+    layout: "mark",
+    kicker: "Mark the concept",
+    headline: "Box the welded sound.",
+    subhead: "The box shows the letters that stay together.",
+    items: [
+      { text: "long", mark: "ong" },
+      { text: "ring", mark: "ing" },
+      { text: "hung", mark: "ung" },
+      { text: "bank", mark: "ank" },
+      { text: "think", mark: "ink" },
+      { text: "junk", mark: "unk" }
+    ],
+    cue: "Have students box the welded sound in each word. This matches the 2.1 notebook marking routine."
+  },
+  {
+    id: "finish",
+    layout: "finish",
+    kicker: "Ready to practice",
+    headline: "Eight welded sounds. One strong idea.",
+    subhead: "Read each green card as one welded unit.",
+    items: TT_INTRO_21_NG.concat(TT_INTRO_21_NK),
+    cue: "Quickly point in mixed order. Students read each sound. Then close the intro and continue with the regular Section 2 practice words."
+  }
+];
+
+function ttIntro21Scene() {
+  return TT_INTRO_21_SCENES[ttIntro21Index] || TT_INTRO_21_SCENES[0];
+}
+
+function ttIntro21SoundCardsHtml(items = []) {
+  return `<div class="intro-family-grid">${items.map((item) => `
+    <article class="intro-sound-card">
+      <strong>${escapeHtml(item.text)}</strong>
+      <span>${escapeHtml(item.keyword)} - /${escapeHtml(item.text)}/</span>
+    </article>
+  `).join("")}</div>`;
+}
+
+function ttIntro21BuildHtml(scene) {
+  return `<div class="intro-build-stage">
+    <div class="intro-build-row">${(scene.items || []).map((item) => `
+      <span class="intro-build-card ${escapeHtml(item.type || "consonant")}">
+        ${Number(item.tap || 0) ? `<span class="intro-tap-cue" aria-label="${Number(item.tap)} finger tap">${Array.from({ length: Number(item.tap) }, () => "<i></i>").join("")}</span>` : ""}
+        ${escapeHtml(item.text)}
+      </span>
+    `).join("")}</div>
+    <div class="intro-build-word">${escapeHtml(scene.word || "")}${scene.wordNote ? `<small>${escapeHtml(scene.wordNote)}</small>` : ""}</div>
+  </div>`;
+}
+
+function ttIntro21MarkedWordHtml(item) {
+  const word = String(item?.text || "");
+  const mark = String(item?.mark || "");
+  const index = mark ? word.lastIndexOf(mark) : -1;
+  if (index < 0) return `<span class="intro-mark-word">${escapeHtml(word)}</span>`;
+  return `<span class="intro-mark-word">${escapeHtml(word.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(word.slice(index + mark.length))}</span>`;
+}
+
+function ttIntro21VisualHtml(scene) {
+  if (scene.layout === "welcome") {
+    return `<div class="intro-welcome">
+      <div class="intro-welcome-mark" aria-label="Three letters welded together"><span>i</span><span>n</span><span>k</span></div>
+      <strong>See it. Say it. Tap it. Blend it.</strong>
+    </div>`;
+  }
+  if (scene.layout === "family") return ttIntro21SoundCardsHtml(scene.items);
+  if (scene.layout === "pairs") {
+    return `<div class="intro-pair-grid">${scene.pairs.map((pair) => `
+      <div class="intro-pair"><span>${escapeHtml(pair[0])}</span><span class="intro-pair-arrow">to</span><span>${escapeHtml(pair[1])}</span></div>
+    `).join("")}</div>`;
+  }
+  if (scene.layout === "focus") {
+    return `<div class="intro-focus-sound">
+      ${ttIntro21SoundCardsHtml(scene.items)}
+      <div class="intro-letter-count"><span><i></i><i></i><i></i> three letters</span><span>one welded card</span></div>
+    </div>`;
+  }
+  if (scene.layout === "build") return ttIntro21BuildHtml(scene);
+  if (scene.layout === "mark") {
+    return `<div class="intro-mark-grid">${(scene.items || []).map(ttIntro21MarkedWordHtml).join("")}</div>`;
+  }
+  if (scene.layout === "finish") {
+    return `<div class="intro-finish">${ttIntro21SoundCardsHtml(scene.items)}<strong>Ready for word practice</strong></div>`;
+  }
+  return "";
+}
+
+function ttIntro21CardDisplayPayload() {
+  const scene = ttIntro21Scene();
+  const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
+  return {
+    kind: "intro-21",
+    layout: scene.layout,
+    key: `intro-21-${scene.id}`,
+    sectionLabel: "Section 2 - Intro 2.1",
+    headline: scene.headline || "",
+    subhead: scene.subhead || "",
+    word: scene.word || "",
+    wordNote: scene.wordNote || "",
+    label: "Welded sounds introduction",
+    position: `${ttIntro21Index + 1} of ${TT_INTRO_21_SCENES.length}`,
+    items: (scene.items || pairItems).map((item) => ({
+      text: item.text || "",
+      type: item.type || "welded",
+      keyword: item.keyword || "",
+      pair: item.pair || "",
+      tap: Number(item.tap || 0),
+      mark: item.mark || ""
+    }))
+  };
+}
+
+function ttRenderIntro21() {
+  const overlay = ttById("ttIntro21");
+  const target = ttById("ttIntro21Scene");
+  if (!overlay || !target || overlay.hidden) return;
+  const scene = ttIntro21Scene();
+  target.classList.remove("intro-scene-enter");
+  target.innerHTML = `<div class="intro-scene-inner">
+    <header class="intro-scene-heading">
+      <span class="intro-scene-kicker">${escapeHtml(scene.kicker || "Intro 2.1")}</span>
+      <h2>${escapeHtml(scene.headline || "")}</h2>
+      <p>${escapeHtml(scene.subhead || "")}</p>
+    </header>
+    <div class="intro-scene-visual">${ttIntro21VisualHtml(scene)}</div>
+  </div>`;
+  requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
+  ttById("ttIntro21Cue").textContent = scene.cue || "";
+  ttById("ttIntro21Progress").textContent = `${ttIntro21Index + 1} of ${TT_INTRO_21_SCENES.length}`;
+  ttById("ttIntro21Dots").innerHTML = TT_INTRO_21_SCENES.map((_, index) => `<i class="${index === ttIntro21Index ? "active" : index < ttIntro21Index ? "complete" : ""}"></i>`).join("");
+  ttById("ttIntro21Back").disabled = ttIntro21Index === 0;
+  ttById("ttIntro21Next").textContent = ttIntro21Index === TT_INTRO_21_SCENES.length - 1 ? "Finish" : "Next";
+  ttSendStudentDisplay(ttStudentDisplayPayload("follow"));
+}
+
+function ttSetIntro21BackgroundInert(active) {
+  const overlay = ttById("ttIntro21");
+  [...document.body.children].forEach((element) => {
+    if (element === overlay || element.tagName === "SCRIPT") return;
+    element.inert = active;
+    if (active) {
+      element.dataset.ttIntro21AriaHidden = element.hasAttribute("aria-hidden")
+        ? element.getAttribute("aria-hidden")
+        : "__none__";
+      element.setAttribute("aria-hidden", "true");
+    } else if (element.dataset.ttIntro21AriaHidden !== undefined) {
+      const previous = element.dataset.ttIntro21AriaHidden;
+      if (previous === "__none__") element.removeAttribute("aria-hidden");
+      else element.setAttribute("aria-hidden", previous);
+      delete element.dataset.ttIntro21AriaHidden;
+    }
+  });
+}
+
+function ttOpenIntro21() {
+  const overlay = ttById("ttIntro21");
+  if (!overlay) return;
+  ttIntro21Index = 0;
+  ttIntro21Open = true;
+  overlay.hidden = false;
+  ttSetIntro21BackgroundInert(true);
+  document.body.classList.add("intro-lesson-open");
+  ttSetNativeProjectionMode("stage");
+  ttStudentDisplayMode = "follow";
+  localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttRenderIntro21();
+  ttById("ttIntro21Next")?.focus();
+}
+
+function ttCloseIntro21() {
+  const overlay = ttById("ttIntro21");
+  if (!overlay) return;
+  overlay.hidden = true;
+  ttIntro21Open = false;
+  ttSetIntro21BackgroundInert(false);
+  document.body.classList.remove("intro-lesson-open");
+  ttStudentDisplayFollowKey = "";
+  ttSyncFollowingStudentDisplay({ force: true });
+  ttById("ttOpenIntro21")?.focus();
+}
+
+function ttStepIntro21(direction) {
+  const nextIndex = ttIntro21Index + direction;
+  if (nextIndex >= TT_INTRO_21_SCENES.length) {
+    ttCloseIntro21();
+    return;
+  }
+  ttIntro21Index = Math.max(0, nextIndex);
+  ttRenderIntro21();
+}
+
 function ttFillSection2ReplacementTools(lesson, skill) {
   const currentSelect = ttById("ttCurrentWordSelect");
   if (currentSelect) {
@@ -13932,6 +14325,14 @@ function ttBind() {
     ttToggleSmallDropdown("ttAttendance", { focus: true });
   });
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
+  ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21());
+  ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
+  ttById("ttIntro21Restart")?.addEventListener("click", () => {
+    ttIntro21Index = 0;
+    ttRenderIntro21();
+  });
+  ttById("ttIntro21Back")?.addEventListener("click", () => ttStepIntro21(-1));
+  ttById("ttIntro21Next")?.addEventListener("click", () => ttStepIntro21(1));
   // Day 1 / Day 2 toggle — works in both teach bar and presentation dock
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-group-day]");
@@ -14008,6 +14409,23 @@ function ttBind() {
   ttById("ttDockNextSection")?.addEventListener("click", () => ttGoToTeachingSection(1));
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.addEventListener("keydown", (event) => {
+    if (ttIntro21Open) {
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        ttStepIntro21(1);
+      } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        ttStepIntro21(-1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        ttIntro21Index = 0;
+        ttRenderIntro21();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        ttCloseIntro21();
+      }
+      return;
+    }
     if (event.key === "Escape" && document.body.classList.contains("present-menu-open")) {
       ttSetPresentationMenu(false);
     } else if (event.key === "Escape" && ttLaserEnabled) {
