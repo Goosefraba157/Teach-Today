@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-24-intro21-discovery-2";
+const CACHE_NAME = "teach-today-offline-v2026-08-24-intro21-cards-1";
 
 const APP_SHELL = [
   "./",
@@ -458,6 +458,18 @@ const APP_SHELL = [
   "./pwa-register.js",
   "./manifest.webmanifest",
   "./assets/morrocoy-logo.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ang-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ing-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ong-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/ung%20sound%20card.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ank-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ink-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/onk-sound-card-high-res.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/unk%20sound%20card.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/short%20a.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/short%20i.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/short%20o%20aw.png",
+  "./Pics%20for%20Lessons%20and%20Stuff/short%20u.png",
   "./Games/index.html",
   "./Games/game-hub.css",
   "./Games/game-hub.js",

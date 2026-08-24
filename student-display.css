@@ -461,21 +461,12 @@ body.stage-inking .stage-ink-canvas {
 }
 
 .stage-intro-keyword-art {
-  width: 150px;
+  display: block;
+  width: auto;
+  max-width: 100%;
   height: 196px;
-  background-image: url("Sounds%20for%20Section%201/2.1%20-%202.2.png");
-  background-repeat: no-repeat;
-  background-size: 1829px 1018px;
+  object-fit: contain;
 }
-
-.stage-intro-keyword-art.image-ang { background-position: -1076px -235px; }
-.stage-intro-keyword-art.image-ing { background-position: -1224px -235px; }
-.stage-intro-keyword-art.image-ong { background-position: -1372px -235px; }
-.stage-intro-keyword-art.image-ung { background-position: -1520px -235px; }
-.stage-intro-keyword-art.image-ank { background-position: -1076px -439px; }
-.stage-intro-keyword-art.image-ink { background-position: -1224px -439px; }
-.stage-intro-keyword-art.image-onk { background-position: -1372px -439px; }
-.stage-intro-keyword-art.image-unk { background-position: -1520px -439px; }
 
 .stage-intro-keyword-card > div:last-child {
   width: 100%;
@@ -705,12 +696,55 @@ body.stage-inking .stage-ink-canvas {
   width: min(780px, 100%);
   display: grid;
   justify-items: center;
-  gap: 20px;
+  gap: 10px;
 }
 
 .stage-intro-contrast .stage-intro-keyword-grid {
   grid-template-columns: repeat(2, minmax(0, 280px));
   justify-content: center;
+}
+
+.stage-intro-contrast .stage-intro-keyword-card {
+  grid-template-rows: 150px;
+}
+
+.stage-intro-contrast .stage-intro-keyword-art {
+  height: 150px;
+}
+
+.stage-intro-contrast .stage-intro-keyword-card > div:last-child {
+  display: none;
+}
+
+.stage-intro-mouth-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.stage-intro-mouth-grid figure {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 100px auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  border: 1px solid #cbd5e1;
+  padding: 5px 10px;
+  background: #fff;
+}
+
+.stage-intro-mouth-grid img {
+  width: 100px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.stage-intro-mouth-grid figcaption {
+  color: #334155;
+  font-size: 19px;
+  font-weight: 900;
 }
 
 .stage-intro-mouth-cues {
@@ -872,19 +906,9 @@ body.stage-inking .stage-ink-canvas {
   }
 
   .stage-intro-keyword-art {
-    width: 76px;
+    width: auto;
     height: 100px;
-    background-size: 930px 518px;
   }
-
-  .stage-intro-keyword-art.image-ang { background-position: -548px -120px; }
-  .stage-intro-keyword-art.image-ing { background-position: -624px -120px; }
-  .stage-intro-keyword-art.image-ong { background-position: -700px -120px; }
-  .stage-intro-keyword-art.image-ung { background-position: -776px -120px; }
-  .stage-intro-keyword-art.image-ank { background-position: -548px -224px; }
-  .stage-intro-keyword-art.image-ink { background-position: -624px -224px; }
-  .stage-intro-keyword-art.image-onk { background-position: -700px -224px; }
-  .stage-intro-keyword-art.image-unk { background-position: -776px -224px; }
 
   .stage-intro-keyword-card > div:last-child {
     padding: 4px 6px 6px;
@@ -942,6 +966,33 @@ body.stage-inking .stage-ink-canvas {
 
   .stage-intro-mouth-cues span {
     padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .stage-intro-contrast .stage-intro-keyword-card {
+    grid-template-rows: 90px auto;
+  }
+
+  .stage-intro-contrast .stage-intro-keyword-art {
+    height: 90px;
+  }
+
+  .stage-intro-mouth-grid {
+    gap: 8px;
+  }
+
+  .stage-intro-mouth-grid figure {
+    grid-template-columns: 72px auto;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .stage-intro-mouth-grid img {
+    width: 72px;
+    height: 50px;
+  }
+
+  .stage-intro-mouth-grid figcaption {
     font-size: 12px;
   }
 

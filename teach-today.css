@@ -3557,21 +3557,12 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 }
 
 .intro-keyword-art {
-  width: 150px;
+  display: block;
+  width: auto;
+  max-width: 100%;
   height: 196px;
-  background-image: url("Sounds%20for%20Section%201/2.1%20-%202.2.png");
-  background-repeat: no-repeat;
-  background-size: 1829px 1018px;
+  object-fit: contain;
 }
-
-.intro-keyword-art.image-ang { background-position: -1076px -235px; }
-.intro-keyword-art.image-ing { background-position: -1224px -235px; }
-.intro-keyword-art.image-ong { background-position: -1372px -235px; }
-.intro-keyword-art.image-ung { background-position: -1520px -235px; }
-.intro-keyword-art.image-ank { background-position: -1076px -439px; }
-.intro-keyword-art.image-ink { background-position: -1224px -439px; }
-.intro-keyword-art.image-onk { background-position: -1372px -439px; }
-.intro-keyword-art.image-unk { background-position: -1520px -439px; }
 
 .intro-keyword-card > div:last-child {
   width: 100%;
@@ -3802,6 +3793,49 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-contrast .intro-keyword-grid {
   grid-template-columns: repeat(2, minmax(0, 260px));
   justify-content: center;
+}
+
+.intro-contrast .intro-keyword-card {
+  grid-template-rows: 180px;
+}
+
+.intro-contrast .intro-keyword-art {
+  height: 180px;
+}
+
+.intro-contrast .intro-keyword-card > div:last-child {
+  display: none;
+}
+
+.intro-mouth-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.intro-mouth-grid figure {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 120px auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid #cbd5e1;
+  padding: 7px 12px;
+  background: #fff;
+}
+
+.intro-mouth-grid img {
+  width: 120px;
+  height: 78px;
+  object-fit: contain;
+}
+
+.intro-mouth-grid figcaption {
+  color: #334155;
+  font-size: 17px;
+  font-weight: 900;
 }
 
 .intro-mouth-cues {
@@ -4055,19 +4089,9 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   }
 
   .intro-keyword-art {
-    width: 76px;
+    width: auto;
     height: 100px;
-    background-size: 930px 518px;
   }
-
-  .intro-keyword-art.image-ang { background-position: -548px -120px; }
-  .intro-keyword-art.image-ing { background-position: -624px -120px; }
-  .intro-keyword-art.image-ong { background-position: -700px -120px; }
-  .intro-keyword-art.image-ung { background-position: -776px -120px; }
-  .intro-keyword-art.image-ank { background-position: -548px -224px; }
-  .intro-keyword-art.image-ink { background-position: -624px -224px; }
-  .intro-keyword-art.image-onk { background-position: -700px -224px; }
-  .intro-keyword-art.image-unk { background-position: -776px -224px; }
 
   .intro-keyword-card > div:last-child {
     padding: 4px 6px 6px;
@@ -4125,6 +4149,33 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
   .intro-mouth-cues span {
     padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .intro-contrast .intro-keyword-card {
+    grid-template-rows: 90px auto;
+  }
+
+  .intro-contrast .intro-keyword-art {
+    height: 90px;
+  }
+
+  .intro-mouth-grid {
+    gap: 8px;
+  }
+
+  .intro-mouth-grid figure {
+    grid-template-columns: 72px auto;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .intro-mouth-grid img {
+    width: 72px;
+    height: 50px;
+  }
+
+  .intro-mouth-grid figcaption {
     font-size: 12px;
   }
 

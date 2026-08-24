@@ -8544,6 +8544,24 @@ const TT_INTRO_21_NK = [
   { text: "unk", keyword: "junk", imageKey: "unk", type: "welded" }
 ];
 
+const TT_INTRO_21_CARD_IMAGE_PATHS = Object.freeze({
+  ang: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ang-sound-card-high-res.png",
+  ing: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ing-sound-card-high-res.png",
+  ong: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ong-sound-card-high-res.png",
+  ung: "Pics%20for%20Lessons%20and%20Stuff/ung%20sound%20card.png",
+  ank: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ank-sound-card-high-res.png",
+  ink: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ink-sound-card-high-res.png",
+  onk: "Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/onk-sound-card-high-res.png",
+  unk: "Pics%20for%20Lessons%20and%20Stuff/unk%20sound%20card.png"
+});
+
+const TT_INTRO_21_MOUTH_IMAGE_PATHS = Object.freeze({
+  a: "Pics%20for%20Lessons%20and%20Stuff/short%20a.png",
+  i: "Pics%20for%20Lessons%20and%20Stuff/short%20i.png",
+  o: "Pics%20for%20Lessons%20and%20Stuff/short%20o%20aw.png",
+  u: "Pics%20for%20Lessons%20and%20Stuff/short%20u.png"
+});
+
 const TT_INTRO_21_SCENES = [
   {
     id: "welcome",
@@ -9022,14 +9040,23 @@ function ttIntro21PatternCardsHtml(items = []) {
 
 function ttIntro21KeywordArtHtml(item, compact = false) {
   const imageKey = String(item?.imageKey || item?.text || "").toLowerCase();
+  const imageSrc = TT_INTRO_21_CARD_IMAGE_PATHS[imageKey] || "";
   return `<article class="intro-keyword-card ${compact ? "compact" : ""}">
-    <div class="intro-keyword-art image-${escapeHtml(imageKey)}" role="img" aria-label="${escapeHtml(item.keyword || imageKey)} keyword picture"></div>
+    ${imageSrc ? `<img class="intro-keyword-art" src="${escapeHtml(imageSrc)}" alt="${escapeHtml(item.keyword || imageKey)} keyword card">` : ""}
     <div><strong>${escapeHtml(item.text || "")}</strong><span>${escapeHtml(item.keyword || "")} - /${escapeHtml(item.text || "")}/</span></div>
   </article>`;
 }
 
 function ttIntro21KeywordGridHtml(items = [], compact = false) {
   return `<div class="intro-keyword-grid ${compact ? "compact" : ""}">${items.map((item) => ttIntro21KeywordArtHtml(item, compact)).join("")}</div>`;
+}
+
+function ttIntro21MouthGridHtml(items = []) {
+  return `<div class="intro-mouth-grid">${items.map((item) => {
+    const vowel = String(item?.text || "").charAt(0).toLowerCase();
+    const imageSrc = TT_INTRO_21_MOUTH_IMAGE_PATHS[vowel] || "";
+    return imageSrc ? `<figure><img src="${escapeHtml(imageSrc)}" alt="Short ${escapeHtml(vowel)} mouth position"><figcaption>short ${escapeHtml(vowel)}</figcaption></figure>` : "";
+  }).join("")}</div>`;
 }
 
 function ttIntro21BuildHtml(scene) {
@@ -9092,6 +9119,7 @@ function ttIntro21VisualHtml(scene) {
     const notes = String(scene.wordNote || "").split("|").map((note) => note.trim()).filter(Boolean);
     return `<div class="intro-contrast">
       ${ttIntro21KeywordGridHtml(scene.items, true)}
+      ${ttIntro21MouthGridHtml(scene.items)}
       <div class="intro-mouth-cues">${notes.map((note) => `<span>${escapeHtml(note)}</span>`).join("")}</div>
     </div>`;
   }
