@@ -146,6 +146,9 @@ function renderPoster(payload) {
 
 function renderCards(payload) {
   const card = payload.cardDisplay || {};
+  if ((card.kind === "intro-21" || card.kind === "intro-35") && card.teacherMirror) {
+    return renderIntroTeacherMirror(card);
+  }
   if (card.kind === "intro-21") return renderIntro21Cards(payload, card);
   if (card.kind === "intro-35") return renderIntro35Cards(payload, card);
   const items = (card.items || []).filter((item) => item?.text);
@@ -164,6 +167,43 @@ function renderCards(payload) {
       </div>
     </article>
   `, card.sectionLabel || "Lesson");
+}
+
+function renderIntroTeacherMirror(card) {
+  const view = card.teacherView || {};
+  const total = Math.max(1, Number(view.progressTotal || 1));
+  const activeIndex = Math.max(0, Number(view.progressIndex || 0));
+  const dots = Array.from({ length: total }, (_, index) => `<i class="${index === activeIndex ? "active" : index < activeIndex ? "complete" : ""}"></i>`).join("");
+  return `<section class="intro-lesson-overlay intro-lesson-student-mirror" aria-label="Teacher-style intro lesson mirror">
+    <header class="intro-lesson-topbar">
+      <div>
+        <span>${escapeHtml(view.substepLabel || "Intro lesson")}</span>
+        <strong>${escapeHtml(view.title || "Intro lesson")}</strong>
+      </div>
+      <div class="intro-lesson-progress" aria-label="Lesson progress">
+        <span>${escapeHtml(view.progress || card.position || "")}</span>
+        <div aria-hidden="true">${dots}</div>
+      </div>
+      <span class="intro-mirror-status">Teacher mirror</span>
+    </header>
+    <main class="intro-lesson-scene">
+      <div class="intro-scene-inner intro-scene-enter">
+        <header class="intro-scene-heading">
+          <span class="intro-scene-kicker">${escapeHtml(view.kicker || "Intro lesson")}</span>
+          <h2>${escapeHtml(view.headline || "")}</h2>
+          <p>${escapeHtml(view.subhead || "")}</p>
+        </header>
+        <div class="intro-scene-visual">${view.visualHtml || ""}</div>
+      </div>
+    </main>
+    <footer class="intro-lesson-footer">
+      <div class="intro-teacher-cue">
+        <span>Teacher cue</span>
+        <p>${escapeHtml(view.cue || "")}</p>
+      </div>
+      <strong class="intro-mirror-progress">${escapeHtml(view.progress || card.position || "")}</strong>
+    </footer>
+  </section>`;
 }
 
 function renderIntro21MarkedWord(item) {
@@ -312,7 +352,7 @@ function renderIntro35SegmentedWord(item, className = "") {
   const suffix = String(item?.mark || "");
   const index = suffix ? word.lastIndexOf(suffix) : -1;
   if (index < 0) return `<span class="${modeClass(className)}">${escapeHtml(word)}</span>`;
-  const base = String(item?.keyword || word.slice(0, index));
+  const base = word.slice(0, index);
   return `<span class="${modeClass(className)}"><u>${escapeHtml(base)}</u><b>${escapeHtml(suffix)}</b></span>`;
 }
 
@@ -373,11 +413,27 @@ function renderIntro35Visual(card) {
   if (card.layout === "suffix-notebook") {
     const suffixes = items.filter((item) => item.type === "suffix");
     const markedWord = items.find((item) => item.type === "word");
-    return `<article class="stage-intro-suffix-notebook">
-      <header><span>Word Elements</span><strong>Suffix Endings</strong></header>
-      <div>${suffixes.map((item) => `<section><b>${escapeHtml(item.text)}</b><span>vowel suffix</span><em>${escapeHtml(item.keyword)}</em></section>`).join("")}</div>
-      <footer><span>Mark Words</span>${renderIntro35SegmentedWord(markedWord, "stage-intro-suffix-mark-word")}</footer>
-    </article>`;
+    const ing = suffixes.find((item) => item.text === "-ing");
+    const ed = suffixes.find((item) => item.text === "-ed");
+    return `<div class="stage-intro-suffix-notebook-pages">
+      <article class="stage-intro-suffix-notebook">
+        <header><span>Word Elements</span><em>page 23</em></header>
+        <h3>Suffixes</h3>
+        <div class="stage-intro-notebook-equations">
+          <p><span>fish + ing =</span><strong>${escapeHtml(ing?.keyword || "fishing")}</strong></p>
+          <p><span>rent + ed =</span><strong>${escapeHtml(ed?.keyword || "rented")}</strong></p>
+        </div>
+        <footer><span>Mark Words</span>${renderIntro35SegmentedWord(markedWord, "stage-intro-suffix-mark-word")}</footer>
+      </article>
+      <article class="stage-intro-suffix-notebook">
+        <header><span>Word Elements</span><em>page 24</em></header>
+        <h3>Vowel Suffixes</h3>
+        <div class="stage-intro-notebook-vowels">
+          <p><b>-ing</b><strong>${escapeHtml(ing?.keyword || "fishing")}</strong></p>
+          <p><b>-ed /ĕd/</b><strong>${escapeHtml(ed?.keyword || "rented")}</strong></p>
+        </div>
+      </article>
+    </div>`;
   }
   return "";
 }
@@ -543,6 +599,7 @@ function renderGame(payload) {
 function render(payload) {
   currentPayload = payload;
   document.body.classList.remove("stage-inking");
+  document.body.classList.toggle("stage-teacher-mirror", Boolean(payload?.cardDisplay?.teacherMirror));
   if (!payload) {
     root.innerHTML = `
       <section class="waiting">

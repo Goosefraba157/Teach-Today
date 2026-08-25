@@ -111,3 +111,11 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added a Section 7 spelling-discovery entry point that opens directly on the base-protection routine, including face-down base/suffix cards, staged `landed` and `melting` spelling, marking practice, and the Suffix Endings notebook entry.
 - Extended the clean student Stage renderer for all 3.5 discovery layouts, kept teacher cues out of projection, fixed the shared intro overlay's dynamic substep label, and corrected the full-lesson group-day picker to handle its intentional no-day selection without a console error.
 - Browser-audited all 28 teacher scenes, both Section 2 and Section 7 launch paths, live Stage following, layout overflow, and preservation of the existing 19/24-scene 2.1 intros; JavaScript syntax and sync-safety checks pass, and the native iOS Stage shell builds successfully.
+
+## 2026-08-25
+
+- Revised 3.5 meaning and Section 7 spelling slides to follow the manual's exact base-first prompts, including separate monosyllabic tapping and multisyllabic syllable language, facedown-card modeling, and base-then-whole-word rereading.
+- Fixed suffix-word rendering so the actual base word—not an explanatory label—is underlined, made every base underline continuous below descenders, and clarified the past-action `-ed` comparison.
+- Identified and added the exact Student Notebook destinations: printed pages 23 and 24, with `fishing`, `rented`, and the `check(ing)` marking review.
+- Added intro-header `Mirror teacher`, `Mark`, and `Laser` controls to both the 2.1 and 3.5 lessons. The student display can toggle between its Stage layout and a teacher-style intro mirror, while native iPad projection uses the existing exact teacher-webview mirror.
+- Verified both intro variants, mirror/Stage switching, marking and laser activation, updated Section 7 labeling, and browser console output; JavaScript, sync-safety, diff checks, and the unsigned iOS simulator build pass.

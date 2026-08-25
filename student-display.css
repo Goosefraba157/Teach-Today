@@ -37,6 +37,36 @@ button {
   height: 100vh;
 }
 
+body.stage-teacher-mirror {
+  background: #f4f9fb;
+}
+
+body.stage-teacher-mirror :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
+  display: none;
+}
+
+.intro-lesson-student-mirror {
+  z-index: 200;
+}
+
+.intro-mirror-status {
+  justify-self: end;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  padding: 8px 13px;
+  background: #ccfbf1;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.intro-mirror-progress {
+  min-width: 92px;
+  color: #475569;
+  font-size: 14px;
+  text-align: center;
+}
+
 .stage-shell {
   position: relative;
   width: 100vw;
@@ -932,8 +962,9 @@ body.stage-inking .stage-ink-canvas {
 .stage-intro-base-hunt-word u,
 .stage-intro-meaning-word u {
   text-decoration-color: #0f766e;
+  text-decoration-skip-ink: none;
   text-decoration-thickness: 6px;
-  text-underline-offset: 9px;
+  text-underline-offset: 0.3em;
 }
 
 .stage-intro-base-hunt-word b,
@@ -974,7 +1005,7 @@ body.stage-inking .stage-ink-canvas {
   text-align: center;
 }
 
-.stage-intro-suffix-mark-word u { text-decoration-color: #334155; text-decoration-thickness: 5px; text-underline-offset: 9px; }
+.stage-intro-suffix-mark-word u { text-decoration-color: #334155; text-decoration-skip-ink: none; text-decoration-thickness: 5px; text-underline-offset: 0.3em; }
 .stage-intro-suffix-mark-word b { margin-left: 2px; border: 4px solid #be123c; border-radius: 999px; padding: 0 6px 3px; font-weight: inherit; }
 
 .stage-intro-roadmap {
@@ -1001,7 +1032,7 @@ body.stage-inking .stage-ink-canvas {
 
 .stage-intro-routine-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
   width: min(1120px, 100%);
 }
@@ -1037,26 +1068,35 @@ body.stage-inking .stage-ink-canvas {
 .stage-intro-spell-stage article b { font-family: Georgia, "Times New Roman", serif; font-size: 74px; }
 .stage-intro-spell-stage article span { color: #475569; font-size: 19px; font-weight: 900; }
 
+.stage-intro-suffix-notebook-pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  width: min(1120px, 100%);
+}
+
 .stage-intro-suffix-notebook {
-  width: min(820px, 100%);
+  min-width: 0;
   border: 1px solid #94a3b8;
-  padding: 26px 30px;
+  padding: 20px 22px;
   background: #fff;
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.13);
   animation: stage-intro-rise 330ms ease both;
 }
 
-.stage-intro-suffix-notebook header { display: flex; align-items: end; justify-content: space-between; border-bottom: 3px solid #334155; padding-bottom: 11px; }
+.stage-intro-suffix-notebook header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .stage-intro-suffix-notebook header span,
+.stage-intro-suffix-notebook header em,
 .stage-intro-suffix-notebook footer > span { color: #0f766e; font-size: 14px; font-weight: 950; text-transform: uppercase; }
-.stage-intro-suffix-notebook header strong { font-family: Georgia, "Times New Roman", serif; font-size: 42px; }
-.stage-intro-suffix-notebook > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 22px 0; }
-.stage-intro-suffix-notebook section { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 9px 15px; border: 2px solid #d3aa27; padding: 16px; background: #fffbea; }
-.stage-intro-suffix-notebook section b { grid-row: 1 / 3; font-family: Georgia, "Times New Roman", serif; font-size: 50px; }
-.stage-intro-suffix-notebook section span { color: #713f12; font-size: 14px; font-weight: 900; }
-.stage-intro-suffix-notebook section em { color: #334155; font-size: 21px; font-style: normal; font-weight: 900; }
+.stage-intro-suffix-notebook header em { color: #475569; font-style: normal; }
+.stage-intro-suffix-notebook h3 { margin: 9px 0 0; border: 2px solid #334155; border-radius: 8px; padding: 7px 11px; color: #111827; font-family: Georgia, "Times New Roman", serif; font-size: 30px; }
+.stage-intro-suffix-notebook > div { display: grid; gap: 11px; padding: 15px 0; }
+.stage-intro-suffix-notebook p { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 11px; margin: 0; border-bottom: 1px solid #94a3b8; padding: 9px 4px; }
+.stage-intro-suffix-notebook p span,
+.stage-intro-suffix-notebook p b { color: #334155; font-family: Georgia, "Times New Roman", serif; font-size: 24px; }
+.stage-intro-suffix-notebook p strong { color: #0f4c81; font-size: 27px; text-align: center; }
 .stage-intro-suffix-notebook footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #94a3b8; padding-top: 16px; }
-.stage-intro-suffix-notebook .stage-intro-suffix-mark-word { font-size: 44px; }
+.stage-intro-suffix-notebook .stage-intro-suffix-mark-word { font-size: 35px; }
 
 @keyframes stage-intro-rise {
   from { opacity: 0; transform: translateY(16px) scale(0.97); }
@@ -1258,12 +1298,19 @@ body.stage-inking .stage-ink-canvas {
   .stage-intro-spell-stage article b { font-size: 42px; }
   .stage-intro-spell-stage article span { font-size: 12px; }
 
-  .stage-intro-suffix-notebook { padding: 12px 14px; }
-  .stage-intro-suffix-notebook header strong { font-size: 27px; }
-  .stage-intro-suffix-notebook > div { gap: 8px; padding: 10px 0; }
-  .stage-intro-suffix-notebook section { padding: 7px; }
-  .stage-intro-suffix-notebook section b { font-size: 31px; }
-  .stage-intro-suffix-notebook .stage-intro-suffix-mark-word { font-size: 26px; }
+  .stage-intro-suffix-notebook-pages { gap: 8px; }
+  .stage-intro-suffix-notebook { padding: 9px 10px; }
+  .stage-intro-suffix-notebook header span,
+  .stage-intro-suffix-notebook header em,
+  .stage-intro-suffix-notebook footer > span { font-size: 9px; }
+  .stage-intro-suffix-notebook h3 { margin-top: 5px; padding: 4px 6px; font-size: 18px; }
+  .stage-intro-suffix-notebook > div { gap: 5px; padding: 7px 0; }
+  .stage-intro-suffix-notebook p { grid-template-columns: 1fr; gap: 2px; padding: 4px 2px; }
+  .stage-intro-suffix-notebook p span,
+  .stage-intro-suffix-notebook p b { font-size: 13px; }
+  .stage-intro-suffix-notebook p strong { font-size: 15px; text-align: left; }
+  .stage-intro-suffix-notebook footer { padding-top: 7px; }
+  .stage-intro-suffix-notebook .stage-intro-suffix-mark-word { font-size: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

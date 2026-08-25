@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-24
+2026-08-25
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -59,6 +59,9 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
+- Complete locally on 2026-08-25: the 3.5 Visual Discovery wording and displays were tightened against the full manual, especially Sections 2 and 7. The meaning comparison now asks which word shows a past action; base-word underlines are continuous and lowered below descenders; and the spelling sequence now says the whole word, says it without the suffix, taps a monosyllabic base or says each syllable of a multisyllabic base, spells the base, then says and spells the suffix. The `landed` and `melting` models follow the manual's facedown-card, base-first sequence and reread the word without the suffix before the whole word.
+- The exact Student Notebook destinations are now shown instead of a generic Suffix Ending page: printed page 23 adds `fishing` and `rented` under The Most Common Suffixes and reviews `check(ing)`; printed page 24 adds the examples beside vowel suffixes `-ing` and `-ed /ĕd/`. The current-spelling portion of the full 3.5 discovery also changes the live Student Display header from Section 2 to Section 7.
+- Both the 2.1 and 3.5 intro overlays now put `Mirror teacher`, `Mark`, and `Laser` beside Close. Mirror teacher toggles the student display between its existing Stage renderer and a teacher-style copy of the current intro slide; in the native iPad shell it uses the existing exact teacher-webview mirror. Mark and Laser reuse the Present-view ink and pointer systems and remain mutually exclusive. Browser verification covered both intros, both display modes, live scene updates, mark/laser canvas activation, and console logs. JavaScript, sync-safety, diff checks, and the unsigned generic iOS simulator build pass. Exact next step: classroom-test the revised 3.5 prompts plus the intro mirror/mark/laser controls on the connected display.
 - Complete locally on 2026-08-24: Substep 3.5 now has a 28-scene `Visual Discovery 3.5` sequence in Section 2 and a `Spelling Discovery 3.5` entry point in Section 7. The sequence follows the manual's progression from the known `bug + -s` suffix model to the new vowel suffixes `-ing` and `-ed`, teaches students to read the unchanged one-syllable base before the whole word, limits introductory `-ed` pronunciation to `/ĕd/` or `/id/`, and keeps later multisyllabic, prefixed, and complex-base work as a future roadmap rather than current instruction.
 - The 3.5 spelling bridge preserves the manual's vital routine: repeat the whole word, name the word without the suffix, spell the base, add the suffix, and reread the whole word. It includes face-down white base/yellow suffix cards, staged `landed` and `melting` reveals, base-underlined/suffix-circled marking, and the Suffix Endings notebook entry. Section 7 opens directly at this bridge while Section 2 runs the complete discovery sequence.
 - Follow Lesson projects every 3.5 scene through the clean browser/native Stage contract and keeps teacher cues private. Local browser verification audited all 28 scenes, both section launch points, 2.1 preservation, Stage synchronization, and scene overflow; JavaScript syntax and sync-safety tests pass, and the native Stage shell builds successfully for a generic iOS simulator with signing disabled. Exact next step: classroom-test the 3.5 wording, pacing, and example set before deciding whether to shorten or reorder any discovery beats.

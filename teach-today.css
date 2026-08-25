@@ -1388,7 +1388,17 @@ body.presentation-mode .global-ink-canvas {
   display: block;
 }
 
+body.intro-lesson-open .global-ink-canvas {
+  z-index: 92;
+  display: block;
+}
+
 body.presentation-mode.global-ink-mode .global-ink-canvas {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+body.intro-lesson-open.global-ink-mode .global-ink-canvas {
   pointer-events: auto;
   cursor: crosshair;
 }
@@ -1402,8 +1412,26 @@ body.presentation-mode.laser-mode .laser-canvas {
   pointer-events: none;
 }
 
+body.intro-lesson-open.laser-mode .laser-canvas {
+  z-index: 94;
+  display: block;
+  pointer-events: none;
+}
+
+body.intro-lesson-open .global-ink-palette {
+  z-index: 93;
+}
+
+body.intro-lesson-open .intro-lesson-topbar,
+body.intro-lesson-open .intro-lesson-footer {
+  position: relative;
+  z-index: 95;
+}
+
 body.presentation-mode.laser-mode,
-body.presentation-mode.laser-mode * {
+body.presentation-mode.laser-mode *,
+body.intro-lesson-open.laser-mode,
+body.intro-lesson-open.laser-mode * {
   cursor: none !important;
 }
 
@@ -3345,8 +3373,14 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   white-space: nowrap;
 }
 
-.intro-lesson-topbar > button {
+.intro-lesson-actions {
+  display: flex;
   justify-self: end;
+  align-items: center;
+  gap: 8px;
+}
+
+.intro-lesson-actions button {
   min-height: 38px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -3354,6 +3388,20 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   background: #fff;
   color: #334155;
   font-weight: 900;
+}
+
+.intro-lesson-actions button.active {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+}
+
+.intro-lesson-actions #ttIntroLaserToggle.active {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
 }
 
 .intro-lesson-progress {
@@ -4041,8 +4089,9 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-base-hunt-word u,
 .intro-meaning-word u {
   text-decoration-color: #0f766e;
+  text-decoration-skip-ink: none;
   text-decoration-thickness: 5px;
-  text-underline-offset: 8px;
+  text-underline-offset: 0.3em;
 }
 
 .intro-base-hunt-word b,
@@ -4089,8 +4138,9 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
 .intro-suffix-mark-word u {
   text-decoration-color: #334155;
+  text-decoration-skip-ink: none;
   text-decoration-thickness: 4px;
-  text-underline-offset: 8px;
+  text-underline-offset: 0.3em;
 }
 
 .intro-suffix-mark-word b {
@@ -4128,9 +4178,9 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
 .intro-routine-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
-  width: min(1040px, 100%);
+  width: min(1120px, 100%);
 }
 
 .intro-routine-grid article {
@@ -4195,32 +4245,40 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-spell-stage article b { font-family: Georgia, "Times New Roman", serif; font-size: 68px; }
 .intro-spell-stage article span { color: #475569; font-size: 17px; font-weight: 900; }
 
+.intro-suffix-notebook-pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  width: min(1040px, 100%);
+}
+
 .intro-suffix-notebook {
-  width: min(760px, 100%);
+  min-width: 0;
   border: 1px solid #94a3b8;
-  padding: 24px 28px;
+  padding: 18px 20px;
   background: #fff;
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.13);
 }
 
 .intro-suffix-notebook header {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
-  border-bottom: 3px solid #334155;
-  padding-bottom: 10px;
+  gap: 10px;
 }
 
 .intro-suffix-notebook header span,
+.intro-suffix-notebook header em,
 .intro-suffix-notebook footer > span { color: #0f766e; font-size: 13px; font-weight: 950; text-transform: uppercase; }
-.intro-suffix-notebook header strong { font-family: Georgia, "Times New Roman", serif; font-size: 38px; }
-.intro-suffix-notebook > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; padding: 20px 0; }
-.intro-suffix-notebook section { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 8px 14px; border: 2px solid #d3aa27; padding: 14px; background: #fffbea; }
-.intro-suffix-notebook section b { grid-row: 1 / 3; font-family: Georgia, "Times New Roman", serif; font-size: 45px; }
-.intro-suffix-notebook section span { color: #713f12; font-size: 13px; font-weight: 900; }
-.intro-suffix-notebook section em { color: #334155; font-size: 19px; font-style: normal; font-weight: 900; }
+.intro-suffix-notebook header em { color: #475569; font-style: normal; }
+.intro-suffix-notebook h3 { margin: 8px 0 0; border: 2px solid #334155; border-radius: 8px; padding: 6px 10px; color: #111827; font-family: Georgia, "Times New Roman", serif; font-size: 27px; }
+.intro-suffix-notebook > div { display: grid; gap: 10px; padding: 14px 0; }
+.intro-suffix-notebook p { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 10px; margin: 0; border-bottom: 1px solid #94a3b8; padding: 8px 4px; }
+.intro-suffix-notebook p span,
+.intro-suffix-notebook p b { color: #334155; font-family: Georgia, "Times New Roman", serif; font-size: 22px; }
+.intro-suffix-notebook p strong { color: #0f4c81; font-size: 24px; text-align: center; }
 .intro-suffix-notebook footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #94a3b8; padding-top: 15px; }
-.intro-suffix-notebook .intro-suffix-mark-word { font-size: 40px; }
+.intro-suffix-notebook .intro-suffix-mark-word { font-size: 32px; }
 
 .intro-finish {
   display: grid;
@@ -4317,6 +4375,16 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
   .intro-lesson-progress > div {
     display: none;
+  }
+
+  .intro-lesson-actions {
+    gap: 5px;
+  }
+
+  .intro-lesson-actions button {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 11px;
   }
 
   .intro-lesson-scene {
@@ -4530,12 +4598,19 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   .intro-spell-stage article b { font-size: 40px; }
   .intro-spell-stage article span { font-size: 12px; }
 
-  .intro-suffix-notebook { padding: 12px 14px; }
-  .intro-suffix-notebook header strong { font-size: 26px; }
-  .intro-suffix-notebook > div { gap: 8px; padding: 10px 0; }
-  .intro-suffix-notebook section { padding: 7px; }
-  .intro-suffix-notebook section b { font-size: 30px; }
-  .intro-suffix-notebook .intro-suffix-mark-word { font-size: 25px; }
+  .intro-suffix-notebook-pages { gap: 8px; }
+  .intro-suffix-notebook { padding: 9px 10px; }
+  .intro-suffix-notebook header span,
+  .intro-suffix-notebook header em,
+  .intro-suffix-notebook footer > span { font-size: 9px; }
+  .intro-suffix-notebook h3 { margin-top: 5px; padding: 4px 6px; font-size: 18px; }
+  .intro-suffix-notebook > div { gap: 5px; padding: 7px 0; }
+  .intro-suffix-notebook p { grid-template-columns: 1fr; gap: 2px; padding: 4px 2px; }
+  .intro-suffix-notebook p span,
+  .intro-suffix-notebook p b { font-size: 13px; }
+  .intro-suffix-notebook p strong { font-size: 15px; text-align: left; }
+  .intro-suffix-notebook footer { padding-top: 7px; }
+  .intro-suffix-notebook .intro-suffix-mark-word { font-size: 18px; }
 
   .intro-lesson-footer {
     grid-template-columns: 1fr;

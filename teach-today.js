@@ -12,6 +12,7 @@ let ttSection2BWord = "";
 let ttIntro21Open = false;
 let ttIntro21Index = 0;
 let ttIntro21Variant = "guided";
+let ttIntroTeacherMirror = false;
 let ttIntroSourceSection = "section2";
 let ttIntroLaunchButtonId = "ttOpenIntro21";
 let ttHfwDeck = [];
@@ -9198,13 +9199,13 @@ const TT_INTRO_35_DISCOVERY_SCENES = [
     id: "meaning-contrast",
     layout: "meaning",
     kicker: "Meaning discovery",
-    headline: "Which action already happened?",
-    subhead: "Compare resting and rested.",
+    headline: "Which word shows an action that happened in the past?",
+    subhead: "Read the word without the suffix first: rest—resting; rest—rested.",
     items: [
-      { text: "resting", type: "suffix", keyword: "happening now", mark: "ing" },
-      { text: "rested", type: "suffix", keyword: "happened in the past", mark: "ed" }
+      { text: "resting", type: "suffix", keyword: "suffix: -ing", mark: "ing" },
+      { text: "rested", type: "suffix", keyword: "-ed: action happened in the past", mark: "ed" }
     ],
-    cue: "Students identify rested as past. Keep the contrast about meaning while preserving the base word rest in both forms."
+    cue: "Use Wilson's questions: What is the word without the suffix? What is the suffix? What does -ed mean when it is added to a word? Confirm that rested shows an action that happened in the past."
   },
   {
     id: "mark-reading-question",
@@ -9247,80 +9248,81 @@ const TT_INTRO_35_DISCOVERY_SCENES = [
     id: "spell-bridge",
     layout: "routine",
     kicker: "Section 7 • Spelling",
-    headline: "Say the whole word. Then protect the base.",
-    subhead: "Repeat → name the word without the suffix → spell the base → add the suffix.",
+    headline: "Use the Wilson spelling prompts in order.",
+    subhead: "Tap a one-syllable base. For a multisyllabic base, say each syllable.",
     items: [
-      { text: "1", keyword: "Repeat the whole word" },
-      { text: "2", keyword: "Name the base word" },
-      { text: "3", keyword: "Spell the base" },
-      { text: "4", keyword: "Spell the suffix" }
+      { text: "1", keyword: "Say the whole word" },
+      { text: "2", keyword: "Say it without the suffix" },
+      { text: "3", keyword: "Tap it out • or say each syllable" },
+      { text: "4", keyword: "Spell the base word" },
+      { text: "5", keyword: "Say and spell the suffix" }
     ],
-    cue: "This is the vital Section 7 habit. Use the same order on every spelling word so students do not try to spell the whole suffixed word at once."
+    cue: "Follow Wilson's sequence: Say the whole word. Say it without the suffix. For a one-syllable base, tap it out; for a multisyllabic base, say each syllable. Spell the base word. Then touch, say, and spell the suffix."
   },
   {
     id: "spell-landed-hidden",
     layout: "spell",
     kicker: "Spelling discovery",
-    headline: "The word is landed.",
-    subhead: "Repeat it. What is the word without the suffix?",
+    headline: "Say landed.",
+    subhead: "Say it without the suffix.",
     word: "landed",
     items: [
       { text: "?", type: "syllable-blank", keyword: "base word" },
       { text: "?", type: "suffix-blank", keyword: "suffix" }
     ],
-    cue: "Place a blank white syllable card and blank yellow suffix card facedown. Dictate landed. Students repeat landed, then say land."
+    cue: "Place a blank white Syllable Card and the yellow -ed Suffix Card facedown. Dictate landed. Prompt: Say landed. Say it without the suffix. The student says land."
   },
   {
     id: "spell-landed-base",
     layout: "spell",
     kicker: "Spell the base first",
-    headline: "Touch land. Say land. Spell l-a-n-d.",
-    subhead: "Turn over only the base card to check.",
+    headline: "Tap out land. Then spell l-a-n-d.",
+    subhead: "Touch and say the base word before spelling it.",
     word: "land",
     items: [
       { text: "land", type: "base", keyword: "l-a-n-d" },
       { text: "?", type: "suffix-blank", keyword: "suffix waits" }
     ],
-    cue: "Have students touch the white card, say land, and spell l-a-n-d. The suffix remains facedown until the base is complete."
+    cue: "Prompt: Tap out land. Then have the student touch and say the base word land and spell l-a-n-d. Keep the suffix facedown until the base word is complete."
   },
   {
     id: "spell-landed-suffix",
     layout: "spell",
     kicker: "Add the suffix",
-    headline: "Touch /ĕd/. Spell e-d.",
-    subhead: "Then read back: land — landed.",
+    headline: "Touch and say /ĕd/. Spell e-d.",
+    subhead: "Read the word without the suffix first: land—landed.",
     word: "land → landed",
     items: [
       { text: "land", type: "base", keyword: "l-a-n-d" },
       { text: "-ed", type: "suffix", keyword: "e-d" }
     ],
-    cue: "Students touch and say the suffix sound, spell e-d, then immediately read land—landed to check the whole word."
+    cue: "Have the student touch and say the suffix /ĕd/, then spell e-d. To check, the student immediately reads the word without the suffix first and then the whole word: land—landed."
   },
   {
     id: "spell-melting-question",
     layout: "spell",
     kicker: "Try the routine",
-    headline: "The word is melting.",
-    subhead: "Name and spell the base before the suffix is revealed.",
+    headline: "Say melting. Say it without the suffix.",
+    subhead: "Tap out melt. Spell the base before adding the suffix.",
     word: "melting",
     items: [
       { text: "?", type: "syllable-blank", keyword: "base word" },
       { text: "?", type: "suffix-blank", keyword: "suffix" }
     ],
-    cue: "Students repeat melting, say melt, and orally spell m-e-l-t. Then ask which suffix completes the word."
+    cue: "Prompt in order: Say melting. Say it without the suffix. Tap out melt. Then have the student touch and say melt and spell m-e-l-t."
   },
   {
     id: "spell-melting-answer",
     layout: "spell",
     kicker: "Check the parts",
-    headline: "melt — melting",
-    subhead: "Spell the base, add -ing, then read the whole word.",
+    headline: "Touch and say -ing. Spell i-n-g.",
+    subhead: "Read the word without the suffix first: melt—melting.",
     word: "melt → melting",
     items: [
       { text: "melt", type: "base", keyword: "m-e-l-t" },
       { text: "-ing", type: "suffix", keyword: "i-n-g" }
     ],
-    cue: "Students touch each card left to right, spell melt, spell -ing, and read melt—melting. Repeat with lasted, lasting, funded, or funding as needed."
+    cue: "Have the student touch and say the suffix -ing and spell i-n-g. To check, read the word without the suffix first and then the whole word: melt—melting. Practice lasted, lasting, funded, or funding the same way."
   },
   {
     id: "mark-spelling-question",
@@ -9350,28 +9352,29 @@ const TT_INTRO_35_DISCOVERY_SCENES = [
     id: "suffix-notebook",
     layout: "suffix-notebook",
     kicker: "Add to Notebook",
-    headline: "Record the new vowel suffixes.",
-    subhead: "Suffix Ending page • examples: fishing and rented",
+    headline: "Add the 3.5 entries on pages 23 and 24.",
+    subhead: "Student Notebook • Word Elements • Suffixes",
     items: [
       { text: "-ing", type: "suffix", keyword: "fishing", mark: "ing" },
       { text: "-ed", type: "suffix", keyword: "rented", mark: "ed" },
       { text: "checking", type: "word", keyword: "check", mark: "ing" }
     ],
-    cue: "On the Suffix Ending page, add fishing and rented. Add the same examples to vowel suffixes -ing and -ed, and review marking check(ing)."
+    cue: "Page 23: add fishing and rented under The Most Common Suffixes and review marking check(ing). Page 24: add fishing beside -ing and rented beside the /ĕd/ form of -ed under Vowel Suffixes."
   },
   {
     id: "suffix-finish",
     layout: "routine",
     kicker: "Say what you discovered",
-    headline: "The base word comes first every time.",
-    subhead: "Repeat whole word → name base → spell base → spell suffix → read whole word.",
+    headline: "Use the same spelling sequence every time.",
+    subhead: "Say it → say it without the suffix → tap or syllabicate → spell the base → spell the suffix.",
     items: [
-      { text: "base", keyword: "read or spell it first" },
-      { text: "+", keyword: "keep the base unchanged" },
-      { text: "suffix", keyword: "add -ed or -ing" },
-      { text: "word", keyword: "read the whole result" }
+      { text: "1", keyword: "Say the whole word" },
+      { text: "2", keyword: "Say it without the suffix" },
+      { text: "3", keyword: "Tap it out • or say each syllable" },
+      { text: "4", keyword: "Spell the base word" },
+      { text: "5", keyword: "Say and spell the suffix" }
     ],
-    cue: "Have students explain the routine in their own words. Remind them that 3.5 uses unchanged base words and -ed only as /ĕd/ or /id/. Then continue with current 3.5 practice."
+    cue: "Have students repeat Wilson's sequence in order. Then read the word without the suffix first and the whole word to check. Remind them that 3.5 uses unchanged base words and -ed only as /ĕd/ or /id/."
   }
 ];
 
@@ -9452,7 +9455,7 @@ function ttIntro35SegmentedWordHtml(item, className = "") {
   const suffix = String(item?.mark || "");
   const index = suffix ? word.lastIndexOf(suffix) : -1;
   if (index < 0) return `<span class="${escapeHtml(className)}">${escapeHtml(word)}</span>`;
-  const base = String(item?.keyword || word.slice(0, index));
+  const base = word.slice(0, index);
   return `<span class="${escapeHtml(className)}"><u>${escapeHtml(base)}</u><b>${escapeHtml(suffix)}</b></span>`;
 }
 
@@ -9513,11 +9516,27 @@ function ttIntro35VisualHtml(scene) {
   if (scene.layout === "suffix-notebook") {
     const suffixes = items.filter((item) => item.type === "suffix");
     const markedWord = items.find((item) => item.type === "word");
-    return `<article class="intro-suffix-notebook">
-      <header><span>Word Elements</span><strong>Suffix Endings</strong></header>
-      <div>${suffixes.map((item) => `<section><b>${escapeHtml(item.text)}</b><span>vowel suffix</span><em>${escapeHtml(item.keyword)}</em></section>`).join("")}</div>
-      <footer><span>Mark Words</span>${ttIntro35SegmentedWordHtml(markedWord, "intro-suffix-mark-word")}</footer>
-    </article>`;
+    const ing = suffixes.find((item) => item.text === "-ing");
+    const ed = suffixes.find((item) => item.text === "-ed");
+    return `<div class="intro-suffix-notebook-pages">
+      <article class="intro-suffix-notebook">
+        <header><span>Word Elements</span><em>page 23</em></header>
+        <h3>Suffixes</h3>
+        <div class="intro-notebook-equations">
+          <p><span>fish + ing =</span><strong>${escapeHtml(ing?.keyword || "fishing")}</strong></p>
+          <p><span>rent + ed =</span><strong>${escapeHtml(ed?.keyword || "rented")}</strong></p>
+        </div>
+        <footer><span>Mark Words</span>${ttIntro35SegmentedWordHtml(markedWord, "intro-suffix-mark-word")}</footer>
+      </article>
+      <article class="intro-suffix-notebook">
+        <header><span>Word Elements</span><em>page 24</em></header>
+        <h3>Vowel Suffixes</h3>
+        <div class="intro-notebook-vowels">
+          <p><b>-ing</b><strong>${escapeHtml(ing?.keyword || "fishing")}</strong></p>
+          <p><b>-ed /ĕd/</b><strong>${escapeHtml(ed?.keyword || "rented")}</strong></p>
+        </div>
+      </article>
+    </div>`;
   }
   return "";
 }
@@ -9590,6 +9609,8 @@ function ttIntro21CardDisplayPayload() {
   const scene = ttIntro21Scene();
   const scenes = ttIntro21Scenes();
   const isIntro35 = ttIntro21Variant === "discovery35";
+  const intro35SpellingStart = scenes.findIndex((item) => item.id === "spell-bridge");
+  const isIntro35Spelling = isIntro35 && intro35SpellingStart >= 0 && ttIntro21Index >= intro35SpellingStart;
   const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
   return {
     kind: isIntro35 ? "intro-35" : "intro-21",
@@ -9597,7 +9618,7 @@ function ttIntro21CardDisplayPayload() {
     layout: scene.layout,
     key: `${isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
     sectionLabel: isIntro35
-      ? `${ttIntroSourceSection === "section7" ? "Section 7" : "Section 2"} - Intro 3.5`
+      ? `${isIntro35Spelling || ttIntroSourceSection === "section7" ? "Section 7" : "Section 2"} - Intro 3.5`
       : "Section 2 - Intro 2.1",
     headline: scene.headline || "",
     subhead: scene.subhead || "",
@@ -9605,6 +9626,23 @@ function ttIntro21CardDisplayPayload() {
     wordNote: scene.wordNote || "",
     label: isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
     position: `${ttIntro21Index + 1} of ${scenes.length}`,
+    teacherMirror: ttIntroTeacherMirror,
+    teacherView: {
+      substepLabel: isIntro35 ? "Substep 3.5" : "Substep 2.1",
+      title: isIntro35
+        ? "Suffixes -ed and -ing Visual Discovery"
+        : ttIntro21Variant === "discovery"
+          ? "Welded Sounds Visual Discovery"
+          : "Welded Sounds Introduction",
+      kicker: scene.kicker || (isIntro35 ? "Intro 3.5" : "Intro 2.1"),
+      headline: scene.headline || "",
+      subhead: scene.subhead || "",
+      visualHtml: ttIntro21VisualHtml(scene),
+      cue: scene.cue || "",
+      progress: `${ttIntro21Index + 1} of ${scenes.length}`,
+      progressIndex: ttIntro21Index,
+      progressTotal: scenes.length
+    },
     items: (scene.items || pairItems).map((item) => ({
       text: item.text || "",
       type: item.type || "welded",
@@ -9647,7 +9685,38 @@ function ttRenderIntro21() {
   ttById("ttIntro21Dots").innerHTML = scenes.map((_, index) => `<i class="${index === ttIntro21Index ? "active" : index < ttIntro21Index ? "complete" : ""}"></i>`).join("");
   ttById("ttIntro21Back").disabled = ttIntro21Index === 0;
   ttById("ttIntro21Next").textContent = ttIntro21Index === scenes.length - 1 ? "Finish" : "Next";
+  ttUpdateIntroDisplayControls();
   ttSendStudentDisplay(ttStudentDisplayPayload("follow"));
+}
+
+function ttUpdateIntroDisplayControls() {
+  const mirrorButton = ttById("ttIntroMirrorToggle");
+  if (mirrorButton) {
+    mirrorButton.textContent = ttIntroTeacherMirror ? "Use Stage view" : "Mirror teacher";
+    mirrorButton.classList.toggle("active", ttIntroTeacherMirror);
+    mirrorButton.setAttribute("aria-pressed", String(ttIntroTeacherMirror));
+  }
+}
+
+function ttToggleIntroTeacherMirror() {
+  ttIntroTeacherMirror = !ttIntroTeacherMirror;
+  if (ttIsNativeIpadShell()) {
+    ttSetNativeProjectionMode(ttIntroTeacherMirror ? "mirror" : "stage");
+  } else {
+    if (!ttStudentDisplayWindow || ttStudentDisplayWindow.closed) ttOpenStudentDisplay("follow");
+    else ttSendStudentDisplay(ttStudentDisplayPayload("follow"));
+  }
+  ttUpdateIntroDisplayControls();
+}
+
+function ttToggleIntroInk() {
+  if (ttGlobalInkState.active) {
+    ttSetGlobalInkActive(false);
+    ttToggleGlobalInkPalette(false);
+    return;
+  }
+  ttToggleGlobalInkPalette(true);
+  ttSetGlobalInkMode("pen");
 }
 
 function ttSetIntro21BackgroundInert(active) {
@@ -9677,6 +9746,7 @@ function ttOpenIntro21(variant = "guided") {
   ttIntroSourceSection = "section2";
   ttIntroLaunchButtonId = ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21";
   ttIntro21Open = true;
+  ttIntroTeacherMirror = false;
   overlay.hidden = false;
   ttSetIntro21BackgroundInert(true);
   document.body.classList.add("intro-lesson-open");
@@ -9695,6 +9765,7 @@ function ttOpenIntro35(startSceneId = "suffix-memory-question", sourceSection = 
   ttIntroSourceSection = sourceSection === "section7" ? "section7" : "section2";
   ttIntroLaunchButtonId = launchButtonId;
   ttIntro21Open = true;
+  ttIntroTeacherMirror = false;
   overlay.hidden = false;
   overlay.setAttribute("aria-label", "Substep 3.5 visual discovery lesson");
   ttSetIntro21BackgroundInert(true);
@@ -9711,6 +9782,12 @@ function ttCloseIntro21() {
   if (!overlay) return;
   overlay.hidden = true;
   ttIntro21Open = false;
+  ttIntroTeacherMirror = false;
+  ttSetNativeProjectionMode("stage");
+  ttToggleLaser(false);
+  ttSetGlobalInkActive(false);
+  ttToggleGlobalInkPalette(false);
+  ttClearGlobalInk();
   ttSetIntro21BackgroundInert(false);
   document.body.classList.remove("intro-lesson-open");
   ttStudentDisplayFollowKey = "";
@@ -14467,6 +14544,8 @@ function ttSetGlobalInkActive(active) {
     button.classList.toggle("active", ttGlobalInkState.active && button.dataset.globalInkMode === ttGlobalInkState.mode);
   });
   ttById("ttGlobalInkInteract")?.classList.toggle("active", !ttGlobalInkState.active);
+  ttById("ttIntroInkToggle")?.classList.toggle("active", ttGlobalInkState.active);
+  ttById("ttIntroInkToggle")?.setAttribute("aria-pressed", String(ttGlobalInkState.active));
 }
 
 function ttSetGlobalInkMode(mode) {
@@ -14631,6 +14710,8 @@ function ttToggleLaser(force = null, event = null) {
   ttSetLaserTouchMode(ttLaserTouchMode);
   ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
   ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
+  ttById("ttIntroLaserToggle")?.classList.toggle("active", ttLaserEnabled);
+  ttById("ttIntroLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
 
 function ttOpenWhiteboard() {
@@ -15146,6 +15227,9 @@ function ttBind() {
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
   ttById("ttOpenIntro35Spelling")?.addEventListener("click", () => ttOpenIntro35("spell-bridge", "section7", "ttOpenIntro35Spelling"));
+  ttById("ttIntroMirrorToggle")?.addEventListener("click", () => ttToggleIntroTeacherMirror());
+  ttById("ttIntroInkToggle")?.addEventListener("click", () => ttToggleIntroInk());
+  ttById("ttIntroLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
   ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
   ttById("ttIntro21Restart")?.addEventListener("click", () => {
     ttIntro21Index = 0;
