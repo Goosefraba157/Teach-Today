@@ -114,6 +114,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-25
 
+- Stabilized Laser Scoop on touch/stylus devices: activation no longer seeds a stuck point at the Laser button, lift/cancel releases the live tip, Scoop captures touch correctly inside Visual Discovery as well as Present mode, and the left ink palette cannot steal Scoop gestures while the mode is active.
 - Revised 3.5 meaning and Section 7 spelling slides to follow the manual's exact base-first prompts, including separate monosyllabic tapping and multisyllabic syllable language, facedown-card modeling, and base-then-whole-word rereading.
 - Fixed suffix-word rendering so the actual base word—not an explanatory label—is underlined, made every base underline continuous below descenders, and clarified the past-action `-ed` comparison.
 - Identified and added the exact Student Notebook destinations: printed pages 23 and 24, with `fishing`, `rented`, and the `check(ing)` marking review.

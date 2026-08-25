@@ -14670,10 +14670,18 @@ function ttLaserMove(event) {
   ttAddLaserPoint(event);
 }
 
+function ttLaserEnd(event) {
+  if (!ttLaserEnabled || (event.pointerType !== "touch" && event.pointerType !== "pen")) return;
+  ttLaserCurrentPoint = null;
+  if (!ttLaserFrame && ttLaserPoints.length) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
+}
+
 function ttLaserLeave() {
   if (!ttLaserEnabled) return;
   ttLaserCurrentPoint = null;
   ttLaserPoints = [];
+  if (ttLaserFrame) cancelAnimationFrame(ttLaserFrame);
+  ttLaserFrame = null;
   ttClearCanvas("ttLaserCanvas");
 }
 
@@ -14692,13 +14700,12 @@ function ttSetLaserTouchMode(mode) {
   }
 }
 
-function ttToggleLaser(force = null, event = null) {
+function ttToggleLaser(force = null) {
   ttLaserEnabled = force ?? !ttLaserEnabled;
   if (ttLaserEnabled) {
     if (ttNotesEnabled) ttToggleNotes(false, false);
     ttSetGlobalInkActive(false);
     ttResizeGlobalPresentationCanvases();
-    if (event) ttAddLaserPoint(event);
   } else {
     ttLaserCurrentPoint = null;
     ttLaserPoints = [];
@@ -14707,7 +14714,7 @@ function ttToggleLaser(force = null, event = null) {
     ttClearCanvas("ttLaserCanvas");
   }
   document.body.classList.toggle("laser-mode", ttLaserEnabled);
-  ttSetLaserTouchMode(ttLaserTouchMode);
+  ttSetLaserTouchMode(ttLaserEnabled ? "scoop" : ttLaserTouchMode);
   ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
   ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
@@ -15287,7 +15294,7 @@ function ttBind() {
     else ttTogglePresentation(false);
   });
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
-  ttById("ttLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
+  ttById("ttLaserToggle")?.addEventListener("click", () => ttToggleLaser());
   ttById("ttLaserInputMode")?.addEventListener("click", () => {
     ttSetLaserTouchMode(ttLaserTouchMode === "scoop" ? "scroll" : "scoop");
   });
@@ -15357,6 +15364,8 @@ function ttBind() {
   globalInkCanvas?.addEventListener("pointerup", ttGlobalInkEnd);
   globalInkCanvas?.addEventListener("pointercancel", ttGlobalInkEnd);
   window.addEventListener("pointermove", ttLaserMove, { passive: false });
+  window.addEventListener("pointerup", ttLaserEnd, { passive: true });
+  window.addEventListener("pointercancel", ttLaserEnd, { passive: true });
   document.documentElement.addEventListener("pointerleave", ttLaserLeave);
   window.addEventListener("blur", ttLaserLeave);
   window.addEventListener("resize", () => {
