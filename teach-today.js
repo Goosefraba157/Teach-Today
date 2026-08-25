@@ -12,6 +12,8 @@ let ttSection2BWord = "";
 let ttIntro21Open = false;
 let ttIntro21Index = 0;
 let ttIntro21Variant = "guided";
+let ttIntroSourceSection = "section2";
+let ttIntroLaunchButtonId = "ttOpenIntro21";
 let ttHfwDeck = [];
 let ttHfwIndex = 0;
 let ttNotesEnabled = false;
@@ -2827,7 +2829,12 @@ function ttRender() {
   if (intro21Button) intro21Button.hidden = skill.id !== "2.1";
   const intro21DiscoveryButton = ttById("ttOpenIntro21Discovery");
   if (intro21DiscoveryButton) intro21DiscoveryButton.hidden = skill.id !== "2.1";
-  if (ttIntro21Open && skill.id !== "2.1") ttCloseIntro21();
+  const intro35DiscoveryButton = ttById("ttOpenIntro35Discovery");
+  if (intro35DiscoveryButton) intro35DiscoveryButton.hidden = skill.id !== "3.5";
+  const intro35SpellingButton = ttById("ttOpenIntro35Spelling");
+  if (intro35SpellingButton) intro35SpellingButton.hidden = skill.id !== "3.5";
+  const activeIntroSubstep = ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
+  if (ttIntro21Open && skill.id !== activeIntroSubstep) ttCloseIntro21();
   ttFillGroups(group.id);
   ttFillLessonControls(group);
   if (ttById("ttSubstep")) ttById("ttSubstep").value = lesson.substep;
@@ -3000,7 +3007,7 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const displayMode = mode || "private";
   const sourceSection = displayMode === "follow" || displayMode === "cards"
-    ? (ttIntro21Open ? "section2" : ttStudentDisplayCurrentSectionId())
+    ? (ttIntro21Open ? ttIntroSourceSection : ttStudentDisplayCurrentSectionId())
     : "";
   const resolvedMode = displayMode === "follow" ? ttStudentDisplayFollowResolution(sourceSection) : displayMode;
   const poster = ttSection1PhotoForSubstep(skill.id);
@@ -7026,8 +7033,8 @@ function ttBuildPlannerLesson(options = {}) {
   const lessonTypeForPicker = (ttLesson?.lessonType === "part1" || ttLesson?.lessonType === "part2") ? "group" : (ttLesson?.lessonType || "full");
   if (lessonTypeForPicker === "group") {
     ttShowGroupDayPicker(group, (choice) => {
-      const day = typeof choice === "object" ? choice.day : choice;
-      const scheduledDate = typeof choice === "object" ? choice.date : ttLesson.scheduledDate;
+      const day = choice && typeof choice === "object" ? choice.day : choice;
+      const scheduledDate = choice && typeof choice === "object" ? choice.date : ttLesson.scheduledDate;
       if (day) {
         ttLesson.activeGroupDay = day;
         ttLesson.scheduledDate = scheduledDate || ttLesson.scheduledDate || ttTodayKey();
@@ -9008,12 +9015,373 @@ const TT_INTRO_21_DISCOVERY_SCENES = [
   }
 ];
 
+const TT_INTRO_35_DISCOVERY_SCENES = [
+  {
+    id: "suffix-memory-question",
+    layout: "build",
+    kicker: "Visual discovery",
+    headline: "What changed when -s joined bug?",
+    subhead: "Read the small word first. Then look at the yellow card.",
+    word: "bug → bugs",
+    items: [
+      { text: "bug", type: "base" },
+      { text: "-s", type: "suffix" }
+    ],
+    cue: "Pause for student observations. Listen for: bug stayed the same, -s was added at the end, and the word became bugs."
+  },
+  {
+    id: "suffix-memory-answer",
+    layout: "build",
+    kicker: "Check the idea",
+    headline: "The base word stays. The suffix joins the end.",
+    subhead: "A suffix is a word element added to the end of a base word.",
+    word: "bug + -s = bugs",
+    wordNote: "-s begins with a consonant, so it is a consonant suffix.",
+    items: [
+      { text: "bug", type: "base" },
+      { text: "-s", type: "suffix" }
+    ],
+    cue: "Name the two parts: base word bug and suffix -s. Briefly review that suffixes may begin with a consonant or a vowel."
+  },
+  {
+    id: "new-suffixes-question",
+    layout: "suffixes",
+    kicker: "Meet two new endings",
+    headline: "What do you notice about -ed and -ing?",
+    subhead: "Look at the first letter of each suffix before naming the kind.",
+    items: [
+      { text: "-ed", type: "suffix" },
+      { text: "-ing", type: "suffix" }
+    ],
+    cue: "Wait. Students should notice that both endings begin with a vowel. Keep the yellow suffix cards separate from the base word."
+  },
+  {
+    id: "new-suffixes-answer",
+    layout: "suffixes",
+    kicker: "Check the pattern",
+    headline: "Both are vowel suffixes.",
+    subhead: "-ed begins with e. -ing begins with i.",
+    items: [
+      { text: "-ed", type: "suffix", mark: "e" },
+      { text: "-ing", type: "suffix", mark: "i" }
+    ],
+    cue: "Confirm that vowel suffix means the suffix begins with a vowel. Students read and spell each suffix from the yellow card."
+  },
+  {
+    id: "rent-base",
+    layout: "build",
+    kicker: "Start with the base",
+    headline: "Read this word before anything is added.",
+    subhead: "This is the word we will protect every time.",
+    word: "rent",
+    items: [{ text: "rent", type: "base" }],
+    cue: "Students read rent. Identify it as the base word. Do not add a suffix until rent is secure."
+  },
+  {
+    id: "rent-ing-question",
+    layout: "build",
+    kicker: "Add a vowel suffix",
+    headline: "Which part should we read first?",
+    subhead: "Think before reading the whole word.",
+    word: "?",
+    items: [
+      { text: "rent", type: "base" },
+      { text: "-ing", type: "suffix" }
+    ],
+    cue: "Pause. Require the response rent before students blend the whole word. Ask: What is the suffix?"
+  },
+  {
+    id: "rent-ing-answer",
+    layout: "build",
+    kicker: "Base first",
+    headline: "rent — renting",
+    subhead: "Read the word without the suffix, then the whole word.",
+    word: "rent → renting",
+    wordNote: "Base word: rent   •   Suffix: -ing",
+    items: [
+      { text: "rent", type: "base" },
+      { text: "-ing", type: "suffix" }
+    ],
+    cue: "Use the exact base-first oral routine: rent—renting. Then ask students to name the base word and suffix."
+  },
+  {
+    id: "rent-ed-question",
+    layout: "build",
+    kicker: "Change one card",
+    headline: "What changes when -ed replaces -ing?",
+    subhead: "Name the base word and suffix before reading the result.",
+    word: "?",
+    items: [
+      { text: "rent", type: "base" },
+      { text: "-ed", type: "suffix" }
+    ],
+    cue: "Let students supply rent and -ed. Ask what -ed tells us about the action."
+  },
+  {
+    id: "rent-ed-answer",
+    layout: "build",
+    kicker: "Past action",
+    headline: "rent — rented",
+    subhead: "-ed shows that the action happened in the past.",
+    word: "rent → rented",
+    wordNote: "For now, -ed says /ĕd/ or /id/.",
+    items: [
+      { text: "rent", type: "base" },
+      { text: "-ed", type: "suffix" }
+    ],
+    cue: "Read rent—rented. Explain that the e in this -ed sound is a schwa and may sound like /id/. Do not introduce /d/ or /t/ pronunciations yet."
+  },
+  {
+    id: "ed-sound-guardrail",
+    layout: "listen",
+    kicker: "Auditory discovery",
+    headline: "What ending do you hear?",
+    subhead: "rented   landed   melted",
+    wordNote: "Right now, -ed says /ĕd/ or /id/.",
+    cue: "Say rented, landed, and melted. Students repeat and identify the extra syllable. Use only current 3.5 words whose -ed ending says /ĕd/ or /id/."
+  },
+  {
+    id: "base-hunt-question",
+    layout: "base-hunt",
+    kicker: "Find what stayed",
+    headline: "Say each word without its suffix.",
+    subhead: "Do the thinking before the next click reveals the bases.",
+    items: [
+      { text: "fishing", type: "word" },
+      { text: "landed", type: "word" },
+      { text: "melting", type: "word" },
+      { text: "funded", type: "word" }
+    ],
+    cue: "Students say fish, land, melt, and fund. Ask them to name each suffix too. Do not reveal the bases early."
+  },
+  {
+    id: "base-hunt-answer",
+    layout: "base-hunt",
+    kicker: "Check the bases",
+    headline: "The base word is still inside.",
+    subhead: "Read base first, then whole word.",
+    items: [
+      { text: "fishing", type: "word", keyword: "fish", mark: "ing" },
+      { text: "landed", type: "word", keyword: "land", mark: "ed" },
+      { text: "melting", type: "word", keyword: "melt", mark: "ing" },
+      { text: "funded", type: "word", keyword: "fund", mark: "ed" }
+    ],
+    cue: "Point to each whole word. Students respond fish—fishing, land—landed, melt—melting, fund—funded."
+  },
+  {
+    id: "base-first-question",
+    layout: "base-hunt",
+    kicker: "Use the routine",
+    headline: "What should your voice say first?",
+    subhead: "planting   rested   checking",
+    items: [
+      { text: "planting", type: "word" },
+      { text: "rested", type: "word" },
+      { text: "checking", type: "word" }
+    ],
+    cue: "Pause for plant, rest, and check. Ask students why naming the base first makes a longer word easier to read and spell."
+  },
+  {
+    id: "base-first-answer",
+    layout: "base-hunt",
+    kicker: "Read in two steps",
+    headline: "Base word first. Whole word second.",
+    subhead: "Keep this order every time.",
+    items: [
+      { text: "planting", type: "word", keyword: "plant", mark: "ing" },
+      { text: "rested", type: "word", keyword: "rest", mark: "ed" },
+      { text: "checking", type: "word", keyword: "check", mark: "ing" }
+    ],
+    cue: "Choral read: plant—planting, rest—rested, check—checking. Keep the pace brisk once the routine is accurate."
+  },
+  {
+    id: "meaning-contrast",
+    layout: "meaning",
+    kicker: "Meaning discovery",
+    headline: "Which action already happened?",
+    subhead: "Compare resting and rested.",
+    items: [
+      { text: "resting", type: "suffix", keyword: "happening now", mark: "ing" },
+      { text: "rested", type: "suffix", keyword: "happened in the past", mark: "ed" }
+    ],
+    cue: "Students identify rested as past. Keep the contrast about meaning while preserving the base word rest in both forms."
+  },
+  {
+    id: "mark-reading-question",
+    layout: "suffix-mark",
+    kicker: "Your eyes do the work",
+    headline: "Where are the base and suffix?",
+    subhead: "Tell where you would underline and circle. Then check.",
+    items: [
+      { text: "drafted", type: "word" },
+      { text: "checking", type: "word" }
+    ],
+    cue: "Students identify draft + ed and check + ing. Ask which part is underlined and which part is circled."
+  },
+  {
+    id: "mark-reading-answer",
+    layout: "suffix-mark",
+    kicker: "Check the marking",
+    headline: "Underline the base. Circle the suffix.",
+    subhead: "The marks show the two word elements.",
+    items: [
+      { text: "drafted", type: "word", keyword: "draft", mark: "ed" },
+      { text: "checking", type: "word", keyword: "check", mark: "ing" }
+    ],
+    cue: "Confirm the marking, then read draft—drafted and check—checking."
+  },
+  {
+    id: "first-lesson-roadmap",
+    layout: "roadmap",
+    kicker: "Start here",
+    headline: "Today, keep the base word unchanged.",
+    subhead: "Begin with one-syllable base words. Longer structures come in later lessons.",
+    items: [
+      { text: "rent + -ing", type: "today", keyword: "Today: one-syllable base" },
+      { text: "publish + -ing", type: "later", keyword: "Later: multisyllabic base" },
+      { text: "un- + fold + -ed", type: "later", keyword: "Later: prefix + base + suffix" }
+    ],
+    cue: "This boundary follows the manual. Do not teach multisyllabic, prefixed, or complex-base examples in the introductory lesson; show them only as a future roadmap."
+  },
+  {
+    id: "spell-bridge",
+    layout: "routine",
+    kicker: "Section 7 • Spelling",
+    headline: "Say the whole word. Then protect the base.",
+    subhead: "Repeat → name the word without the suffix → spell the base → add the suffix.",
+    items: [
+      { text: "1", keyword: "Repeat the whole word" },
+      { text: "2", keyword: "Name the base word" },
+      { text: "3", keyword: "Spell the base" },
+      { text: "4", keyword: "Spell the suffix" }
+    ],
+    cue: "This is the vital Section 7 habit. Use the same order on every spelling word so students do not try to spell the whole suffixed word at once."
+  },
+  {
+    id: "spell-landed-hidden",
+    layout: "spell",
+    kicker: "Spelling discovery",
+    headline: "The word is landed.",
+    subhead: "Repeat it. What is the word without the suffix?",
+    word: "landed",
+    items: [
+      { text: "?", type: "syllable-blank", keyword: "base word" },
+      { text: "?", type: "suffix-blank", keyword: "suffix" }
+    ],
+    cue: "Place a blank white syllable card and blank yellow suffix card facedown. Dictate landed. Students repeat landed, then say land."
+  },
+  {
+    id: "spell-landed-base",
+    layout: "spell",
+    kicker: "Spell the base first",
+    headline: "Touch land. Say land. Spell l-a-n-d.",
+    subhead: "Turn over only the base card to check.",
+    word: "land",
+    items: [
+      { text: "land", type: "base", keyword: "l-a-n-d" },
+      { text: "?", type: "suffix-blank", keyword: "suffix waits" }
+    ],
+    cue: "Have students touch the white card, say land, and spell l-a-n-d. The suffix remains facedown until the base is complete."
+  },
+  {
+    id: "spell-landed-suffix",
+    layout: "spell",
+    kicker: "Add the suffix",
+    headline: "Touch /ĕd/. Spell e-d.",
+    subhead: "Then read back: land — landed.",
+    word: "land → landed",
+    items: [
+      { text: "land", type: "base", keyword: "l-a-n-d" },
+      { text: "-ed", type: "suffix", keyword: "e-d" }
+    ],
+    cue: "Students touch and say the suffix sound, spell e-d, then immediately read land—landed to check the whole word."
+  },
+  {
+    id: "spell-melting-question",
+    layout: "spell",
+    kicker: "Try the routine",
+    headline: "The word is melting.",
+    subhead: "Name and spell the base before the suffix is revealed.",
+    word: "melting",
+    items: [
+      { text: "?", type: "syllable-blank", keyword: "base word" },
+      { text: "?", type: "suffix-blank", keyword: "suffix" }
+    ],
+    cue: "Students repeat melting, say melt, and orally spell m-e-l-t. Then ask which suffix completes the word."
+  },
+  {
+    id: "spell-melting-answer",
+    layout: "spell",
+    kicker: "Check the parts",
+    headline: "melt — melting",
+    subhead: "Spell the base, add -ing, then read the whole word.",
+    word: "melt → melting",
+    items: [
+      { text: "melt", type: "base", keyword: "m-e-l-t" },
+      { text: "-ing", type: "suffix", keyword: "i-n-g" }
+    ],
+    cue: "Students touch each card left to right, spell melt, spell -ing, and read melt—melting. Repeat with lasted, lasting, funded, or funding as needed."
+  },
+  {
+    id: "mark-spelling-question",
+    layout: "suffix-mark",
+    kicker: "Mark what you spelled",
+    headline: "Show the base and suffix.",
+    subhead: "Decide where the underline and circle belong before the reveal.",
+    items: [
+      { text: "drafted", type: "word" },
+      { text: "checking", type: "word" }
+    ],
+    cue: "Students point to the base and suffix in each word. Ask them to explain which mark belongs to each element."
+  },
+  {
+    id: "mark-spelling-answer",
+    layout: "suffix-mark",
+    kicker: "Check the word elements",
+    headline: "Base underlined. Suffix circled.",
+    subhead: "The dash stays on the left side of a suffix card.",
+    items: [
+      { text: "drafted", type: "word", keyword: "draft", mark: "ed" },
+      { text: "checking", type: "word", keyword: "check", mark: "ing" }
+    ],
+    cue: "Confirm the markings. Point out the left-side dash on -ed and -ing; a prefix card would place the dash on the right."
+  },
+  {
+    id: "suffix-notebook",
+    layout: "suffix-notebook",
+    kicker: "Add to Notebook",
+    headline: "Record the new vowel suffixes.",
+    subhead: "Suffix Ending page • examples: fishing and rented",
+    items: [
+      { text: "-ing", type: "suffix", keyword: "fishing", mark: "ing" },
+      { text: "-ed", type: "suffix", keyword: "rented", mark: "ed" },
+      { text: "checking", type: "word", keyword: "check", mark: "ing" }
+    ],
+    cue: "On the Suffix Ending page, add fishing and rented. Add the same examples to vowel suffixes -ing and -ed, and review marking check(ing)."
+  },
+  {
+    id: "suffix-finish",
+    layout: "routine",
+    kicker: "Say what you discovered",
+    headline: "The base word comes first every time.",
+    subhead: "Repeat whole word → name base → spell base → spell suffix → read whole word.",
+    items: [
+      { text: "base", keyword: "read or spell it first" },
+      { text: "+", keyword: "keep the base unchanged" },
+      { text: "suffix", keyword: "add -ed or -ing" },
+      { text: "word", keyword: "read the whole result" }
+    ],
+    cue: "Have students explain the routine in their own words. Remind them that 3.5 uses unchanged base words and -ed only as /ĕd/ or /id/. Then continue with current 3.5 practice."
+  }
+];
+
 function ttIntro21Scene() {
   const scenes = ttIntro21Scenes();
   return scenes[ttIntro21Index] || scenes[0];
 }
 
 function ttIntro21Scenes() {
+  if (ttIntro21Variant === "discovery35") return TT_INTRO_35_DISCOVERY_SCENES;
   return ttIntro21Variant === "discovery" ? TT_INTRO_21_DISCOVERY_SCENES : TT_INTRO_21_SCENES;
 }
 
@@ -9079,7 +9447,83 @@ function ttIntro21MarkedWordHtml(item) {
   return `<span class="intro-mark-word">${escapeHtml(word.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(word.slice(index + mark.length))}</span>`;
 }
 
+function ttIntro35SegmentedWordHtml(item, className = "") {
+  const word = String(item?.text || "");
+  const suffix = String(item?.mark || "");
+  const index = suffix ? word.lastIndexOf(suffix) : -1;
+  if (index < 0) return `<span class="${escapeHtml(className)}">${escapeHtml(word)}</span>`;
+  const base = String(item?.keyword || word.slice(0, index));
+  return `<span class="${escapeHtml(className)}"><u>${escapeHtml(base)}</u><b>${escapeHtml(suffix)}</b></span>`;
+}
+
+function ttIntro35VisualHtml(scene) {
+  const items = scene.items || [];
+  if (scene.layout === "build") return ttIntro21BuildHtml(scene);
+  if (scene.layout === "suffixes") {
+    return `<div class="intro-suffix-grid">${items.map((item) => {
+      const text = String(item.text || "");
+      const mark = String(item.mark || "");
+      const index = mark ? text.indexOf(mark) : -1;
+      const display = index < 0
+        ? escapeHtml(text)
+        : `${escapeHtml(text.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(text.slice(index + mark.length))}`;
+      return `<article><strong>${display}</strong><span>yellow suffix card</span></article>`;
+    }).join("")}</div>`;
+  }
+  if (scene.layout === "listen") {
+    return `<div class="intro-listen intro-suffix-listen" aria-label="Listen carefully">
+      <div class="intro-listen-bars" aria-hidden="true">${Array.from({ length: 7 }, () => "<i></i>").join("")}</div>
+      <strong>rented · landed · melted</strong>
+      ${scene.wordNote ? `<small>${escapeHtml(scene.wordNote)}</small>` : ""}
+    </div>`;
+  }
+  if (scene.layout === "base-hunt") {
+    return `<div class="intro-base-hunt-grid">${items.map((item) => `<article>
+      ${ttIntro35SegmentedWordHtml(item, "intro-base-hunt-word")}
+      <span>${item.keyword ? `base: ${escapeHtml(item.keyword)}` : "Find the base word"}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (scene.layout === "meaning") {
+    return `<div class="intro-meaning-grid">${items.map((item) => `<article>
+      ${ttIntro35SegmentedWordHtml(item, "intro-meaning-word")}
+      <span>${escapeHtml(item.keyword || "")}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (scene.layout === "suffix-mark") {
+    return `<div class="intro-suffix-mark-grid">${items.map((item) => ttIntro35SegmentedWordHtml(item, "intro-suffix-mark-word")).join("")}</div>`;
+  }
+  if (scene.layout === "roadmap") {
+    return `<div class="intro-roadmap">${items.map((item) => `<article class="${escapeHtml(item.type || "later")}">
+      <span>${escapeHtml(item.keyword || "")}</span><strong>${escapeHtml(item.text || "")}</strong>
+    </article>`).join("")}</div>`;
+  }
+  if (scene.layout === "routine") {
+    return `<div class="intro-routine-grid">${items.map((item) => `<article>
+      <strong>${escapeHtml(item.text || "")}</strong><span>${escapeHtml(item.keyword || "")}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (scene.layout === "spell") {
+    return `<div class="intro-spell-stage">
+      <strong>${escapeHtml(scene.word || "")}</strong>
+      <div>${items.map((item) => `<article class="${escapeHtml(item.type || "base")}">
+        <b>${escapeHtml(item.text || "")}</b><span>${escapeHtml(item.keyword || "")}</span>
+      </article>`).join("")}</div>
+    </div>`;
+  }
+  if (scene.layout === "suffix-notebook") {
+    const suffixes = items.filter((item) => item.type === "suffix");
+    const markedWord = items.find((item) => item.type === "word");
+    return `<article class="intro-suffix-notebook">
+      <header><span>Word Elements</span><strong>Suffix Endings</strong></header>
+      <div>${suffixes.map((item) => `<section><b>${escapeHtml(item.text)}</b><span>vowel suffix</span><em>${escapeHtml(item.keyword)}</em></section>`).join("")}</div>
+      <footer><span>Mark Words</span>${ttIntro35SegmentedWordHtml(markedWord, "intro-suffix-mark-word")}</footer>
+    </article>`;
+  }
+  return "";
+}
+
 function ttIntro21VisualHtml(scene) {
+  if (ttIntro21Variant === "discovery35") return ttIntro35VisualHtml(scene);
   if (scene.layout === "welcome") {
     return `<div class="intro-welcome">
       <div class="intro-welcome-mark" aria-label="Three letters welded together"><span>i</span><span>n</span><span>k</span></div>
@@ -9145,18 +9589,21 @@ function ttIntro21VisualHtml(scene) {
 function ttIntro21CardDisplayPayload() {
   const scene = ttIntro21Scene();
   const scenes = ttIntro21Scenes();
+  const isIntro35 = ttIntro21Variant === "discovery35";
   const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
   return {
-    kind: "intro-21",
+    kind: isIntro35 ? "intro-35" : "intro-21",
     variant: ttIntro21Variant,
     layout: scene.layout,
-    key: `intro-21-${scene.id}`,
-    sectionLabel: "Section 2 - Intro 2.1",
+    key: `${isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
+    sectionLabel: isIntro35
+      ? `${ttIntroSourceSection === "section7" ? "Section 7" : "Section 2"} - Intro 3.5`
+      : "Section 2 - Intro 2.1",
     headline: scene.headline || "",
     subhead: scene.subhead || "",
     word: scene.word || "",
     wordNote: scene.wordNote || "",
-    label: "Welded sounds introduction",
+    label: isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
     position: `${ttIntro21Index + 1} of ${scenes.length}`,
     items: (scene.items || pairItems).map((item) => ({
       text: item.text || "",
@@ -9176,6 +9623,10 @@ function ttRenderIntro21() {
   if (!overlay || !target || overlay.hidden) return;
   const scene = ttIntro21Scene();
   const scenes = ttIntro21Scenes();
+  const substepLabel = ttById("ttIntro21SubstepLabel");
+  if (substepLabel) {
+    substepLabel.textContent = ttIntro21Variant === "discovery35" ? "Substep 3.5" : "Substep 2.1";
+  }
   target.classList.remove("intro-scene-enter");
   target.innerHTML = `<div class="intro-scene-inner">
     <header class="intro-scene-heading">
@@ -9187,7 +9638,11 @@ function ttRenderIntro21() {
   </div>`;
   requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
   ttById("ttIntro21Cue").textContent = scene.cue || "";
-  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery" ? "Welded Sounds Visual Discovery" : "Welded Sounds Introduction";
+  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery35"
+    ? "Suffixes -ed and -ing Visual Discovery"
+    : ttIntro21Variant === "discovery"
+      ? "Welded Sounds Visual Discovery"
+      : "Welded Sounds Introduction";
   ttById("ttIntro21Progress").textContent = `${ttIntro21Index + 1} of ${scenes.length}`;
   ttById("ttIntro21Dots").innerHTML = scenes.map((_, index) => `<i class="${index === ttIntro21Index ? "active" : index < ttIntro21Index ? "complete" : ""}"></i>`).join("");
   ttById("ttIntro21Back").disabled = ttIntro21Index === 0;
@@ -9219,8 +9674,29 @@ function ttOpenIntro21(variant = "guided") {
   if (!overlay) return;
   ttIntro21Index = 0;
   ttIntro21Variant = variant === "discovery" ? "discovery" : "guided";
+  ttIntroSourceSection = "section2";
+  ttIntroLaunchButtonId = ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21";
   ttIntro21Open = true;
   overlay.hidden = false;
+  ttSetIntro21BackgroundInert(true);
+  document.body.classList.add("intro-lesson-open");
+  ttSetNativeProjectionMode("stage");
+  ttStudentDisplayMode = "follow";
+  localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttRenderIntro21();
+  ttById("ttIntro21Next")?.focus();
+}
+
+function ttOpenIntro35(startSceneId = "suffix-memory-question", sourceSection = "section2", launchButtonId = "ttOpenIntro35Discovery") {
+  const overlay = ttById("ttIntro21");
+  if (!overlay) return;
+  ttIntro21Variant = "discovery35";
+  ttIntro21Index = Math.max(0, TT_INTRO_35_DISCOVERY_SCENES.findIndex((scene) => scene.id === startSceneId));
+  ttIntroSourceSection = sourceSection === "section7" ? "section7" : "section2";
+  ttIntroLaunchButtonId = launchButtonId;
+  ttIntro21Open = true;
+  overlay.hidden = false;
+  overlay.setAttribute("aria-label", "Substep 3.5 visual discovery lesson");
   ttSetIntro21BackgroundInert(true);
   document.body.classList.add("intro-lesson-open");
   ttSetNativeProjectionMode("stage");
@@ -9239,7 +9715,8 @@ function ttCloseIntro21() {
   document.body.classList.remove("intro-lesson-open");
   ttStudentDisplayFollowKey = "";
   ttSyncFollowingStudentDisplay({ force: true });
-  ttById(ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21")?.focus();
+  overlay.setAttribute("aria-label", "Substep 2.1 introductory lesson");
+  ttById(ttIntroLaunchButtonId)?.focus();
 }
 
 function ttStepIntro21(direction) {
@@ -14667,6 +15144,8 @@ function ttBind() {
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
+  ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
+  ttById("ttOpenIntro35Spelling")?.addEventListener("click", () => ttOpenIntro35("spell-bridge", "section7", "ttOpenIntro35Spelling"));
   ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
   ttById("ttIntro21Restart")?.addEventListener("click", () => {
     ttIntro21Index = 0;

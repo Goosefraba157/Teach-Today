@@ -147,6 +147,7 @@ function renderPoster(payload) {
 function renderCards(payload) {
   const card = payload.cardDisplay || {};
   if (card.kind === "intro-21") return renderIntro21Cards(payload, card);
+  if (card.kind === "intro-35") return renderIntro35Cards(payload, card);
   const items = (card.items || []).filter((item) => item?.text);
   const content = items.length
     ? `<div class="stage-build-cards">${items.map((item) => `<span class="stage-build-card ${modeClass(item.type)}">${escapeHtml(item.text)}</span>`).join("")}</div>`
@@ -304,6 +305,94 @@ function renderIntro21Cards(payload, card) {
       <span class="stage-intro-position">${escapeHtml(card.position || "")}</span>
     </article>
   `, "Section 2 - Intro 2.1");
+}
+
+function renderIntro35SegmentedWord(item, className = "") {
+  const word = String(item?.text || "");
+  const suffix = String(item?.mark || "");
+  const index = suffix ? word.lastIndexOf(suffix) : -1;
+  if (index < 0) return `<span class="${modeClass(className)}">${escapeHtml(word)}</span>`;
+  const base = String(item?.keyword || word.slice(0, index));
+  return `<span class="${modeClass(className)}"><u>${escapeHtml(base)}</u><b>${escapeHtml(suffix)}</b></span>`;
+}
+
+function renderIntro35Visual(card) {
+  const items = (card.items || []).filter((item) => item?.text);
+  if (card.layout === "build") return renderIntro21Visual(card);
+  if (card.layout === "suffixes") {
+    return `<div class="stage-intro-suffix-grid">${items.map((item) => {
+      const text = String(item.text || "");
+      const mark = String(item.mark || "");
+      const index = mark ? text.indexOf(mark) : -1;
+      const display = index < 0
+        ? escapeHtml(text)
+        : `${escapeHtml(text.slice(0, index))}<b>${escapeHtml(mark)}</b>${escapeHtml(text.slice(index + mark.length))}`;
+      return `<article><strong>${display}</strong><span>yellow suffix card</span></article>`;
+    }).join("")}</div>`;
+  }
+  if (card.layout === "listen") {
+    return `<div class="stage-intro-listen stage-intro-suffix-listen">
+      <div aria-hidden="true">${Array.from({ length: 7 }, () => "<i></i>").join("")}</div>
+      <strong>rented · landed · melted</strong>
+      ${card.wordNote ? `<small>${escapeHtml(card.wordNote)}</small>` : ""}
+    </div>`;
+  }
+  if (card.layout === "base-hunt") {
+    return `<div class="stage-intro-base-hunt-grid">${items.map((item) => `<article>
+      ${renderIntro35SegmentedWord(item, "stage-intro-base-hunt-word")}
+      <span>${item.keyword ? `base: ${escapeHtml(item.keyword)}` : "Find the base word"}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (card.layout === "meaning") {
+    return `<div class="stage-intro-meaning-grid">${items.map((item) => `<article>
+      ${renderIntro35SegmentedWord(item, "stage-intro-meaning-word")}
+      <span>${escapeHtml(item.keyword || "")}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (card.layout === "suffix-mark") {
+    return `<div class="stage-intro-suffix-mark-grid">${items.map((item) => renderIntro35SegmentedWord(item, "stage-intro-suffix-mark-word")).join("")}</div>`;
+  }
+  if (card.layout === "roadmap") {
+    return `<div class="stage-intro-roadmap">${items.map((item) => `<article class="${modeClass(item.type || "later")}">
+      <span>${escapeHtml(item.keyword || "")}</span><strong>${escapeHtml(item.text || "")}</strong>
+    </article>`).join("")}</div>`;
+  }
+  if (card.layout === "routine") {
+    return `<div class="stage-intro-routine-grid">${items.map((item) => `<article>
+      <strong>${escapeHtml(item.text || "")}</strong><span>${escapeHtml(item.keyword || "")}</span>
+    </article>`).join("")}</div>`;
+  }
+  if (card.layout === "spell") {
+    return `<div class="stage-intro-spell-stage">
+      <strong>${escapeHtml(card.word || "")}</strong>
+      <div>${items.map((item) => `<article class="${modeClass(item.type || "base")}">
+        <b>${escapeHtml(item.text || "")}</b><span>${escapeHtml(item.keyword || "")}</span>
+      </article>`).join("")}</div>
+    </div>`;
+  }
+  if (card.layout === "suffix-notebook") {
+    const suffixes = items.filter((item) => item.type === "suffix");
+    const markedWord = items.find((item) => item.type === "word");
+    return `<article class="stage-intro-suffix-notebook">
+      <header><span>Word Elements</span><strong>Suffix Endings</strong></header>
+      <div>${suffixes.map((item) => `<section><b>${escapeHtml(item.text)}</b><span>vowel suffix</span><em>${escapeHtml(item.keyword)}</em></section>`).join("")}</div>
+      <footer><span>Mark Words</span>${renderIntro35SegmentedWord(markedWord, "stage-intro-suffix-mark-word")}</footer>
+    </article>`;
+  }
+  return "";
+}
+
+function renderIntro35Cards(payload, card) {
+  return renderShell(payload, "Suffix Discovery", `
+    <article class="stage-intro-lesson stage-intro-layout-${modeClass(card.layout)}">
+      <div class="stage-intro-heading">
+        <h2>${escapeHtml(card.headline || "")}</h2>
+        <p>${escapeHtml(card.subhead || "")}</p>
+      </div>
+      <div class="stage-intro-visual">${renderIntro35Visual(card)}</div>
+      <span class="stage-intro-position">${escapeHtml(card.position || "")}</span>
+    </article>
+  `, card.sectionLabel || "Intro 3.5");
 }
 
 function renderSentence(payload) {

@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260824-intro21-cards-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260824-intro35-discovery-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -435,7 +435,7 @@
     <section id="ttIntro21" class="intro-lesson-overlay" role="dialog" aria-modal="true" hidden aria-label="Substep 2.1 introductory lesson">
       <header class="intro-lesson-topbar">
         <div>
-          <span>Substep 2.1</span>
+          <span id="ttIntro21SubstepLabel">Substep 2.1</span>
           <strong id="ttIntro21Title">Welded Sounds Introduction</strong>
         </div>
         <div class="intro-lesson-progress" aria-label="Lesson progress">
@@ -584,6 +584,7 @@
           <div class="section-head-actions">
             <button id="ttOpenIntro21" class="section-intro-launch" type="button" hidden>Start Intro 2.1</button>
             <button id="ttOpenIntro21Discovery" class="section-intro-launch discovery" type="button" hidden>Visual Discovery</button>
+            <button id="ttOpenIntro35Discovery" class="section-intro-launch discovery" type="button" hidden>Visual Discovery 3.5</button>
             <button class="section-refresh" data-refresh-section="2" type="button" title="New Section 2 set">↻ New set</button>
           </div>
         </div>
@@ -815,7 +816,13 @@
       </section>
 
       <section id="section7" class="teach-card">
-        <div class="section-head section-head-with-actions"><div><span>7</span><h2>Teach & Review Concepts for Spelling</h2></div><button class="section-refresh" data-refresh-section="7" type="button" title="New spelling words">↻ New set</button></div>
+        <div class="section-head section-head-with-actions">
+          <div><span>7</span><h2>Teach & Review Concepts for Spelling</h2></div>
+          <div class="section-head-actions">
+            <button id="ttOpenIntro35Spelling" class="section-intro-launch discovery" type="button" hidden>Spelling Discovery 3.5</button>
+            <button class="section-refresh" data-refresh-section="7" type="button" title="New spelling words">↻ New set</button>
+          </div>
+        </div>
         <span id="ttSection7Ref" class="section-ref-pill"></span>
         <div id="ttEncodingBar7" class="encoding-bar"></div>
         <p id="ttSpellingConcept" class="spelling-note"></p>
@@ -1036,7 +1043,7 @@
     <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260824-intro21-cards-1"></script>
+    <script src="teach-today.js?v=20260824-intro35-discovery-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>
