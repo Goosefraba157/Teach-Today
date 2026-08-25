@@ -3680,6 +3680,10 @@ function ttOpenStudentDisplay(mode = ttStudentDisplayMode, options = {}) {
 
 function ttSetStudentDisplayMode(mode) {
   ttSetNativeProjectionMode("stage");
+  if (ttIntro21Open && ttIntroTeacherMirror) {
+    ttIntroTeacherMirror = false;
+    ttUpdateIntroDisplayControls();
+  }
   ttStudentDisplayMode = mode || "private";
   ttStudentDisplayFollowKey = "";
   if (!ttStudentDisplayWindow || ttStudentDisplayWindow.closed) {
@@ -9709,20 +9713,14 @@ function ttToggleIntroTeacherMirror() {
   ttUpdateIntroDisplayControls();
 }
 
-function ttToggleIntroInk() {
-  if (ttGlobalInkState.active) {
-    ttSetGlobalInkActive(false);
-    ttToggleGlobalInkPalette(false);
-    return;
-  }
-  ttToggleGlobalInkPalette(true);
-  ttSetGlobalInkMode("pen");
-}
-
 function ttSetIntro21BackgroundInert(active) {
   const overlay = ttById("ttIntro21");
   [...document.body.children].forEach((element) => {
-    if (element === overlay || element.tagName === "SCRIPT") return;
+    if (
+      element === overlay
+      || element.tagName === "SCRIPT"
+      || element.matches?.(".presentation-dock, #ttGlobalInkPalette, #ttGlobalInkCanvas, #ttLaserCanvas")
+    ) return;
     element.inert = active;
     if (active) {
       element.dataset.ttIntro21AriaHidden = element.hasAttribute("aria-hidden")
@@ -9753,6 +9751,8 @@ function ttOpenIntro21(variant = "guided") {
   ttSetNativeProjectionMode("stage");
   ttStudentDisplayMode = "follow";
   localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttToggleGlobalInkPalette(true);
+  ttSetGlobalInkActive(false);
   ttRenderIntro21();
   ttById("ttIntro21Next")?.focus();
 }
@@ -9773,6 +9773,8 @@ function ttOpenIntro35(startSceneId = "suffix-memory-question", sourceSection = 
   ttSetNativeProjectionMode("stage");
   ttStudentDisplayMode = "follow";
   localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttToggleGlobalInkPalette(true);
+  ttSetGlobalInkActive(false);
   ttRenderIntro21();
   ttById("ttIntro21Next")?.focus();
 }
@@ -9786,10 +9788,10 @@ function ttCloseIntro21() {
   ttSetNativeProjectionMode("stage");
   ttToggleLaser(false);
   ttSetGlobalInkActive(false);
-  ttToggleGlobalInkPalette(false);
   ttClearGlobalInk();
   ttSetIntro21BackgroundInert(false);
   document.body.classList.remove("intro-lesson-open");
+  ttToggleGlobalInkPalette(document.body.classList.contains("presentation-mode"));
   ttStudentDisplayFollowKey = "";
   ttSyncFollowingStudentDisplay({ force: true });
   overlay.setAttribute("aria-label", "Substep 2.1 introductory lesson");
@@ -14544,8 +14546,6 @@ function ttSetGlobalInkActive(active) {
     button.classList.toggle("active", ttGlobalInkState.active && button.dataset.globalInkMode === ttGlobalInkState.mode);
   });
   ttById("ttGlobalInkInteract")?.classList.toggle("active", !ttGlobalInkState.active);
-  ttById("ttIntroInkToggle")?.classList.toggle("active", ttGlobalInkState.active);
-  ttById("ttIntroInkToggle")?.setAttribute("aria-pressed", String(ttGlobalInkState.active));
 }
 
 function ttSetGlobalInkMode(mode) {
@@ -14710,8 +14710,6 @@ function ttToggleLaser(force = null, event = null) {
   ttSetLaserTouchMode(ttLaserTouchMode);
   ttById("ttLaserToggle")?.classList.toggle("active", ttLaserEnabled);
   ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
-  ttById("ttIntroLaserToggle")?.classList.toggle("active", ttLaserEnabled);
-  ttById("ttIntroLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
 
 function ttOpenWhiteboard() {
@@ -15228,8 +15226,6 @@ function ttBind() {
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
   ttById("ttOpenIntro35Spelling")?.addEventListener("click", () => ttOpenIntro35("spell-bridge", "section7", "ttOpenIntro35Spelling"));
   ttById("ttIntroMirrorToggle")?.addEventListener("click", () => ttToggleIntroTeacherMirror());
-  ttById("ttIntroInkToggle")?.addEventListener("click", () => ttToggleIntroInk());
-  ttById("ttIntroLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
   ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
   ttById("ttIntro21Restart")?.addEventListener("click", () => {
     ttIntro21Index = 0;
@@ -15286,7 +15282,10 @@ function ttBind() {
   ttById("ttPresentDisplayTray")?.querySelectorAll("[data-display-mode]").forEach((button) => {
     button.addEventListener("click", () => ttSetStudentDisplayMode(button.dataset.displayMode));
   });
-  ttById("ttExitPresent").addEventListener("click", () => ttTogglePresentation(false));
+  ttById("ttExitPresent").addEventListener("click", () => {
+    if (ttIntro21Open) ttCloseIntro21();
+    else ttTogglePresentation(false);
+  });
   ttById("ttNotesToggle").addEventListener("click", () => ttToggleNotes());
   ttById("ttLaserToggle")?.addEventListener("click", (event) => ttToggleLaser(null, event));
   ttById("ttLaserInputMode")?.addEventListener("click", () => {
@@ -15309,8 +15308,14 @@ function ttBind() {
   ttById("ttGlobalInkSize")?.addEventListener("input", (event) => {
     ttGlobalInkState.size = Number(event.target.value) || 5;
   });
-  ttById("ttDockPrevSection")?.addEventListener("click", () => ttGoToTeachingSection(-1));
-  ttById("ttDockNextSection")?.addEventListener("click", () => ttGoToTeachingSection(1));
+  ttById("ttDockPrevSection")?.addEventListener("click", () => {
+    if (ttIntro21Open) ttStepIntro21(-1);
+    else ttGoToTeachingSection(-1);
+  });
+  ttById("ttDockNextSection")?.addEventListener("click", () => {
+    if (ttIntro21Open) ttStepIntro21(1);
+    else ttGoToTeachingSection(1);
+  });
   ttById("ttDockTop").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.addEventListener("keydown", (event) => {
     if (ttIntro21Open) {

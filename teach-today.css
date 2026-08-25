@@ -1419,7 +1419,16 @@ body.intro-lesson-open.laser-mode .laser-canvas {
 }
 
 body.intro-lesson-open .global-ink-palette {
-  z-index: 93;
+  z-index: 96;
+}
+
+body.intro-lesson-open .presentation-dock {
+  z-index: 96;
+  display: grid;
+}
+
+body.intro-lesson-open .dock-day-btn {
+  display: none !important;
 }
 
 body.intro-lesson-open .intro-lesson-topbar,
@@ -3395,13 +3404,6 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   background: #ccfbf1;
   color: #0f766e;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
-}
-
-.intro-lesson-actions #ttIntroLaserToggle.active {
-  border-color: #ef4444;
-  background: #fee2e2;
-  color: #b91c1c;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
 }
 
 .intro-lesson-progress {

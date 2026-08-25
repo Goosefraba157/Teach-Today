@@ -184,7 +184,10 @@ function renderIntroTeacherMirror(card) {
         <span>${escapeHtml(view.progress || card.position || "")}</span>
         <div aria-hidden="true">${dots}</div>
       </div>
-      <span class="intro-mirror-status">Teacher mirror</span>
+      <div class="intro-lesson-actions" aria-hidden="true">
+        <button type="button" class="active" tabindex="-1">Use Stage view</button>
+        <button type="button" tabindex="-1">Close</button>
+      </div>
     </header>
     <main class="intro-lesson-scene">
       <div class="intro-scene-inner intro-scene-enter">
@@ -203,7 +206,33 @@ function renderIntroTeacherMirror(card) {
       </div>
       <strong class="intro-mirror-progress">${escapeHtml(view.progress || card.position || "")}</strong>
     </footer>
+    ${renderIntroMirrorPresentationTools()}
   </section>`;
+}
+
+function renderIntroMirrorPresentationTools() {
+  const colors = ["#ef4444", "#f97316", "#facc15", "#16a34a", "#14b8a6", "#2563eb", "#7c3aed", "#0f172a"];
+  return `<aside class="global-ink-palette intro-mirror-ink-palette" aria-hidden="true">
+      <div class="global-ink-tool-row">
+        <button type="button" tabindex="-1">Pen</button>
+        <button type="button" tabindex="-1">Hi</button>
+        <button type="button" class="active" tabindex="-1">↖</button>
+      </div>
+      <div class="global-ink-colors">
+        ${colors.map((color, index) => `<button type="button" class="${index === 0 ? "active" : ""}" style="--global-ink:${color}" tabindex="-1"></button>`).join("")}
+      </div>
+      <label>Size<input type="range" min="1" max="24" value="5" tabindex="-1"></label>
+      <button type="button" tabindex="-1">Undo</button>
+      <button type="button" tabindex="-1">Clear</button>
+    </aside>
+    <aside class="presentation-dock intro-mirror-presentation-dock" aria-hidden="true">
+      <button id="ttExitPresent" type="button" tabindex="-1">×</button>
+      <button id="ttDockPrevSection" type="button" tabindex="-1">↑</button>
+      <button id="ttDockNextSection" type="button" tabindex="-1">↓</button>
+      <button id="ttDockDisplay" type="button" tabindex="-1">Stage</button>
+      <button id="ttLaserToggle" type="button" tabindex="-1">Laser</button>
+      <button id="ttDockTop" type="button" tabindex="-1">Top</button>
+    </aside>`;
 }
 
 function renderIntro21MarkedWord(item) {

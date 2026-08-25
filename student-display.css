@@ -49,22 +49,18 @@ body.stage-teacher-mirror :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   z-index: 200;
 }
 
-.intro-mirror-status {
-  justify-self: end;
-  border: 1px solid #99f6e4;
-  border-radius: 8px;
-  padding: 8px 13px;
-  background: #ccfbf1;
-  color: #0f766e;
-  font-size: 13px;
-  font-weight: 900;
-}
-
 .intro-mirror-progress {
   min-width: 92px;
   color: #475569;
   font-size: 14px;
   text-align: center;
+}
+
+.intro-mirror-ink-palette,
+.intro-mirror-presentation-dock {
+  z-index: 210;
+  display: grid;
+  pointer-events: none;
 }
 
 .stage-shell {
