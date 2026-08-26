@@ -539,8 +539,8 @@ function renderDictationPaper(payload) {
   const rows = (count) => Array.from({ length: count }, (_, index) => `
     <div class="dictation-line"><span>${index + 1}</span></div>
   `).join("");
-  return renderShell(payload, "Dictation Paper", `
-    <article class="dictation-paper-stage">
+  const fallbackPage = `
+    <article class="dictation-paper-stage dictation-document-fallback">
       <p>${escapeHtml(payload.dictationPaper?.prompt || "Listen, repeat, tap the sounds, and write.")}</p>
       <div class="dictation-paper">
         <section><h2>Sounds</h2>${rows(5)}</section>
@@ -548,7 +548,27 @@ function renderDictationPaper(payload) {
         <section class="dictation-sentences"><h2>Sentences</h2>${rows(3)}</section>
       </div>
     </article>
-  `, "Section 8");
+  `;
+  return `
+    <section class="stage-shell stage-mode-dictation-paper">
+      <div class="chart-mini-header">
+        <strong>Section 8 - Dictation Paper</strong>
+      </div>
+      <div class="stage-body">
+        <section class="dictation-document-stage">
+          <article class="dictation-document-panel">
+            ${fallbackPage}
+            <img
+              class="dictation-page-image"
+              alt="WRS Student Dictation Page"
+              data-dictation-page-src="assets/stage/wrs-student-dictation-page.webp"
+            >
+          </article>
+        </section>
+      </div>
+      ${renderStageTools(payload)}
+    </section>
+  `;
 }
 
 function renderChart(payload) {
@@ -659,6 +679,7 @@ function render(payload) {
   currentInkKey = nextInkKey;
   bindStageControls(payload);
   setupChartPageImage();
+  setupDictationPageImage();
   setupStageInk(payload);
 }
 
@@ -693,6 +714,15 @@ function setupChartPageImage() {
   image.addEventListener("load", () => panel.classList.add("chart-pdf-ready"), { once: true });
   image.addEventListener("error", () => panel.classList.add("chart-pdf-failed"), { once: true });
   image.src = image.dataset.chartPageSrc || "";
+}
+
+function setupDictationPageImage() {
+  const image = root.querySelector(".dictation-page-image[data-dictation-page-src]");
+  const panel = image?.closest(".dictation-document-panel");
+  if (!image || !panel) return;
+  image.addEventListener("load", () => panel.classList.add("dictation-document-ready"), { once: true });
+  image.addEventListener("error", () => panel.classList.add("dictation-document-failed"), { once: true });
+  image.src = image.dataset.dictationPageSrc || "";
 }
 
 function payloadInkKey(payload) {

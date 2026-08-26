@@ -16,6 +16,8 @@ The browser-based Present and Student Stage flow remains unchanged. Inside the n
 
 Section 4 Follow Lesson uses exact lossless page images generated from the official Reader PDFs. Do not restore raw PDF embedding: iPad `WKWebView` may ignore the requested page fragment and show the Reader cover instead.
 
+Section 8 Follow Lesson and the manual Paper choice use the fixed lossless image rendered from the official WRS Student Dictation Page. The hosted app precaches that page for offline use and retains the generated worksheet only as a loading/error fallback; no native payload field or rebuild is required for this display change.
+
 ## Verified
 
 - The original A/B scene proof succeeded on the target non-M1 A16 iPad over AirPlay Screen Mirroring.

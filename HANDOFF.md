@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-08-25
+2026-08-26
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -59,6 +59,7 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
+- Complete locally on 2026-08-26: Section 8 Student Stage now displays the official one-page `WRS Student Dictation Page` instead of the recreated app worksheet. The PDF was rendered to a 1530x1980 lossless WebP for reliable browser and iPad `WKWebView` fitting; the prior generated sheet remains the loading/error fallback, and the official page is precached with the app shell for offline use. Manual `Paper` and Section 8 `Follow Lesson` were verified end to end at 1920x1080 with the full page visible, no scrolling, and no browser warnings or errors. No native payload or lesson-data contract changed. Exact next step: fully close and reopen the iPad Stage app after deployment, then verify Section 8 over the classroom display.
 - Complete locally on 2026-08-25: Laser Scoop was stabilized for touch and generic iPad stylus use. Turning Laser on now always starts a fresh Scoop session without creating a point at the Laser button; touch/pen `pointerup` and `pointercancel` explicitly release the live tip; Scoop suppresses browser touch navigation in both Present and Visual Discovery; and the left ink palette temporarily ignores pointer input while Scoop is active so it cannot steal the gesture. Scroll mode restores normal palette interaction and page navigation. JavaScript, sync-safety, diff checks, browser state verification, and the unsigned iOS simulator build pass. Exact next step: classroom-test repeated Scoop on/off, lift/re-touch, and edge gestures beside the left palette on the iPad.
 - Complete locally on 2026-08-25: the 3.5 Visual Discovery wording and displays were tightened against the full manual, especially Sections 2 and 7. The meaning comparison now asks which word shows a past action; base-word underlines are continuous and lowered below descenders; and the spelling sequence now says the whole word, says it without the suffix, taps a monosyllabic base or says each syllable of a multisyllabic base, spells the base, then says and spells the suffix. The `landed` and `melting` models follow the manual's facedown-card, base-first sequence and reread the word without the suffix before the whole word.
 - The exact Student Notebook destinations are now shown instead of a generic Suffix Ending page: printed page 23 adds `fishing` and `rented` under The Most Common Suffixes and reviews `check(ing)`; printed page 24 adds the examples beside vowel suffixes `-ing` and `-ed /ĕd/`. The current-spelling portion of the full 3.5 discovery also changes the live Student Display header from Section 2 to Section 7.

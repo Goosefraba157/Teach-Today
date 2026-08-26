@@ -1569,12 +1569,14 @@ body.stage-inking .stage-ink-canvas {
   line-height: 1;
 }
 
-.stage-mode-chart {
+.stage-mode-chart,
+.stage-mode-dictation-paper {
   grid-template-rows: minmax(0, 1fr);
   background: #d9edf2;
 }
 
-.stage-mode-chart .stage-body {
+.stage-mode-chart .stage-body,
+.stage-mode-dictation-paper .stage-body {
   height: 100vh;
   padding: 6px 6px 6px 58px;
 }
@@ -1681,6 +1683,53 @@ body.stage-inking .stage-ink-canvas {
 }
 
 .chart-pdf-ready .chart-page-fallback {
+  visibility: hidden;
+}
+
+.dictation-document-stage {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  overflow: hidden;
+}
+
+.dictation-document-panel {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  align-items: stretch;
+  justify-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #202124;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
+}
+
+.dictation-document-fallback {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dictation-page-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: #202124;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.dictation-document-ready .dictation-page-image {
+  opacity: 1;
+}
+
+.dictation-document-ready .dictation-document-fallback {
   visibility: hidden;
 }
 
@@ -1860,7 +1909,8 @@ body.stage-inking .stage-ink-canvas {
     display: none;
   }
 
-  .stage-mode-chart .stage-body {
+  .stage-mode-chart .stage-body,
+  .stage-mode-dictation-paper .stage-body {
     padding-left: 56px;
   }
 }
@@ -1893,7 +1943,8 @@ body.stage-inking .stage-ink-canvas {
     min-height: 28px;
   }
 
-  .stage-mode-chart .stage-body {
+  .stage-mode-chart .stage-body,
+  .stage-mode-dictation-paper .stage-body {
     padding: 4px 4px 4px 56px;
   }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-25-laser-scoop-3";
+const CACHE_NAME = "teach-today-offline-v2026-08-26-section8-dictation-page-1";
 
 const APP_SHELL = [
   "./",
@@ -58,6 +58,7 @@ const APP_SHELL = [
   "./wilson-lp-template.js",
   "./wilson-hfw-data.js",
   "./vendor/pdf-lib.min.js",
+  "./assets/stage/wrs-student-dictation-page.webp",
   "./Readers%20in%20PDF%20form/WRS_Student_Reader_1.pdf",
   "./Readers%20in%20PDF%20form/WRS_Student_Reader_2.pdf",
   "./Readers%20in%20PDF%20form/WRS_Student_Reader_3.pdf",

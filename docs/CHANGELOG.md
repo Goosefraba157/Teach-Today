@@ -2,6 +2,11 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-26
+
+- Replaced the recreated Section 8 Student Stage worksheet with a full-page lossless rendering of the official WRS Student Dictation Page for both manual Paper and Follow Lesson modes.
+- Kept the generated worksheet as a loading/error fallback and precached the official page for reliable offline use in browsers and the native iPad Stage shell.
+
 ## 2026-08-18
 
 - Re-established V1 as the active application and paused `/v2/` development.
