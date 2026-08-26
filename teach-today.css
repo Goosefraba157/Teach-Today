@@ -6438,10 +6438,6 @@ body.section4-stage-preview-open .teach-flow {
   min-width: 0;
 }
 
-.section2b-picker {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .section2-picker article {
   min-width: 0;
 }

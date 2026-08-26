@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-26
 
+- Brought 45+45 Section 2B to full interaction parity with Section 2: matching source groups, charting/review tools, custom words, card editing, whiteboard, applicable intro launches, navigation, and student Stage output while preserving independent Day 2 review/current words.
+- Left Section 2 and all existing lesson/student/charting data contracts unchanged; no migration or saved-data rewrite is part of the Section 2B patch.
 - Replaced the recreated Section 8 Student Stage worksheet with a full-page lossless rendering of the official WRS Student Dictation Page for both manual Paper and Follow Lesson modes.
 - Kept the generated worksheet as a loading/error fallback and precached the official page for reliable offline use in browsers and the native iPad Stage shell.
 

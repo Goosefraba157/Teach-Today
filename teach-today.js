@@ -9,6 +9,7 @@ let ttSection2Word = "";
 let ttSection2BDeck = [];
 let ttSection2BIndex = 0;
 let ttSection2BWord = "";
+let ttWhiteboardWord = "";
 let ttIntro21Open = false;
 let ttIntro21Index = 0;
 let ttIntro21Variant = "guided";
@@ -2832,6 +2833,12 @@ function ttRender() {
   if (intro21DiscoveryButton) intro21DiscoveryButton.hidden = skill.id !== "2.1";
   const intro35DiscoveryButton = ttById("ttOpenIntro35Discovery");
   if (intro35DiscoveryButton) intro35DiscoveryButton.hidden = skill.id !== "3.5";
+  const intro21B2Button = ttById("ttOpenIntro21B2");
+  if (intro21B2Button) intro21B2Button.hidden = skill.id !== "2.1";
+  const intro21DiscoveryB2Button = ttById("ttOpenIntro21DiscoveryB2");
+  if (intro21DiscoveryB2Button) intro21DiscoveryB2Button.hidden = skill.id !== "2.1";
+  const intro35DiscoveryB2Button = ttById("ttOpenIntro35DiscoveryB2");
+  if (intro35DiscoveryB2Button) intro35DiscoveryB2Button.hidden = skill.id !== "3.5";
   const intro35SpellingButton = ttById("ttOpenIntro35Spelling");
   if (intro35SpellingButton) intro35SpellingButton.hidden = skill.id !== "3.5";
   const activeIntroSubstep = ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
@@ -2864,10 +2871,20 @@ function ttRender() {
   });
   // §2b — Day 2 words (only visible in group mode via CSS)
   ttFillWordRow(ttById("ttReviewWordsB2"), lesson.sectionTwoReviewWordsB2 || [], {
-    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id)
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2BWord("review", word)
   });
   ttFillWordRow(ttById("ttCurrentWordsB2"), lesson.sectionTwoCurrentWordsB2 || [], {
-    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id)
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2BWord("current", word)
+  });
+  ttFillWordRow(ttById("ttLastMissedWordsB2"), lesson.sectionTwoLastMissedWords || [], {
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2Word("lastMisses", word)
+  });
+  ttFillWordRow(ttById("ttPriorityMissedWordsB2"), lesson.sectionTwoPriorityMissedWords || [], {
+    onSelect: (word) => ttShowSection2BWordByDeck(word, skill.id),
+    onReplace: (word) => ttReplaceSection2Word("priorityMisses", word)
   });
   ttFillWordRow(ttById("ttLastMissedWords"), lesson.sectionTwoLastMissedWords || [], {
     onSelect: (word) => ttShowSection2WordByDeck(word, skill.id),
@@ -2878,6 +2895,7 @@ function ttRender() {
     onReplace: (word) => ttReplaceSection2Word("priorityMisses", word)
   });
   ttFillSection2ReplacementTools(lesson, skill);
+  ttFillSection2BReplacementTools(lesson, skill);
   ttFillSection2DisplayDeck(lesson, skill);
   ttFillSection2BDisplayDeck(lesson, skill);
   ttFillSection3Cards(lesson);
@@ -9622,8 +9640,10 @@ function ttIntro21CardDisplayPayload() {
     layout: scene.layout,
     key: `${isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
     sectionLabel: isIntro35
-      ? `${isIntro35Spelling || ttIntroSourceSection === "section7" ? "Section 7" : "Section 2"} - Intro 3.5`
-      : "Section 2 - Intro 2.1",
+      ? `${isIntro35Spelling || ttIntroSourceSection === "section7"
+        ? "Section 7"
+        : ttIntroSourceSection === "section2b" ? "Section 2B" : "Section 2"} - Intro 3.5`
+      : `${ttIntroSourceSection === "section2b" ? "Section 2B" : "Section 2"} - Intro 2.1`,
     headline: scene.headline || "",
     subhead: scene.subhead || "",
     word: scene.word || "",
@@ -9736,13 +9756,13 @@ function ttSetIntro21BackgroundInert(active) {
   });
 }
 
-function ttOpenIntro21(variant = "guided") {
+function ttOpenIntro21(variant = "guided", sourceSection = "section2", launchButtonId = "") {
   const overlay = ttById("ttIntro21");
   if (!overlay) return;
   ttIntro21Index = 0;
   ttIntro21Variant = variant === "discovery" ? "discovery" : "guided";
-  ttIntroSourceSection = "section2";
-  ttIntroLaunchButtonId = ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21";
+  ttIntroSourceSection = sourceSection === "section2b" ? "section2b" : "section2";
+  ttIntroLaunchButtonId = launchButtonId || (ttIntro21Variant === "discovery" ? "ttOpenIntro21Discovery" : "ttOpenIntro21");
   ttIntro21Open = true;
   ttIntroTeacherMirror = false;
   overlay.hidden = false;
@@ -9762,7 +9782,7 @@ function ttOpenIntro35(startSceneId = "suffix-memory-question", sourceSection = 
   if (!overlay) return;
   ttIntro21Variant = "discovery35";
   ttIntro21Index = Math.max(0, TT_INTRO_35_DISCOVERY_SCENES.findIndex((scene) => scene.id === startSceneId));
-  ttIntroSourceSection = sourceSection === "section7" ? "section7" : "section2";
+  ttIntroSourceSection = ["section2b", "section7"].includes(sourceSection) ? sourceSection : "section2";
   ttIntroLaunchButtonId = launchButtonId;
   ttIntro21Open = true;
   ttIntroTeacherMirror = false;
@@ -9823,6 +9843,20 @@ function ttFillSection2ReplacementTools(lesson, skill) {
   }
 }
 
+function ttFillSection2BReplacementTools(lesson, skill) {
+  const currentSelect = ttById("ttCurrentWordSelectB2");
+  if (currentSelect) {
+    const words = [...new Set([].concat(lesson.realWords || [], lesson.nonsenseWords || []).filter(isUsableReaderWord))];
+    currentSelect.innerHTML = `<option value="">Pick from charting page...</option>${words.map((word) => `<option value="${escapeHtml(word)}">${escapeHtml(word)}</option>`).join("")}`;
+  }
+  const categorySelect = ttById("ttReviewCategoryB2");
+  if (categorySelect) {
+    const categories = section2ReviewCategories();
+    categorySelect.innerHTML = categories.map((category) => `<option value="${escapeHtml(category.id)}">${escapeHtml(category.label)}</option>`).join("");
+    ttFillSection2BReviewCategoryWords(categorySelect.value || categories[0]?.id || "", skill.id);
+  }
+}
+
 function section2ReviewCategories() {
   return [
     { id: "blends", label: "Blends" },
@@ -9848,6 +9882,20 @@ function ttFillSection2ReviewCategoryWords(categoryId, currentSubstep) {
     button.type = "button";
     button.textContent = word;
     button.addEventListener("click", () => ttShowSection2WordByDeck(word, currentSubstep));
+    container.appendChild(button);
+  });
+}
+
+function ttFillSection2BReviewCategoryWords(categoryId, currentSubstep) {
+  const container = ttById("ttReviewReplacementWordsB2");
+  if (!container) return;
+  const words = section2ReviewWordsForCategory(categoryId, currentSubstep).slice(0, 18);
+  container.innerHTML = "";
+  words.forEach((word) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = word;
+    button.addEventListener("click", () => ttShowSection2BWordByDeck(word, currentSubstep));
     container.appendChild(button);
   });
 }
@@ -9919,6 +9967,21 @@ function ttReplaceSection2Word(kind, oldWord) {
   ttRender();
 }
 
+function ttReplaceSection2BWord(kind, oldWord) {
+  if (!ttLesson) return;
+  ttForkSavedLessonDraft();
+  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(ttActiveGroup());
+  const key = kind === "current" ? "sectionTwoCurrentWordsB2" : "sectionTwoReviewWordsB2";
+  const current = ttLesson[key] || [];
+  const pool = kind === "current"
+    ? (ttLesson.realWords || []).concat(ttLesson.nonsenseWords || [])
+    : section2ReviewWordsForCategory(ttById("ttReviewCategoryB2")?.value || "blends", skill.id)
+      .concat(dictationReviewWords(skill.id, ttLesson.readerLevel || "AB"), priorDictationWords(skill.id, ttLesson.readerLevel || "AB"));
+  ttLesson[key] = current.map((word) => word === oldWord ? ttPickReplacement(pool, current, oldWord) : word);
+  ttSaveDraftLesson();
+  ttRender();
+}
+
 function ttFillSection2DisplayDeck(lesson, skill) {
   const review = lesson.sectionTwoReviewWords || [];
   const current = lesson.sectionTwoCurrentWords || [];
@@ -9961,6 +10024,7 @@ function ttShowSection2BWordByDeck(word, substep = ttLesson?.substep || ttActive
 function ttShowSection2BWord(word, substep, options = {}) {
   const display = ttById("ttSection2BDisplay");
   const hint = ttById("ttSection2BHint");
+  const editor = ttById("ttSection2EditorB2");
   if (!display || !hint) return;
   if (!options.preserveDeckIndex) {
     const deckIndex = ttSection2BDeck.findIndex((card) => card.word === word);
@@ -9968,6 +10032,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
   }
   ttSection2BWord = word;
   display.innerHTML = "";
+  if (editor) editor.hidden = true;
   if (!word) {
     display.innerHTML = "<span>Tap a Day 2 word</span>";
     ttRenderSection2BCount();
@@ -9992,7 +10057,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
   });
   hint.textContent = cards.mode === "sounds"
     ? "Sound cards: yellow consonants, pink vowels, green glued/welded sounds."
-    : "Syllable / word-part cards: bright yellow affixes and white syllable or Latin-base cards.";
+    : "Syllable / word-part cards: yellow affixes and white syllable or Latin-base cards.";
   ttRenderSection2BCount();
   ttRenderMarkedWords();
   ttSyncFollowingStudentDisplay({ force: true });
@@ -10458,6 +10523,30 @@ function ttUseCustomSection2Word() {
   ttShowSection2Word(clean, substep);
 }
 
+function ttUseCustomSection2BWord() {
+  const input = ttById("ttSection2CustomWordB2");
+  if (!input) return;
+  const value = input.value.trim();
+  if (!value) return;
+  const substep = ttLesson?.substep || ttActiveGroup().substep;
+  const clean = cleanCardWord(value);
+  if (!clean) return;
+  if (/\s/.test(value.trim())) {
+    const items = parseSection2CardInput(value, substep);
+    if (items.length) {
+      const overrides = section2CardOverrides();
+      overrides[clean] = {
+        mode: "syllables",
+        items,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(overrides));
+    }
+  }
+  input.value = "";
+  ttShowSection2BWord(clean, substep);
+}
+
 function ttCurrentSection2Cards() {
   if (!ttSection2Word) return null;
   const substep = ttLesson?.substep || ttActiveGroup().substep;
@@ -10497,6 +10586,47 @@ function ttSaveSection2Cards() {
   input.value = "";
   if (editor) editor.hidden = true;
   ttShowSection2Word(ttSection2Word, ttLesson?.substep || ttActiveGroup().substep);
+}
+
+function ttCurrentSection2BCards() {
+  if (!ttSection2BWord) return null;
+  const substep = ttLesson?.substep || ttActiveGroup().substep;
+  return section2CardsForWord(ttSection2BWord, substep);
+}
+
+function ttEditSection2BCards() {
+  const editor = ttById("ttSection2EditorB2");
+  const input = ttById("ttSection2EditInputB2");
+  if (!editor || !input || !ttSection2BWord) return;
+  const cards = ttCurrentSection2BCards();
+  input.value = cards?.items?.length ? cards.items.map(section2EditInputText).join(" ") : "";
+  editor.hidden = false;
+  input.focus();
+  input.select();
+}
+
+function ttCancelSection2BEdit() {
+  const editor = ttById("ttSection2EditorB2");
+  if (editor) editor.hidden = true;
+}
+
+function ttSaveSection2BCards() {
+  const input = ttById("ttSection2EditInputB2");
+  const editor = ttById("ttSection2EditorB2");
+  if (!input || !ttSection2BWord) return;
+  const items = parseSection2CardInput(input.value, ttLesson?.substep || ttActiveGroup().substep);
+  if (!items.length) return;
+  const clean = cleanCardWord(ttSection2BWord);
+  const overrides = section2CardOverrides();
+  overrides[clean] = {
+    mode: section2ModeForItems(items),
+    items,
+    updatedAt: new Date().toISOString()
+  };
+  localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(overrides));
+  input.value = "";
+  if (editor) editor.hidden = true;
+  ttShowSection2BWord(ttSection2BWord, ttLesson?.substep || ttActiveGroup().substep);
 }
 
 function section2CardOverrides() {
@@ -13170,8 +13300,10 @@ function splitNearMiddle(word) {
 
 function ttRenderMarkedWords() {
   document.querySelectorAll(".word-row button").forEach((button) => {
-    if (button.closest("#ttReviewWordsB2, #ttCurrentWordsB2")) {
-      button.classList.remove("marked-word");
+    const section2BContainer = button.closest("#ttReviewWordsB2, #ttCurrentWordsB2, #ttLastMissedWordsB2, #ttPriorityMissedWordsB2");
+    if (section2BContainer) {
+      const isDay2Core = section2BContainer.matches("#ttReviewWordsB2, #ttCurrentWordsB2");
+      button.classList.toggle("marked-word", !isDay2Core && isMarkedReviewWord(button.textContent));
       button.classList.toggle("selected-display-word", button.textContent === ttSection2BWord);
       return;
     }
@@ -14719,13 +14851,14 @@ function ttToggleLaser(force = null) {
   ttById("ttLaserToggle")?.setAttribute("aria-pressed", String(ttLaserEnabled));
 }
 
-function ttOpenWhiteboard() {
+function ttOpenWhiteboard(word = ttSection2Word, sectionLabel = "Section 2") {
   const board = ttById("ttWhiteboard");
   if (!board) return;
+  ttWhiteboardWord = word || "";
   if (ttNotesEnabled) ttToggleNotes(false, false);
   board.hidden = false;
   document.body.classList.add("whiteboard-mode");
-  ttById("ttWhiteboardTitle").textContent = ttSection2Word ? `Whiteboard - ${ttSection2Word}` : "Section 2 Whiteboard";
+  ttById("ttWhiteboardTitle").textContent = ttWhiteboardWord ? `Whiteboard - ${ttWhiteboardWord}` : `${sectionLabel} Whiteboard`;
   ttSetWhiteboardMode("move");
   requestAnimationFrame(() => {
     ttResizeWhiteboardCanvases();
@@ -14854,7 +14987,7 @@ function ttLayoutWhiteboardBank() {
 
 function ttBuildCurrentWordOnWhiteboard() {
   const substep = ttLesson?.substep || ttActiveGroup().substep;
-  const word = ttSection2Word || (ttLesson?.sectionTwoCurrentWords || [])[0] || "";
+  const word = ttWhiteboardWord || ttSection2Word || (ttLesson?.sectionTwoCurrentWords || [])[0] || "";
   if (!word) return;
   ttClearBuiltWhiteboardTiles();
   const cards = section2CardsForWord(word, substep).items;
@@ -15231,6 +15364,9 @@ function ttBind() {
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
+  ttById("ttOpenIntro21B2")?.addEventListener("click", () => ttOpenIntro21("guided", "section2b", "ttOpenIntro21B2"));
+  ttById("ttOpenIntro21DiscoveryB2")?.addEventListener("click", () => ttOpenIntro21("discovery", "section2b", "ttOpenIntro21DiscoveryB2"));
+  ttById("ttOpenIntro35DiscoveryB2")?.addEventListener("click", () => ttOpenIntro35("suffix-memory-question", "section2b", "ttOpenIntro35DiscoveryB2"));
   ttById("ttOpenIntro35Spelling")?.addEventListener("click", () => ttOpenIntro35("spell-bridge", "section7", "ttOpenIntro35Spelling"));
   ttById("ttIntroMirrorToggle")?.addEventListener("click", () => ttToggleIntroTeacherMirror());
   ttById("ttIntro21Close")?.addEventListener("click", () => ttCloseIntro21());
@@ -15493,6 +15629,24 @@ function ttBind() {
   ttById("ttSection2Next")?.addEventListener("click", () => ttShowSection2Card(ttSection2Index + 1));
   ttById("ttSection2BPrev")?.addEventListener("click", () => ttShowSection2BCard(ttSection2BIndex - 1));
   ttById("ttSection2BNext")?.addEventListener("click", () => ttShowSection2BCard(ttSection2BIndex + 1));
+  ttById("ttEditSection2CardsB2")?.addEventListener("click", () => ttEditSection2BCards());
+  ttById("ttSaveSection2CardsB2")?.addEventListener("click", () => ttSaveSection2BCards());
+  ttById("ttCancelSection2EditB2")?.addEventListener("click", () => ttCancelSection2BEdit());
+  ttById("ttSection2EditInputB2")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") ttSaveSection2BCards();
+    if (event.key === "Escape") ttCancelSection2BEdit();
+  });
+  ttById("ttCurrentWordSelectB2")?.addEventListener("change", (event) => {
+    if (event.target.value) ttShowSection2BWordByDeck(event.target.value, ttLesson?.substep || ttActiveGroup().substep);
+  });
+  ttById("ttReviewCategoryB2")?.addEventListener("change", (event) => {
+    ttFillSection2BReviewCategoryWords(event.target.value, ttLesson?.substep || ttActiveGroup().substep);
+  });
+  ttById("ttUseCustomWordB2")?.addEventListener("click", () => ttUseCustomSection2BWord());
+  ttById("ttSection2CustomWordB2")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") ttUseCustomSection2BWord();
+  });
+  ttById("ttOpenWhiteboardB2")?.addEventListener("click", () => ttOpenWhiteboard(ttSection2BWord, "Section 2B"));
   ttById("ttCloseWhiteboard").addEventListener("click", () => ttCloseWhiteboard());
   ttById("ttWhiteboardBuildWord").addEventListener("click", () => ttBuildCurrentWordOnWhiteboard());
   ttById("ttWhiteboardAddBlank").addEventListener("click", () => ttAddBlankSyllableCard());
