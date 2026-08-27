@@ -4074,6 +4074,7 @@ function ttRenderDataCenter() {
   const driveStatus = localStorage.getItem("teachToday.driveStatus") || "Connect Google Drive to upload audio into your Drive.";
   const lastFirebaseSync = localStorage.getItem("teachToday.lastFirebaseSyncAt");
   const firebaseStatus = localStorage.getItem("teachToday.firebaseSyncStatus") || "Firebase internet sync is ready.";
+  const independentStatus = localStorage.getItem("teachToday.independentBackupStatus.v1") || "Automatic iPad Files and Google Drive backups are ready for setup.";
   const records = appState.masterRecords?.length || 0;
   const lessons = (appState.groups || []).reduce((sum, group) => sum + (group.history?.length || 0), 0);
   const dictation = (appState.groups || []).reduce((sum, group) => sum + (group.dictationMisses?.length || 0), 0);
@@ -4086,6 +4087,7 @@ function ttRenderDataCenter() {
   const cloudStatusEl = ttById("ttCloudSyncStatus");
   const driveStatusEl = ttById("ttDriveSyncStatus");
   const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
+  const independentStatusEl = ttById("ttIndependentBackupStatus");
   const secureLegacyButton = ttById("ttSecureLegacyStudentData");
   const recoveryButton = ttById("ttDownloadRecovery");
   const recoveryBundleButton = ttById("ttDownloadRecoveryBundle");
@@ -4097,6 +4099,7 @@ function ttRenderDataCenter() {
   if (cloudStatusEl) cloudStatusEl.textContent = `${cloudFolder ? `${cloudFolder}: ` : ""}${cloudStatus} Local browser storage is still saved first.`;
   if (driveStatusEl) driveStatusEl.textContent = `${driveStatus} Local browser storage is still saved first.`;
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
+  if (independentStatusEl) independentStatusEl.textContent = independentStatus;
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
   if (recoveryButton) recoveryButton.hidden = !ttRecoveryIndex().length;
   if (recoveryBundleButton) recoveryBundleButton.hidden = !ttRecoveryIndex().length;
@@ -12057,6 +12060,9 @@ const ttFirebaseRecoveryIndexKey = "teachToday.firebaseRecoveryIndex.v1";
 const ttFirebaseDeviceIdKey = "teachToday.firebaseDeviceId.v1";
 const ttDriveScope = "https://www.googleapis.com/auth/drive.file";
 const ttDriveFolderName = "Teach Today Recordings";
+const ttIndependentDriveFolderName = "Teach Today Backups";
+const ttIndependentBackupEnabledKey = "teachToday.independentDriveBackupsEnabled.v1";
+const ttIndependentBackupStatusKey = "teachToday.independentBackupStatus.v1";
 let ttFirebaseSdkPromise = null;
 let ttFirebaseTimer = null;
 let ttFirebaseBusy = false;
@@ -12070,6 +12076,8 @@ let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
 let ttConnectionConflict = false;
 let ttFirebaseSafetyDbPromise = null;
+let ttIndependentBackupBusy = false;
+let ttBackupToastTimer = null;
 
 function ttFirebaseDeviceId() {
   let value = localStorage.getItem(ttFirebaseDeviceIdKey);
@@ -12093,6 +12101,60 @@ function ttBackupPayload(now = new Date()) {
     exportedAt: now.toISOString(),
     appState,
     section2CardOverrides: section2CardOverrides()
+  };
+}
+
+function ttBackupDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function ttBackupWeekKey(date = new Date()) {
+  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const weekday = monday.getDay() || 7;
+  monday.setDate(monday.getDate() - weekday + 1);
+  return ttBackupDateKey(monday);
+}
+
+async function ttSha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function ttShowBackupToast(message, tone = "warning") {
+  const toast = ttById("ttBackupToast");
+  if (!toast) return;
+  clearTimeout(ttBackupToastTimer);
+  toast.textContent = message;
+  toast.dataset.tone = tone;
+  toast.hidden = false;
+  ttBackupToastTimer = setTimeout(() => { toast.hidden = true; }, 6500);
+}
+
+function ttSetIndependentBackupStatus(message, options = {}) {
+  const now = new Date().toISOString();
+  localStorage.setItem(ttIndependentBackupStatusKey, message);
+  localStorage.setItem("teachToday.lastIndependentBackupCheckAt", now);
+  if (options.success) localStorage.setItem("teachToday.lastIndependentBackupAt", now);
+  ttRenderDataCenter();
+  if (options.notify) ttShowBackupToast(message, options.success ? "success" : "warning");
+}
+
+function ttIndependentBackupArtifact(envelope) {
+  const payload = ttNormalizeFirebasePayload(envelope?.payload) || ttFirebasePayload();
+  return {
+    kind: "TeachTodayBackup",
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    appState: payload.appState,
+    section2CardOverrides: payload.section2CardOverrides || {},
+    source: {
+      type: envelope?.revisionId ? "firebase-revision" : "local-shared-copy",
+      revisionId: envelope?.revisionId || ""
+    },
+    backupPolicy: { dailyKeep: 10, weeklyKeep: "school-year", cleanupEnabled: false }
   };
 }
 
@@ -12374,7 +12436,7 @@ async function ttDriveRequest(path, options = {}) {
   return response.json();
 }
 
-async function ttDriveUploadMultipart(metadata, blob) {
+async function ttDriveUploadMultipart(metadata, blob, fileId = "") {
   if (!(await ttEnsureDrivePermission())) throw new Error("Google Drive permission was not granted.");
   const boundary = `teach_today_${Date.now()}`;
   const body = new Blob([
@@ -12384,8 +12446,9 @@ async function ttDriveUploadMultipart(metadata, blob) {
     blob,
     `\r\n--${boundary}--`
   ], { type: `multipart/related; boundary=${boundary}` });
-  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
-    method: "POST",
+  const target = fileId ? `/${encodeURIComponent(fileId)}` : "";
+  const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files${target}?uploadType=multipart&fields=id,name,size,md5Checksum,webViewLink`, {
+    method: fileId ? "PATCH" : "POST",
     headers: ttDriveHeaders(body.type),
     body
   });
@@ -12394,6 +12457,144 @@ async function ttDriveUploadMultipart(metadata, blob) {
     throw new Error(`Drive upload failed (${response.status}): ${detail}`);
   }
   return response.json();
+}
+
+function ttDriveQueryValue(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+async function ttDriveNamedFolder(name, parentId = "") {
+  const key = `teachToday.driveBackupFolder.${parentId || "root"}.${name}`;
+  const cached = localStorage.getItem(key);
+  if (cached) return cached;
+  const clauses = [
+    "mimeType='application/vnd.google-apps.folder'",
+    `name='${ttDriveQueryValue(name)}'`,
+    "trashed=false"
+  ];
+  if (parentId) clauses.push(`'${ttDriveQueryValue(parentId)}' in parents`);
+  const result = await ttDriveRequest(`files?q=${encodeURIComponent(clauses.join(" and "))}&spaces=drive&fields=files(id,name)&pageSize=1`);
+  let folderId = result.files?.[0]?.id || "";
+  if (!folderId) {
+    const folder = await ttDriveCreateMetadata({
+      name,
+      parents: parentId ? [parentId] : undefined,
+      mimeType: "application/vnd.google-apps.folder"
+    });
+    folderId = folder.id || "";
+  }
+  if (folderId) localStorage.setItem(key, folderId);
+  return folderId;
+}
+
+async function ttDriveUpsertBackup(folderId, name, blob) {
+  const query = [`name='${ttDriveQueryValue(name)}'`, `'${ttDriveQueryValue(folderId)}' in parents`, "trashed=false"].join(" and ");
+  const found = await ttDriveRequest(`files?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id,name,size)&pageSize=1`);
+  const existingId = found.files?.[0]?.id || "";
+  const file = await ttDriveUploadMultipart({
+    name,
+    parents: existingId ? undefined : [folderId],
+    mimeType: "application/json"
+  }, blob, existingId);
+  if (Number(file.size) !== blob.size) throw new Error(`Drive verification failed for ${name}.`);
+  return file;
+}
+
+async function ttSaveIndependentDriveBackup(content, names, revisionId) {
+  const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
+  const daily = await ttDriveNamedFolder("Daily", root);
+  const weekly = await ttDriveNamedFolder("Weekly", root);
+  const blob = new Blob([content], { type: "application/json" });
+  await ttDriveUpsertBackup(daily, names.daily, blob);
+  await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  localStorage.setItem("teachToday.lastIndependentDriveRevision", revisionId);
+  localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
+}
+
+function ttNativeBackupAvailable() {
+  return document.documentElement.dataset.teachTodayNativeBackup === "1"
+    && Boolean(window.webkit?.messageHandlers?.teachTodayBackup);
+}
+
+function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
+  return new Promise((resolve, reject) => {
+    if (!ttNativeBackupAvailable()) {
+      reject(new Error("This Stage app needs one Xcode update before iPad Files backups can run."));
+      return;
+    }
+    const requestId = crypto.randomUUID?.() || `backup-${Date.now()}`;
+    const timeout = setTimeout(() => {
+      window.removeEventListener("teachTodayNativeBackupResult", onResult);
+      reject(new Error("The iPad Files backup did not finish."));
+    }, 20000);
+    function onResult(event) {
+      if (event.detail?.requestId !== requestId) return;
+      clearTimeout(timeout);
+      window.removeEventListener("teachTodayNativeBackupResult", onResult);
+      if (!event.detail.ok) {
+        reject(new Error(event.detail.error || "The iPad Files backup failed."));
+        return;
+      }
+      localStorage.setItem("teachToday.lastIndependentNativeRevision", revisionId);
+      localStorage.setItem("teachToday.lastIndependentNativeAt", new Date().toISOString());
+      resolve(event.detail);
+    }
+    window.addEventListener("teachTodayNativeBackupResult", onResult);
+    window.webkit.messageHandlers.teachTodayBackup.postMessage({
+      requestId,
+      content,
+      sha256: digest,
+      dailyName: names.daily,
+      weeklyName: names.weekly
+    });
+  });
+}
+
+async function ttEnsureIndependentBackups(envelope, options = {}) {
+  if (ttIndependentBackupBusy) return;
+  const revisionId = envelope?.revisionId || ttFirebasePayloadSignature(envelope?.payload || ttFirebasePayload());
+  const needsNative = ttIsNativeIpadShell() && (options.force || localStorage.getItem("teachToday.lastIndependentNativeRevision") !== revisionId);
+  const driveEnabled = localStorage.getItem(ttIndependentBackupEnabledKey) === "true";
+  const needsDrive = driveEnabled && (options.force || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId);
+  if (!needsNative && !needsDrive) return;
+  ttIndependentBackupBusy = true;
+  try {
+    const now = new Date();
+    const names = {
+      daily: `teach-today-daily-${ttBackupDateKey(now)}.json`,
+      weekly: `teach-today-weekly-${ttBackupWeekKey(now)}.json`
+    };
+    const content = JSON.stringify(ttIndependentBackupArtifact(envelope));
+    const digest = await ttSha256Hex(content);
+    const failures = [];
+    const jobs = [];
+    if (needsNative) jobs.push(ttSaveIndependentNativeBackup(content, digest, names, revisionId).catch((error) => failures.push(`iPad Files: ${error.message}`)));
+    if (needsDrive) {
+      if (!ttDriveAccessToken && !options.requestDrivePermission) {
+        failures.push("Google Drive needs permission. Open Records and tap Connect Drive backups.");
+      } else {
+        if (options.requestDrivePermission) await ttEnsureDrivePermission();
+        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+      }
+    }
+    await Promise.all(jobs);
+    if (failures.length) {
+      ttSetIndependentBackupStatus(`Backup needs attention. ${failures.join(" ")}`, { notify: true });
+    } else {
+      const destinations = [needsNative ? "iPad Files" : "", needsDrive ? "Google Drive" : ""].filter(Boolean).join(" and ");
+      ttSetIndependentBackupStatus(`Automatic backup verified in ${destinations}.`, { success: true, notify: options.manual });
+    }
+  } finally {
+    ttIndependentBackupBusy = false;
+  }
+}
+
+async function ttRunIndependentBackup(options = {}) {
+  if (options.connectDrive) localStorage.setItem(ttIndependentBackupEnabledKey, "true");
+  let envelope = null;
+  if (ttFirebaseUser) envelope = await ttFirebaseReadEnvelope();
+  if (!envelope) envelope = { payload: ttFirebasePayload(), revisionId: "" };
+  await ttEnsureIndependentBackups(envelope, { force: true, manual: true, requestDrivePermission: options.connectDrive });
 }
 
 async function ttDriveCreateMetadata(metadata) {
@@ -13009,6 +13210,9 @@ async function ttMarkFirebaseSynced(envelope, reason) {
     timeline.dataset.loadedForUid = "";
     ttLoadFirebaseTimeline({ force: true });
   }
+  ttEnsureIndependentBackups({ ...envelope, payload }).catch((error) => {
+    ttSetIndependentBackupStatus(`Backup needs attention. ${error.message}`, { notify: true });
+  });
 }
 
 async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
@@ -13340,6 +13544,9 @@ async function ttFirebaseSignIn() {
     if (ttDriveAccessToken) {
       localStorage.setItem("teachToday.driveStatus", "Google Drive audio is connected.");
       ttUploadPendingAudioToDrive().catch(() => {});
+      if (localStorage.getItem(ttIndependentBackupEnabledKey) === "true") {
+        ttRunIndependentBackup().catch((error) => ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true }));
+      }
     }
   } catch (err) {
     localStorage.setItem("teachToday.firebaseSyncStatus", `Sign-in failed: ${err.message}`);
@@ -16429,6 +16636,17 @@ function ttBind() {
   ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {
     localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${ttFriendlyDriveError(err)}`);
     ttRenderDataCenter();
+  }));
+  ttById("ttDriveBackupConnect")?.addEventListener("click", async () => {
+    localStorage.setItem(ttIndependentBackupEnabledKey, "true");
+    try {
+      await ttRunIndependentBackup({ connectDrive: true });
+    } catch (error) {
+      ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true });
+    }
+  });
+  ttById("ttIndependentBackupNow")?.addEventListener("click", () => ttRunIndependentBackup({ connectDrive: true }).catch((error) => {
+    ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true });
   }));
   ttById("ttFirebaseLoadProtected")?.addEventListener("click", () => ttLoadProtectedFirebaseCopy());
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());

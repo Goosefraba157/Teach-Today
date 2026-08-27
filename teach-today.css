@@ -5969,6 +5969,33 @@ body.presentation-mode #ttEditSection2Cards {
   background: #ecfdf5;
 }
 
+.backup-status-toast {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 220;
+  max-width: min(360px, calc(100vw - 28px));
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: #fffbeb;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.backup-status-toast[data-tone="success"] {
+  border-color: #5eead4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.backup-status-toast[hidden] {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .firebase-backup-timeline-head,
   .firebase-backup-timeline-entry {

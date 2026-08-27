@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import CryptoKit
 
 private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
     weak var delegate: WKScriptMessageHandler?
@@ -16,6 +17,7 @@ private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
 final class TeacherWebViewController: UIViewController {
     private let messageName = "teachTodayStage"
     private let projectionMessageName = "teachTodayProjectionMode"
+    private let backupMessageName = "teachTodayBackup"
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
     private let errorView = UIView()
@@ -30,7 +32,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "document.documentElement.dataset.teachTodayNative = 'ipad';",
+            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1';",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -38,6 +40,7 @@ final class TeacherWebViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: messageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: projectionMessageName)
+        configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: backupMessageName)
     }
 
     @available(*, unavailable)
@@ -49,6 +52,7 @@ final class TeacherWebViewController: UIViewController {
         mirrorTimer?.invalidate()
         webView.configuration.userContentController.removeScriptMessageHandler(forName: messageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: projectionMessageName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: backupMessageName)
     }
 
     override func viewDidLoad() {
@@ -193,6 +197,97 @@ final class TeacherWebViewController: UIViewController {
             StageCoordinator.shared.displayTeacherSnapshot(image)
         }
     }
+
+    private func saveBackup(_ command: [String: Any]) {
+        let requestId = command["requestId"] as? String ?? ""
+        do {
+            guard !requestId.isEmpty,
+                  let content = command["content"] as? String,
+                  let expectedHash = command["sha256"] as? String,
+                  let dailyName = command["dailyName"] as? String,
+                  let weeklyName = command["weeklyName"] as? String,
+                  let data = content.data(using: .utf8),
+                  !data.isEmpty,
+                  data.count <= 30_000_000
+            else { throw BackupError.invalidRequest }
+
+            guard Self.isAllowedBackupName(dailyName, prefix: "teach-today-daily-"),
+                  Self.isAllowedBackupName(weeklyName, prefix: "teach-today-weekly-")
+            else { throw BackupError.invalidFileName }
+
+            let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            guard object?["kind"] as? String == "TeachTodayBackup",
+                  let appState = object?["appState"] as? [String: Any],
+                  appState["groups"] is [Any]
+            else { throw BackupError.invalidPayload }
+
+            let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            guard digest == expectedHash.lowercased() else { throw BackupError.hashMismatch }
+
+            let documents = try FileManager.default.url(
+                for: .documentDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            let backupRoot = documents.appendingPathComponent("Backups", isDirectory: true)
+            let dailyFolder = backupRoot.appendingPathComponent("Daily", isDirectory: true)
+            let weeklyFolder = backupRoot.appendingPathComponent("Weekly", isDirectory: true)
+            try FileManager.default.createDirectory(at: dailyFolder, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: weeklyFolder, withIntermediateDirectories: true)
+            let dailyURL = dailyFolder.appendingPathComponent(dailyName)
+            let weeklyURL = weeklyFolder.appendingPathComponent(weeklyName)
+            try data.write(to: dailyURL, options: .atomic)
+            try data.write(to: weeklyURL, options: .atomic)
+            guard try Data(contentsOf: dailyURL) == data,
+                  try Data(contentsOf: weeklyURL) == data
+            else { throw BackupError.verificationFailed }
+
+            dispatchBackupResult([
+                "requestId": requestId,
+                "ok": true,
+                "bytes": data.count,
+                "dailyPath": "Backups/Daily/\(dailyName)",
+                "weeklyPath": "Backups/Weekly/\(weeklyName)"
+            ])
+        } catch {
+            dispatchBackupResult([
+                "requestId": requestId,
+                "ok": false,
+                "error": error.localizedDescription
+            ])
+        }
+    }
+
+    private static func isAllowedBackupName(_ name: String, prefix: String) -> Bool {
+        guard name.hasPrefix(prefix), name.hasSuffix(".json"), name.count == prefix.count + 10 + 5 else { return false }
+        let datePart = name.dropFirst(prefix.count).dropLast(5)
+        return datePart.enumerated().allSatisfy { index, character in
+            (index == 4 || index == 7) ? character == "-" : character.isNumber
+        }
+    }
+
+    private func dispatchBackupResult(_ detail: [String: Any]) {
+        guard JSONSerialization.isValidJSONObject(detail),
+              let data = try? JSONSerialization.data(withJSONObject: detail),
+              let json = String(data: data, encoding: .utf8)
+        else { return }
+        webView.evaluateJavaScript("window.dispatchEvent(new CustomEvent('teachTodayNativeBackupResult', {detail: \(json)}));")
+    }
+}
+
+private enum BackupError: LocalizedError {
+    case invalidRequest, invalidFileName, invalidPayload, hashMismatch, verificationFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidRequest: return "The backup request was incomplete."
+        case .invalidFileName: return "The backup file name was not allowed."
+        case .invalidPayload: return "The backup did not contain valid Teach Today data."
+        case .hashMismatch: return "The backup changed before it reached Files."
+        case .verificationFailed: return "The saved Files backup could not be verified."
+        }
+    }
 }
 
 extension TeacherWebViewController: WKNavigationDelegate {
@@ -232,6 +327,12 @@ extension TeacherWebViewController: WKScriptMessageHandler {
            let command = message.body as? [String: Any],
            let mode = command["mode"] as? String {
             setExternalProjectionMode(mode == "mirror" ? .mirror : .stage)
+            return
+        }
+
+        if message.name == backupMessageName,
+           let command = message.body as? [String: Any] {
+            saveBackup(command)
         }
     }
 }

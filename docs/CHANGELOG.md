@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-27
 
+- Added automatic independent recovery copies of each newly confirmed Firebase revision to Google Drive and native iPad Files, with daily and weekly dated filenames.
+- Added native payload validation, atomic writes, SHA-256/readback verification, Drive byte-size verification, and a small non-blocking failure notice with persistent Records status. The backup path does not restore, merge, delete, or modify Firebase data, and retention pruning remains disabled for the initial safety rollout.
 - Added a repository-wide fast recovery runbook for Codex, Claude, and future maintainers: use the teacher's selected downloaded checkpoint before searching Firebase, stop writes, preserve the current cloud copy, preview stable-ID differences, and recover additively only.
 - Documented practical backup sizing: approximately 3-5 MB per human-readable daily checkpoint at the current database size, with 1-2 GB recommended for a cumulative school-year archive; audio remains separate.
 - Added an automatic private Cloud backup timeline to Records & Data. Successful changed-data Firebase saves now index their immutable revisions into six four-hour recovery windows per day, giving a year-scale history without duplicating full student payloads.

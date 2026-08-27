@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260827-backup-timeline-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260827-independent-backups-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -236,6 +236,8 @@
           <button id="ttDownloadRecoveryBundle" type="button" hidden>Download all recoveries</button>
           <button id="ttConnectCloudSync" type="button">Choose local folder</button>
           <button id="ttSyncCloudNow" type="button">Save local file now</button>
+          <button id="ttIndependentBackupNow" type="button">Back up today</button>
+          <button id="ttDriveBackupConnect" type="button">Connect Drive backups</button>
           <button id="ttDriveConnect" type="button">Google Drive audio</button>
           <button id="ttFirebaseLoadProtected" type="button">Load protected Firebase copy</button>
           <button id="ttFirebaseSyncNow" type="button">Upload / merge with Firebase now</button>
@@ -247,6 +249,7 @@
         <input id="ttHistoricalWrsFile" type="file" accept="application/json,.json" hidden>
         <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
         <p id="ttDriveSyncStatus" class="data-note">Google Drive audio is ready for setup.</p>
+        <p id="ttIndependentBackupStatus" class="data-note">Independent daily backups are ready for setup.</p>
         <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
         <section class="firebase-backup-timeline" aria-labelledby="ttFirebaseTimelineTitle">
           <div class="firebase-backup-timeline-head">
@@ -262,6 +265,8 @@
         </section>
       </section>
     </header>
+
+    <div id="ttBackupToast" class="backup-status-toast" role="status" aria-live="polite" hidden></div>
 
     <section id="ttConnectionNotice" class="connection-notice" hidden>
       <div>
@@ -1110,7 +1115,7 @@
     <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260827-backup-timeline-1"></script>
+    <script src="teach-today.js?v=20260827-independent-backups-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

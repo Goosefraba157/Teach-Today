@@ -14,6 +14,10 @@ For patch testing, open `DeveloperDashboard.html` and unlock creator mode. The m
 
 For student-data checks, open `DeveloperDataDiagnostic.html` from the developer dashboard. It compares one student across the teacher master state (`dyslexiaInstructionEngine.v2`), student home session (`tt_student_v1`), lesson progress keys (`teachToday.studentLessonProgress.v1.<studentId>`), the Game Hub ledger (`teachTodayGameHub.v1`), standalone 2.1 drill stores, student activity outbox, game-specific stores, and backup/sync status flags. New stores should be added to `developer-data-diagnostic.js` in the store summary and student report builders so future patches stay auditable.
 
+## Fast backup recovery
+
+Use the newest `teach-today-daily-YYYY-MM-DD.json` from Google Drive -> Teach Today Backups -> Daily or iPad Files -> On My iPad -> Teach Today Stage -> Backups -> Daily. Stop edits on every device, preserve the current Firebase revision, compare stable IDs and counts, and recover additively. Never replace newer valid data with an older whole-app file, and do not broadly search Firebase when the teacher has supplied a dated checkpoint.
+
 ## What it does
 
 - Stores groups, students, current substep, trouble spots, teacher notes, and past plans in the browser.
