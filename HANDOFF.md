@@ -41,6 +41,14 @@
 - `private-input/` contents are ignored by Git except for its README.
 - Extract only the necessary fields, preview matches/counts, write only to the authorized private destination, and never commit source student records.
 
+## Fast Recovery Runbook
+- Lowest-token path: ask the teacher for the dated `teach-today-cloud-recovery-*.json` downloaded from Records -> Cloud backup timeline. A dated local-folder `teach-today-backup-*.json` is the fallback. Do not scan Firebase history first when either complete file is available.
+- Immediately stop writes across devices. Do not use Upload / merge, Restore backup, sign-out, storage clearing, or continued editing while recovery is being assessed.
+- Preserve the current Firebase main payload as a new immutable recovery revision before any change; verify the main pointer is unchanged; compare stable IDs and count previews; then add back only missing data. Never overwrite newer valid data with an older whole-app snapshot.
+- If no file exists, use the teacher-selected timeline date/time to fetch that specific immutable Firebase revision. Broad revision searching is the last resort.
+- Copy/paste request: `Teach Today recovery. Use the attached checkpoint from [date and time] as the last known good copy. Preserve the current Firebase copy first. Perform an additive recovery only. Do not delete or overwrite newer valid records.`
+- Current size planning: the recovered shared payload uses seven 350 KB Firebase chunks, so its compact JSON is about 2.1-2.45 MB. Pretty-printed downloaded backups are expected to be roughly 3-5 MB now and grow cumulatively; allow about 1-2 GB for one backup per teaching day across a school year. Audio files are separate and not included in this estimate.
+
 ## Current Baseline (as of 2026-06-08 Codex session)
 - **Student display** — manual privacy/poster/HFW/chart/passage/game modes plus Follow Lesson and student-safe Section 6 sound reference, Section 7 magnetic journal, and Section 8 dictation paper
 - **PDF reference page** — Wilson Readers and Dictation books with dashboard links to current reader/charting and dictation pages

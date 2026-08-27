@@ -49,3 +49,15 @@ Do not place secrets or student-identifying information in any memory document.
 - GitHub Pages publication and Firebase rules deployment are separate operations.
 - For the current privacy rollout: publish application code, run and verify the signed-in legacy ownership migration, and only then deploy strict Firebase rules.
 
+## Fast recovery rule
+
+When the teacher reports missing or conflicting Teach Today data, use the lowest-token recovery path first:
+
+1. Stop writes: tell the teacher not to press Upload / merge, Restore backup, sign out, clear app data, or continue editing on another device.
+2. Ask for the downloaded `teach-today-cloud-recovery-*.json` checkpoint from **Records -> Cloud backup timeline**, preferably the newest checkpoint from before the loss. A dated local-folder `teach-today-backup-*.json` is the second choice.
+3. Do not begin by scanning every Firebase revision when either file is available. The checkpoint is a complete self-contained recovery package.
+4. Before any cloud write, preserve the current Firebase main payload as a new immutable recovery revision and verify that the live pointer has not changed.
+5. Compare by stable group, lesson, student, and record IDs; preview counts; then perform an additive merge only. Never restore an older whole-app snapshot over newer valid records, delete unmatched data, or overwrite an existing revision.
+6. If no downloaded file exists, use the app's Cloud backup timeline date/time to retrieve that specific immutable revision directly. Search broadly only when the selected revision is unavailable or corrupt.
+
+Recommended teacher prompt: `Teach Today recovery. Use the attached checkpoint from [date and time] as the last known good copy. Preserve the current Firebase copy first. Perform an additive recovery only. Do not delete or overwrite newer valid records.`

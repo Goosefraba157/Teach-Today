@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-27
 
+- Added a repository-wide fast recovery runbook for Codex, Claude, and future maintainers: use the teacher's selected downloaded checkpoint before searching Firebase, stop writes, preserve the current cloud copy, preview stable-ID differences, and recover additively only.
+- Documented practical backup sizing: approximately 3-5 MB per human-readable daily checkpoint at the current database size, with 1-2 GB recommended for a cumulative school-year archive; audio remains separate.
 - Added an automatic private Cloud backup timeline to Records & Data. Successful changed-data Firebase saves now index their immutable revisions into six four-hour recovery windows per day, giving a year-scale history without duplicating full student payloads.
 - Added read-only checkpoint downloads with date, size, reason, and record/lesson counts for new revisions. Viewing or downloading the timeline cannot restore, merge, overwrite, or delete live data.
 - Added a native Stage safety gate and a read-only `Load protected Firebase copy` path so a stale Stage copy cannot automatically upload over a recovered cloud copy; deliberate upload/merge remains separately labeled.
