@@ -1849,7 +1849,7 @@ function fillChartBoard(container, words, section) {
       <div class="score-toggle">
         <button type="button" class="score-one active ok">OK</button>
       </div>
-      <input class="said-input" type="text" placeholder="said...">
+      <input class="said-input" type="text" placeholder="said..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
     `;
     item.querySelector(".score-one").addEventListener("click", () => setWordScore(item, item.dataset.correct !== "true"));
     item.querySelector(".said-input").addEventListener("input", (event) => {

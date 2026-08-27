@@ -4,6 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-26
 
+- Disabled autocorrect, spellcheck, and automatic capitalization only on Section 4 `said...` response fields so iPad keyboard and stylus transcriptions remain verbatim without changing charting behavior.
 - Added a charting school-year selector to Student Profile. Charting summaries, metrics, trends, sheets, recordings, comparisons, and record tables default to the active July-June school year while prior years remain available deliberately.
 - Added a toggleable Charting History panel beside Section 4's purple controls. It can show prior records for any student currently in the group and switch school years without changing the active live-charting student or modifying saved data.
 - Classified dated charting records by their actual session date before fallback metadata, preventing older sessions from being mixed into the current year after a school-year metadata backfill. No charting, student, lesson, or sync data was migrated or rewritten.
