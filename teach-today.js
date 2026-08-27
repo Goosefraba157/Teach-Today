@@ -14531,6 +14531,130 @@ function threeNonsenseWords(substep, level) {
   return [...new Set(candidates)].filter(isUsableReaderWord).slice(0, 3);
 }
 
+function ttAcademicSchoolYearId(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const startYear = date.getMonth() >= 6 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+function ttSchoolYearForChartRecord(record) {
+  const datedYear = ttAcademicSchoolYearId(record?.date || record?.displayDate);
+  if (datedYear) return datedYear;
+  if (record?.schoolYearId) return record.schoolYearId;
+  const groupId = record?.groupIdAtTime || record?.groupId || "";
+  const linkedGroup = (appState.groups || []).find((group) => group.id === groupId);
+  if (linkedGroup?.schoolYearId) return linkedGroup.schoolYearId;
+  return appState.activeSchoolYearId
+    || ttAcademicSchoolYearId();
+}
+
+function ttSection4StudentRecords(student, group = ttActiveGroup()) {
+  const studentId = group.studentIds?.[student]
+    || (appState.rosterStudents || []).find((item) => (item.name || item.displayName || item.fullName) === student)?.studentId
+    || "";
+  return (appState.masterRecords || []).filter((record) => {
+    const identityMatch = studentId
+      ? record.studentId === studentId || (!record.studentId && record.student === student)
+      : record.student === student;
+    const isCharting = record.type !== "soundsDrill"
+      && (record.correct !== undefined || record.wordlistPage || record.chartHalf);
+    return identityMatch && isCharting;
+  });
+}
+
+function ttSection4HistoryYears(records) {
+  const ids = new Set((appState.schoolYears || []).map((year) => year.id).filter(Boolean));
+  records.forEach((record) => {
+    const id = ttSchoolYearForChartRecord(record);
+    if (id) ids.add(id);
+  });
+  ids.add(appState.activeSchoolYearId || ttAcademicSchoolYearId());
+  return [...ids].sort((a, b) => b.localeCompare(a));
+}
+
+function ttSection4HistoryWcpm(record) {
+  if (record.wcpm) return Number(record.wcpm) || 0;
+  const seconds = Number(record.seconds || 0);
+  return seconds ? Math.round((Number(record.correct || 0) / seconds) * 60) : 0;
+}
+
+function ttRenderSection4History() {
+  const panel = ttById("ttSection4History");
+  if (!panel) return;
+  const group = ttActiveGroup();
+  const students = group.students || [];
+  const selectedStudent = students.includes(panel.dataset.student)
+    ? panel.dataset.student
+    : group.activeStudent || students[0] || "";
+  panel.dataset.student = selectedStudent;
+  const allRecords = ttSection4StudentRecords(selectedStudent, group);
+  const years = ttSection4HistoryYears(allRecords);
+  const currentYear = appState.activeSchoolYearId || ttAcademicSchoolYearId();
+  const selectedYear = years.includes(panel.dataset.schoolYear)
+    ? panel.dataset.schoolYear
+    : currentYear;
+  panel.dataset.schoolYear = selectedYear;
+  const labels = new Map((appState.schoolYears || []).map((year) => [year.id, year.label || year.id]));
+  const records = allRecords
+    .filter((record) => ttSchoolYearForChartRecord(record) === selectedYear)
+    .sort((a, b) => ttRecordTime(b) - ttRecordTime(a));
+  const rows = records.map((record) => {
+    const wrong = record.wrongCount ?? Math.max(Number(record.total || 15) - Number(record.correct || 0), 0);
+    return `<tr>
+      <td>${escapeHtml(record.displayDate || (record.date ? new Date(record.date).toLocaleDateString() : "--"))}</td>
+      <td>${escapeHtml(record.substep || "--")}</td>
+      <td>Reader ${escapeHtml(record.reader || "--")}, p. ${escapeHtml(record.wordlistPage || "--")}</td>
+      <td>${escapeHtml(titleCase(record.chartHalf || "--"))}</td>
+      <td><strong>${escapeHtml(record.correct ?? "--")}/${escapeHtml(record.total || 15)}</strong></td>
+      <td>${escapeHtml(wrong)}</td>
+      <td>${escapeHtml(record.seconds || "--")}</td>
+      <td>${escapeHtml(ttSection4HistoryWcpm(record) || "--")}</td>
+      <td>${escapeHtml((record.wrongWords || []).join(", ") || "none")}</td>
+      <td>${escapeHtml(record.notes || "")}</td>
+    </tr>`;
+  }).join("");
+  panel.innerHTML = `
+    <div class="section4-history-head">
+      <div><h3>Previous charting</h3><p>${escapeHtml(selectedYear)} · ${records.length} saved record${records.length === 1 ? "" : "s"}</p></div>
+      <div class="section4-history-controls">
+        <label for="ttSection4HistoryYear">School year</label>
+        <select id="ttSection4HistoryYear">${years.map((id) => `<option value="${escapeHtml(id)}">${escapeHtml(labels.get(id) || id)}${id === currentYear ? " (Current)" : ""}</option>`).join("")}</select>
+      </div>
+    </div>
+    <div class="section4-history-students" aria-label="Choose a student">${students.map((student) => `<button type="button" class="${student === selectedStudent ? "active" : ""}" data-history-student="${escapeHtml(student)}">${escapeHtml(student)}</button>`).join("")}</div>
+    ${records.length ? `<div class="section4-history-table-wrap"><table>
+      <thead><tr><th>Date</th><th>Substep</th><th>Page</th><th>Half</th><th>Correct</th><th>Wrong</th><th>sec/15w</th><th>WCPM</th><th>Wrong words</th><th>Notes</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : `<p class="section4-history-empty">No charting records are saved for ${escapeHtml(selectedStudent || "this student")} in ${escapeHtml(selectedYear)}.</p>`}
+  `;
+  const yearSelect = ttById("ttSection4HistoryYear");
+  if (yearSelect) {
+    yearSelect.value = selectedYear;
+    yearSelect.addEventListener("change", () => {
+      panel.dataset.schoolYear = yearSelect.value;
+      ttRenderSection4History();
+    });
+  }
+  panel.querySelectorAll("[data-history-student]").forEach((button) => {
+    button.addEventListener("click", () => {
+      panel.dataset.student = button.dataset.historyStudent;
+      ttRenderSection4History();
+    });
+  });
+}
+
+function ttToggleSection4History() {
+  const panel = ttById("ttSection4History");
+  const button = ttById("ttSection4HistoryToggle");
+  if (!panel || !button) return;
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+  button.textContent = panel.hidden ? "Charting history" : "Hide history";
+  if (!panel.hidden) ttRenderSection4History();
+}
+
 function ttSetupChart(lesson) {
   const group = ttActiveGroup();
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
@@ -14547,6 +14671,7 @@ function ttSetupChart(lesson) {
   fillChartBoard(card.querySelector(".chart-bottom"), lesson.nonsenseWords || [], "bottom");
   ttRenderChartIntegrity(lesson);
   ttFillStudentPills(group);
+  if (!ttById("ttSection4History")?.hidden) ttRenderSection4History();
   syncChartHalfUi(card);
   updateLiveScore(card);
   ttRenderSection4StagePreview(ttSection4StagePayload());
@@ -16105,6 +16230,7 @@ function ttBind() {
     button.addEventListener("click", () => ttRefreshSection(button.dataset.refreshSection));
   });
   ttById("ttProjectSection4")?.addEventListener("click", () => ttProjectSection4());
+  ttById("ttSection4HistoryToggle")?.addEventListener("click", () => ttToggleSection4History());
   ttById("ttSection4PreviewToggle")?.addEventListener("click", () => ttToggleSection4StagePreview());
   ttById("ttRecheckCharting")?.addEventListener("click", () => ttRecheckSection4Words());
   ttById("ttCardPrev").addEventListener("click", () => ttShowCard(ttCardIndex - 1));

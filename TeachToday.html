@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260827-attendance-ux-4">
+    <link rel="stylesheet" href="teach-today.css?v=20260827-charting-history-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -698,6 +698,7 @@
         <div class="section-head section-head-with-actions">
           <div><span>4</span><h2>Wordlist Charting</h2></div>
           <div class="section-action-row">
+            <button id="ttSection4HistoryToggle" class="section-refresh section4-history-toggle" type="button" aria-expanded="false" aria-controls="ttSection4History" title="Show prior charting for students in this group">Charting history</button>
             <button id="ttProjectSection4" class="section-refresh secondary" type="button" title="Open the clean student chart stage">Project chart</button>
             <button id="ttSection4PreviewToggle" class="section-refresh secondary" type="button" title="Mark the projected chart from this screen">Mark stage</button>
             <button id="ttRecheckCharting" class="section-refresh secondary" type="button" title="Rebuild Section 4 from the selected Reader page">Recheck page</button>
@@ -709,6 +710,7 @@
         <div id="ttSection4StagePreview" class="section4-stage-preview" hidden>
           <iframe id="ttSection4StageFrame" title="Section 4 student stage preview"></iframe>
         </div>
+        <div id="ttSection4History" class="section4-history" hidden></div>
         <div class="live-strip">
           <div>
             <p class="mini-label">Active student</p>
@@ -1091,7 +1093,7 @@
     <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260827-attendance-ux-4"></script>
+    <script src="teach-today.js?v=20260827-charting-history-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js"></script>

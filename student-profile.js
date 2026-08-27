@@ -16,6 +16,7 @@ let profileFirebaseSdkPromise = null;
 let profileDriveAccessToken = "";
 let comparisonScope = "group";
 let profileView = "teacher";
+let profileSchoolYearId = "";
 let studentAppLoadToken = 0;
 let studentAppPortalProfile = null;
 let studentAppActivityById = new Map();
@@ -231,7 +232,7 @@ function studentActivityBadges(activity) {
 
 async function renderStudentAppView() {
   const token = ++studentAppLoadToken;
-  const { group, student, records } = selectedContext();
+  const { group, student, activityRecords } = selectedContext();
   const connection = byId("studentAppConnection");
   const activityContainer = byId("studentAppActivity");
   connection.className = "";
@@ -252,7 +253,7 @@ async function renderStudentAppView() {
   if (token !== studentAppLoadToken) return;
   studentAppPortalProfile = portalProfile;
   importStudentActivityIntoTeacherRecords(remoteActivity, student, group);
-  const activity = mergeStudentActivity(localStudentAppActivity(records), remoteActivity);
+  const activity = mergeStudentActivity(localStudentAppActivity(activityRecords), remoteActivity);
   studentAppActivityById = new Map(activity.map((item) => [item.id, item]));
 
   if (portalProfile) {
@@ -368,6 +369,67 @@ function studentNameFromPrivateId(data, group, studentId) {
   return Object.entries(group?.studentIds || {}).find(([, id]) => id === studentId)?.[0] || "";
 }
 
+function isChartingRecord(record) {
+  return record?.type !== "soundsDrill"
+    && (record?.correct !== undefined || record?.wordlistPage || record?.chartHalf);
+}
+
+function academicSchoolYearId(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const startYear = date.getMonth() >= 6 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+function schoolYearForRecord(data, record) {
+  const datedYear = academicSchoolYearId(record?.date || record?.displayDate);
+  if (datedYear) return datedYear;
+  if (record?.schoolYearId) return record.schoolYearId;
+  const groupId = record?.groupIdAtTime || record?.groupId || "";
+  const linkedGroup = (data.groups || []).find((item) => item.id === groupId);
+  if (linkedGroup?.schoolYearId) return linkedGroup.schoolYearId;
+  return academicSchoolYearId(record?.date || record?.displayDate) || data.activeSchoolYearId || academicSchoolYearId();
+}
+
+function profileSchoolYears(data, records = []) {
+  const ids = new Set((data.schoolYears || []).map((year) => year.id).filter(Boolean));
+  (data.groups || []).forEach((group) => {
+    if (group.schoolYearId) ids.add(group.schoolYearId);
+  });
+  records.forEach((record) => {
+    const id = schoolYearForRecord(data, record);
+    if (id) ids.add(id);
+  });
+  ids.add(data.activeSchoolYearId || academicSchoolYearId());
+  return [...ids].sort((a, b) => b.localeCompare(a));
+}
+
+function selectedProfileSchoolYear(data, records = []) {
+  const available = profileSchoolYears(data, records);
+  const preferred = data.activeSchoolYearId || academicSchoolYearId();
+  if (!profileSchoolYearId || !available.includes(profileSchoolYearId)) {
+    profileSchoolYearId = available.includes(preferred) ? preferred : available[0] || preferred;
+  }
+  return profileSchoolYearId;
+}
+
+function renderProfileSchoolYearSelector(data, records) {
+  const select = byId("profileSchoolYear");
+  if (!select) return;
+  const selected = selectedProfileSchoolYear(data, records);
+  const current = data.activeSchoolYearId || academicSchoolYearId();
+  const labels = new Map((data.schoolYears || []).map((year) => [year.id, year.label || year.id]));
+  select.innerHTML = profileSchoolYears(data, records).map((id) =>
+    `<option value="${escapeHtml(id)}">${escapeHtml(labels.get(id) || id)}${id === current ? " (Current)" : ""}</option>`
+  ).join("");
+  select.value = selected;
+  select.onchange = () => {
+    profileSchoolYearId = select.value;
+    render();
+  };
+}
+
 function selectedContext() {
   const data = state();
   const query = params();
@@ -385,18 +447,24 @@ function selectedContext() {
     ? (data.groups || []).find((item) => (item.students || []).includes(student)) || group
     : group;
   const resolvedStudentId = studentId || privateStudentId(data, profileGroup, student);
-  const records = (data.masterRecords || []).filter((record) => {
-    const identityMatch = resolvedStudentId ? record.studentId === resolvedStudentId : record.student === student;
-    return identityMatch && (!profileGroup.id || record.groupId === profileGroup.id || record.group === profileGroup.name
-      || record.historicalBaseline || (record.type === "soundsDrill" && !record.groupId && !record.group));
+  const allRecords = (data.masterRecords || []).filter((record) => {
+    const identityMatch = resolvedStudentId
+      ? record.studentId === resolvedStudentId || (!record.studentId && record.student === student)
+      : record.student === student;
+    return identityMatch;
   });
+  const allChartRecords = allRecords.filter(isChartingRecord);
+  const schoolYearId = selectedProfileSchoolYear(data, allChartRecords);
+  const activityRecords = allRecords.filter((record) => schoolYearForRecord(data, record) === schoolYearId);
+  const records = activityRecords.filter(isChartingRecord);
   const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
   const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
-  return { data, group: profileGroup, student, studentId: studentId || privateStudentId(data, profileGroup, student), records, dictationMisses, encodingObservations };
+  return { data, group: profileGroup, student, studentId: studentId || privateStudentId(data, profileGroup, student), records, allRecords: allChartRecords, activityRecords, schoolYearId, dictationMisses, encodingObservations };
 }
 
 function render() {
-  const { data, group, student, records, dictationMisses, encodingObservations } = selectedContext();
+  const { data, group, student, records, allRecords, activityRecords, schoolYearId, dictationMisses, encodingObservations } = selectedContext();
+  renderProfileSchoolYearSelector(data, allRecords);
   const recent = records.slice(-5);
   const status = performanceStatus(records);
   const last = records.at(-1);
@@ -407,7 +475,7 @@ function render() {
   const studentLessons = lessonsForStudent(data, group, student, records, dictationMisses.concat(encodingObservations));
 
   byId("studentName").textContent = student || "No student selected";
-  byId("studentMeta").textContent = `${group.name || "No group"} - ${records.length} charting record${records.length === 1 ? "" : "s"} - ${dictationMisses.length} dictation miss${dictationMisses.length === 1 ? "" : "es"}`;
+  byId("studentMeta").textContent = `${group.name || "No group"} - ${schoolYearId} - ${records.length} charting record${records.length === 1 ? "" : "s"} - ${dictationMisses.length} dictation miss${dictationMisses.length === 1 ? "" : "es"}`;
   byId("statusDot").className = `status-dot ${status.color}`;
   byId("statusLabel").textContent = status.label;
   byId("nextRecommendation").textContent = last?.recommendation || "Save charting records to generate next-step recommendations.";
@@ -452,7 +520,7 @@ function render() {
   renderRows(records);
   renderDictationRows(dictationMisses);
   renderRecordingsSection(records.filter((record) => record.type !== "soundsDrill"));
-  renderSoundsDrillSection(records);
+  renderSoundsDrillSection(activityRecords);
 }
 
 function dateKeyLocal(value) {
@@ -664,8 +732,12 @@ function renderProfileStudentButtons(data, group, activeStudent) {
 function recordsForStudent(data, student, group, scope = comparisonScope) {
   const studentId = privateStudentId(data, group, student);
   return (data.masterRecords || []).filter((record) => {
-    const identityMatch = studentId ? record.studentId === studentId : record.student === student;
-    return identityMatch && (scope === "all" || record.groupId === group.id || record.group === group.name || record.historicalBaseline);
+    const identityMatch = studentId
+      ? record.studentId === studentId || (!record.studentId && record.student === student)
+      : record.student === student;
+    const groupMatch = scope === "all" || record.groupId === group.id || record.group === group.name || record.historicalBaseline;
+    return identityMatch && groupMatch && isChartingRecord(record)
+      && schoolYearForRecord(data, record) === selectedProfileSchoolYear(data);
   });
 }
 

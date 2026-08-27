@@ -4,6 +4,9 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-26
 
+- Added a charting school-year selector to Student Profile. Charting summaries, metrics, trends, sheets, recordings, comparisons, and record tables default to the active July-June school year while prior years remain available deliberately.
+- Added a toggleable Charting History panel beside Section 4's purple controls. It can show prior records for any student currently in the group and switch school years without changing the active live-charting student or modifying saved data.
+- Classified dated charting records by their actual session date before fallback metadata, preventing older sessions from being mixed into the current year after a school-year metadata backfill. No charting, student, lesson, or sync data was migrated or rewritten.
 - Replaced inferred/default-present attendance with explicit confirmed daily sessions. A persistent, gently pulsing lesson reminder allows one-tap all-present marking, individual present/absent confirmation, or an explicit no-session dismissal without blocking lesson preparation.
 - Allowed one attendance date to reference the same lesson across any combination of Day 1 and Day 2 portions; switching lesson portions after confirmation updates the same session rather than creating duplicate attendance.
 - Added prior-date attendance editing from both the lesson attendance controls and student calendar, including lesson selection, local dates, optional notes, stable private student-ID mappings, and an audit snapshot for corrections.

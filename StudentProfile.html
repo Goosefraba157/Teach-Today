@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=student-app-sync-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260827-charting-history-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -58,6 +58,15 @@
         <button id="teacherDataTab" class="active" type="button">Teacher data</button>
         <button id="studentAppTab" type="button">Student app</button>
       </nav>
+
+      <section class="profile-card charting-year-card" id="chartingYearCard">
+        <div>
+          <strong>Charting school year</strong>
+          <span>Charting summaries, trends, sheets, recordings, and records stay within this year.</span>
+        </div>
+        <label for="profileSchoolYear">School year</label>
+        <select id="profileSchoolYear"></select>
+      </section>
 
       <section class="profile-card student-app-view" id="studentAppView" hidden>
         <div class="student-app-view-head">
@@ -336,7 +345,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260827-confirmed-attendance-1"></script>
+    <script src="student-profile.js?v=20260827-charting-history-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

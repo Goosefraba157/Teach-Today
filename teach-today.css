@@ -6185,6 +6185,128 @@ body.presentation-mode #ttEditSection2Cards {
   color: var(--teal);
 }
 
+.section4-history-toggle {
+  border-color: #c4b5fd;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+#section4 .section4-history-toggle[aria-expanded="true"] {
+  border-color: #7c3aed;
+  background: #7c3aed;
+  color: #fff;
+}
+
+.section4-history {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+  border: 1px solid #c4b5fd;
+  border-radius: 12px;
+  padding: 12px;
+  background: #faf5ff;
+}
+
+.section4-history[hidden] {
+  display: none;
+}
+
+.section4-history-head,
+.section4-history-controls,
+.section4-history-students {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.section4-history-head {
+  justify-content: space-between;
+}
+
+.section4-history-head h3,
+.section4-history-head p {
+  margin: 0;
+}
+
+.section4-history-head h3 {
+  color: #4c1d95;
+  font-size: 16px;
+}
+
+.section4-history-head p,
+.section4-history-empty {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.section4-history-controls label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.section4-history-controls select {
+  min-height: 32px;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  padding: 5px 9px;
+  background: #fff;
+  color: #4c1d95;
+  font-weight: 900;
+}
+
+.section4-history-students button {
+  min-height: 30px;
+  border: 1px solid #c4b5fd;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #fff;
+  color: #5b21b6;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.section4-history-students button.active {
+  border-color: #7c3aed;
+  background: #7c3aed;
+  color: #fff;
+}
+
+.section4-history-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #ddd6fe;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.section4-history table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.section4-history th,
+.section4-history td {
+  border-bottom: 1px solid #ede9fe;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.section4-history th {
+  background: #f5f3ff;
+  color: #4c1d95;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.section4-history tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .chart-integrity {
   margin: -3px 0 8px;
   border: 1px solid #bbf7d0;

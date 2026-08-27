@@ -138,6 +138,49 @@ button:hover:not(:disabled) {
   gap: 7px;
 }
 
+.profile-card.charting-year-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(170px, auto);
+  align-items: center;
+  gap: 12px;
+  border-color: #ddd6fe;
+  background: #faf5ff;
+}
+
+.charting-year-card > div {
+  display: grid;
+  gap: 2px;
+}
+
+.charting-year-card strong {
+  color: #5b21b6;
+  font-size: 15px;
+}
+
+.charting-year-card span,
+.charting-year-card label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.charting-year-card select {
+  min-height: 36px;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #4c1d95;
+  font: inherit;
+  font-weight: 900;
+}
+
+@media (max-width: 640px) {
+  .charting-year-card {
+    grid-template-columns: 1fr;
+  }
+}
+
 .comparison-card {
   border-color: #bfdbfe;
 }
