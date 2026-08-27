@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260827-charting-history-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260827-section4-timer-dock-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -717,17 +717,6 @@
             <div id="ttStudentPills" class="live-student-pills"></div>
           </div>
           <div>
-            <p class="mini-label">Timer</p>
-            <div class="timer-actions">
-              <strong class="live-timer">0 sec</strong>
-              <span class="recording-status">Ready</span>
-              <button class="start-timer" type="button">Start</button>
-              <button class="pause-timer" type="button">Pause</button>
-              <button class="stop-timer" type="button">Stop</button>
-              <button class="mic-toggle" type="button">Mic</button>
-            </div>
-          </div>
-          <div>
             <p class="mini-label">Charting half</p>
             <div class="half-toggle-row">
               <button class="half-toggle" data-half="top" type="button">Top</button>
@@ -739,10 +728,24 @@
           <div class="chart-section" data-half-section="top">
             <p class="mini-label">Top half</p>
             <div class="chart-board chart-top"></div>
+            <div class="chart-timer-slot" data-timer-slot="top"></div>
           </div>
           <div class="chart-section active-chart-section" data-half-section="bottom">
             <p class="mini-label">Bottom half - scoring this half</p>
             <div class="chart-board chart-bottom"></div>
+            <div class="chart-timer-slot" data-timer-slot="bottom">
+              <div id="ttChartTimerDock" class="chart-timer-dock">
+                <p class="mini-label chart-timer-title">Bottom half timer</p>
+                <div class="timer-actions">
+                  <strong class="live-timer">0 sec</strong>
+                  <span class="recording-status">Ready</span>
+                  <button class="start-timer" type="button">Start</button>
+                  <button class="pause-timer" type="button">Pause</button>
+                  <button class="stop-timer" type="button">Stop</button>
+                  <button class="mic-toggle" type="button">Mic</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <label class="notes-label">
@@ -1089,7 +1092,7 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=20260827-section4-no-autocorrect-1"></script>
+    <script src="app.js?v=20260827-section4-timer-dock-1"></script>
     <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>

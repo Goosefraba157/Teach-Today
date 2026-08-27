@@ -2,6 +2,11 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-27
+
+- Moved Section 4's single timer dock beneath the selected Top or Bottom charting board so the timing controls stay close to the words being scored.
+- Preserved one uninterrupted timer when the teacher switches halves or works in the notes area; no performance-linked color or student-facing signal was added.
+
 ## 2026-08-26
 
 - Disabled autocorrect, spellcheck, and automatic capitalization only on Section 4 `said...` response fields so iPad keyboard and stylus transcriptions remain verbatim without changing charting behavior.

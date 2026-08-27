@@ -69,6 +69,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 ## Live charting records
 
 - **Current-lesson status:** Section 4 student pills indicate only whether charting has been saved for the current lesson. Longitudinal performance colors belong in private records/profile views, not the live student selector.
+- **Timer placement:** Section 4 uses one timer dock beneath whichever Top or Bottom charting board is selected. Switching halves moves the same running controls without pausing or resetting elapsed time, and the timer must not use performance-linked color changes that could cue a nearby student.
 - **Save safety:** Meaningful Section 4 charting is finalized when the teacher presses Stop, changes students, navigates away, or scrolls out of the section. Manual Save remains available, and blank untouched charting must not create a record merely because the teacher scrolls past it.
 - **Verbatim response entry:** Section 4's `said...` fields disable browser autocorrect, spellcheck, and automatic capitalization so keyboard or stylus handwriting preserves the teacher's phonetic transcription. The restriction applies only to those response fields and does not change scoring, handwriting input, or saved-record behavior.
 

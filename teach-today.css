@@ -8134,6 +8134,7 @@ body.section4-stage-preview-open .teach-flow {
   position: sticky;
   top: 78px;
   z-index: 6;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
 }
 
 .chart-card .chart-halves {
@@ -8153,6 +8154,42 @@ body.section4-stage-preview-open .teach-flow {
 .chart-section.active-chart-section {
   border-color: var(--teal);
   background: #f0fdfa;
+}
+
+.chart-timer-slot:empty {
+  display: none;
+}
+
+.chart-timer-dock {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(76, 29, 149, 0.08);
+}
+
+.chart-timer-dock .chart-timer-title {
+  margin: 0;
+  color: #4c1d95;
+}
+
+.chart-timer-dock .timer-actions {
+  justify-content: center;
+}
+
+.chart-timer-dock .live-timer {
+  min-width: 56px;
+  color: var(--teal);
+  font-size: 18px;
+  text-align: center;
+}
+
+.chart-timer-dock .timer-actions button {
+  min-height: 36px;
+  padding: 6px 14px;
 }
 
 .chart-board {
@@ -8787,6 +8824,10 @@ body.section4-stage-preview-open .teach-flow {
 }
 
 @media (max-width: 759px) {
+  .chart-card .live-strip {
+    grid-template-columns: 1fr;
+  }
+
   #section9 {
     width: calc(100vw - 16px);
   }

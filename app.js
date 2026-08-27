@@ -1957,6 +1957,11 @@ function syncChartHalfUi(card) {
   card.querySelectorAll(".chart-section").forEach((section) => {
     section.classList.toggle("active-chart-section", section.dataset.halfSection === activeHalf);
   });
+  const timerDock = card.querySelector("#ttChartTimerDock");
+  const timerSlot = card.querySelector(`[data-timer-slot="${activeHalf}"]`);
+  if (timerDock && timerSlot && timerDock.parentElement !== timerSlot) timerSlot.appendChild(timerDock);
+  const timerTitle = timerDock?.querySelector(".chart-timer-title");
+  if (timerTitle) timerTitle.textContent = `${titleCase(activeHalf)} half timer`;
 }
 
 function setRecordingStatus(card, text, mode = "") {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-27-section4-no-autocorrect-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-27-section4-timer-dock-1";
 
 const APP_SHELL = [
   "./",
