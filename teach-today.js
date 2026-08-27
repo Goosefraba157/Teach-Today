@@ -13095,7 +13095,10 @@ async function ttInitFirebaseSync() {
         } else {
           localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Firebase is up to date.`);
         }
-        ttUploadPendingAudioRecordings(); // upload any recordings that didn't make it to Storage yet
+        // Do not retry pending Firebase Storage audio automatically on startup.
+        // A failed background retry changes shared record metadata; with more than
+        // one signed-in device that can create revision/reload ping-pong. Teachers
+        // can still connect Google Drive audio deliberately from Records.
         if (!ttDriveAccessToken) {
           localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission for this browser session. Click Google Drive audio in Records.");
         }
