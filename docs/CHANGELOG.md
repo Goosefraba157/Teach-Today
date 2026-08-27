@@ -4,6 +4,10 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-26
 
+- Replaced inferred/default-present attendance with explicit confirmed daily sessions. A persistent, gently pulsing lesson reminder allows one-tap all-present marking, individual present/absent confirmation, or an explicit no-session dismissal without blocking lesson preparation.
+- Allowed one attendance date to reference the same lesson across any combination of Day 1 and Day 2 portions; switching lesson portions after confirmation updates the same session rather than creating duplicate attendance.
+- Added prior-date attendance editing from both the lesson attendance controls and student calendar, including lesson selection, local dates, optional notes, stable private student-ID mappings, and an audit snapshot for corrections.
+- Preserved all legacy attendance and student records without automatic migration or deletion. Explicit corrected sessions take precedence only for the dates the teacher deliberately saves.
 - Brought 45+45 Section 2B to full interaction parity with Section 2: matching source groups, charting/review tools, custom words, card editing, whiteboard, applicable intro launches, navigation, and student Stage output while preserving independent Day 2 review/current words.
 - Left Section 2 and all existing lesson/student/charting data contracts unchanged; no migration or saved-data rewrite is part of the Section 2B patch.
 - Replaced the recreated Section 8 Student Stage worksheet with a full-page lossless rendering of the official WRS Student Dictation Page for both manual Paper and Follow Lesson modes.

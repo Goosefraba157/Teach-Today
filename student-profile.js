@@ -507,6 +507,13 @@ function lessonsForStudent(data, group, student, records, encodingRecords) {
   if (!student) return [];
   const plans = (group.history || []).filter((plan) => plan?.lessons?.[0]);
   const attendanceByDay = data.attendanceRecords?.[group.id] || {};
+  const sessionsByDay = data.attendanceSessions?.[group.id] || {};
+  const studentId = group.studentIds?.[student]
+    || (data.rosterStudents || []).find((item) => typeof item !== "string" && (item.name === student || item.displayName === student))?.studentId
+    || "";
+  const explicitAttendance = (session) => studentId && session?.attendanceByStudentId?.[studentId] !== undefined
+    ? session.attendanceByStudentId[studentId]
+    : session?.attendance?.[student];
   const evidenceDays = new Set();
   records.forEach((record) => {
     const key = dateKeyLocal(record.date || record.displayDate);
@@ -519,6 +526,11 @@ function lessonsForStudent(data, group, student, records, encodingRecords) {
   Object.keys(attendanceByDay).forEach((dayKey) => {
     if (latestPlanForDay(plans, dayKey)) evidenceDays.add(dayKey);
   });
+  Object.values(sessionsByDay).forEach((session) => {
+    const status = explicitAttendance(session);
+    if (session?.status === "confirmed" && (status === true || status === false)) evidenceDays.add(session.date);
+    if (session?.status === "no-session") evidenceDays.delete(session.date);
+  });
 
   const explicitPlanIds = new Set([...planIdsFromRecords(records), ...planIdsFromRecords(encodingRecords)]);
   explicitPlanIds.forEach((planId) => {
@@ -529,12 +541,15 @@ function lessonsForStudent(data, group, student, records, encodingRecords) {
 
   return [...evidenceDays].sort((a, b) => b.localeCompare(a)).map((dayKey) => {
     const dayRecords = records.concat(encodingRecords);
-    const plan = linkedPlanForDay(plans, dayKey, dayRecords)
+    const session = sessionsByDay[dayKey] || null;
+    const sessionPlan = (session?.planIds || []).map((id) => plans.find((item) => item.id === id)).find(Boolean);
+    const plan = sessionPlan || linkedPlanForDay(plans, dayKey, dayRecords)
       || latestPlanForDay(plans, dayKey)
       || plans.find((item) => explicitPlanIds.has(item.id))
       || null;
     const attendance = attendanceByDay[dayKey] || {};
-    const present = attendance[student] !== false;
+    const confirmedStatus = explicitAttendance(session);
+    const present = session?.status === "confirmed" ? confirmedStatus === true : attendance[student] !== false;
     const charting = records.filter((record) => dateKeyLocal(record.date || record.displayDate) === dayKey);
     const encoding = encodingRecords.filter((record) => dateKeyLocal(record.date || record.displayDate) === dayKey);
     const lesson = plan?.lessons?.[0] || {};
@@ -546,10 +561,12 @@ function lessonsForStudent(data, group, student, records, encodingRecords) {
       substep: lesson.substep || String(plan?.substep || "").split(" - ")[0] || "--",
       wordlist: lesson.wordlistMeta || (lesson.wordlistPageNumber ? `Reader ${lesson.reader || ""}, p. ${lesson.wordlistPageNumber}` : ""),
       present,
+      attendanceSource: session?.status === "confirmed" ? "confirmed" : "legacy",
+      lessonParts: session?.lessonParts || [],
       chartingCount: charting.length,
       encodingCount: encoding.length
     };
-  }).filter((item) => item.planId);
+  }).filter((item) => item.planId && sessionsByDay[item.dayKey]?.status !== "no-session");
 }
 
 function renderStudentLessons(lessons, group) {
@@ -605,7 +622,7 @@ function renderAttendanceCalendar(lessons, group) {
       const lesson = lessonsByDay.get(dayKey);
       if (!lesson) return `<span class="calendar-day"><b>${day}</b></span>`;
       const className = lesson.present ? "present" : "absent";
-      return `<a class="calendar-day ${className}" href="TeachToday.html?group=${encodeURIComponent(group.id || "")}&plan=${encodeURIComponent(lesson.planId)}" title="${escapeHtml(lesson.title)}"><b>${day}</b><small>${lesson.present ? "P" : "A"}</small></a>`;
+      return `<a class="calendar-day ${className}" href="TeachToday.html?group=${encodeURIComponent(group.id || "")}&plan=${encodeURIComponent(lesson.planId)}&editAttendance=${encodeURIComponent(lesson.dayKey)}" title="${escapeHtml(lesson.title)} · Edit attendance"><b>${day}</b><small>${lesson.present ? "P" : "A"}</small></a>`;
     }).join("");
     return `
       <article class="attendance-month">

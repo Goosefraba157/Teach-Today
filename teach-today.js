@@ -2853,6 +2853,7 @@ function ttRender() {
   ttRenderLessonIdentity(group, lesson);
   ttRenderLessonTabs();
   ttRenderAttendancePanel(group);
+  ttUpdateAttendanceReminder();
   ttRenderSavedLessons(group);
   ttRenderDataCenter();
   ttRenderWrapUpPanel(group, lesson);
@@ -3833,6 +3834,7 @@ function ttSetGroupDay(day) {
     if (plan) {
       plan.activeDay = ttGroupDay;
       ttEnsureLessonWorkflow(plan, ttLesson, ttActiveGroup());
+      ttTrackConfirmedAttendanceActivity({ part: ttGroupDay });
       saveState();
     }
   }
@@ -3868,6 +3870,7 @@ function ttToggleSectionDone(sectionId) {
   const next = current === null ? "done" : current === "done" ? "skipped" : null;
   if (next === null) delete ttLesson.completedSections[sectionId];
   else ttLesson.completedSections[sectionId] = next;
+  ttTrackConfirmedAttendanceActivity({ sectionId, state: next || "unmarked" });
   if (sectionId === "section9" && next === "done") ttClearPassageInk({ save: false, allStories: true });
   if (ttLesson.savedPlanId) ttSaveCurrentLesson({ render: false, reason: `Updated ${sectionId.replace("section", "Section ")} progress` });
   else ttSaveDraftLesson({ status: false });
@@ -4209,6 +4212,7 @@ function ttNormalizeTeachTodayState() {
   appState.lessonScrollPositions ||= {};
   appState.lessonDrafts ||= {};
   appState.attendanceRecords ||= {};
+  appState.attendanceSessions ||= {};
   appState.rosterStudents ||= [];
   const existingRosterNames = new Set(appState.rosterStudents.map((student) => String(student.name || student).toLowerCase()));
   appState.groups?.forEach((group) => {
@@ -4610,33 +4614,277 @@ function ttFillFrontStudents(group) {
 }
 
 function ttAttendanceKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
+  return dateKey(date);
 }
 
-function ttTodaysAttendance(group = ttActiveGroup()) {
+function ttAttendanceSession(group = ttActiveGroup(), dayKey = ttAttendanceKey(), create = false) {
   ttNormalizeTeachTodayState();
-  const key = ttAttendanceKey();
+  if (!group?.id || !dayKey) return null;
+  appState.attendanceSessions[group.id] ||= {};
+  if (create && !appState.attendanceSessions[group.id][dayKey]) {
+    appState.attendanceSessions[group.id][dayKey] = {
+      date: dayKey,
+      status: "unconfirmed",
+      attendance: {},
+      planIds: [],
+      lessonNumbers: [],
+      lessonParts: [],
+      createdAt: new Date().toISOString(),
+      audit: []
+    };
+  }
+  return appState.attendanceSessions[group.id][dayKey] || null;
+}
+
+function ttTodaysAttendance(group = ttActiveGroup(), dayKey = ttAttendanceKey()) {
+  ttNormalizeTeachTodayState();
+  const session = ttAttendanceSession(group, dayKey);
+  if (session?.status === "confirmed") return session.attendance || {};
+  return appState.attendanceRecords?.[group.id]?.[dayKey] || {};
+}
+
+function ttAttendanceContext(group = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup()) {
+  const plan = group ? ttActiveOpenPlan(group) || (group.id === ttActiveGroup()?.id ? ttCurrentPlan() : null) : null;
+  const lesson = plan?.lessons?.[0] || (group?.id === ttActiveGroup()?.id ? ttLesson : null) || {};
+  const lessonNumber = plan ? ttPlanLessonNumber(plan, lesson, group) : Number(group?.lessonSerial || 0) + 1;
+  const planId = plan?.id || lesson?.savedPlanId || "";
+  return { group, plan, lesson, lessonNumber, planId };
+}
+
+function ttAttendanceLessonParts(session, lesson, plan) {
+  const saved = Array.isArray(session?.lessonParts) ? session.lessonParts.map(String) : [];
+  if (session) return [...new Set(saved)];
+  const active = String(plan?.activeDay || lesson?.activeGroupDay || ttGroupDay || "1");
+  return active === "2" ? ["2"] : ["1"];
+}
+
+function ttUpdateAttendanceReminder() {
+  const button = ttById("ttAttendanceReminder");
+  if (!button) return;
+  const viewingArchive = document.body.classList.contains("home-mode")
+    && ttById("ttHomeSchoolYear")?.value
+    && ttById("ttHomeSchoolYear").value !== appState.activeSchoolYearId;
+  const { group, lessonNumber } = ttAttendanceContext();
+  const session = group ? ttAttendanceSession(group) : null;
+  const resolved = session && ["confirmed", "no-session"].includes(session.status);
+  button.hidden = !group || viewingArchive || resolved;
+  if (!button.hidden) {
+    button.innerHTML = `<span aria-hidden="true">✓</span><strong>Attendance</strong><small>${escapeHtml(group.name)} · Lesson ${escapeHtml(lessonNumber)}</small>`;
+    button.setAttribute("aria-label", `Confirm attendance for ${group.name} today`);
+  }
+}
+
+function ttTrackConfirmedAttendanceActivity({ part = "", sectionId = "", state = "" } = {}) {
+  const group = ttActiveGroup();
+  const session = ttAttendanceSession(group);
+  if (session?.status !== "confirmed") return;
+  const plan = ttCurrentPlan();
+  const lesson = plan?.lessons?.[0] || ttLesson || {};
+  const activePart = String(part || plan?.activeDay || lesson.activeGroupDay || ttGroupDay || "");
+  session.lessonParts ||= [];
+  session.planIds ||= [];
+  session.lessonNumbers ||= [];
+  if (["1", "2"].includes(activePart) && !session.lessonParts.includes(activePart)) {
+    session.lessonParts.push(activePart);
+    session.lessonParts.sort();
+  }
+  if (plan?.id && !session.planIds.includes(plan.id)) session.planIds.push(plan.id);
+  const lessonNumber = ttPlanLessonNumber(plan, lesson, group);
+  if (lessonNumber && !session.lessonNumbers.map(String).includes(String(lessonNumber))) session.lessonNumbers.push(lessonNumber);
+  if (sectionId) {
+    session.sectionActivity ||= {};
+    session.sectionActivity[sectionId] = { state: state || "visited", lessonPart: activePart || "", updatedAt: new Date().toISOString() };
+  }
+  session.updatedAt = new Date().toISOString();
+}
+
+function ttAttendanceModalElement() {
+  let overlay = ttById("ttAttendanceSessionModal");
+  if (overlay) return overlay;
+  overlay = document.createElement("div");
+  overlay.id = "ttAttendanceSessionModal";
+  overlay.className = "attendance-session-overlay";
+  overlay.hidden = true;
+  overlay.innerHTML = `<div class="attendance-session-backdrop" data-attendance-close></div><section class="attendance-session-card" role="dialog" aria-modal="true" aria-labelledby="ttAttendanceSessionTitle"><button class="attendance-session-close" type="button" data-attendance-close aria-label="Close">×</button><div id="ttAttendanceSessionBody"></div></section>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (event) => {
+    if (event.target.closest("[data-attendance-close]")) ttCloseAttendanceSessionModal();
+  });
+  return overlay;
+}
+
+function ttAttendanceStatusButton(student, status) {
+  if (status === true) status = "present";
+  if (status === false) status = "absent";
+  const label = status === "present" ? "Present" : status === "absent" ? "Absent" : "Not marked";
+  return `<button type="button" class="attendance-person-status ${escapeHtml(status || "unmarked")}" data-attendance-student="${escapeHtml(student)}" data-attendance-status="${escapeHtml(status || "unmarked")}">${escapeHtml(student)}<span>${label}</span></button>`;
+}
+
+function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) {
+  const overlay = ttAttendanceModalElement();
+  const body = ttById("ttAttendanceSessionBody");
+  const { group, plan, lesson, lessonNumber, planId } = ttAttendanceContext();
+  if (!group || !body) return;
+  const existing = ttAttendanceSession(group, dayKey);
+  const legacyAttendance = appState.attendanceRecords?.[group.id]?.[dayKey] || {};
+  const attendance = { ...(existing?.attendance || legacyAttendance) };
+  Object.entries(group.studentIds || {}).forEach(([name, studentId]) => {
+    if (attendance[name] === undefined && existing?.attendanceByStudentId?.[studentId] !== undefined) attendance[name] = existing.attendanceByStudentId[studentId];
+  });
+  const parts = ttAttendanceLessonParts(existing, lesson, plan);
+  const lessonPlans = ttOfficialLessonPlans(group);
+  const selectedPlanId = existing?.planIds?.[0] || planId;
+  const lessonOptions = lessonPlans.slice().reverse().map((item) => {
+    const itemLesson = item.lessons?.[0] || {};
+    const number = ttPlanLessonNumber(item, itemLesson, group);
+    return `<option value="${escapeHtml(item.id)}" data-lesson-number="${escapeHtml(number)}" ${item.id === selectedPlanId ? "selected" : ""}>Lesson ${escapeHtml(number)} · ${escapeHtml(item.status || "Saved")}</option>`;
+  }).join("");
+  const explicitByDate = appState.attendanceSessions?.[group.id] || {};
+  const priorDates = [...new Set([
+    ...Object.keys(appState.attendanceRecords?.[group.id] || {}),
+    ...Object.keys(explicitByDate)
+  ])].filter((date) => date && date !== dayKey).sort((a, b) => b.localeCompare(a)).map((date) => explicitByDate[date] || { date, status: "legacy" });
+  const isToday = dayKey === ttAttendanceKey();
+  const displayLessonNumber = existing?.lessonNumbers?.join(" + ") || lessonNumber;
+  body.innerHTML = `<header><span>${isToday ? "TODAY'S SESSION" : "EDIT ATTENDANCE"}</span><h2 id="ttAttendanceSessionTitle">${escapeHtml(group.name)} · ${escapeHtml(ttLongLessonDate(dayKey))}</h2><p>Lesson ${escapeHtml(displayLessonNumber)}. Opening or preparing this lesson does not count as attendance.</p></header>
+    <div class="attendance-identity-fields"><label class="attendance-date-field">Attendance date<input id="ttAttendanceEditDate" type="date" value="${escapeHtml(dayKey)}"></label><label class="attendance-date-field">Lesson used<select id="ttAttendancePlanSelect">${lessonOptions || `<option value="${escapeHtml(planId)}" data-lesson-number="${escapeHtml(lessonNumber)}">Lesson ${escapeHtml(lessonNumber)}</option>`}</select></label></div>
+    <fieldset class="attendance-parts"><legend>Lesson portions used on this date</legend><label><input type="checkbox" value="1" ${parts.includes("1") ? "checked" : ""}> Day 1 portions</label><label><input type="checkbox" value="2" ${parts.includes("2") ? "checked" : ""}> Day 2 portions</label></fieldset>
+    <div class="attendance-people">${(group.students || []).map((student) => ttAttendanceStatusButton(student, attendance[student])).join("") || "<p>No students are assigned to this group.</p>"}</div>
+    <label class="attendance-note-field">Optional note<textarea id="ttAttendanceSessionNote" rows="2" placeholder="Fire drill, shortened lesson, sections revisited…">${escapeHtml(existing?.note || "")}</textarea></label>
+    <div class="attendance-session-actions"><button type="button" data-attendance-all>Everyone present</button><button type="button" class="attendance-confirm" data-attendance-confirm>Confirm attendance</button><button type="button" class="attendance-no-session" data-attendance-none>No session held</button></div>
+    <details class="attendance-history" ${options.history ? "open" : ""}><summary>Edit a previous date</summary><div>${priorDates.length ? priorDates.map((item) => `<button type="button" data-attendance-edit-date="${escapeHtml(item.date)}"><strong>${escapeHtml(ttLongLessonDate(item.date))}</strong><span>${item.status === "confirmed" ? "Confirmed" : item.status === "no-session" ? "No session" : "Older record · review"}</span></button>`).join("") : "<p>No attendance dates have been saved yet.</p>"}</div></details>`;
+  overlay.hidden = false;
+
+  body.querySelector("#ttAttendanceEditDate")?.addEventListener("change", (event) => ttOpenAttendanceSessionModal(event.target.value || dayKey, options));
+  body.querySelectorAll("[data-attendance-student]").forEach((button) => button.addEventListener("click", () => {
+    const next = button.dataset.attendanceStatus === "unmarked" ? "present" : button.dataset.attendanceStatus === "present" ? "absent" : "unmarked";
+    button.dataset.attendanceStatus = next;
+    button.className = `attendance-person-status ${next}`;
+    button.querySelector("span").textContent = next === "present" ? "Present" : next === "absent" ? "Absent" : "Not marked";
+  }));
+  body.querySelector("[data-attendance-all]")?.addEventListener("click", () => {
+    body.querySelectorAll("[data-attendance-student]").forEach((button) => {
+      button.dataset.attendanceStatus = "present";
+      button.className = "attendance-person-status present";
+      button.querySelector("span").textContent = "Present";
+    });
+  });
+  const selectedIdentity = () => {
+    const select = body.querySelector("#ttAttendancePlanSelect");
+    return { planId: select?.value || planId, lessonNumber: select?.selectedOptions?.[0]?.dataset.lessonNumber || lessonNumber };
+  };
+  body.querySelector("[data-attendance-confirm]")?.addEventListener("click", () => ttConfirmAttendanceSession(group, dayKey, selectedIdentity()));
+  body.querySelector("[data-attendance-none]")?.addEventListener("click", () => ttSaveNoAttendanceSession(group, dayKey, selectedIdentity()));
+  body.querySelectorAll("[data-attendance-edit-date]").forEach((button) => button.addEventListener("click", () => ttOpenAttendanceSessionModal(button.dataset.attendanceEditDate, { history: true })));
+}
+
+function ttAttendanceModalValues() {
+  const body = ttById("ttAttendanceSessionBody");
+  const attendance = {};
+  let unmarked = 0;
+  body?.querySelectorAll("[data-attendance-student]").forEach((button) => {
+    const status = button.dataset.attendanceStatus;
+    if (status === "present") attendance[button.dataset.attendanceStudent] = true;
+    else if (status === "absent") attendance[button.dataset.attendanceStudent] = false;
+    else unmarked += 1;
+  });
+  return {
+    attendance,
+    unmarked,
+    parts: [...body?.querySelectorAll(".attendance-parts input:checked") || []].map((input) => input.value),
+    note: body?.querySelector("#ttAttendanceSessionNote")?.value.trim() || ""
+  };
+}
+
+function ttConfirmAttendanceSession(group, dayKey, identity = {}) {
+  const values = ttAttendanceModalValues();
+  if (values.unmarked) {
+    alert(`Mark all ${values.unmarked} remaining student${values.unmarked === 1 ? "" : "s"} present or absent before confirming.`);
+    return;
+  }
+  const session = ttAttendanceSession(group, dayKey, true);
+  const before = session.status;
+  const previous = before === "unconfirmed" ? null : {
+    status: before,
+    attendance: ttClone(session.attendance || {}),
+    attendanceByStudentId: ttClone(session.attendanceByStudentId || {}),
+    lessonParts: ttClone(session.lessonParts || []),
+    planIds: ttClone(session.planIds || []),
+    lessonNumbers: ttClone(session.lessonNumbers || []),
+    note: session.note || ""
+  };
+  session.status = "confirmed";
+  session.attendance = values.attendance;
+  session.attendanceByStudentId = Object.entries(values.attendance).reduce((result, [name, present]) => {
+    const studentId = group.studentIds?.[name]
+      || (appState.rosterStudents || []).find((student) => typeof student !== "string" && (student.name === name || student.displayName === name))?.studentId;
+    if (studentId) result[studentId] = present;
+    return result;
+  }, {});
+  session.note = values.note;
+  session.lessonParts = [...new Set(values.parts)].sort();
+  session.planIds = identity.planId ? [identity.planId] : [];
+  session.lessonNumbers = identity.lessonNumber ? [identity.lessonNumber] : [];
+  session.confirmedAt = new Date().toISOString();
+  session.updatedAt = session.confirmedAt;
+  session.audit ||= [];
+  session.audit.push({ at: session.updatedAt, action: before === "confirmed" ? "corrected" : "confirmed", ...(previous ? { previous } : {}) });
   appState.attendanceRecords[group.id] ||= {};
-  appState.attendanceRecords[group.id][key] ||= {};
-  return appState.attendanceRecords[group.id][key];
+  appState.attendanceRecords[group.id][dayKey] = { ...values.attendance };
+  saveState();
+  ttCloseAttendanceSessionModal();
+  ttRenderAttendancePanel(group);
+  ttRenderWrapUpPanel(group, ttLesson);
+  ttUpdateAttendanceReminder();
+}
+
+function ttSaveNoAttendanceSession(group, dayKey, identity = {}) {
+  const session = ttAttendanceSession(group, dayKey, true);
+  const previous = session.status === "unconfirmed" ? null : {
+    status: session.status,
+    attendance: ttClone(session.attendance || {}),
+    attendanceByStudentId: ttClone(session.attendanceByStudentId || {}),
+    lessonParts: ttClone(session.lessonParts || []),
+    planIds: ttClone(session.planIds || []),
+    lessonNumbers: ttClone(session.lessonNumbers || []),
+    note: session.note || ""
+  };
+  session.status = "no-session";
+  session.attendance = {};
+  session.attendanceByStudentId = {};
+  session.note = ttById("ttAttendanceSessionNote")?.value.trim() || "";
+  session.lessonParts = [];
+  session.planIds = identity.planId ? [identity.planId] : [];
+  session.lessonNumbers = identity.lessonNumber ? [identity.lessonNumber] : [];
+  session.updatedAt = new Date().toISOString();
+  session.audit ||= [];
+  session.audit.push({ at: session.updatedAt, action: "marked-no-session", ...(previous ? { previous } : {}) });
+  saveState();
+  ttCloseAttendanceSessionModal();
+  ttUpdateAttendanceReminder();
+}
+
+function ttCloseAttendanceSessionModal() {
+  const overlay = ttById("ttAttendanceSessionModal");
+  if (overlay) overlay.hidden = true;
+  const url = new URL(location.href);
+  if (url.searchParams.has("editAttendance")) {
+    url.searchParams.delete("editAttendance");
+    history.replaceState(null, "", url);
+  }
 }
 
 function ttRenderAttendancePanel(group) {
   const panel = ttById("ttAttendancePanel");
   if (!panel) return;
-  const attendance = ttTodaysAttendance(group);
+  const session = ttAttendanceSession(group);
+  const attendance = session?.status === "confirmed" ? session.attendance : {};
   panel.innerHTML = group.students.map((student) => {
-    const present = attendance[student] !== false;
-    return `<button type="button" class="attendance-chip ${present ? "present" : ""}" data-student="${escapeHtml(student)}">${present ? "Present" : "Absent"} - ${escapeHtml(student)}</button>`;
-  }).join("");
-  panel.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const student = button.dataset.student;
-      attendance[student] = attendance[student] === false;
-      saveState();
-      ttRenderAttendancePanel(group);
-    });
-  });
+    const status = attendance[student] === true ? "Present" : attendance[student] === false ? "Absent" : "Not marked";
+    return `<span class="attendance-chip ${status === "Present" ? "present" : status === "Absent" ? "absent" : ""}">${status} - ${escapeHtml(student)}</span>`;
+  }).join("") + `<button type="button" class="attendance-panel-edit" data-open-attendance>${session?.status === "confirmed" ? "Edit today's attendance" : "Confirm today's attendance"}</button><button type="button" class="attendance-panel-history" data-open-attendance-history>Edit previous dates</button>`;
+  panel.querySelector("[data-open-attendance]")?.addEventListener("click", () => ttOpenAttendanceSessionModal());
+  panel.querySelector("[data-open-attendance-history]")?.addEventListener("click", () => ttOpenAttendanceSessionModal(ttAttendanceKey(), { history: true }));
 }
 
 function ttSetAttendancePanel(open = true, options = {}) {
@@ -4761,7 +5009,6 @@ function ttAddStudentToActiveGroup(name) {
   if (!cleanName) return;
   if (!group.students.includes(cleanName)) group.students.push(cleanName);
   group.activeStudent = cleanName;
-  ttTodaysAttendance(group)[cleanName] = true;
   saveState();
   ttToggleRosterPicker(false);
   ttRender();
@@ -4996,6 +5243,7 @@ function ttRenderHomeScreen() {
   ttRenderHomeModePicker(!viewingArchive);
   ttRenderPlannerPanel();
   ttUpdateHomeReferenceLinks();
+  ttUpdateAttendanceReminder();
 }
 
 function ttRenderHomeContinuity(enabled = true) {
@@ -7318,8 +7566,9 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
   if (!summary) return;
   const plan = ttCurrentPlan();
   const data = ttTodaysLessonData(group, lesson);
-  const attendance = ttTodaysAttendance(group);
-  const presentStudents = (group.students || []).filter((student) => attendance[student] !== false);
+  const attendanceSession = ttAttendanceSession(group);
+  const attendance = attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {};
+  const presentStudents = (group.students || []).filter((student) => attendance[student] === true);
   const absentStudents = (group.students || []).filter((student) => attendance[student] === false);
   const chartCount = data.chart.length;
   const dictationCount = data.dictation.length;
@@ -7328,7 +7577,7 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
 
   summary.innerHTML = `
     <article><strong>${escapeHtml(group.name || "Group")}</strong><span>${escapeHtml(lesson?.substep || group.substep || "--")} / Reader ${escapeHtml(lesson?.reader || "")}</span></article>
-    <article><strong>${presentStudents.length}/${(group.students || []).length}</strong><span>Present</span></article>
+    <article><strong>${attendanceSession?.status === "confirmed" ? `${presentStudents.length}/${(group.students || []).length}` : "Not confirmed"}</strong><span>Attendance</span></article>
     <article><strong>${chartCount}</strong><span>Chart record${chartCount === 1 ? "" : "s"}</span></article>
     <article><strong>${dictationCount + encodingCount}</strong><span>Miss / encoding mark${dictationCount + encodingCount === 1 ? "" : "s"}</span></article>
     <article><strong>${escapeHtml(completeLabel)}</strong><span>Lesson status</span></article>
@@ -7337,18 +7586,10 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
   const attendancePanel = ttById("ttWrapAttendance");
   if (attendancePanel) {
     attendancePanel.innerHTML = (group.students || []).map((student) => {
-      const present = attendance[student] !== false;
-      return `<button type="button" class="attendance-chip ${present ? "present" : ""}" data-student="${escapeHtml(student)}">${present ? "Present" : "Absent"} - ${escapeHtml(student)}</button>`;
+      const status = attendance[student] === true ? "Present" : attendance[student] === false ? "Absent" : "Not marked";
+      return `<button type="button" class="attendance-chip ${status === "Present" ? "present" : status === "Absent" ? "absent" : ""}" data-open-wrap-attendance>${status} - ${escapeHtml(student)}</button>`;
     }).join("");
-    attendancePanel.querySelectorAll("button").forEach((button) => {
-      button.addEventListener("click", () => {
-        const student = button.dataset.student;
-        attendance[student] = attendance[student] === false;
-        saveState();
-        ttRenderAttendancePanel(group);
-        ttRenderWrapUpPanel(group, lesson);
-      });
-    });
+    attendancePanel.querySelectorAll("[data-open-wrap-attendance]").forEach((button) => button.addEventListener("click", () => ttOpenAttendanceSessionModal()));
   }
 
   const studentData = ttById("ttWrapStudentData");
@@ -7417,10 +7658,12 @@ function ttCompleteLessonWrapUp(options = {}) {
   const data = ttTodaysLessonData(group, ttLesson);
   const note = ttById("ttWrapNote")?.value.trim() || "";
   group.note = note;
+  const attendanceSession = ttAttendanceSession(group);
   plan.wrapUp = {
     completedAt: new Date().toISOString(),
     note,
-    attendance: ttClone(ttTodaysAttendance(group)),
+    attendance: ttClone(attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {}),
+    attendanceStatus: attendanceSession?.status || "unconfirmed",
     chartRecordCount: data.chart.length,
     dictationMissCount: data.dictation.length,
     encodingMarkCount: data.encoding.length,
@@ -7489,9 +7732,14 @@ function ttDictationSummary(records) {
 }
 
 function dateKey(value) {
+  const direct = typeof value === "string" ? value.match(/^(\d{4}-\d{2}-\d{2})(?:$|T)/) : null;
+  if (direct && !String(value).includes("T")) return direct[1];
   const date = value instanceof Date ? value : new Date(value || 0);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function formatSnapshotDate(value) {
@@ -15360,6 +15608,7 @@ function ttBind() {
   ttById("ttAttendance").addEventListener("click", () => {
     ttToggleSmallDropdown("ttAttendance", { focus: true });
   });
+  ttById("ttAttendanceReminder")?.addEventListener("click", () => ttOpenAttendanceSessionModal());
   ttById("ttPresent").addEventListener("click", () => ttTogglePresentation());
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
@@ -15884,4 +16133,6 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("resize", ttQueueStudentDisplayFollowSync, { passive: true });
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
+const ttAttendanceEditDate = new URLSearchParams(location.search).get("editAttendance");
+if (ttAttendanceEditDate) requestAnimationFrame(() => ttOpenAttendanceSessionModal(ttAttendanceEditDate, { history: true }));
 ttHandleDeveloperRoute();

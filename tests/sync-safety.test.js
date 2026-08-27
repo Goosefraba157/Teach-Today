@@ -23,6 +23,8 @@ const baseState = {
     { studentId: "student-b", displayName: "Student B" }
   ],
   masterRecords: [],
+  attendanceRecords: {},
+  attendanceSessions: {},
   lastSavedAt: "2026-08-23T12:00:00.000Z"
 };
 
@@ -48,6 +50,19 @@ assert.deepEqual(merged.appState.masterRecords.map((record) => record.id).sort()
 assert.deepEqual(merged.appState.groups[0].history[0].completedSections, [1, 2]);
 assert.equal(merged.appState.groups[0].history[0].day2Date, "2026-08-25");
 assert.deepEqual(merged.conflicts, []);
+
+const attendanceBase = structuredClone(sharedBase);
+attendanceBase.attendanceSessions = { "group-a": { "2026-08-26": { date: "2026-08-26", status: "unconfirmed", attendance: {} } } };
+const attendanceLocal = structuredClone(attendanceBase);
+attendanceLocal.attendanceSessions["group-a"]["2026-08-26"].attendance["student-a"] = true;
+const attendanceRemote = structuredClone(attendanceBase);
+attendanceRemote.attendanceSessions["group-a"]["2026-08-26"].attendance["student-b"] = false;
+const attendanceMerged = sync.mergePayloads(payload(attendanceBase), payload(attendanceLocal), payload(attendanceRemote));
+assert.deepEqual(attendanceMerged.appState.attendanceSessions["group-a"]["2026-08-26"].attendance, {
+  "student-a": true,
+  "student-b": false
+});
+assert.deepEqual(attendanceMerged.conflicts, []);
 
 const localConflict = structuredClone(sharedBase);
 const remoteConflict = structuredClone(sharedBase);

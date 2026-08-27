@@ -47,6 +47,13 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Next lesson defaults:** Completing a lesson as-is or preserving it as incomplete and planning another prepares the next automatic lesson number on the next Monday-Thursday instructional date. Teachers may override the date, including Friday when needed.
 - **Test separation:** Demo teaching should use a group explicitly marked as a demo group so test saves do not enter official group continuity. Routine UI must not expose a broad school-year lesson reset.
 
+## Attendance sessions
+
+- **Decision:** Attendance is explicit, not inferred. Opening, planning, presenting, navigating, or saving a lesson never marks a student present. A student calendar may show a new record only after the teacher confirms a held session; an explicitly recorded no-session day remains blank.
+- **Daily identity:** One group has at most one attendance session per local calendar date. That session may reference one or more lesson numbers and any combination of Day 1 and Day 2 portions; lesson portions are instructional phases, not calendar-day boundaries.
+- **Statuses:** Every rostered student begins unmarked and must be explicitly confirmed present or absent. Confirmed attendance is stored by both the current teacher-facing name and permanent private student ID when available.
+- **Corrections and preservation:** Prior dates remain editable. Corrections retain a private audit snapshot of the earlier value. Legacy attendance records are preserved unchanged and remain readable until the teacher deliberately replaces a specific date with an explicit confirmed or no-session record.
+
 ## Student identity and school years
 
 - **Decision:** Use permanent private student IDs to connect records across school years while keeping each year's groups and activity separate.
