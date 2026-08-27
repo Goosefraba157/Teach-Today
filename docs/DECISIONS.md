@@ -51,7 +51,10 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 - **Decision:** Attendance is explicit, not inferred. Opening, planning, presenting, navigating, or saving a lesson never marks a student present. A student calendar may show a new record only after the teacher confirms a held session; an explicitly recorded no-session day remains blank.
 - **Daily identity:** One group has at most one attendance session per local calendar date. That session may reference one or more lesson numbers and any combination of Day 1 and Day 2 portions; lesson portions are instructional phases, not calendar-day boundaries.
-- **Statuses:** Every rostered student begins unmarked and must be explicitly confirmed present or absent. Confirmed attendance is stored by both the current teacher-facing name and permanent private student ID when available.
+- **Statuses:** Every rostered student must have an explicit present/absent value when the teacher confirms. Confirmed attendance is stored by both the current teacher-facing name and permanent private student ID when available.
+- **Fast default:** Opening an unconfirmed attendance date presets every rostered student as present in the unsaved editor so the ordinary workflow is to toggle only absences. Nothing becomes an attendance record until the teacher confirms.
+- **Coverage inference:** Lesson coverage is advisory and may be detected from meaningful section interactions such as buttons, inputs, charting, drawing, or section navigation. Scrolling alone is never evidence of instruction. Detected coverage does not create attendance and remains manually adjustable because preparation and teaching interactions can look alike.
+- **History view:** The correction surface shows four calendar weeks with explicit confirmed, no-session, and legacy-needs-review states. Blank dates remain blank but may be selected to add a deliberate correction.
 - **Corrections and preservation:** Prior dates remain editable. Corrections retain a private audit snapshot of the earlier value. Legacy attendance records are preserved unchanged and remain readable until the teacher deliberately replaces a specific date with an explicit confirmed or no-session record.
 
 ## Student identity and school years

@@ -9,6 +9,9 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added prior-date attendance editing from both the lesson attendance controls and student calendar, including lesson selection, local dates, optional notes, stable private student-ID mappings, and an audit snapshot for corrections.
 - Preserved all legacy attendance and student records without automatic migration or deletion. Explicit corrected sessions take precedence only for the dates the teacher deliberately saves.
 - Published the confirmed-attendance release to GitHub Pages and verified the versioned HTML and JavaScript are live.
+- Refined the attendance popup for classroom speed: every unsaved date now opens with the roster preset present, teachers toggle only absences, and lesson portions are collapsed into an advisory coverage summary that detects meaningful section controls and presentation navigation without treating scrolling as instruction.
+- Replaced the prior-date attendance list with a four-week calendar distinguishing confirmed sessions, explicit no-session dates, legacy records needing review, and blank dates.
+- Locked the lesson page behind the scrollable attendance popup, including iPad-style overscroll containment and exact background-position restoration after closing.
 - Brought 45+45 Section 2B to full interaction parity with Section 2: matching source groups, charting/review tools, custom words, card editing, whiteboard, applicable intro launches, navigation, and student Stage output while preserving independent Day 2 review/current words.
 - Left Section 2 and all existing lesson/student/charting data contracts unchanged; no migration or saved-data rewrite is part of the Section 2B patch.
 - Replaced the recreated Section 8 Student Stage worksheet with a full-page lossless rendering of the official WRS Student Dictation Page for both manual Paper and Follow Lesson modes.

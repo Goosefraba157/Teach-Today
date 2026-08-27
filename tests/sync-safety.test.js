@@ -25,6 +25,7 @@ const baseState = {
   masterRecords: [],
   attendanceRecords: {},
   attendanceSessions: {},
+  attendanceActivity: {},
   lastSavedAt: "2026-08-23T12:00:00.000Z"
 };
 
@@ -63,6 +64,16 @@ assert.deepEqual(attendanceMerged.appState.attendanceSessions["group-a"]["2026-0
   "student-b": false
 });
 assert.deepEqual(attendanceMerged.conflicts, []);
+
+const activityBase = structuredClone(sharedBase);
+activityBase.attendanceActivity = { "group-a": { "2026-08-26": { date: "2026-08-26", sections: {} } } };
+const activityLocal = structuredClone(activityBase);
+activityLocal.attendanceActivity["group-a"]["2026-08-26"].sections.section1 = { lessonPart: "1", sources: ["click"] };
+const activityRemote = structuredClone(activityBase);
+activityRemote.attendanceActivity["group-a"]["2026-08-26"].sections.section6 = { lessonPart: "2", sources: ["change"] };
+const activityMerged = sync.mergePayloads(payload(activityBase), payload(activityLocal), payload(activityRemote));
+assert.deepEqual(Object.keys(activityMerged.appState.attendanceActivity["group-a"]["2026-08-26"].sections).sort(), ["section1", "section6"]);
+assert.deepEqual(activityMerged.conflicts, []);
 
 const localConflict = structuredClone(sharedBase);
 const remoteConflict = structuredClone(sharedBase);
