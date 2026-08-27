@@ -4130,27 +4130,7 @@ function ttHideConnectionNotice() {
 }
 
 async function ttResolveFirebaseConflictFromCloud() {
-  const approved = window.confirm(
-    "Load the Firebase copy on this device? Teach Today will automatically preserve this device's current lesson copy in Recovery before replacing it."
-  );
-  if (!approved) return;
-  ttWorkOffline = false;
-  localStorage.setItem("teachToday.workOffline", "false");
-  localStorage.setItem("teachToday.firebaseSyncStatus", "Loading the selected Firebase copy...");
-  ttRenderDataCenter();
-  try {
-    const restored = await ttFirebaseRestoreIfNewer({ force: true });
-    if (!restored) {
-      localStorage.setItem("teachToday.firebaseSyncStatus", "No usable Firebase copy was found. This device was not changed.");
-      ttShowConnectionNotice("No usable Firebase copy was found. This device was not changed.");
-    }
-  } catch (error) {
-    const detail = error?.code || error?.message || "unknown error";
-    localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase copy could not load (${detail}). This device was not changed.`);
-    ttShowConnectionNotice(`Firebase copy could not load (${detail}). This device was not changed.`);
-  } finally {
-    ttRenderDataCenter();
-  }
+  return ttLoadProtectedFirebaseCopy();
 }
 
 function ttHandleConnectionPrimaryAction() {
@@ -12084,6 +12064,7 @@ let ttFirebasePending = false;
 let ttFirebaseUser = null; // set after Google sign-in
 let ttFirebaseUnsubscribe = null;
 let ttFirebaseWritingRevisionId = "";
+let ttNativeFirebaseUploadPaused = false;
 let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
@@ -12600,6 +12581,35 @@ async function ttFirebaseReadEnvelope() {
   }
 }
 
+async function ttFirebaseReadRevisionEnvelope(revisionId) {
+  if (!ttFirebaseUser || !revisionId) return null;
+  const { firestoreDb, doc, getDoc } = await ttFirebaseSdk();
+  const path = ttFirebaseDocPath();
+  const manifestSnapshot = await getDoc(doc(firestoreDb, ...path, "revisions", revisionId));
+  if (!manifestSnapshot.exists()) return null;
+  const manifest = manifestSnapshot.data() || {};
+  const chunkCount = Number(manifest.chunkCount || 0);
+  if (!Number.isInteger(chunkCount) || chunkCount < 1 || chunkCount > 100) {
+    throw new Error("This recovery point has an invalid chunk manifest.");
+  }
+  const chunks = [];
+  for (let index = 0; index < chunkCount; index += 1) {
+    const id = String(index).padStart(4, "0");
+    const chunkSnapshot = await getDoc(doc(firestoreDb, ...path, "revisions", revisionId, "chunks", id));
+    if (!chunkSnapshot.exists()) throw new Error(`Recovery point chunk ${id} is missing.`);
+    chunks.push(chunkSnapshot.data()?.text || "");
+  }
+  const payload = ttNormalizeFirebasePayload(JSON.parse(chunks.join("")));
+  if (!payload) throw new Error("This recovery point does not contain valid Teach Today data.");
+  return {
+    payload,
+    revisionId,
+    exportedAt: manifest.exportedAt || payload.exportedAt || "",
+    version: manifest.version || 4,
+    manifest
+  };
+}
+
 async function ttInstallFirebaseEnvelope(envelope, options = {}) {
   const payload = ttNormalizeFirebasePayload(envelope?.payload);
   if (!payload) return false;
@@ -12649,9 +12659,252 @@ async function ttFirebaseRestoreIfNewer(options = {}) {
   }
   return ttInstallFirebaseEnvelope(envelope, {
     preserveLocal: localSignature !== ttFirebasePayloadSignature(baseline?.payload),
+    archiveLocal: options.archiveLocal !== false,
     reason: "Before loading a different Firebase copy",
     status: "Loaded Firebase data. The previous device copy was preserved in Recovery."
   });
+}
+
+function ttFirebasePayloadSummary(payload) {
+  const state = ttNormalizeFirebasePayload(payload)?.appState || {};
+  return {
+    groups: (state.groups || []).length,
+    profiles: (state.rosterStudents || []).length,
+    records: (state.masterRecords || []).length,
+    lessons: (state.groups || []).reduce((sum, group) => sum + (group.history || []).length, 0)
+  };
+}
+
+function ttFirebaseSummaryText(summary) {
+  return `${summary.records} records, ${summary.lessons} lessons, ${summary.groups} groups, and ${summary.profiles} student profiles`;
+}
+
+function ttFirebaseTimelineDate(manifest = {}) {
+  const serverDate = manifest.createdAt?.toDate?.();
+  if (serverDate && !Number.isNaN(serverDate.getTime())) return serverDate;
+  const exportedDate = new Date(manifest.exportedAt || "");
+  if (!Number.isNaN(exportedDate.getTime())) return exportedDate;
+  const revisionTime = Number(String(manifest.revisionId || "").split("-")[0]);
+  return Number.isFinite(revisionTime) ? new Date(revisionTime) : new Date(0);
+}
+
+function ttFirebaseTimelineSize(byteLength) {
+  const bytes = Number(byteLength || 0);
+  if (!bytes) return "size unavailable";
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function ttFirebaseDailyBackupKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function ttFirebaseDailyBackupBucket(date = new Date()) {
+  const startHour = Math.floor(date.getHours() / 4) * 4;
+  return `${String(startHour).padStart(2, "0")}-${String(startHour + 3).padStart(2, "0")}`;
+}
+
+async function ttRecordDailyBackupIndex(revision) {
+  if (!ttFirebaseUser || !revision?.revisionId || !revision.manifest) return;
+  const { firestoreDb, doc, runTransaction } = await ttFirebaseSdk();
+  const now = new Date();
+  const dateKey = ttFirebaseDailyBackupKey(now);
+  const bucket = ttFirebaseDailyBackupBucket(now);
+  const dailyRef = doc(firestoreDb, ...ttFirebaseDocPath(), "dailyBackups", dateKey);
+  const checkpoint = {
+    revisionId: revision.revisionId,
+    exportedAt: revision.manifest.exportedAt || now.toISOString(),
+    byteLength: revision.manifest.byteLength || 0,
+    summary: revision.manifest.summary || {},
+    reason: revision.manifest.reason || "Automatic sync"
+  };
+  await runTransaction(firestoreDb, async (transaction) => {
+    const snapshot = await transaction.get(dailyRef);
+    const existing = snapshot.exists() ? snapshot.data() : {};
+    transaction.set(dailyRef, {
+      kind: "TeachTodayDailyBackupIndex",
+      version: 1,
+      dateKey,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "local",
+      firstRevisionId: existing.firstRevisionId || revision.revisionId,
+      firstSavedAt: existing.firstSavedAt || checkpoint.exportedAt,
+      latestRevisionId: revision.revisionId,
+      latestSavedAt: checkpoint.exportedAt,
+      checkpoints: { ...(existing.checkpoints || {}), [bucket]: checkpoint }
+    });
+  });
+}
+
+function ttFirebaseDailyManifests(snapshot) {
+  return snapshot.docs.flatMap((item) => {
+    const data = item.data() || {};
+    return Object.values(data.checkpoints || {}).map((checkpoint) => ({
+      kind: "TeachTodayFirebaseRevision",
+      ...checkpoint,
+      revisionId: checkpoint.revisionId || ""
+    }));
+  }).filter((item) => item.revisionId);
+}
+
+function ttRenderFirebaseTimeline(manifests = []) {
+  const timeline = ttById("ttFirebaseTimeline");
+  if (!timeline) return;
+  if (!manifests.length) {
+    timeline.textContent = "No cloud recovery points were found. The next successful Firebase data save will create one automatically.";
+    return;
+  }
+  const currentRevisionId = localStorage.getItem("teachToday.lastFirebaseRevisionId") || "";
+  let dayKey = "";
+  timeline.innerHTML = manifests.map((manifest) => {
+    const date = ttFirebaseTimelineDate(manifest);
+    const nextDayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const dayHeading = nextDayKey === dayKey
+      ? ""
+      : `<div class="firebase-backup-timeline-day">${escapeHtml(date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }))}</div>`;
+    dayKey = nextDayKey;
+    const summary = manifest.summary || {};
+    const countText = Number.isFinite(summary.records) && Number.isFinite(summary.lessons)
+      ? `${summary.records} records · ${summary.lessons} lessons · `
+      : "";
+    const isCurrent = manifest.revisionId === currentRevisionId;
+    const kind = manifest.kind === "TeachTodayFirebaseRecoveryRevision" ? "Protected branch" : "Automatic backup";
+    return `${dayHeading}<article class="firebase-backup-timeline-entry${isCurrent ? " is-current" : ""}">
+      <div>
+        <strong>${escapeHtml(date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))} · ${escapeHtml(kind)}${isCurrent ? " · Current" : ""}</strong>
+        <span>${escapeHtml(countText)}${escapeHtml(ttFirebaseTimelineSize(manifest.byteLength))} · ${escapeHtml(manifest.reason || "Saved to Firebase")}</span>
+      </div>
+      <button type="button" data-firebase-revision-download="${escapeHtml(manifest.revisionId)}">Download</button>
+    </article>`;
+  }).join("");
+}
+
+async function ttLoadFirebaseTimeline(options = {}) {
+  const timeline = ttById("ttFirebaseTimeline");
+  const refresh = ttById("ttFirebaseTimelineRefresh");
+  if (!timeline) return;
+  if (!ttFirebaseUser) {
+    timeline.textContent = "Sign in to view private cloud recovery points.";
+    timeline.dataset.loadedForUid = "";
+    return;
+  }
+  if (!options.force && timeline.dataset.loadedForUid === ttFirebaseUser.uid) return;
+  timeline.textContent = "Loading private cloud recovery points...";
+  if (refresh) refresh.disabled = true;
+  try {
+    const { firestoreDb, collection, getDocs, query, orderBy, limit } = await ttFirebaseSdk();
+    const revisionsRef = collection(firestoreDb, ...ttFirebaseDocPath(), "revisions");
+    const dailyRef = collection(firestoreDb, ...ttFirebaseDocPath(), "dailyBackups");
+    const [dailySnapshot, recentSnapshot] = await Promise.all([
+      getDocs(query(dailyRef, orderBy("dateKey", "desc"), limit(400))),
+      getDocs(query(revisionsRef, orderBy("createdAt", "desc"), limit(120)))
+    ]);
+    const recentManifests = recentSnapshot.docs
+      .map((item) => ({ ...item.data(), revisionId: item.id }));
+    const seen = new Set();
+    const manifests = [...ttFirebaseDailyManifests(dailySnapshot), ...recentManifests]
+      .filter((item) => item.revisionId && !seen.has(item.revisionId) && seen.add(item.revisionId))
+      .sort((a, b) => ttFirebaseTimelineDate(b) - ttFirebaseTimelineDate(a));
+    ttRenderFirebaseTimeline(manifests);
+    timeline.dataset.loadedForUid = ttFirebaseUser.uid;
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    timeline.textContent = `Cloud backup timeline could not load (${detail}). Live data was not changed.`;
+  } finally {
+    if (refresh) refresh.disabled = false;
+  }
+}
+
+async function ttDownloadFirebaseRevision(revisionId, button = null) {
+  if (!revisionId || !ttFirebaseUser) return;
+  const priorLabel = button?.textContent || "Download";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Preparing...";
+  }
+  try {
+    const envelope = await ttFirebaseReadRevisionEnvelope(revisionId);
+    if (!envelope?.payload) throw new Error("Recovery point not found.");
+    const date = ttFirebaseTimelineDate(envelope.manifest);
+    ttDownloadPayload({
+      kind: "TeachTodayCloudRecoveryPoint",
+      version: 1,
+      revisionId,
+      savedAt: date.toISOString(),
+      reason: envelope.manifest.reason || "Firebase recovery point",
+      payload: envelope.payload
+    }, `teach-today-cloud-recovery-${ttBackupFileStamp(date)}.json`);
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Recovery point could not download (${detail}). Live data was not changed.`);
+    ttRenderDataCenter();
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = priorLabel;
+    }
+  }
+}
+
+async function ttLoadProtectedFirebaseCopy() {
+  if (!ttFirebaseUser) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google before loading the protected Firebase copy.");
+    ttRenderDataCenter();
+    return false;
+  }
+  const button = ttById("ttFirebaseLoadProtected");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Checking Firebase...";
+  }
+  try {
+    const envelope = await ttFirebaseReadEnvelope();
+    if (!envelope?.payload) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "No usable protected Firebase copy was found. This device was not changed.");
+      ttRenderDataCenter();
+      return false;
+    }
+    const remoteSignature = ttFirebasePayloadSignature(envelope.payload);
+    if (remoteSignature === ttCurrentFirebaseSignature()) {
+      ttNativeFirebaseUploadPaused = false;
+      await ttMarkFirebaseSynced(envelope, "This device already matches the protected Firebase copy.");
+      ttHideConnectionNotice();
+      ttRenderDataCenter();
+      return false;
+    }
+    const cloud = ttFirebasePayloadSummary(envelope.payload);
+    const device = ttFirebasePayloadSummary(ttFirebasePayload());
+    const approved = window.confirm(
+      `Load the protected Firebase copy on this device?\n\nFirebase: ${ttFirebaseSummaryText(cloud)}.\nThis device: ${ttFirebaseSummaryText(device)}.\n\nTeach Today will first preserve this device's current copy in local Recovery. This action reads Firebase but does not upload, merge, delete, or change the protected Firebase copy.`
+    );
+    if (!approved) {
+      localStorage.setItem("teachToday.firebaseSyncStatus", "Protected Firebase load canceled. Nothing was changed.");
+      ttRenderDataCenter();
+      return false;
+    }
+    await ttPreserveLocalRecovery("Before read-only protected Firebase load");
+    ttNativeFirebaseUploadPaused = false;
+    ttWorkOffline = false;
+    localStorage.setItem("teachToday.workOffline", "false");
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Loading the protected Firebase copy without writing to Firebase...");
+    ttHideConnectionNotice();
+    ttRenderDataCenter();
+    return ttInstallFirebaseEnvelope(envelope, {
+      preserveLocal: false,
+      archiveLocal: false,
+      status: "Loaded the protected Firebase copy. The previous device copy remains available in local Recovery."
+    });
+  } catch (error) {
+    const detail = error?.code || error?.message || "unknown error";
+    localStorage.setItem("teachToday.firebaseSyncStatus", `Protected Firebase copy could not load (${detail}). This device and Firebase were not changed.`);
+    ttShowConnectionNotice(`Protected Firebase copy could not load (${detail}). This device and Firebase were not changed.`);
+    return false;
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Load protected Firebase copy";
+    }
+    ttRenderDataCenter();
+  }
 }
 
 async function ttWriteFirebaseRevisionDocuments(payload, metadata = {}) {
@@ -12678,6 +12931,7 @@ async function ttWriteFirebaseRevisionDocuments(payload, metadata = {}) {
     chunkCount,
     chunkSize: ttFirebaseChunkSize,
     byteLength: new Blob([serialized]).size,
+    summary: ttFirebasePayloadSummary(payload),
     deviceId: ttFirebaseDeviceId(),
     parentRevisionId: metadata.parentRevisionId || "",
     mergeParentRevisionIds: metadata.mergeParentRevisionIds || [],
@@ -12734,6 +12988,11 @@ async function ttCommitFirebaseRevision(payload, expectedRevisionId, metadata = 
     latestRevisionId: revision.revisionId,
     latestSyncAt: serverTimestamp()
   }, { merge: true });
+  try {
+    await ttRecordDailyBackupIndex(revision);
+  } catch (error) {
+    console.warn("Teach Today daily backup timeline could not update:", error);
+  }
   return revision.revisionId;
 }
 
@@ -12745,6 +13004,11 @@ async function ttMarkFirebaseSynced(envelope, reason) {
   localStorage.setItem(ttFirebaseSharedSignatureKey, ttFirebasePayloadSignature(payload));
   localStorage.setItem("teachToday.firebaseSyncStatus", reason);
   await ttStoreFirebaseBaseline({ ...envelope, payload });
+  const timeline = ttById("ttFirebaseTimeline");
+  if (timeline && !ttById("ttDataPanel")?.hidden) {
+    timeline.dataset.loadedForUid = "";
+    ttLoadFirebaseTimeline({ force: true });
+  }
 }
 
 async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
@@ -12939,6 +13203,11 @@ async function ttSecureLegacyStudentData() {
 
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
+  if (ttIsNativeIpadShell() && ttNativeFirebaseUploadPaused) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", "Stage automatic upload remains paused. Local changes are saved on this device; load the protected Firebase copy or deliberately choose Upload / merge with Firebase now.");
+    ttUpdateHomeFirebaseStatus();
+    return;
+  }
   if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {
     localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase is up to date.");
     ttUpdateHomeFirebaseStatus();
@@ -13037,13 +13306,21 @@ async function ttStartFirebaseRevisionListener() {
       return;
     }
     if (ttHasUnsyncedFirebaseChanges()) {
+      if (ttIsNativeIpadShell()) {
+        ttNativeFirebaseUploadPaused = true;
+        const message = "The Stage app has local changes while Firebase has newer data. Automatic upload is paused. Load the protected Firebase copy or keep this device offline; Firebase has not been changed.";
+        localStorage.setItem("teachToday.firebaseSyncStatus", message);
+        ttShowConnectionNotice(message, "Stage sync paused for safety", { conflict: true });
+        ttUpdateHomeFirebaseStatus();
+        return;
+      }
       localStorage.setItem("teachToday.firebaseSyncStatus", "Another device changed Firebase. Reconciling both copies safely...");
       ttQueueFirebaseSync();
       return;
     }
     localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data detected. Updating this device...");
     ttUpdateHomeFirebaseStatus();
-    await ttFirebaseRestoreIfNewer({ force: true, revisionId });
+    await ttFirebaseRestoreIfNewer({ force: true, revisionId, archiveLocal: !ttIsNativeIpadShell() });
   }, (error) => {
     const detail = error?.code || error?.message || "unknown error";
     localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase change detection paused (${detail}). Local saves are still protected.`);
@@ -13110,12 +13387,20 @@ async function ttInitFirebaseSync() {
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Checking cloud data…`);
         ttRenderDataCenter();
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
-        const restored = await ttFirebaseRestoreIfNewer();
+        const restored = await ttFirebaseRestoreIfNewer({ archiveLocal: !ttIsNativeIpadShell() });
         if (restored) return;
         await ttStartFirebaseRevisionListener();
         if (ttHasUnsyncedFirebaseChanges()) {
-          ttQueueFirebaseSync();
+          if (ttIsNativeIpadShell()) {
+            ttNativeFirebaseUploadPaused = true;
+            const message = "The Stage app's local copy differs from Firebase. Automatic upload is paused. Use Load protected Firebase copy to read the recovered cloud data without writing back.";
+            localStorage.setItem("teachToday.firebaseSyncStatus", message);
+            ttShowConnectionNotice(message, "Stage sync paused for safety", { conflict: true });
+          } else {
+            ttQueueFirebaseSync();
+          }
         } else {
+          ttNativeFirebaseUploadPaused = false;
           localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Firebase is up to date.`);
         }
         // Do not retry pending Firebase Storage audio automatically on startup.
@@ -13125,15 +13410,22 @@ async function ttInitFirebaseSync() {
         if (!ttDriveAccessToken) {
           localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission for this browser session. Click Google Drive audio in Records.");
         }
-        if (ttHasUnsyncedFirebaseChanges()) {
+        if (ttHasUnsyncedFirebaseChanges() && !ttIsNativeIpadShell()) {
           localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
         }
       } else {
+        ttNativeFirebaseUploadPaused = false;
         if (ttFirebaseUnsubscribe) ttFirebaseUnsubscribe();
         ttFirebaseUnsubscribe = null;
         localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
+        const timeline = ttById("ttFirebaseTimeline");
+        if (timeline) {
+          timeline.dataset.loadedForUid = "";
+          timeline.textContent = "Sign in to view private cloud recovery points.";
+        }
       }
       ttRenderDataCenter();
+      if (user && !ttById("ttDataPanel")?.hidden) ttLoadFirebaseTimeline({ force: true });
     });
   } catch (error) {
     const detail = error?.code || error?.message || "unknown error";
@@ -16101,7 +16393,10 @@ function ttBind() {
     ttCloseSmallDropdownMenus();
     panel.hidden = isOpen;
     ttById("ttDataToggle").classList.toggle("active", !isOpen);
-    if (!panel.hidden) ttRenderDataCenter();
+    if (!panel.hidden) {
+      ttRenderDataCenter();
+      ttLoadFirebaseTimeline();
+    }
   });
   ttById("ttDataClose")?.addEventListener("click", () => {
     ttById("ttDataPanel").hidden = true;
@@ -16123,12 +16418,19 @@ function ttBind() {
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttDownloadRecovery")?.addEventListener("click", () => ttDownloadLatestRecovery());
   ttById("ttDownloadRecoveryBundle")?.addEventListener("click", () => ttDownloadRecoveryBundle());
+  ttById("ttFirebaseTimelineRefresh")?.addEventListener("click", () => ttLoadFirebaseTimeline({ force: true }));
+  ttById("ttFirebaseTimeline")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-firebase-revision-download]");
+    if (!button) return;
+    ttDownloadFirebaseRevision(button.dataset.firebaseRevisionDownload, button);
+  });
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
   ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {
     localStorage.setItem("teachToday.driveStatus", `Google Drive audio failed: ${ttFriendlyDriveError(err)}`);
     ttRenderDataCenter();
   }));
+  ttById("ttFirebaseLoadProtected")?.addEventListener("click", () => ttLoadProtectedFirebaseCopy());
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   ttById("ttSecureLegacyStudentData")?.addEventListener("click", () => ttSecureLegacyStudentData());
   ttById("ttConnectionBackup")?.addEventListener("click", () => ttBackupData());

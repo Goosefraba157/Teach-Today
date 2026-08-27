@@ -4,6 +4,9 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-27
 
+- Added an automatic private Cloud backup timeline to Records & Data. Successful changed-data Firebase saves now index their immutable revisions into six four-hour recovery windows per day, giving a year-scale history without duplicating full student payloads.
+- Added read-only checkpoint downloads with date, size, reason, and record/lesson counts for new revisions. Viewing or downloading the timeline cannot restore, merge, overwrite, or delete live data.
+- Added a native Stage safety gate and a read-only `Load protected Firebase copy` path so a stale Stage copy cannot automatically upload over a recovered cloud copy; deliberate upload/merge remains separately labeled.
 - Applied the authorized private Firebase recovery as a stable-ID additive merge instead of restoring an older whole-app snapshot. Preserved the pre-recovery live payload as a separate immutable revision, wrote the merged payload to a new immutable revision, and changed the main pointer only under an unchanged-update-time precondition.
 - Verified the merged revision by exact chunk readback and aggregate checks: 379 master records, 21 groups, 64 saved lessons, 118 chart summaries, 83 encoding observations, 14 dictation misses, 13 legacy attendance records, 6 explicit attendance sessions, 3 attendance-activity entries, 8 lesson drafts, 2 Section 2 overrides, and 52 unique protected roster profiles. No records or prior revisions were deleted or overwritten.
 - Stopped automatic signed-in startup retries for pending Firebase Storage audio after failed retries were found to create shared revisions and a cross-device reload loop. Existing recordings, recording links, instructional records, and deliberate Google Drive audio remain unchanged.

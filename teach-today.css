@@ -5874,6 +5874,109 @@ body.presentation-mode #ttEditSection2Cards {
   color: #fff;
 }
 
+.firebase-backup-timeline {
+  margin-top: 10px;
+  border-top: 1px solid #99f6e4;
+  padding-top: 10px;
+}
+
+.firebase-backup-timeline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.firebase-backup-timeline-head div,
+.firebase-backup-timeline-entry div {
+  min-width: 0;
+}
+
+.firebase-backup-timeline-head strong,
+.firebase-backup-timeline-head span {
+  display: block;
+}
+
+.firebase-backup-timeline-head strong {
+  color: #134e4a;
+  font-size: 13px;
+}
+
+.firebase-backup-timeline-head span,
+.firebase-backup-timeline-list {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.firebase-backup-timeline-head button,
+.firebase-backup-timeline-entry button {
+  min-height: 30px;
+  border-color: #5eead4;
+  background: #fff;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.firebase-backup-timeline-list {
+  display: grid;
+  gap: 6px;
+  max-height: 230px;
+  margin-top: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.firebase-backup-timeline-day {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px 0 2px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.firebase-backup-timeline-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #ccfbf1;
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: #fff;
+}
+
+.firebase-backup-timeline-entry strong,
+.firebase-backup-timeline-entry span {
+  display: block;
+}
+
+.firebase-backup-timeline-entry strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.firebase-backup-timeline-entry span {
+  margin-top: 2px;
+}
+
+.firebase-backup-timeline-entry.is-current {
+  border-color: #14b8a6;
+  background: #ecfdf5;
+}
+
+@media (max-width: 760px) {
+  .firebase-backup-timeline-head,
+  .firebase-backup-timeline-entry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .wrap-up-card {
   border-color: #86efac;
   background: linear-gradient(180deg, #f7fee7 0%, #ffffff 34%);
