@@ -4088,6 +4088,7 @@ function ttRenderDataCenter() {
   const firebaseStatusEl = ttById("ttFirebaseSyncStatus");
   const secureLegacyButton = ttById("ttSecureLegacyStudentData");
   const recoveryButton = ttById("ttDownloadRecovery");
+  const recoveryBundleButton = ttById("ttDownloadRecoveryBundle");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
@@ -4098,6 +4099,7 @@ function ttRenderDataCenter() {
   if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
   if (recoveryButton) recoveryButton.hidden = !ttRecoveryIndex().length;
+  if (recoveryBundleButton) recoveryBundleButton.hidden = !ttRecoveryIndex().length;
 }
 
 function ttShowConnectionNotice(message, title = "Cloud connection issue", options = {}) {
@@ -12237,6 +12239,27 @@ async function ttDownloadLatestRecovery() {
   ttDownloadPayload(entry.payload, `teach-today-recovery-${stamp}.json`);
 }
 
+async function ttDownloadRecoveryBundle() {
+  const recoveries = [];
+  for (const item of ttRecoveryIndex()) {
+    const entry = await ttFirebaseSafetyGet(item.key);
+    if (!entry?.payload) continue;
+    recoveries.push({
+      savedAt: entry.savedAt || item.savedAt || "",
+      reason: entry.reason || item.reason || "Protected recovery",
+      payload: entry.payload
+    });
+  }
+  if (!recoveries.length) return;
+  const now = new Date();
+  ttDownloadPayload({
+    kind: "TeachTodayRecoveryBundle",
+    version: 1,
+    exportedAt: now.toISOString(),
+    recoveries
+  }, `teach-today-recovery-bundle-${ttBackupFileStamp(now)}.json`);
+}
+
 function ttBackupFileStamp(date = new Date()) {
   const year = date.getFullYear();
   const monthNumber = String(date.getMonth() + 1).padStart(2, "0");
@@ -16099,6 +16122,7 @@ function ttBind() {
   ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttDownloadRecovery")?.addEventListener("click", () => ttDownloadLatestRecovery());
+  ttById("ttDownloadRecoveryBundle")?.addEventListener("click", () => ttDownloadRecoveryBundle());
   ttById("ttConnectCloudSync").addEventListener("click", () => ttConnectCloudSync());
   ttById("ttSyncCloudNow").addEventListener("click", () => ttCloudSyncWrite("Saved local backup file now."));
   ttById("ttDriveConnect")?.addEventListener("click", () => ttUploadPendingAudioToDrive().catch((err) => {

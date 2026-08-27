@@ -5,6 +5,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-08-27
 
 - Stopped automatic signed-in startup retries for pending Firebase Storage audio after failed retries were found to create shared revisions and a cross-device reload loop. Existing recordings, recording links, instructional records, and deliberate Google Drive audio remain unchanged.
+- Added a protected all-recoveries export so every locally retained reconciliation branch can be compared before any additive data recovery; the existing latest-Recovery download remains available.
 - Moved Section 4's single timer dock beneath the selected Top or Bottom charting board so the timing controls stay close to the words being scored.
 - Preserved one uninterrupted timer when the teacher switches halves or works in the notes area; no performance-linked color or student-facing signal was added.
 
