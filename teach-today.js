@@ -4219,6 +4219,157 @@ function ttNormalizeTeachTodayState() {
   ttBackfillLessonLinks();
 }
 
+function ttRosterProfileById(studentId) {
+  return (appState.rosterStudents || [])
+    .map((student) => typeof student === "string" ? { name: student } : student)
+    .find((student) => student.studentId === studentId) || null;
+}
+
+function ttRosterProfileByName(name) {
+  const normalized = String(name || "").trim().toLocaleLowerCase();
+  return (appState.rosterStudents || [])
+    .map((student) => typeof student === "string" ? { name: student } : student)
+    .find((student) => [student.name, student.displayName, student.fullName, ...(student.aliases || [])]
+      .filter(Boolean)
+      .some((value) => String(value).trim().toLocaleLowerCase() === normalized)) || null;
+}
+
+function ttStudentIdForName(name, group = null) {
+  return group?.studentIds?.[name] || ttRosterProfileByName(name)?.studentId || "";
+}
+
+function ttStudentDisplayName(studentId, fallback = "Student") {
+  const profile = ttRosterProfileById(studentId);
+  return profile?.name || profile?.displayName || fallback;
+}
+
+function ttStudentHomeGroupId(studentId, schoolYearId = appState.activeSchoolYearId) {
+  return (appState.groups || []).find((group) => group.schoolYearId === schoolYearId
+    && (group.students || []).some((name) => ttStudentIdForName(name, group) === studentId))?.id || "";
+}
+
+function ttTeachingDate(group = ttActiveGroup(), lesson = ttLesson) {
+  if (lesson?.scheduledDate) return dateKey(lesson.scheduledDate);
+  const plan = group ? ttActiveOpenPlan(group) : null;
+  const day = plan ? ttPlanSessionDay(plan, plan.lessons?.[0]) : "1";
+  if (plan?.sessions?.[day]?.date) return dateKey(plan.sessions[day].date);
+  if (plan?.scheduledDate) return dateKey(plan.scheduledDate);
+  if (ttPlannerDraft?.groupId === group?.id && ttPlannerDraft.scheduledDate) return dateKey(ttPlannerDraft.scheduledDate);
+  return ttTodayKey();
+}
+
+function ttCombinationFor(group = ttActiveGroup(), dayKey = ttTeachingDate(group)) {
+  return group?.temporaryCombinations?.[dateKey(dayKey)] || null;
+}
+
+function ttTeachingStudentEntries(group = ttActiveGroup(), dayKey = ttTeachingDate(group)) {
+  if (!group) return [];
+  const combination = ttCombinationFor(group, dayKey);
+  const sourceIds = [group.id, ...(combination?.sourceGroupIds || [])];
+  const seen = new Set();
+  return sourceIds.flatMap((groupId) => {
+    const sourceGroup = (appState.groups || []).find((item) => item.id === groupId);
+    if (!sourceGroup) return [];
+    return (sourceGroup.students || []).flatMap((name) => {
+      const studentId = ttStudentIdForName(name, sourceGroup);
+      const key = studentId || String(name).trim().toLocaleLowerCase();
+      if (!key || seen.has(key)) return [];
+      seen.add(key);
+      return [{
+        studentId,
+        name: ttStudentDisplayName(studentId, name),
+        homeGroupId: sourceGroup.id,
+        homeGroupName: sourceGroup.name
+      }];
+    });
+  });
+}
+
+function ttTeachingStudents(group = ttActiveGroup(), dayKey = ttTeachingDate(group)) {
+  return ttTeachingStudentEntries(group, dayKey).map((entry) => entry.name);
+}
+
+function ttApplyPlanRosterSnapshot(plan, group, lesson = plan?.lessons?.[0]) {
+  if (!plan || !group) return plan;
+  if (plan.rosterSnapshotLocked && Array.isArray(plan.rosterSnapshot)) {
+    plan.hostGroupId ||= group.id;
+    plan.participatingGroupIds = [...new Set([
+      plan.hostGroupId,
+      ...plan.rosterSnapshot.map((entry) => entry.homeGroupId)
+    ].filter(Boolean))];
+    plan.participantStudentIds = [...new Set(plan.rosterSnapshot.map((entry) => entry.studentId).filter(Boolean))];
+    return plan;
+  }
+  const dayKey = dateKey(lesson?.scheduledDate || plan.scheduledDate || ttTeachingDate(group, lesson));
+  const combination = ttCombinationFor(group, dayKey);
+  const entries = ttTeachingStudentEntries(group, dayKey);
+  plan.hostGroupId = group.id;
+  plan.participatingGroupIds = [group.id, ...(combination?.sourceGroupIds || [])];
+  plan.participatingGroupIds = [...new Set(plan.participatingGroupIds.filter(Boolean))];
+  plan.participantStudentIds = [...new Set(entries.map((entry) => entry.studentId).filter(Boolean))];
+  plan.rosterSnapshot = entries.map((entry) => ({ ...entry }));
+  plan.combinationDate = combination ? dayKey : "";
+  plan.guestLessonNumbers ||= {};
+  plan.participatingGroupIds.filter((groupId) => groupId !== group.id).forEach((groupId) => {
+    const guest = (appState.groups || []).find((item) => item.id === groupId);
+    if (guest && !plan.guestLessonNumbers[groupId]) plan.guestLessonNumbers[groupId] = Number(guest.lessonSerial || 0) + 1;
+  });
+  if (plan.hasStudentData || ["Taught", "Complete"].includes(plan.status)) plan.rosterSnapshotLocked = true;
+  return plan;
+}
+
+function ttSyncCombinedLessonLinks(plan, hostGroup) {
+  if (!plan || !hostGroup) return;
+  ttApplyPlanRosterSnapshot(plan, hostGroup, plan.lessons?.[0]);
+  const participantIds = new Set(plan.participatingGroupIds || []);
+  (appState.groups || []).forEach((group) => {
+    if (group.id === hostGroup.id) return;
+    group.history ||= [];
+    const linkId = `combined-link-${plan.id}-${group.id}`;
+    const existingIndex = group.history.findIndex((item) => item.id === linkId);
+    if (!participantIds.has(group.id)) {
+      if (existingIndex >= 0 && !group.history[existingIndex].hasStudentData) {
+        group.history.splice(existingIndex, 1);
+        ttRecalculateLessonSerial(group);
+      }
+      return;
+    }
+    const guestLessonNumber = plan.guestLessonNumbers?.[group.id] || Number(group.lessonSerial || 0) + 1;
+    const lesson = ttClone(plan.lessons?.[0] || {});
+    lesson.savedPlanId = linkId;
+    lesson.lessonSequence = guestLessonNumber;
+    const link = {
+      id: linkId,
+      hostPlanId: plan.id,
+      hostGroupId: hostGroup.id,
+      hostGroupNameAtTime: hostGroup.name,
+      combinedParticipation: true,
+      readOnly: true,
+      source: "CombinedSession",
+      schoolYearId: group.schoolYearId,
+      groupIdAtTime: group.id,
+      lessonNumber: guestLessonNumber,
+      title: `Combined with ${hostGroup.name} · Lesson ${guestLessonNumber}`,
+      tabLabel: `Combined · ${hostGroup.name}`,
+      created: plan.created,
+      savedAt: plan.savedAt,
+      dailyKey: plan.dailyKey,
+      scheduledDate: plan.scheduledDate,
+      status: plan.status,
+      substep: plan.substep,
+      hasStudentData: plan.hasStudentData,
+      participantStudentIds: (plan.rosterSnapshot || [])
+        .filter((entry) => entry.homeGroupId === group.id && entry.studentId)
+        .map((entry) => entry.studentId),
+      lessons: [lesson]
+    };
+    if (existingIndex >= 0) group.history[existingIndex] = link;
+    else group.history.push(link);
+    group.history = group.history.slice(-50);
+    group.lessonSerial = Math.max(Number(group.lessonSerial || 0), Number(guestLessonNumber || 0));
+  });
+}
+
 function ttRecordTime(record) {
   return new Date(record?.date || record?.displayDate || 0).getTime() || 0;
 }
@@ -4579,7 +4730,9 @@ function ttFillLessonControls(group) {
 function ttFillStudents(group) {
   const select = ttById("ttStudent");
   select.innerHTML = "";
-  group.students.forEach((student) => {
+  const students = ttTeachingStudents(group);
+  if (!students.includes(group.activeStudent)) group.activeStudent = students[0] || "";
+  students.forEach((student) => {
     const option = document.createElement("option");
     option.value = student;
     option.textContent = student;
@@ -4591,7 +4744,7 @@ function ttFillStudents(group) {
 function ttFillFrontStudents(group) {
   const container = ttById("ttFrontStudents");
   container.innerHTML = "";
-  group.students.forEach((student) => {
+  ttTeachingStudents(group).forEach((student) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `front-student${student === group.activeStudent ? " active" : ""}`;
@@ -4835,10 +4988,11 @@ function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) 
   const isToday = dayKey === ttAttendanceKey();
   const isFreshToday = isToday && !existing && !Object.keys(legacyAttendance).length;
   const attendance = { ...(existing?.attendance || legacyAttendance) };
-  Object.entries(group.studentIds || {}).forEach(([name, studentId]) => {
+  ttTeachingStudentEntries(group, dayKey).forEach(({ name, studentId }) => {
     if (attendance[name] === undefined && existing?.attendanceByStudentId?.[studentId] !== undefined) attendance[name] = existing.attendanceByStudentId[studentId];
   });
-  if (!existing) (group.students || []).forEach((student) => {
+  const sessionStudents = ttTeachingStudents(group, dayKey);
+  if (!existing) sessionStudents.forEach((student) => {
     if (attendance[student] === undefined) attendance[student] = true;
   });
   const activity = ttAttendanceActivity(group, dayKey);
@@ -4858,7 +5012,7 @@ function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) 
   body.innerHTML = `<header><span>${isToday ? "TODAY'S SESSION" : "EDIT ATTENDANCE"}</span><h2 id="ttAttendanceSessionTitle">${escapeHtml(group.name)} · ${escapeHtml(ttLongLessonDate(dayKey))}</h2><p>Lesson ${escapeHtml(displayLessonNumber)}. Opening or preparing this lesson does not count as attendance.</p></header>
     <div class="attendance-identity-fields"><label class="attendance-date-field">Attendance date<input id="ttAttendanceEditDate" type="date" value="${escapeHtml(dayKey)}"></label><label class="attendance-date-field">Lesson used<select id="ttAttendancePlanSelect">${lessonOptions || `<option value="${escapeHtml(planId)}" data-lesson-number="${escapeHtml(lessonNumber)}">Lesson ${escapeHtml(lessonNumber)}</option>`}</select></label></div>
     <details class="attendance-coverage" ${!isFreshToday || detectedSections.length ? "open" : ""}><summary><strong>Lesson coverage</strong><span>${escapeHtml(detectedLabel)}</span></summary><fieldset class="attendance-parts"><legend>Adjust lesson portions if needed</legend><label><input type="checkbox" value="1" ${parts.includes("1") ? "checked" : ""}> Day 1 portions</label><label><input type="checkbox" value="2" ${parts.includes("2") ? "checked" : ""}> Day 2 portions</label></fieldset></details>
-    <div class="attendance-people">${(group.students || []).map((student) => ttAttendanceStatusButton(student, attendance[student])).join("") || "<p>No students are assigned to this group.</p>"}</div>
+    <div class="attendance-people">${sessionStudents.map((student) => ttAttendanceStatusButton(student, attendance[student])).join("") || "<p>No students are assigned to this group.</p>"}</div>
     <label class="attendance-note-field">Optional note<textarea id="ttAttendanceSessionNote" rows="2" placeholder="Fire drill, shortened lesson, sections revisited…">${escapeHtml(existing?.note || "")}</textarea></label>
     <div class="attendance-session-actions"><button type="button" data-attendance-all>Reset all present</button><button type="button" class="attendance-confirm" data-attendance-confirm>Confirm attendance</button><button type="button" class="attendance-no-session" data-attendance-none>No session held</button></div>
     <details class="attendance-history" ${options.history ? "open" : ""}><summary>Edit a previous date</summary>${ttAttendanceHistoryCalendarHtml(group, dayKey)}</details>`;
@@ -4906,6 +5060,57 @@ function ttAttendanceModalValues() {
   };
 }
 
+function ttSyncCombinedAttendanceToSourceGroups(hostGroup, dayKey, hostSession, identity = {}) {
+  const combination = ttCombinationFor(hostGroup, dayKey);
+  if (!combination?.sourceGroupIds?.length || !hostSession) return;
+  appState.attendanceSessions ||= {};
+  appState.attendanceRecords ||= {};
+  combination.sourceGroupIds.forEach((groupId) => {
+    const group = (appState.groups || []).find((item) => item.id === groupId);
+    if (!group) return;
+    const hostPlan = (hostGroup.history || []).find((plan) => plan.id === identity.planId);
+    const linkedPlanId = hostPlan ? `combined-link-${hostPlan.id}-${group.id}` : identity.planId || "";
+    const guestLessonNumber = hostPlan?.guestLessonNumbers?.[group.id] || identity.lessonNumber;
+    appState.attendanceSessions[group.id] ||= {};
+    appState.attendanceRecords[group.id] ||= {};
+    const existing = appState.attendanceSessions[group.id][dayKey];
+    if (existing?.status === "confirmed" && existing.combinedHostGroupId && existing.combinedHostGroupId !== hostGroup.id) return;
+    if (existing?.status === "confirmed" && !existing.combinedHostGroupId) {
+      existing.audit ||= [];
+      existing.audit.push({ at: new Date().toISOString(), action: "combined-session-linked", hostGroupId: hostGroup.id, planId: linkedPlanId });
+      existing.combinedPlanIds = [...new Set([...(existing.combinedPlanIds || []), linkedPlanId].filter(Boolean))];
+      return;
+    }
+    const attendance = {};
+    const attendanceByStudentId = {};
+    (group.students || []).forEach((name) => {
+      const studentId = ttStudentIdForName(name, group);
+      if (!studentId || hostSession.attendanceByStudentId?.[studentId] === undefined) return;
+      attendance[name] = hostSession.attendanceByStudentId[studentId];
+      attendanceByStudentId[studentId] = hostSession.attendanceByStudentId[studentId];
+    });
+    const synced = {
+      ...(existing || {}),
+      date: dayKey,
+      status: "confirmed",
+      attendance,
+      attendanceByStudentId,
+      note: existing?.note || `Combined session hosted by ${hostGroup.name}`,
+      planIds: linkedPlanId ? [linkedPlanId] : [],
+      lessonNumbers: guestLessonNumber ? [guestLessonNumber] : [],
+      lessonParts: ttClone(hostSession.lessonParts || []),
+      sectionActivity: ttClone(hostSession.sectionActivity || {}),
+      combinedHostGroupId: hostGroup.id,
+      combinedPlanIds: [...new Set([...(existing?.combinedPlanIds || []), linkedPlanId].filter(Boolean))],
+      confirmedAt: hostSession.confirmedAt,
+      updatedAt: new Date().toISOString(),
+      audit: [...(existing?.audit || []), { at: new Date().toISOString(), action: "combined-session-synced", hostGroupId: hostGroup.id, planId: linkedPlanId }]
+    };
+    appState.attendanceSessions[group.id][dayKey] = synced;
+    appState.attendanceRecords[group.id][dayKey] = { ...attendance };
+  });
+}
+
 function ttConfirmAttendanceSession(group, dayKey, identity = {}) {
   const values = ttAttendanceModalValues();
   if (values.unmarked) {
@@ -4927,8 +5132,7 @@ function ttConfirmAttendanceSession(group, dayKey, identity = {}) {
   session.status = "confirmed";
   session.attendance = values.attendance;
   session.attendanceByStudentId = Object.entries(values.attendance).reduce((result, [name, present]) => {
-    const studentId = group.studentIds?.[name]
-      || (appState.rosterStudents || []).find((student) => typeof student !== "string" && (student.name === name || student.displayName === name))?.studentId;
+    const studentId = ttStudentIdForName(name, group);
     if (studentId) result[studentId] = present;
     return result;
   }, {});
@@ -4947,6 +5151,13 @@ function ttConfirmAttendanceSession(group, dayKey, identity = {}) {
   session.audit.push({ at: session.updatedAt, action: before === "confirmed" ? "corrected" : "confirmed", ...(previous ? { previous } : {}) });
   appState.attendanceRecords[group.id] ||= {};
   appState.attendanceRecords[group.id][dayKey] = { ...values.attendance };
+  const attendedPlan = (group.history || []).find((plan) => plan.id === identity.planId);
+  if (attendedPlan) {
+    ttApplyPlanRosterSnapshot(attendedPlan, group, attendedPlan.lessons?.[0]);
+    attendedPlan.rosterSnapshotLocked = true;
+    ttSyncCombinedLessonLinks(attendedPlan, group);
+  }
+  ttSyncCombinedAttendanceToSourceGroups(group, dayKey, session, identity);
   saveState();
   ttCloseAttendanceSessionModal();
   ttRenderAttendancePanel(group);
@@ -4998,7 +5209,7 @@ function ttRenderAttendancePanel(group) {
   if (!panel) return;
   const session = ttAttendanceSession(group);
   const attendance = session?.status === "confirmed" ? session.attendance : {};
-  panel.innerHTML = group.students.map((student) => {
+  panel.innerHTML = ttTeachingStudents(group).map((student) => {
     const status = attendance[student] === true ? "Present" : attendance[student] === false ? "Absent" : "Not marked";
     return `<span class="attendance-chip ${status === "Present" ? "present" : status === "Absent" ? "absent" : ""}">${status} - ${escapeHtml(student)}</span>`;
   }).join("") + `<button type="button" class="attendance-panel-edit" data-open-attendance>${session?.status === "confirmed" ? "Edit today's attendance" : "Confirm today's attendance"}</button><button type="button" class="attendance-panel-history" data-open-attendance-history>Edit previous dates</button>`;
@@ -5193,6 +5404,72 @@ function ttRenderGroupSnapshot(group) {
   `;
 }
 
+function ttCloseCombineGroupsModal() {
+  ttById("ttCombineGroupsModal")?.remove();
+}
+
+function ttOpenCombineGroupsModal(groupId) {
+  const group = (appState.groups || []).find((item) => item.id === groupId);
+  if (!group || group.schoolYearId !== appState.activeSchoolYearId) return;
+  ttCloseCombineGroupsModal();
+  const draftDate = ttPlannerDraft?.groupId === group.id ? ttPlannerDraft.scheduledDate : "";
+  const scheduledDate = dateKey(draftDate || ttTodayKey());
+  const available = (appState.groups || []).filter((item) => item.id !== group.id && item.schoolYearId === group.schoolYearId && item.status !== "archived");
+  const current = ttCombinationFor(group, scheduledDate);
+  const overlay = document.createElement("div");
+  overlay.id = "ttCombineGroupsModal";
+  overlay.className = "combine-groups-overlay";
+  overlay.innerHTML = `<div class="combine-groups-backdrop" data-combine-close></div>
+    <section class="combine-groups-card" role="dialog" aria-modal="true" aria-labelledby="ttCombineGroupsTitle">
+      <button type="button" class="combine-groups-close" data-combine-close aria-label="Close">×</button>
+      <header><span>TEMPORARY ROSTER</span><h2 id="ttCombineGroupsTitle">Combine groups for one session</h2>
+        <p>${escapeHtml(group.name)} stays the host group. The other groups and every student keep their permanent assignment.</p></header>
+      <label class="combine-groups-date">Session date<input id="ttCombineGroupsDate" type="date" value="${escapeHtml(scheduledDate)}"></label>
+      <fieldset><legend>Groups joining ${escapeHtml(group.name)}</legend>
+        ${available.map((item) => `<label><input type="checkbox" value="${escapeHtml(item.id)}" ${(current?.sourceGroupIds || []).includes(item.id) ? "checked" : ""}><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml((item.students || []).join(", ") || "No students")}</small></span></label>`).join("") || "<p>No other current groups are available.</p>"}
+      </fieldset>
+      <div class="combine-groups-safety"><strong>No permanent roster changes</strong><span>The saved lesson and attendance will be linked to every selected group by permanent student ID. Past and future assignments remain intact.</span></div>
+      <footer><button type="button" data-combine-clear>Clear this date</button><button type="button" class="combine-groups-save" data-combine-save>Use combined roster</button></footer>
+    </section>`;
+  document.body.appendChild(overlay);
+  const reopenForDate = () => {
+    const nextDate = overlay.querySelector("#ttCombineGroupsDate")?.value || scheduledDate;
+    const priorSelection = group.temporaryCombinations?.[nextDate];
+    overlay.querySelectorAll('fieldset input[type="checkbox"]').forEach((input) => {
+      input.checked = (priorSelection?.sourceGroupIds || []).includes(input.value);
+    });
+  };
+  overlay.querySelector("#ttCombineGroupsDate")?.addEventListener("change", reopenForDate);
+  overlay.querySelectorAll("[data-combine-close]").forEach((button) => button.addEventListener("click", ttCloseCombineGroupsModal));
+  overlay.querySelector("[data-combine-clear]")?.addEventListener("click", () => {
+    const dayKey = overlay.querySelector("#ttCombineGroupsDate")?.value || scheduledDate;
+    if (group.temporaryCombinations) delete group.temporaryCombinations[dayKey];
+    saveState();
+    ttCloseCombineGroupsModal();
+    ttRenderHomeScreen();
+  });
+  overlay.querySelector("[data-combine-save]")?.addEventListener("click", () => {
+    const dayKey = overlay.querySelector("#ttCombineGroupsDate")?.value || scheduledDate;
+    const sourceGroupIds = [...overlay.querySelectorAll('fieldset input[type="checkbox"]:checked')].map((input) => input.value);
+    group.temporaryCombinations ||= {};
+    if (sourceGroupIds.length) {
+      group.temporaryCombinations[dayKey] = {
+        id: `combination-${group.id}-${dayKey}`,
+        date: dayKey,
+        sourceGroupIds,
+        createdAt: group.temporaryCombinations[dayKey]?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      delete group.temporaryCombinations[dayKey];
+    }
+    if (ttPlannerDraft?.groupId === group.id) ttPlannerDraft.scheduledDate = dayKey;
+    saveState();
+    ttCloseCombineGroupsModal();
+    ttRenderHomeScreen();
+  });
+}
+
 function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   if (ttLessonLaunchTimer) {
     clearTimeout(ttLessonLaunchTimer);
@@ -5225,7 +5502,7 @@ function ttUpdateLessonLaunch(group = ttActiveGroup(), lesson = ttLesson) {
   const reader = lesson?.reader || lesson?.readerLevel || group.readerLevel || "AB";
   const wordlist = lesson?.wordlistPageNumber || "--";
   const sentence = lesson?.sentencePageNumber || "--";
-  const students = (group.students || []).filter(Boolean);
+  const students = ttTeachingStudents(group, lesson?.scheduledDate).filter(Boolean);
   const studentText = students.length ? `${students.length} student${students.length === 1 ? "" : "s"}` : "No students assigned";
   ttById("ttLaunchGroup").textContent = group.name || "Current group";
   ttById("ttLaunchMeta").textContent = `${studentText} - ready for the live lesson view`;
@@ -5352,6 +5629,9 @@ function ttRenderHomeScreen() {
         if (typeof ttOpenEditGroupModal === "function") ttOpenEditGroupModal(button.dataset.editGroup);
       });
     });
+    list.querySelectorAll("[data-combine-group]").forEach((button) => {
+      button.addEventListener("click", () => ttOpenCombineGroupsModal(button.dataset.combineGroup));
+    });
     list.querySelector("#ttHomeAddGroup")?.addEventListener("click", () => {
       if (typeof ttOpenNewGroupModal === "function") ttOpenNewGroupModal();
     });
@@ -5464,6 +5744,7 @@ function ttRenderHomeContinuity(enabled = true) {
     group.activeLessonPlanId = "";
     ttPlannerDraft = {};
     ttEnsurePlannerDraft(group).scheduledDate = ttNextInstructionDateKey(completedDate);
+    ttSyncCombinedLessonLinks(openPlan, group);
     saveState();
     ttRenderHomeScreen();
   });
@@ -5514,7 +5795,7 @@ function ttCreateDemoGroup() {
 }
 
 function ttOfficialLessonPlans(group) {
-  return (group?.history || []).filter((plan) => plan.source === "TeachToday" && plan.lessons?.[0] && !plan.excludedFromLessonSequence && plan.status !== "Test");
+  return (group?.history || []).filter((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0] && !plan.excludedFromLessonSequence && plan.status !== "Test");
 }
 
 function ttRecalculateLessonSerial(group) {
@@ -5535,7 +5816,7 @@ function ttRenderHomeLessonHistory(enabled = true) {
     const lesson = plan.lessons[0];
     const day = ttPlanSessionDay(plan, lesson);
     const date = plan.sessions?.[day]?.date || plan.scheduledDate;
-    return `<option value="${escapeHtml(plan.id)}">Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(plan.status || "Saved")} · ${escapeHtml(ttLongLessonDate(date))}</option>`;
+    return `<option value="${escapeHtml(plan.id)}">Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${plan.combinedParticipation ? `Combined with ${escapeHtml(plan.hostGroupNameAtTime || "another group")} · ` : ""}${escapeHtml(plan.status || "Saved")} · ${escapeHtml(ttLongLessonDate(date))}</option>`;
   }).join("");
   const editHtml = editingPlan ? (() => {
     const lesson = editingPlan.lessons[0];
@@ -5551,7 +5832,13 @@ function ttRenderHomeLessonHistory(enabled = true) {
   container.innerHTML = `<div class="lesson-history-heading"><div><span>Group records</span><strong>Lesson history</strong></div>
     <div class="lesson-history-controls">${plans.length ? `<select aria-label="Previous lesson">${options}</select><button type="button" data-history-edit>Edit date / number</button>` : `<span>No official lessons yet</span>`}</div></div>${editHtml}`;
   container.querySelector("[data-history-edit]")?.addEventListener("click", () => {
-    ttLessonHistoryEditPlanId = container.querySelector("select")?.value || "";
+    const selectedId = container.querySelector("select")?.value || "";
+    const selectedPlan = plans.find((plan) => plan.id === selectedId);
+    if (selectedPlan?.combinedParticipation) {
+      alert(`This lesson is linked from ${selectedPlan.hostGroupNameAtTime || "the host group"}. Open the host lesson to make a correction without creating two versions.`);
+      return;
+    }
+    ttLessonHistoryEditPlanId = selectedId;
     ttRenderHomeLessonHistory(enabled);
   });
   container.querySelector("[data-history-cancel]")?.addEventListener("click", () => {
@@ -5604,20 +5891,22 @@ function ttHomeGroupCardHtml(group, editable = true) {
   const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
   const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
   const recentHistory = (group.history || []).slice().reverse();
-  const lastPlan = recentHistory.find((plan) => plan.source === "TeachToday" && plan.lessons?.[0] && !plan.excludedFromLessonSequence)
+  const lastPlan = recentHistory.find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0] && !plan.excludedFromLessonSequence)
     || recentHistory.find((plan) => !plan.excludedFromLessonSequence);
   const lastLesson = lastPlan?.lessons?.[0];
   const records = (appState.masterRecords || [])
     .filter((record) => record.groupId === group.id || record.group === group.name)
     .sort((a, b) => new Date(b.date || b.displayDate || 0) - new Date(a.date || a.displayDate || 0));
   const lastRecord = records[0];
-  const students = (group.students || []).slice(0, 5).join(", ");
+  const students = (group.students || []).join(", ");
+  const todayCombination = group.temporaryCombinations?.[ttTodayKey()];
+  const combinedNames = (todayCombination?.sourceGroupIds || []).map((groupId) => (appState.groups || []).find((item) => item.id === groupId)?.name).filter(Boolean);
   const active = group.id === ttPlannerGroupId ? " active" : "";
   const lastText = lastLesson
     ? `${lastLesson.substep} / Reader ${lastLesson.reader}, p. ${lastLesson.wordlistPageNumber || "--"}`
     : `${group.substep || "--"} / no saved lesson yet`;
   const chartText = lastRecord
-    ? `${lastRecord.student}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
+    ? `${ttStudentDisplayName(lastRecord.studentId, lastRecord.student)}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
     : "No charting saved";
   const preferredType = ttPlannerFormatLabel(ttPreferredLessonType(group));
   return `<div class="home-group-card-shell" style="--group-color: ${color};">
@@ -5626,11 +5915,12 @@ function ttHomeGroupCardHtml(group, editable = true) {
       <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
       ${ttSubstepProgressBar(group)}
       <em>${escapeHtml(students || "No students yet")}</em>
+      ${combinedNames.length ? `<small class="home-group-combined">Today: combined with ${escapeHtml(combinedNames.join(", "))}</small>` : ""}
       <small>Last lesson: ${escapeHtml(lastText)}</small>
       <small>Last chart: ${escapeHtml(chartText)}</small>
       <small class="home-group-preference">Preferred: ${escapeHtml(preferredType)}</small>
     </button>
-    ${editable ? `<button type="button" class="home-group-edit" data-edit-group="${escapeHtml(group.id)}" aria-label="Edit ${escapeHtml(group.name || "group")}" title="Edit group">Edit</button>` : ""}
+    ${editable ? `<div class="home-group-card-actions"><button type="button" class="home-group-combine" data-combine-group="${escapeHtml(group.id)}" aria-label="Combine ${escapeHtml(group.name || "group")} for one session" title="Combine groups for one session">Combine</button><button type="button" class="home-group-edit" data-edit-group="${escapeHtml(group.id)}" aria-label="Edit ${escapeHtml(group.name || "group")}" title="Edit group">Edit</button></div>` : ""}
   </div>`;
 }
 
@@ -5827,7 +6117,7 @@ function ttAssistantTroubleItems(group, lesson, limit = 6) {
 
 function ttAssistantReadiness(group, lesson) {
   const missing = [];
-  if (!(group.students || []).length) missing.push("students");
+  if (!ttTeachingStudents(group, lesson?.scheduledDate).length) missing.push("students");
   if (!lesson?.realWords?.length && !lesson?.nonsenseWords?.length) missing.push("word list");
   if (!lesson?.readerSentences?.length) missing.push("sentence page");
   if (!lesson?.section9Story?.title && !lesson?.passage) missing.push("connected text");
@@ -5976,10 +6266,11 @@ function ttAssistantTimelineHtml(group, lesson, skill) {
 
 function ttAssistantStudentPanelHtml(group, lesson) {
   const currentSubstep = lesson?.substep || group.substep || "";
-  const rows = (group.students || []).map((student) => {
+  const teachingStudents = ttTeachingStudents(group, lesson?.scheduledDate);
+  const rows = teachingStudents.map((student) => {
     const records = typeof recordsForStudent === "function"
-      ? recordsForStudent(student).filter((record) => record.groupId === group.id || record.group === group.name)
-      : (appState.masterRecords || []).filter((record) => record.student === student && (record.groupId === group.id || record.group === group.name));
+      ? recordsForStudent(student)
+      : (appState.masterRecords || []).filter((record) => record.student === student);
     const last = records.at(-1);
     const status = typeof performanceStatus === "function" ? performanceStatus(records) : { color: "gray", label: "No data yet" };
     const misses = uniqueWords(records.slice(-3).flatMap(ttMissWordsFromChartRecord)).slice(0, 3);
@@ -5993,7 +6284,7 @@ function ttAssistantStudentPanelHtml(group, lesson) {
   const trouble = ttAssistantTroubleItems(group, lesson, 6);
   return `<div class="assistant-panel-head">
       <span>Teacher Panel</span>
-      <strong>${escapeHtml(group.students?.length || 0)} student${(group.students || []).length === 1 ? "" : "s"}</strong>
+      <strong>${escapeHtml(teachingStudents.length)} student${teachingStudents.length === 1 ? "" : "s"}</strong>
       <em>${escapeHtml(currentSubstep)}</em>
     </div>
     <div class="assistant-panel-trouble">
@@ -6444,11 +6735,11 @@ function ttUpdateHomeReferenceLinks() {
 }
 
 function ttPlannerLastLessonText(group) {
-  const lastPlan = (group.history || []).slice().reverse().find((plan) => plan.source === "TeachToday" && plan.lessons?.[0]);
+  const lastPlan = (group.history || []).slice().reverse().find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0]);
   if (!lastPlan?.lessons?.[0]) return "No saved lesson yet. Smart defaults use this group’s current substep.";
   const lesson = lastPlan.lessons[0];
   const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
-  return `Last taught: ${lesson.substep}, Reader ${lesson.reader}, wordlist p. ${lesson.wordlistPageNumber || "--"}${saved ? ` · ${saved}` : ""}`;
+  return `Last taught: ${lesson.substep}, Reader ${lesson.reader}, wordlist p. ${lesson.wordlistPageNumber || "--"}${lastPlan.combinedParticipation ? ` · combined with ${lastPlan.hostGroupNameAtTime || "another group"}` : ""}${saved ? ` · ${saved}` : ""}`;
 }
 
 function ttFillPlannerCoreSelects(group, skill, level) {
@@ -7687,8 +7978,9 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
   const data = ttTodaysLessonData(group, lesson);
   const attendanceSession = ttAttendanceSession(group);
   const attendance = attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {};
-  const presentStudents = (group.students || []).filter((student) => attendance[student] === true);
-  const absentStudents = (group.students || []).filter((student) => attendance[student] === false);
+  const teachingStudents = ttTeachingStudents(group, lesson?.scheduledDate);
+  const presentStudents = teachingStudents.filter((student) => attendance[student] === true);
+  const absentStudents = teachingStudents.filter((student) => attendance[student] === false);
   const chartCount = data.chart.length;
   const dictationCount = data.dictation.length;
   const encodingCount = data.encoding.length;
@@ -7696,7 +7988,7 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
 
   summary.innerHTML = `
     <article><strong>${escapeHtml(group.name || "Group")}</strong><span>${escapeHtml(lesson?.substep || group.substep || "--")} / Reader ${escapeHtml(lesson?.reader || "")}</span></article>
-    <article><strong>${attendanceSession?.status === "confirmed" ? `${presentStudents.length}/${(group.students || []).length}` : "Not confirmed"}</strong><span>Attendance</span></article>
+    <article><strong>${attendanceSession?.status === "confirmed" ? `${presentStudents.length}/${teachingStudents.length}` : "Not confirmed"}</strong><span>Attendance</span></article>
     <article><strong>${chartCount}</strong><span>Chart record${chartCount === 1 ? "" : "s"}</span></article>
     <article><strong>${dictationCount + encodingCount}</strong><span>Miss / encoding mark${dictationCount + encodingCount === 1 ? "" : "s"}</span></article>
     <article><strong>${escapeHtml(completeLabel)}</strong><span>Lesson status</span></article>
@@ -7704,7 +7996,7 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
 
   const attendancePanel = ttById("ttWrapAttendance");
   if (attendancePanel) {
-    attendancePanel.innerHTML = (group.students || []).map((student) => {
+    attendancePanel.innerHTML = teachingStudents.map((student) => {
       const status = attendance[student] === true ? "Present" : attendance[student] === false ? "Absent" : "Not marked";
       return `<button type="button" class="attendance-chip ${status === "Present" ? "present" : status === "Absent" ? "absent" : ""}" data-open-wrap-attendance>${status} - ${escapeHtml(student)}</button>`;
     }).join("");
@@ -7713,7 +8005,7 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
 
   const studentData = ttById("ttWrapStudentData");
   if (studentData) {
-    const rows = (group.students || []).map((student) => {
+    const rows = teachingStudents.map((student) => {
       const chart = data.chart.filter((record) => record.student === student);
       const dictation = data.dictation.filter((record) => record.student === student);
       const encoding = data.encoding.filter((record) => record.student === student);
@@ -7797,6 +8089,7 @@ function ttCompleteLessonWrapUp(options = {}) {
   group.activeLessonPlanId = "";
   plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
   plan.lastStudentDataAt = new Date().toISOString();
+  ttSyncCombinedLessonLinks(plan, group);
   saveState();
   ttUpdateSaveStatus(plan);
   ttRenderSavedLessons(group);
@@ -8317,7 +8610,7 @@ function ttFillEncodingStudentGrid(container, section, label, items = []) {
     <div class="encoding-student-grid"></div>
   `;
   const grid = container.querySelector(".encoding-student-grid");
-  group.students.forEach((student) => {
+  ttTeachingStudents(group).forEach((student) => {
     const column = document.createElement("article");
     column.className = "encoding-student-column";
     column.innerHTML = `
@@ -8453,7 +8746,7 @@ function ttSelectEncodingItem(button, section, category, value) {
 
 function ttToggleEncodingForActiveStudent(button, section, category, value) {
   const group = ttActiveGroup();
-  const student = group.activeStudent || group.students[0];
+  const student = group.activeStudent || ttTeachingStudents(group)[0];
   ttToggleEncodingObservation(button, student, section, category, "encoding miss", value);
 }
 
@@ -8527,12 +8820,15 @@ function ttSaveEncodingObservation(student, section, category, note, item = "") 
   if (!student) return;
   ttEnsureCurrentLessonSavedForData();
   const group = ttActiveGroup();
+  const studentId = ttStudentIdForName(student, group);
   const lessonMeta = ttCurrentLessonRecordMeta(ttLesson);
   group.encodingObservations ||= [];
   group.encodingObservations.push({
     id: `encoding-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     date: new Date().toISOString(),
     student,
+    studentId,
+    homeGroupIdAtTime: ttStudentHomeGroupId(studentId, group.schoolYearId) || group.id,
     section,
     substep: ttLesson?.substep || group.substep,
     category,
@@ -11084,6 +11380,7 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
     ttRecordPlanRevision(existing, lesson, options.reason || "Saved lesson");
     ttAddLessonTab(existing.id);
     delete appState.lessonDrafts[ttDraftKey(group)];
+    ttSyncCombinedLessonLinks(existing, group);
     saveState();
     ttUpdateSaveStatus(existing);
     return existing;
@@ -11114,6 +11411,7 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
   group.history = group.history.slice(-50);
   ttAddLessonTab(plan.id);
   delete appState.lessonDrafts[ttDraftKey(group)];
+  ttSyncCombinedLessonLinks(plan, group);
   saveState();
   ttUpdateSaveStatus(plan);
   return plan;
@@ -11153,6 +11451,7 @@ function ttSaveCurrentLesson(options = {}) {
   ttRecordPlanRevision(plan, ttLesson, options.reason || "Saved changes");
   ttAddLessonTab(plan.id);
   delete appState.lessonDrafts[ttDraftKey(group)];
+  ttSyncCombinedLessonLinks(plan, group);
   saveState();
   ttUpdateSaveStatus(plan);
   ttRenderLessonTabs();
@@ -11231,6 +11530,7 @@ function ttMarkCurrentPlanHasData(lesson = ttLesson) {
   plan.hasStudentData = true;
   if (plan.status !== "Complete") plan.status = "Taught";
   plan.lastStudentDataAt = new Date().toISOString();
+  ttSyncCombinedLessonLinks(plan, group);
   return plan;
 }
 
@@ -11378,7 +11678,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
   const text = {
     "DATE": date,
     "Lesson Number": lessonNumber ? String(lessonNumber) : "",
-    "Student Name/Group": (group.students || []).join(", "),
+    "Student Name/Group": ttTeachingStudents(group, lesson?.scheduledDate).join(", "),
     "Substep": skill.id,
     "CONCEPTS TO WEAVE": concept,
     "TROUBLE SPOTS": ttWilsonTroubleSpots(group, lesson),
@@ -11386,7 +11686,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "1 SQD CONSONANTS": sounds.consonants,
     "1 SQD WELDED": sounds.welded,
     "1 SQD ADD TO NOTEBOOK": ttJoinLines(notebookItems),
-    "1 SQD DRILL LEADER IF GROUP": (group.students || []).join(", "),
+    "1 SQD DRILL LEADER IF GROUP": ttTeachingStudents(group, lesson?.scheduledDate).join(", "),
     "2 REVIEW CONCEPTS": `Review ${priorSubstep(skill.id)} and trouble patterns.`,
     "2 REVIEW WORDS": ttJoinLines((lesson.sectionTwoReviewWords || []).concat(lesson.sectionTwoLastMissedWords || [])),
     "2 CURRENT CONCEPTS": concept,
@@ -11608,7 +11908,7 @@ function ttLessonPlanDocumentHtml(group, skill, lesson, plan, savedDate) {
   const isGroupLesson = (lesson.lessonType === "group" || lesson.lessonType === "part1" || lesson.lessonType === "part2");
   const section2bReview = isGroupLesson ? (lesson.sectionTwoReviewWordsB2 || []) : [];
   const section2bCurrent = isGroupLesson ? (lesson.sectionTwoCurrentWordsB2 || []) : [];
-  const students = (group.students || []).map((student) => `<span>${escapeHtml(student)}</span>`).join("");
+  const students = ttTeachingStudents(group, lesson?.scheduledDate).map((student) => `<span>${escapeHtml(student)}</span>`).join("");
   const section9Companion = ttSection9CompanionFor(lesson.section9Story?.passageId || lesson.section9Story);
   const section9Vocab = (section9Companion?.vocabulary || []).slice(0, 6);
   const section9Support = (section9Companion?.questions?.support || []).slice(0, 3);
@@ -13942,6 +14242,10 @@ function ttOpenPlanInApp(planId) {
     const plan = (group.history || []).find((item) => item.id === planId);
     if (plan) found = { group, plan };
   });
+  if (found?.plan?.combinedParticipation && found.plan.hostPlanId) {
+    ttOpenPlanInApp(found.plan.hostPlanId);
+    return;
+  }
   if (!found?.plan?.lessons?.[0]) return;
   appState.selectedGroupId = found.group.id;
   ttLesson = ttClone(found.plan.lessons[0]);
@@ -14733,12 +15037,15 @@ function ttSaveDictationMissForStudent(student) {
   }
   ttEnsureCurrentLessonSavedForData();
   const group = ttActiveGroup();
+  const studentId = ttStudentIdForName(student, group);
   const lessonMeta = ttCurrentLessonRecordMeta(ttLesson);
   group.dictationMisses ||= [];
   group.dictationMisses.push({
     id: `dictation-miss-${Date.now()}`,
     date: new Date().toISOString(),
     student,
+    studentId,
+    homeGroupIdAtTime: ttStudentHomeGroupId(studentId, group.schoolYearId) || group.id,
     substep: ttLesson?.substep || group.substep,
     category,
     item: value,
@@ -15076,9 +15383,7 @@ function ttSchoolYearForChartRecord(record) {
 }
 
 function ttSection4StudentRecords(student, group = ttActiveGroup()) {
-  const studentId = group.studentIds?.[student]
-    || (appState.rosterStudents || []).find((item) => (item.name || item.displayName || item.fullName) === student)?.studentId
-    || "";
+  const studentId = ttStudentIdForName(student, group);
   return (appState.masterRecords || []).filter((record) => {
     const identityMatch = studentId
       ? record.studentId === studentId || (!record.studentId && record.student === student)
@@ -15109,7 +15414,7 @@ function ttRenderSection4History() {
   const panel = ttById("ttSection4History");
   if (!panel) return;
   const group = ttActiveGroup();
-  const students = group.students || [];
+  const students = ttTeachingStudents(group);
   const selectedStudent = students.includes(panel.dataset.student)
     ? panel.dataset.student
     : group.activeStudent || students[0] || "";
@@ -15308,7 +15613,7 @@ function ttRecheckSection4Words() {
 function ttFillStudentPills(group) {
   const container = ttById("ttStudentPills");
   container.innerHTML = "";
-  group.students.forEach((student) => {
+  ttTeachingStudents(group).forEach((student) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `student-pill${student === group.activeStudent ? " active" : ""}`;
@@ -15331,8 +15636,9 @@ function ttFillStudentPills(group) {
 
 function ttCurrentLessonChartRecords(student, group = ttActiveGroup()) {
   const meta = ttCurrentLessonRecordMeta(ttLesson);
+  const studentId = ttStudentIdForName(student, group);
   return (appState.masterRecords || []).filter((record) => {
-    if (record.student !== student) return false;
+    if (studentId ? record.studentId !== studentId && record.student !== student : record.student !== student) return false;
     if (record.groupId && record.groupId !== group.id) return false;
     if (!record.groupId && record.group !== group.name) return false;
     if (meta.planId) return record.planId === meta.planId;
@@ -16888,11 +17194,9 @@ function ttLoadPlanFromUrl() {
 function ttOpenStudentProfile() {
   if (ttChartCard) saveLiveRecordIfNeeded(ttChartCard);
   const group = ttActiveGroup();
-  const student = group.activeStudent || group.students[0] || "";
+  const student = group.activeStudent || ttTeachingStudents(group)[0] || "";
   if (!student) return;
-  const studentId = group.studentIds?.[student]
-    || (appState.rosterStudents || []).find((item) => (item.name || item.fullName) === student)?.studentId
-    || "";
+  const studentId = ttStudentIdForName(student, group);
   const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&studentId=${encodeURIComponent(studentId)}`;
   location.href = url;
 }

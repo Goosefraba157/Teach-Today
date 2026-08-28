@@ -2,6 +2,16 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-28
+
+- Fixed manually entered students being silently omitted when the teacher saved a group without first pressing the separate Add button, and assigned every new roster entry a permanent private student ID immediately.
+- Removed the five-name Home-card truncation so the complete permanent roster is visible on each group card.
+- Added inline student display-name correction in the group editor. Renames preserve permanent identity, old-name matching, historical snapshots, attendance, charting, and other student records.
+- Added explicit permanent moves between current-year groups, with dated membership intervals and a visible past-membership summary; removals and moves do not delete lessons or student data.
+- Added a one-session Combine action on every current group card. Teachers can select any groups and a session date, teach from one combined roster, and leave every permanent roster unchanged.
+- Added stable-ID participant snapshots that lock once student data or attendance exists, read-only linked lesson history in every joined group, combined-session attendance propagation, school-year-filtered cross-group Student Profile evidence lookup, and home-group-at-time metadata for new student evidence.
+- Added sync-safety entity merging for membership history and name-change audit entries, including regression coverage for independent membership and group edits.
+
 ## 2026-08-27
 
 - Added automatic independent recovery copies of each newly confirmed Firebase revision to Google Drive and native iPad Files, with daily and weekly dated filenames.

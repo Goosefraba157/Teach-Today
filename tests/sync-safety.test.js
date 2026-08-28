@@ -75,6 +75,19 @@ const activityMerged = sync.mergePayloads(payload(activityBase), payload(activit
 assert.deepEqual(Object.keys(activityMerged.appState.attendanceActivity["group-a"]["2026-08-26"].sections).sort(), ["section1", "section6"]);
 assert.deepEqual(activityMerged.conflicts, []);
 
+const membershipBase = structuredClone(sharedBase);
+membershipBase.groups[0].membershipHistory = [{ id: "membership-a", studentId: "student-a", startedOn: "2026-07-01" }];
+const membershipLocal = structuredClone(membershipBase);
+membershipLocal.groups[0].membershipHistory[0].endedOn = "2026-08-28";
+membershipLocal.groups[0].membershipHistory.push({ id: "membership-b", studentId: "student-b", startedOn: "2026-08-28" });
+const membershipRemote = structuredClone(membershipBase);
+membershipRemote.groups[0].note = "Cloud note";
+const membershipMerged = sync.mergePayloads(payload(membershipBase), payload(membershipLocal), payload(membershipRemote));
+assert.equal(membershipMerged.appState.groups[0].membershipHistory.length, 2);
+assert.equal(membershipMerged.appState.groups[0].membershipHistory.find((entry) => entry.id === "membership-a").endedOn, "2026-08-28");
+assert.equal(membershipMerged.appState.groups[0].note, "Cloud note");
+assert.deepEqual(membershipMerged.conflicts, []);
+
 const localConflict = structuredClone(sharedBase);
 const remoteConflict = structuredClone(sharedBase);
 localConflict.groups[0].name = "Local name";

@@ -358,7 +358,7 @@ function params() {
 
 function privateStudentId(data, group, student) {
   return group?.studentIds?.[student]
-    || (data.rosterStudents || []).find((item) => (item.name || item.fullName) === student)?.studentId
+    || (data.rosterStudents || []).find((item) => [item.name, item.fullName, item.displayName, ...(item.aliases || [])].includes(student))?.studentId
     || "";
 }
 
@@ -457,8 +457,12 @@ function selectedContext() {
   const schoolYearId = selectedProfileSchoolYear(data, allChartRecords);
   const activityRecords = allRecords.filter((record) => schoolYearForRecord(data, record) === schoolYearId);
   const records = activityRecords.filter(isChartingRecord);
-  const dictationMisses = (profileGroup.dictationMisses || []).filter((miss) => miss.student === student);
-  const encodingObservations = (profileGroup.encodingObservations || []).filter((item) => item.student === student);
+  const identityMatch = (item) => resolvedStudentId
+    ? item.studentId === resolvedStudentId || (!item.studentId && item.student === student)
+    : item.student === student;
+  const inSelectedYear = (record) => schoolYearForRecord(data, record) === schoolYearId;
+  const dictationMisses = (data.groups || []).flatMap((item) => item.dictationMisses || []).filter(identityMatch).filter(inSelectedYear);
+  const encodingObservations = (data.groups || []).flatMap((item) => item.encodingObservations || []).filter(identityMatch).filter(inSelectedYear);
   return { data, group: profileGroup, student, studentId: studentId || privateStudentId(data, profileGroup, student), records, allRecords: allChartRecords, activityRecords, schoolYearId, dictationMisses, encodingObservations };
 }
 
@@ -743,9 +747,13 @@ function recordsForStudent(data, student, group, scope = comparisonScope) {
 
 function encodingForStudent(data, student, group, scope = comparisonScope) {
   const groups = scope === "all" ? (data.groups || []) : [group];
+  const studentId = privateStudentId(data, group, student);
+  const matches = (item) => studentId
+    ? item.studentId === studentId || (!item.studentId && item.student === student)
+    : item.student === student;
   return groups.flatMap((item) => [
-    ...(item.dictationMisses || []).filter((miss) => miss.student === student),
-    ...(item.encodingObservations || []).filter((miss) => miss.student === student)
+    ...(item.dictationMisses || []).filter(matches),
+    ...(item.encodingObservations || []).filter(matches)
   ]);
 }
 

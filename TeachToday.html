@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260827-independent-backups-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260828-roster-membership-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -1067,6 +1067,7 @@
               <select id="ttNgRoster" class="tt-ng-roster-select" aria-label="Pick from roster"></select>
               <button id="ttNgAddFromRoster" type="button" class="tt-ng-add-btn">+ Add</button>
             </div>
+            <button id="ttNgMoveFromRoster" type="button" class="tt-ng-move-btn" hidden>Move here permanently</button>
             <div class="tt-student-adder-or">or type a new name</div>
             <div class="tt-student-adder-row">
               <input id="ttNgNewStudent" type="text" placeholder="Student first name" autocomplete="off" autocorrect="off" autocapitalize="words">
@@ -1074,7 +1075,7 @@
             </div>
           </div>
           <div id="ttNgStudentTags" class="tt-ng-student-tags"></div>
-          <p class="tt-group-edit-note">Removing a student from this group does not delete the student profile or historical records. Add the student to another group to move them.</p>
+          <p class="tt-group-edit-note">Use ✎ to correct a display name. Add keeps an existing assignment; Move here permanently ends the earlier assignment. Historical lessons and student records are always preserved.</p>
         </div>
         <div class="tt-modal-footer">
           <button id="ttNewGroupCancel" type="button" class="tt-modal-cancel">Cancel</button>
@@ -1111,13 +1112,13 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=20260827-section4-timer-dock-1"></script>
-    <script src="sync-safety.js?v=20260823-authoritative-sync-1"></script>
+    <script src="app.js?v=20260828-roster-membership-1"></script>
+    <script src="sync-safety.js?v=20260828-roster-membership-1"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260827-independent-backups-1"></script>
+    <script src="teach-today.js?v=20260828-roster-membership-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
-    <script src="add-group.js"></script>
+    <script src="add-group.js?v=20260828-roster-membership-1"></script>
   </body>
 </html>

@@ -19,6 +19,8 @@
     "chartResults",
     "dictationMisses",
     "encodingObservations",
+    "membershipHistory",
+    "studentNameChanges",
     "revisions"
   ]);
 

@@ -64,6 +64,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Reason:** Students may leave or remain, while longitudinal growth must remain available without merging yearly operational data.
 - **School-year boundary:** A Teach Today school year runs July 1 through June 30. Student charting views default to the active school year and expose older years only through a deliberate selector. A dated charting record is grouped by its session date before falling back to saved school-year or group metadata, so older sessions cannot appear in the current-year view because of later metadata backfills.
 - **Decision:** Teacher-facing labels should use the minimum recognizable name, normally first name plus last initial, rather than full legal names.
+- **Display-name corrections:** A teacher may correct a student's current display name without changing the permanent private student ID. Prior names remain private aliases for record matching, while historical record snapshots are not rewritten or detached.
+- **Permanent membership history:** Current group rosters describe today's permanent assignments. Adding or removing a permanent assignment opens or closes a dated membership interval by student ID; a move closes the prior current-year assignment and opens the new one without deleting either group's earlier lessons or the student's records.
+- **Temporary combined sessions:** A teacher may select any current groups to join a host group for a specific date. This creates a dated teaching roster and participant snapshot without changing permanent memberships. Saved lessons and confirmed attendance are linked into every participating group's history by group and student ID; the joined-group lesson link is read-only and corrections route to the single host lesson.
 - **Decision:** Archiving ends an active school-year membership; it does not delete historical records.
 
 ## Live charting records

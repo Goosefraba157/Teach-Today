@@ -284,7 +284,7 @@ function applyStudentPrivacySchema(state) {
 
   const byName = new Map();
   state.rosterStudents.forEach((student) => {
-    [student.name, student.fullName, student.displayName].filter(Boolean).forEach((name) => {
+    [student.name, student.fullName, student.displayName, ...(student.aliases || [])].filter(Boolean).forEach((name) => {
       const key = normalizePrivateStudentName(name);
       if (!byName.has(key)) byName.set(key, student.studentId);
     });
@@ -294,9 +294,26 @@ function applyStudentPrivacySchema(state) {
     group.schoolYearId ||= existingDataYearId;
     group.status ||= isLegacyMigration ? "archived" : "active";
     group.studentIds ||= {};
+    group.membershipHistory = Array.isArray(group.membershipHistory) ? group.membershipHistory : [];
     (group.students || []).forEach((name) => {
       const studentId = byName.get(normalizePrivateStudentName(name));
       if (studentId) group.studentIds[name] ||= studentId;
+    });
+    const membershipStart = (state.schoolYears || []).find((year) => year.id === group.schoolYearId)?.startsOn
+      || `${String(group.schoolYearId || activeYearId).split("-")[0]}-07-01`;
+    const activeMembershipIds = new Set(group.membershipHistory.filter((entry) => !entry.endedOn).map((entry) => entry.studentId));
+    (group.students || []).forEach((name) => {
+      const studentId = group.studentIds[name] || byName.get(normalizePrivateStudentName(name));
+      if (!studentId || activeMembershipIds.has(studentId)) return;
+      group.membershipHistory.push({
+        id: privateRandomId("membership"),
+        studentId,
+        displayNameAtStart: name,
+        startedOn: membershipStart,
+        approximateStart: true,
+        reason: "current-roster-backfill"
+      });
+      activeMembershipIds.add(studentId);
     });
     (group.history || []).forEach((plan) => {
       plan.schoolYearId ||= group.schoolYearId;
@@ -464,8 +481,11 @@ function normalizeGroup(group) {
   group.chartResults ||= [];
   group.markedReviewWords ||= [];
   if (!Array.isArray(appState.masterRecords)) appState.masterRecords = [];
-  if (!group.activeStudent || !group.students.includes(group.activeStudent)) {
-    group.activeStudent = group.students[0] || "";
+  const availableStudents = typeof window.ttTeachingStudents === "function"
+    ? window.ttTeachingStudents(group)
+    : group.students;
+  if (!group.activeStudent || !availableStudents.includes(group.activeStudent)) {
+    group.activeStudent = availableStudents[0] || "";
   }
   if (!("warmupRepeat" in group)) group.warmupRepeat = null;
   return group;
@@ -769,7 +789,18 @@ function fillWordChipRow(container, words) {
 
 function recordsForStudent(student) {
   if (!student) return [];
-  return (appState.masterRecords || []).filter((record) => record.student === student);
+  const normalized = normalizePrivateStudentName(student);
+  const profile = (appState.rosterStudents || []).find((item) => {
+    const value = typeof item === "string" ? { name: item } : item;
+    return [value.name, value.fullName, value.displayName]
+      .filter(Boolean)
+      .some((name) => normalizePrivateStudentName(name) === normalized);
+  });
+  return (appState.masterRecords || []).filter((record) => (
+    profile?.studentId
+      ? record.studentId === profile.studentId || (!record.studentId && normalizePrivateStudentName(record.student) === normalized)
+      : normalizePrivateStudentName(record.student) === normalized
+  ));
 }
 
 function commonWrongWords(records) {
@@ -1002,6 +1033,9 @@ function createGroup(name) {
     pageProgress: { wordlist: 0, sentences: 0, passage: 0 },
     warmupRepeat: null,
     students: [],
+    studentIds: {},
+    membershipHistory: [],
+    temporaryCombinations: {},
     trouble: [],
     note: "",
     chartResults: [],
@@ -1759,7 +1793,8 @@ function setupLiveLesson(fragment, lesson) {
 function renderLiveStudentPills(card, group) {
   const container = card.querySelector(".live-student-pills");
   container.innerHTML = "";
-  group.students.forEach((student) => {
+  const students = typeof window.ttTeachingStudents === "function" ? window.ttTeachingStudents(group) : group.students;
+  students.forEach((student) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `student-pill${student === group.activeStudent ? " active" : ""}`;
@@ -1775,7 +1810,8 @@ function renderLiveStudentPills(card, group) {
 
 function selectActiveStudent(student, options = {}) {
   const group = activeGroup();
-  if (!student || !group.students.includes(student)) return;
+  const students = typeof window.ttTeachingStudents === "function" ? window.ttTeachingStudents(group) : group.students;
+  if (!student || !students.includes(student)) return;
   if (student === group.activeStudent) {
     syncActiveStudentUi(group);
     return;
@@ -2389,6 +2425,12 @@ function saveLiveRecord(card, options = {}) {
   const lessonMeta = typeof window.ttCurrentLessonRecordMeta === "function"
     ? window.ttCurrentLessonRecordMeta(lesson)
     : { lessonId: lesson.id || "" };
+  const studentId = typeof window.ttStudentIdForName === "function"
+    ? window.ttStudentIdForName(student, group)
+    : group.studentIds?.[student] || null;
+  const homeGroup = studentId
+    ? (appState.groups || []).find((item) => (item.students || []).some((name) => item.studentIds?.[name] === studentId))
+    : null;
 
   const record = {
     id: `record-${Date.now()}`,
@@ -2397,6 +2439,8 @@ function saveLiveRecord(card, options = {}) {
     group: group.name,
     groupId: group.id,
     student,
+    studentId,
+    homeGroupIdAtTime: homeGroup?.id || group.id,
     substep: lesson.substep,
     concept: skill?.title || lesson.title || lesson.focus || "",
     reader: lesson.reader,
