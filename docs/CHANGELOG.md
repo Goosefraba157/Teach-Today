@@ -13,6 +13,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added stable-ID participant snapshots that lock once student data or attendance exists, read-only linked lesson history in every joined group, combined-session attendance propagation, school-year-filtered cross-group Student Profile evidence lookup, and home-group-at-time metadata for new student evidence.
 - Added sync-safety entity merging for membership history and name-change audit entries, including regression coverage for independent membership and group edits.
 - Published commit `987c858` to GitHub Pages and verified the successful deployment plus the versioned HTML and JavaScript roster-membership markers.
+- Published the final past-session bridge through commit `c2bebaa` and verified GitHub Pages serves the `20260828-roster-membership-2` HTML and JavaScript markers.
 
 ## 2026-08-27
 
