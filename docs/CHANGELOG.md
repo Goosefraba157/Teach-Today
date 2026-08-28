@@ -9,6 +9,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added inline student display-name correction in the group editor. Renames preserve permanent identity, old-name matching, historical snapshots, attendance, charting, and other student records.
 - Added explicit permanent moves between current-year groups, with dated membership intervals and a visible past-membership summary; removals and moves do not delete lessons or student data.
 - Added a one-session Combine action on every current group card. Teachers can select any groups and a session date, teach from one combined roster, and leave every permanent roster unchanged.
+- Made past-date combinations attach an already-saved host lesson to each selected group's history, so a session recorded before this release can be classified without moving or rewriting student evidence.
 - Added stable-ID participant snapshots that lock once student data or attendance exists, read-only linked lesson history in every joined group, combined-session attendance propagation, school-year-filtered cross-group Student Profile evidence lookup, and home-group-at-time metadata for new student evidence.
 - Added sync-safety entity merging for membership history and name-change audit entries, including regression coverage for independent membership and group edits.
 - Published commit `987c858` to GitHub Pages and verified the successful deployment plus the versioned HTML and JavaScript roster-membership markers.

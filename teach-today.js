@@ -5408,6 +5408,21 @@ function ttCloseCombineGroupsModal() {
   ttById("ttCombineGroupsModal")?.remove();
 }
 
+function ttSyncCombinationPlansForDate(group, dayKey, { attachHistorical = false } = {}) {
+  const matchesDate = (plan) => [
+    plan.dailyKey,
+    plan.scheduledDate,
+    plan.lessons?.[0]?.scheduledDate,
+    ...Object.values(plan.sessions || {}).map((session) => session?.date)
+  ].filter(Boolean).some((value) => dateKey(value) === dayKey);
+  ttOfficialLessonPlans(group).filter(matchesDate).forEach((plan) => {
+    if (plan.rosterSnapshotLocked) return;
+    const hasHistoricalData = Boolean(plan.hasStudentData || ["Taught", "Complete"].includes(plan.status));
+    if (hasHistoricalData && !attachHistorical) return;
+    ttSyncCombinedLessonLinks(plan, group);
+  });
+}
+
 function ttOpenCombineGroupsModal(groupId) {
   const group = (appState.groups || []).find((item) => item.id === groupId);
   if (!group || group.schoolYearId !== appState.activeSchoolYearId) return;
@@ -5444,6 +5459,7 @@ function ttOpenCombineGroupsModal(groupId) {
   overlay.querySelector("[data-combine-clear]")?.addEventListener("click", () => {
     const dayKey = overlay.querySelector("#ttCombineGroupsDate")?.value || scheduledDate;
     if (group.temporaryCombinations) delete group.temporaryCombinations[dayKey];
+    ttSyncCombinationPlansForDate(group, dayKey);
     saveState();
     ttCloseCombineGroupsModal();
     ttRenderHomeScreen();
@@ -5463,6 +5479,7 @@ function ttOpenCombineGroupsModal(groupId) {
     } else {
       delete group.temporaryCombinations[dayKey];
     }
+    ttSyncCombinationPlansForDate(group, dayKey, { attachHistorical: sourceGroupIds.length > 0 });
     if (ttPlannerDraft?.groupId === group.id) ttPlannerDraft.scheduledDate = dayKey;
     saveState();
     ttCloseCombineGroupsModal();
