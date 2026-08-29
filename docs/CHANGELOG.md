@@ -5,7 +5,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-08-28
 
 - Made Presentation Laser's Scoop mode lock touch/stylus scrolling from the start of the gesture across the actual lesson surface, with pointer capture and an iPad touch fallback; Scroll mode deliberately restores normal panning.
-- Kept the fixed left and right presentation toolbars tappable during Scoop, preserved mouse laser behavior, and left all student, lesson, Firebase, sync, backup, and storage data contracts unchanged.
+- Kept the fixed left and right presentation toolbars plus actual in-lesson buttons, links, fields, and selectors tappable during Scoop without reopening page scrolling; preserved mouse laser behavior and left all student, lesson, Firebase, sync, backup, and storage data contracts unchanged.
 - Fixed manually entered students being silently omitted when the teacher saved a group without first pressing the separate Add button, and assigned every new roster entry a permanent private student ID immediately.
 - Removed the five-name Home-card truncation so the complete permanent roster is visible on each group card.
 - Added inline student display-name correction in the group editor. Renames preserve permanent identity, old-name matching, historical snapshots, attendance, charting, and other student records.

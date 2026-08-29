@@ -16152,16 +16152,17 @@ function ttAddLaserPoint(event) {
   if (!ttLaserFrame) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
 }
 
-function ttIsLaserToolbarTarget(target) {
+function ttIsLaserControlTarget(target) {
   return Boolean(target?.closest?.(
-    ".presentation-dock, .global-ink-palette, .present-menu-logo, .teach-bar"
+    ".presentation-dock, .global-ink-palette, .present-menu-logo, .teach-bar, "
+    + "button, a[href], input, select, textarea, label, summary, [role='button'], [onclick], [contenteditable='true']"
   ));
 }
 
 function ttLaserPointerDown(event) {
   if (!ttLaserEnabled || ttLaserTouchMode !== "scoop") return;
   if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-  if (ttIsLaserToolbarTarget(event.target)) return;
+  if (ttIsLaserControlTarget(event.target)) return;
   if (event.cancelable) event.preventDefault();
   ttLaserActivePointerId = event.pointerId;
   try { event.target?.setPointerCapture?.(event.pointerId); } catch {}
@@ -16188,7 +16189,7 @@ function ttLaserEnd(event) {
 
 function ttLaserTouchMoveLock(event) {
   if (!ttLaserEnabled || ttLaserTouchMode !== "scoop") return;
-  if (ttIsLaserToolbarTarget(event.target)) return;
+  if (ttIsLaserControlTarget(event.target)) return;
   if (event.cancelable) event.preventDefault();
 }
 
