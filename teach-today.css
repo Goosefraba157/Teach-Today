@@ -1444,12 +1444,16 @@ body.intro-lesson-open.laser-mode * {
   cursor: none !important;
 }
 
+html.laser-scoop-mode,
 body.laser-mode.laser-scoop-mode {
+  overscroll-behavior: none;
   touch-action: none;
 }
 
-body.laser-mode.laser-scoop-mode .global-ink-palette {
-  pointer-events: none;
+body.laser-mode.laser-scoop-mode *,
+body.laser-mode.laser-scoop-mode .teach-flow,
+body.laser-mode.laser-scoop-mode .intro-lesson-overlay {
+  touch-action: none !important;
 }
 
 .global-ink-palette {

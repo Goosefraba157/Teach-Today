@@ -36,6 +36,7 @@ let ttLaserTouchMode = "scoop";
 let ttLaserPoints = [];
 let ttLaserCurrentPoint = null;
 let ttLaserFrame = null;
+let ttLaserActivePointerId = null;
 let ttWhiteboardMode = "move";
 let ttWhiteboardDrawing = false;
 let ttWhiteboardLastPoint = null;
@@ -16151,17 +16152,44 @@ function ttAddLaserPoint(event) {
   if (!ttLaserFrame) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
 }
 
+function ttIsLaserToolbarTarget(target) {
+  return Boolean(target?.closest?.(
+    ".presentation-dock, .global-ink-palette, .present-menu-logo, .teach-bar"
+  ));
+}
+
+function ttLaserPointerDown(event) {
+  if (!ttLaserEnabled || ttLaserTouchMode !== "scoop") return;
+  if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (ttIsLaserToolbarTarget(event.target)) return;
+  if (event.cancelable) event.preventDefault();
+  ttLaserActivePointerId = event.pointerId;
+  try { event.target?.setPointerCapture?.(event.pointerId); } catch {}
+  ttAddLaserPoint(event);
+}
+
 function ttLaserMove(event) {
   if (!ttLaserEnabled) return;
   if (event.pointerType === "touch" && ttLaserTouchMode !== "scoop") return;
+  if (event.pointerType === "touch" && ttLaserActivePointerId !== event.pointerId) return;
   if ((event.pointerType === "touch" || event.pointerType === "pen") && event.cancelable) event.preventDefault();
   ttAddLaserPoint(event);
 }
 
 function ttLaserEnd(event) {
   if (!ttLaserEnabled || (event.pointerType !== "touch" && event.pointerType !== "pen")) return;
+  if (ttLaserActivePointerId === event.pointerId) {
+    try { event.target?.releasePointerCapture?.(event.pointerId); } catch {}
+    ttLaserActivePointerId = null;
+  }
   ttLaserCurrentPoint = null;
   if (!ttLaserFrame && ttLaserPoints.length) ttLaserFrame = requestAnimationFrame(ttRenderLaser);
+}
+
+function ttLaserTouchMoveLock(event) {
+  if (!ttLaserEnabled || ttLaserTouchMode !== "scoop") return;
+  if (ttIsLaserToolbarTarget(event.target)) return;
+  if (event.cancelable) event.preventDefault();
 }
 
 function ttLaserLeave() {
@@ -16177,6 +16205,8 @@ function ttSetLaserTouchMode(mode) {
   ttLaserTouchMode = mode === "scroll" ? "scroll" : "scoop";
   const scoopMode = ttLaserTouchMode === "scoop";
   document.body.classList.toggle("laser-scoop-mode", ttLaserEnabled && scoopMode);
+  document.documentElement.classList.toggle("laser-scoop-mode", ttLaserEnabled && scoopMode);
+  if (!scoopMode) ttLaserActivePointerId = null;
   const button = ttById("ttLaserInputMode");
   if (button) {
     button.textContent = scoopMode ? "Scoop" : "Scroll";
@@ -16195,6 +16225,7 @@ function ttToggleLaser(force = null) {
     ttSetGlobalInkActive(false);
     ttResizeGlobalPresentationCanvases();
   } else {
+    ttLaserActivePointerId = null;
     ttLaserCurrentPoint = null;
     ttLaserPoints = [];
     if (ttLaserFrame) cancelAnimationFrame(ttLaserFrame);
@@ -16874,9 +16905,11 @@ function ttBind() {
   globalInkCanvas?.addEventListener("pointermove", ttGlobalInkMove);
   globalInkCanvas?.addEventListener("pointerup", ttGlobalInkEnd);
   globalInkCanvas?.addEventListener("pointercancel", ttGlobalInkEnd);
+  window.addEventListener("pointerdown", ttLaserPointerDown, { passive: false, capture: true });
   window.addEventListener("pointermove", ttLaserMove, { passive: false });
-  window.addEventListener("pointerup", ttLaserEnd, { passive: true });
-  window.addEventListener("pointercancel", ttLaserEnd, { passive: true });
+  window.addEventListener("pointerup", ttLaserEnd, { passive: false });
+  window.addEventListener("pointercancel", ttLaserEnd, { passive: false });
+  document.addEventListener("touchmove", ttLaserTouchMoveLock, { passive: false, capture: true });
   document.documentElement.addEventListener("pointerleave", ttLaserLeave);
   window.addEventListener("blur", ttLaserLeave);
   window.addEventListener("resize", () => {
