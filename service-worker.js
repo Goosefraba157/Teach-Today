@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-28-laser-scroll-pad-2";
+const CACHE_NAME = "teach-today-offline-v2026-08-29-enhanced-planner-1";
 
 const APP_SHELL = [
   "./",
@@ -53,6 +53,8 @@ const APP_SHELL = [
   "./dictation-index.js",
   "./dictation-phrase-index.js",
   "./dictation-sentence-index.js",
+  "./enhanced-planning-index.js",
+  "./enhanced-planning.js",
   "./sample-blue-group-data.js",
   "./section9-passage-companions.js",
   "./wilson-lp-template.js",

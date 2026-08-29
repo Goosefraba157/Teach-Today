@@ -7836,6 +7836,28 @@ body.section4-stage-preview-open .teach-flow {
   align-items: start;
 }
 
+.reverse-reference {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.reverse-reference > summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  color: #475569;
+  font-weight: 850;
+  list-style-position: inside;
+}
+
+.reverse-reference-groups {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 12px;
+  background: #fff;
+}
+
 .reverse-chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -8003,6 +8025,12 @@ body.section4-stage-preview-open .teach-flow {
   border-color: var(--teal);
   background: var(--teal-soft);
   color: var(--teal);
+}
+
+.encoding-code-row-skill button.suggested:not(.saved) {
+  border-style: dashed;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgb(245 158 11 / 12%);
 }
 
 @media (max-width: 920px) {
@@ -8597,6 +8625,30 @@ body.section4-stage-preview-open .teach-flow {
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
+}
+
+.dictation-shared-list {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.dictation-shared-list > summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  color: #475569;
+  font-weight: 850;
+  list-style-position: inside;
+}
+
+.dictation-shared-list[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.dictation-shared-list .dictation-sheet {
+  border: 0;
+  border-radius: 0 0 9px 9px;
 }
 
 .dictation-block {

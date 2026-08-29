@@ -789,7 +789,7 @@ function studentEncodeSummary(data, student, group) {
     student,
     misses,
     recent,
-    topArea: topCount(misses.map((miss) => miss.category || miss.note || "Dictation")),
+    topArea: topCount(misses.map((miss) => miss.category || miss.note || "Previous / uncategorized")),
     lastItem: misses.at(-1)?.item || misses.at(-1)?.note || "--"
   };
 }
@@ -989,7 +989,7 @@ function renderCategoryBars(misses) {
     return;
   }
   const counts = new Map();
-  misses.forEach((miss) => counts.set(miss.category || "Dictation", (counts.get(miss.category || "Dictation") || 0) + 1));
+  misses.forEach((miss) => counts.set(miss.category || "Previous / uncategorized", (counts.get(miss.category || "Previous / uncategorized") || 0) + 1));
   const max = Math.max(...counts.values(), 1);
   [...counts.entries()].sort((a, b) => b[1] - a[1]).forEach(([category, count]) => {
     const row = document.createElement("div");
@@ -1692,7 +1692,7 @@ function renderDictationRows(misses) {
     row.innerHTML = `
       <td>${escapeHtml(formatDateTime(miss.date))}</td>
       <td>${escapeHtml(miss.substep || "")}</td>
-      <td><span class="type-pill">${escapeHtml(miss.category || "Dictation")}</span></td>
+      <td><span class="type-pill">${escapeHtml(miss.category || "Previous / uncategorized")}</span></td>
       <td><strong>${escapeHtml(miss.item || "")}</strong></td>
     `;
     body.appendChild(row);

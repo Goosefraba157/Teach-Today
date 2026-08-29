@@ -2,6 +2,19 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-29
+
+- Added a generated, curriculum-only enhanced planning index for Substeps 1.3-7.5: 347 charting pages, 9,073 indexed words with structure metadata, 320 chart-page sentence recommendations, and 262 chart-page dictation recommendation sets. Existing logic remains the fallback for 1.1-1.2 and Steps 8-12.
+- Made the exact Section 4 charting page the planning anchor and automatically recommend a matching available Section 5 sentence page; direct charting-page changes update the recommendation without changing Section 4 scoring, halves, timer, stage, or record behavior.
+- Made Customize, preview, and Start Teaching share one canonical planned lesson snapshot, with additive planning source/anchor/selection metadata preserved in the existing whole-lesson JSON save path.
+- Improved Sections 2/2B/3 review selection with recent student evidence and indexed prior-page words while keeping current words tied to the exact selected page and preserving their teaching displays.
+- Separated Section 6 from Section 8 planning, preserving grouped vowel/consonant/welded/element targets and using recent trouble/review evidence for enhanced substeps.
+- Added indexed Section 7 review/current/nonsense/HFW planning and word-first Section 8 planning that derives sounds and word elements from the five selected real words and prioritizes exact-page dictation sentence recommendations.
+- Kept the full Section 6 and Section 8 shared reference controls available behind collapsed disclosures so the per-student data boxes remain the primary compact teaching surface.
+- Preserved tap-again removal and exclusive Auto/Acc/Strug behavior in Sections 6-8, restored saved button state by stable student ID, and added non-saving metadata suggestions for NS/Blends/Vowel Diff/HFW/Sfx tags.
+- Kept existing student evidence arrays, record IDs, lesson history, Firebase sync, backups, and exports unchanged; legacy entries without a category now display as `Previous / uncategorized` in Student Profile.
+- Added regression tests for enhanced coverage/fallbacks, exact page recommendations, generated-asset privacy, Section 6/8 separation, canonical snapshot use, and additive JSON persistence.
+
 ## 2026-08-28
 
 - Made Presentation Laser's Scoop mode lock touch/stylus scrolling from the start of the gesture across the actual lesson surface, with pointer capture and an iPad touch fallback; Scroll mode deliberately restores normal panning.

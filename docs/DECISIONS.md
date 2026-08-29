@@ -37,6 +37,12 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Boundary:** “Generate Best Lesson” may optimize instructional content but must not change the teacher-selected lesson format.
 - **Planner hierarchy:** The official open-lesson continuity panel and the proposed Recommended Plan are distinct. Customize is the authoritative lesson editor and owns the single format picker; the compact recommendation layer explains evidence, readiness, and sequence without duplicating every section control.
 - **Same-page reteach:** Redoing a weak charting lesson creates a new lesson that retains the Section 4 charting page while refreshing Section 2/2B current practice words from that page and review words from prior concepts. The original lesson and evidence remain unchanged.
+- **Exact-page planning anchor:** The teacher-selected Section 4 charting page anchors current words, sentence-page recommendations, and dictation recommendations. A recommendation is applied only when that page exists in V1; otherwise the existing ordered-page behavior remains in force.
+- **Enhanced-index boundary:** The compact enhanced curriculum index covers Substeps 1.3-7.5. Substeps 1.1-1.2 and Steps 8-12 continue to use V1's existing indexes until equivalent reviewed metadata is available. This is a content-selection boundary, not a student-data migration.
+- **Canonical lesson snapshot:** Customize is the authoritative editor. Preview and Start Teaching consume the same planned lesson snapshot; starting a lesson must not silently regenerate or merge different selections.
+- **Encoding selection:** Section 6 uses review/trouble evidence and is independent from Section 8. Section 8 selects five real words first, then derives sounds and word elements from those words. Teacher edits override derived defaults.
+- **Student evidence preservation:** Section 6-8 item/status/tag observations remain additive records attached by stable student and lesson identity. Existing arrays and IDs are never rewritten to adopt enhanced planning metadata; unmapped legacy evidence remains visible as previous/uncategorized data.
+- **Protected teaching surfaces:** Reindexing may change planned content but must not redesign Section 4 charting mechanics or Section 9 passage behavior. The established teaching displays for Sections 1, 2/2B, 3, 5, 6, 7, and 8 remain the presentation contract; redundant shared references may be collapsed without removing their fallback controls.
 
 ## Lesson identity and continuity
 
