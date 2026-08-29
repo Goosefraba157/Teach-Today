@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260828-laser-scoop-lock-2">
+    <link rel="stylesheet" href="teach-today.css?v=20260828-laser-scroll-pad-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -295,6 +295,13 @@
       <button id="ttLaserToggle" type="button" title="Temporary laser pointer" aria-pressed="false">Laser</button>
       <button id="ttLaserInputMode" type="button" title="Laser captures touch gestures for scooping" aria-pressed="true">Scoop</button>
       <button id="ttDockTop" type="button" title="Top">Top</button>
+      <div id="ttLaserScrollPad" class="laser-scroll-pad" role="region" tabindex="0"
+        aria-label="Drag vertically to scroll the lesson while Scoop is active"
+        title="Drag up or down to scroll while Scoop is active">
+        <span aria-hidden="true">↑</span>
+        <span class="laser-scroll-pad-track" aria-hidden="true"></span>
+        <span aria-hidden="true">↓</span>
+      </div>
       <div id="ttPresentDisplayTray" class="present-display-tray" hidden aria-label="Presenter stage controls">
         <button class="native-projection-only" type="button" data-native-projection-mode="mirror" hidden>Mirror Teacher</button>
         <button type="button" data-display-mode="follow">Follow Lesson</button>
@@ -1116,7 +1123,7 @@
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260828-laser-scoop-lock-2"></script>
+    <script src="teach-today.js?v=20260828-laser-scroll-pad-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>

@@ -37,6 +37,8 @@ let ttLaserPoints = [];
 let ttLaserCurrentPoint = null;
 let ttLaserFrame = null;
 let ttLaserActivePointerId = null;
+let ttLaserScrollPadPointerId = null;
+let ttLaserScrollPadLastY = 0;
 let ttWhiteboardMode = "move";
 let ttWhiteboardDrawing = false;
 let ttWhiteboardLastPoint = null;
@@ -16171,6 +16173,7 @@ function ttLaserPointerDown(event) {
 
 function ttLaserMove(event) {
   if (!ttLaserEnabled) return;
+  if (event.target?.closest?.("#ttLaserScrollPad")) return;
   if (event.pointerType === "touch" && ttLaserTouchMode !== "scoop") return;
   if (event.pointerType === "touch" && ttLaserActivePointerId !== event.pointerId) return;
   if ((event.pointerType === "touch" || event.pointerType === "pen") && event.cancelable) event.preventDefault();
@@ -16193,6 +16196,43 @@ function ttLaserTouchMoveLock(event) {
   if (event.cancelable) event.preventDefault();
 }
 
+function ttResetLaserScrollPad() {
+  ttLaserScrollPadPointerId = null;
+  ttLaserScrollPadLastY = 0;
+  ttById("ttLaserScrollPad")?.classList.remove("active");
+}
+
+function ttLaserScrollPadStart(event) {
+  if (!ttLaserEnabled || ttLaserTouchMode !== "scoop") return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  ttLaserScrollPadPointerId = event.pointerId;
+  ttLaserScrollPadLastY = event.clientY;
+  event.currentTarget.classList.add("active");
+  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+}
+
+function ttLaserScrollPadMove(event) {
+  if (ttLaserScrollPadPointerId !== event.pointerId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const deltaY = event.clientY - ttLaserScrollPadLastY;
+  ttLaserScrollPadLastY = event.clientY;
+  const scrollingElement = document.scrollingElement || document.documentElement;
+  scrollingElement.scrollTop += deltaY * 1.5;
+}
+
+function ttLaserScrollPadEnd(event) {
+  if (ttLaserScrollPadPointerId !== event.pointerId) return;
+  event.preventDefault();
+  event.stopPropagation();
+  ttLaserScrollPadPointerId = null;
+  ttLaserScrollPadLastY = 0;
+  event.currentTarget.classList.remove("active");
+  try { event.currentTarget.releasePointerCapture(event.pointerId); } catch {}
+}
+
 function ttLaserLeave() {
   if (!ttLaserEnabled) return;
   ttLaserCurrentPoint = null;
@@ -16207,7 +16247,10 @@ function ttSetLaserTouchMode(mode) {
   const scoopMode = ttLaserTouchMode === "scoop";
   document.body.classList.toggle("laser-scoop-mode", ttLaserEnabled && scoopMode);
   document.documentElement.classList.toggle("laser-scoop-mode", ttLaserEnabled && scoopMode);
-  if (!scoopMode) ttLaserActivePointerId = null;
+  if (!scoopMode) {
+    ttLaserActivePointerId = null;
+    ttResetLaserScrollPad();
+  }
   const button = ttById("ttLaserInputMode");
   if (button) {
     button.textContent = scoopMode ? "Scoop" : "Scroll";
@@ -16227,6 +16270,7 @@ function ttToggleLaser(force = null) {
     ttResizeGlobalPresentationCanvases();
   } else {
     ttLaserActivePointerId = null;
+    ttResetLaserScrollPad();
     ttLaserCurrentPoint = null;
     ttLaserPoints = [];
     if (ttLaserFrame) cancelAnimationFrame(ttLaserFrame);
@@ -16834,6 +16878,18 @@ function ttBind() {
   ttById("ttLaserToggle")?.addEventListener("click", () => ttToggleLaser());
   ttById("ttLaserInputMode")?.addEventListener("click", () => {
     ttSetLaserTouchMode(ttLaserTouchMode === "scoop" ? "scroll" : "scoop");
+  });
+  const laserScrollPad = ttById("ttLaserScrollPad");
+  laserScrollPad?.addEventListener("pointerdown", ttLaserScrollPadStart);
+  laserScrollPad?.addEventListener("pointermove", ttLaserScrollPadMove);
+  laserScrollPad?.addEventListener("pointerup", ttLaserScrollPadEnd);
+  laserScrollPad?.addEventListener("pointercancel", ttLaserScrollPadEnd);
+  laserScrollPad?.addEventListener("lostpointercapture", ttLaserScrollPadEnd);
+  laserScrollPad?.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const scrollingElement = document.scrollingElement || document.documentElement;
+    scrollingElement.scrollTop += event.key === "ArrowUp" ? -90 : 90;
   });
   ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));
   ttById("ttGlobalInkUndo")?.addEventListener("click", () => ttUndoGlobalInk());
