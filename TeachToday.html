@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260829-enhanced-planner-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260829-single-lesson-planner-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -90,10 +90,9 @@
           <span class="ribbon-label">Lesson</span>
           <div class="ribbon-buttons">
             <button id="ttHome" type="button" title="Home dashboard">Home</button>
-            <button id="ttStartLesson" class="primary-start-teaching" type="button" title="Save this lesson session and start presenting">Start Teaching</button>
             <button id="ttGameHub" type="button" title="Student game hub" onclick="window.location.href='Games/index.html'">Games</button>
-            <button id="ttRefresh" type="button" title="Plan a new lesson">Plan New</button>
-            <button id="ttWrapJump" type="button" title="Finish or continue this lesson">Finish</button>
+            <button id="ttRefresh" type="button" title="Close this lesson as incomplete and return to planning">End &amp; Plan New</button>
+            <button id="ttWrapJump" type="button" title="Review and finish this lesson">Finish Lesson</button>
             <span class="ref-menu-wrap attendance-menu-wrap">
               <button id="ttAttendance" type="button" title="Confirm attendance" aria-haspopup="menu" aria-expanded="false" aria-controls="ttAttendancePanel">Attend</button>
               <div id="ttAttendancePanel" class="attendance-panel" role="menu" hidden></div>
@@ -369,7 +368,7 @@
         <div>
           <p class="eyebrow">Home</p>
           <h2>Plan Today</h2>
-          <span>Pick a group, glance at the last lesson, then build today’s lesson fast.</span>
+          <span>Select a group. Continue its open lesson, or review and customize the next best plan.</span>
         </div>
         <div class="home-support-actions" aria-label="Reference PDFs">
           <span>Reference</span>
@@ -402,7 +401,6 @@
           <button id="ttHomeFirebaseSignOut" class="firebase-sign-out-btn" type="button" title="Sign out of cloud sync" hidden>Sign out</button>
           <span id="ttHomeFirebaseUserBadge" class="firebase-user-badge" hidden></span>
         </div>
-        <button id="ttHomeOpenCurrent" type="button">Open current lesson</button>
       </header>
       <div class="home-school-year-bar" aria-label="School year view">
         <label for="ttHomeSchoolYear">School year</label>
@@ -411,19 +409,16 @@
       </div>
       <div id="ttHomeGroups" class="home-groups"></div>
       <section id="ttHomeContinuity" class="home-continuity" aria-live="polite" hidden></section>
-      <section id="ttHomeLessonHistory" class="home-lesson-history" aria-label="Lesson history corrections" hidden></section>
       <section id="ttQuickPlanner" class="quick-planner" hidden>
         <div class="planner-head lesson-assistant-head">
           <div>
-            <p class="eyebrow">Recommended Plan</p>
+            <p class="eyebrow">Plan New Lesson</p>
             <h2 id="ttPlannerTitle">Select a group</h2>
             <span id="ttPlannerLastLesson"></span>
           </div>
           <div id="ttAssistantSummary" class="assistant-summary" aria-label="Recommended lesson summary"></div>
           <div class="planner-actions">
-            <button id="ttPlannerOpen" class="assistant-start-btn" type="button">Start Teaching</button>
-            <button id="ttPlannerUseDefaults" type="button">Generate Best Lesson</button>
-            <button id="ttPlannerCustomizeToggle" type="button" aria-expanded="false">Customize</button>
+            <button id="ttPlannerUseDefaults" type="button">Reset to Best Plan</button>
           </div>
         </div>
         <div class="assistant-command-row">
@@ -439,7 +434,14 @@
           <summary>Evidence used for this recommendation</summary>
           <div id="ttAssistantTeacherPanel" class="assistant-teacher-panel" aria-label="Student evidence"></div>
         </details>
-        <div id="ttPlannerCustomizePanel" class="planner-customize-panel" hidden>
+        <div id="ttPlannerCustomizePanel" class="planner-customize-panel">
+          <div class="planner-customize-heading">
+            <div>
+              <span>Planned lesson</span>
+              <strong>Review or customize before teaching</strong>
+            </div>
+            <p>The preview is the exact lesson that will open.</p>
+          </div>
           <div id="ttPlannerModePicker" class="planner-mode-picker-wrap"></div>
           <div class="planner-core">
             <label>Substep<select id="ttPlannerSubstep"></select></label>
@@ -456,6 +458,7 @@
           </div>
         </div>
       </section>
+      <section id="ttHomeLessonHistory" class="home-lesson-history" aria-label="Lesson history corrections" hidden></section>
     </section>
 
     <section id="ttIntro21" class="intro-lesson-overlay" role="dialog" aria-modal="true" hidden aria-label="Substep 2.1 introductory lesson">
@@ -1125,7 +1128,7 @@
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260829-enhanced-planner-1"></script>
+    <script src="teach-today.js?v=20260829-single-lesson-planner-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>

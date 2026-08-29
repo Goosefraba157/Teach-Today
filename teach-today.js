@@ -58,7 +58,6 @@ let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — wor
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttSection8SoundElementsManual = false;
 let ttPlannerHomeScrollPositions = {};
-let ttPlannerCustomizeOpen = false;
 let ttLessonHistoryEditPlanId = "";
 let ttAssistantNotice = "";
 let ttAttendanceModalScrollY = 0;
@@ -5690,22 +5689,8 @@ function ttRenderHomeContinuity(enabled = true) {
   container.hidden = !enabled || !group;
   if (container.hidden) return;
   const openPlan = ttActiveOpenPlan(group);
-  const latestComplete = (group.history || []).slice().reverse().find((plan) => plan.status === "Complete" && plan.lessons?.[0]);
   if (!openPlan) {
-    if (!latestComplete) {
-      container.hidden = true;
-      return;
-    }
-    const lesson = latestComplete.lessons[0];
-    ttEnsureLessonWorkflow(latestComplete, lesson, group);
-    container.innerHTML = `<div class="continuity-copy"><span>Last lesson completed</span>
-        <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(latestComplete, lesson, group))} · ${escapeHtml(ttLongLessonDate(latestComplete.sessions?.[latestComplete.activeDay || "1"]?.date || latestComplete.scheduledDate))}</strong>
-        <small>Your next saved lesson will be Lesson ${escapeHtml((Number(latestComplete.lessonNumber || lesson.lessonSequence || group.lessonSerial || 0) + 1))}.</small></div>
-      <div class="continuity-actions"><button type="button" data-continuity="review">Review completed lesson</button></div>`;
-    container.querySelector('[data-continuity="review"]')?.addEventListener("click", () => {
-      ttOpenPlanInApp(latestComplete.id);
-      ttOpenTeachFlow({ transition: false });
-    });
+    container.hidden = true;
     return;
   }
   const lesson = openPlan.lessons[0];
@@ -5714,14 +5699,14 @@ function ttRenderHomeContinuity(enabled = true) {
   const sessionDate = openPlan.sessions?.[day]?.date || openPlan.scheduledDate;
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
   const plannedDay2Date = openPlan.plannedDay2Date || ttNextInstructionDateKey(openPlan.sessions?.["1"]?.date || sessionDate);
-  container.innerHTML = `<div class="continuity-copy"><span>Lesson still open</span>
-      <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Day ${escapeHtml(day)} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
-      <small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections have been marked finished yet."}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
+  container.innerHTML = `<div class="continuity-copy"><span>Current lesson</span>
+      <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Substep ${escapeHtml(lesson.substep || group.substep || "--")}</strong>
+      <small>${escapeHtml(ttLongLessonDate(sessionDate))} · Reader ${escapeHtml(lesson.reader || "--")}, wordlist p. ${escapeHtml(lesson.wordlistPageNumber || "--")}${summary.done.length ? ` · Finished sections: ${escapeHtml(summary.done.join(", "))}` : ""}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
     <div class="continuity-actions">
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
-      <button class="continuity-primary" type="button" data-continuity="resume">Continue where I left off</button>
-      ${canContinueDay2 ? `<label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Continue Day 2</button><button type="button" data-continuity="complete-day1">Complete Lesson As Is</button>` : ""}
-      <button type="button" data-continuity="new">Plan a new lesson</button>
+      <button class="continuity-primary" type="button" data-continuity="resume">Continue Lesson</button>
+      <button type="button" data-continuity="new">Close as incomplete &amp; plan new</button>
+      ${canContinueDay2 ? `<details class="continuity-more"><summary>Day 1 options</summary><div><label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Start Day 2</button><button type="button" data-continuity="complete-day1">Finish Lesson As Is</button></div></details>` : ""}
     </div>`;
   const saveSessionDate = (date) => {
     if (!date) return;
@@ -5739,7 +5724,9 @@ function ttRenderHomeContinuity(enabled = true) {
     lesson.scheduledDate = date;
     saveState();
     const heading = container.querySelector(".continuity-copy strong");
-    if (heading) heading.textContent = `${group.name} · Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} · Day ${day} · ${ttLongLessonDate(date)}`;
+    if (heading) heading.textContent = `${group.name} · Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} · Substep ${lesson.substep || group.substep || "--"}`;
+    const details = container.querySelector(".continuity-copy small");
+    if (details) details.textContent = `${ttLongLessonDate(date)} · Reader ${lesson.reader || "--"}, wordlist p. ${lesson.wordlistPageNumber || "--"}${summary.done.length ? ` · Finished sections: ${summary.done.join(", ")}` : ""}${summary.skipped.length ? ` · Skipped: ${summary.skipped.join(", ")}` : ""}`;
   };
   const sessionDateInput = container.querySelector("[data-continuity-session-date]");
   ["input", "change"].forEach((eventName) => sessionDateInput?.addEventListener(eventName, (event) => saveSessionDate(event.target.value)));
@@ -5754,7 +5741,8 @@ function ttRenderHomeContinuity(enabled = true) {
     saveSessionDate(container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
     ttOpenPlanInApp(openPlan.id);
     if (lesson.activeGroupDay || openPlan.activeDay) ttSetGroupDay(String(openPlan.activeDay || lesson.activeGroupDay));
-    ttOpenTeachFlow({ transition: false });
+    ttSaveCurrentLesson({ render: false, starting: true, reason: "Continued teaching" });
+    ttOpenTeachFlow({ transition: false, presentation: true });
   });
   container.querySelector('[data-continuity="day2"]')?.addEventListener("click", () => {
     const date = container.querySelector("[data-continuity-date]")?.value || openPlan.plannedDay2Date || ttTodayKey();
@@ -5796,6 +5784,7 @@ function ttRenderHomeContinuity(enabled = true) {
     group.activeLessonPlanId = "";
     ttPlannerDraft = {};
     ttEnsurePlannerDraft(group).scheduledDate = nextDate;
+    ttSyncCombinedLessonLinks(openPlan, group);
     saveState();
     ttRenderHomeScreen();
   });
@@ -6012,7 +6001,7 @@ function ttRenderHomeModePicker(enabled = true) {
   const container = ttById("ttHomeLessonType");
   const group = ttPlannerGroup();
   if (!container) return;
-  container.hidden = !enabled || !group;
+  container.hidden = !enabled || !group || Boolean(ttActiveOpenPlan(group));
   if (container.hidden) return;
   const lessonType = ttEnsurePlannerDraft(group).lessonType || ttPreferredLessonType(group);
   container.innerHTML = `<div class="home-lesson-type-copy">
@@ -6110,8 +6099,9 @@ function ttRenderPlannerPanel() {
   const panel = ttById("ttQuickPlanner");
   if (!panel) return;
   const group = ttPlannerGroup();
-  panel.hidden = !group;
-  if (!group) return;
+  const openPlan = group ? ttActiveOpenPlan(group) : null;
+  panel.hidden = !group || Boolean(openPlan);
+  if (!group || openPlan) return;
   const draft = ttEnsurePlannerDraft(group);
   const skill = scopeMap.find((item) => item.id === draft.substep) || activeStep(group);
   const level = draft.level || group.readerLevel || "AB";
@@ -6136,13 +6126,7 @@ function ttRenderPlannerPanel() {
 
 function ttRenderPlannerCustomizeState() {
   const panel = ttById("ttPlannerCustomizePanel");
-  const toggle = ttById("ttPlannerCustomizeToggle");
-  if (panel) panel.hidden = !ttPlannerCustomizeOpen;
-  if (toggle) {
-    toggle.setAttribute("aria-expanded", ttPlannerCustomizeOpen ? "true" : "false");
-    toggle.classList.toggle("active", ttPlannerCustomizeOpen);
-    toggle.textContent = ttPlannerCustomizeOpen ? "Hide Customize" : "Customize";
-  }
+  if (panel) panel.hidden = false;
 }
 
 function ttInstructionalLessonType(group, lesson) {
@@ -6451,7 +6435,6 @@ function ttBindLessonAssistantActions() {
 }
 
 function ttAssistantEditSection(sectionId) {
-  ttPlannerCustomizeOpen = true;
   ttRenderPlannerCustomizeState();
   const safeSectionId = String(sectionId || "").replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
   const target = ttById("ttPlannerSections")?.querySelector(`[data-sec="${safeSectionId}"]`)
@@ -6615,7 +6598,6 @@ function ttDuplicatePreviousLesson() {
   };
   group.preferredLessonType = ttNormalizeLessonType(ttPlannerDraft.lessonType);
   saveState();
-  ttPlannerCustomizeOpen = true;
   const freshCount = currentDay1.filter((word) => !oldCurrent.includes(word)).length
     + currentDay2.filter((word) => !oldCurrent.includes(word)).length;
   const freshReviewCount = reviewDay1.filter((word) => !oldReview.includes(word)).length
@@ -7867,6 +7849,12 @@ function ttUsePlannerDefaults() {
 function ttBuildPlannerLesson(options = {}) {
   const group = ttPlannerGroup();
   if (!group) return;
+  const openPlan = ttActiveOpenPlan(group);
+  if (openPlan) {
+    alert(`Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)} is still open. Continue it or close it as incomplete before planning another lesson.`);
+    ttRenderHomeScreen();
+    return;
+  }
   const draft = ttEnsurePlannerDraft(group);
   group.preferredLessonType = ttNormalizeLessonType(draft.lessonType || ttPreferredLessonType(group));
   appState.selectedGroupId = group.id;
@@ -8098,7 +8086,7 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
         <span>${escapeHtml(lessonTypeLabel[currentLessonType] || "Lesson Preview")}</span>
         <strong>${escapeHtml(group.name)} · ${escapeHtml(activeLesson.substep)}</strong>
         <em>Reader ${escapeHtml(activeLesson.reader)}, wordlist p. ${escapeHtml(activeLesson.wordlistPageNumber || "--")} · sentences p. ${escapeHtml(activeLesson.sentencePageNumber || "--")}</em>
-        <button class="preview-open-btn" type="button">Start teaching</button>
+        <button id="ttPlannerOpen" class="preview-open-btn" type="button">Start Planned Lesson</button>
       </header>
       ${ttPlannerPreviewBlock("2", "Teach & Review", [
         ["Review", sec2ReviewWords],
@@ -8142,7 +8130,7 @@ function ttRenderPlannerPreview(group = ttPlannerGroup(), skill = null, lesson =
 }
 
 function ttBindPlannerPreviewActions(preview) {
-  preview.querySelector(".preview-open-btn")?.addEventListener("click", () => ttBuildPlannerLesson());
+  preview.querySelector(".preview-open-btn")?.addEventListener("click", () => ttBuildPlannerLesson({ startTeaching: true }));
   preview.querySelectorAll(".preview-jump-section").forEach((section) => {
     section.addEventListener("dblclick", () => ttOpenPlannerPreviewSection(section.dataset.jumpSection));
   });
@@ -11719,7 +11707,8 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
   const scheduledDate = lesson.scheduledDate || ttTodayKey();
   const scheduled = ttDateFromKey(scheduledDate);
   const dailyKey = scheduledDate;
-  const existing = options.upsertDaily === false ? null : ttDailyPlanFor(group, scheduled);
+  const dailyPlan = options.upsertDaily === false ? null : ttDailyPlanFor(group, scheduled);
+  const existing = dailyPlan && !["Complete", "Incomplete", "Test"].includes(dailyPlan.status) ? dailyPlan : null;
   if (existing) {
     lesson.lessonSequence = existing.lessons?.[0]?.lessonSequence || lesson.lessonSequence || group.lessonSerial || 1;
     lesson.savedPlanId = existing.id;
@@ -11818,6 +11807,13 @@ function ttSaveCurrentLesson(options = {}) {
 
 function ttStartCurrentLesson() {
   if (!ttLesson) ttBuildLesson();
+  const group = ttActiveGroup();
+  const openPlan = ttActiveOpenPlan(group);
+  if (openPlan && openPlan.id !== ttLesson?.savedPlanId) {
+    alert(`Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)} is still open. Continue it or close it as incomplete before starting another lesson.`);
+    ttShowHomeScreen(group.id);
+    return;
+  }
   ttLesson.scheduledDate ||= ttTodayKey();
   ttSaveCurrentLesson({ render: false, starting: true, reason: "Started teaching" });
   ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
@@ -11837,18 +11833,30 @@ function ttNewLesson() {
   if (openPlan && openPlan.id !== ttLesson?.savedPlanId) {
     if (!confirm(`Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)} is still unfinished. Keep it as incomplete and plan a new lesson?`)) return;
     openPlan.status = "Incomplete";
+    openPlan.closedAt = new Date().toISOString();
+    openPlan.closedReason = "Teacher chose End & Plan New";
     group.activeLessonPlanId = "";
+    ttSyncCombinedLessonLinks(openPlan, group);
   } else if (openPlan && openPlan.id === ttLesson?.savedPlanId) {
     if (!confirm(`This lesson is still unfinished. Keep it as incomplete and plan a new lesson?`)) return;
     openPlan.status = "Incomplete";
+    openPlan.closedAt = new Date().toISOString();
+    openPlan.closedReason = "Teacher chose End & Plan New";
     group.activeLessonPlanId = "";
+    ttSyncCombinedLessonLinks(openPlan, group);
   }
   ttSection2Word = "";
-  ttLesson = ttBuildLesson();
-  ttSaveDraftLesson({ status: false });
+  ttPlannerGroupId = group.id;
+  ttPlannerDraft = {};
+  ttPickerSelections = {};
+  ttPickerSubstepCache = {};
+  ttSection8RealSlots = [];
+  ttSection8SoundElementsManual = false;
+  const draft = ttEnsurePlannerDraft(group);
+  draft.scheduledDate = ttTodayKey();
   history.replaceState(null, "", location.pathname);
-  ttRender();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  saveState();
+  ttShowHomeScreen(group.id);
 }
 
 function ttPlanUrl(planId) {
@@ -17052,20 +17060,11 @@ function ttBind() {
   ttById("ttHome")?.addEventListener("click", () => {
     if (!document.body.classList.contains("home-mode")) ttRememberScroll();
     ttStopPaceGuide();
-    ttShowHomeScreen();
+    ttShowHomeScreen(ttActiveGroup().id);
   });
-  ttById("ttHomeOpenCurrent")?.addEventListener("click", () => ttOpenTeachFlow());
   ttById("ttHomeFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   ttById("ttHomeFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
-  ttById("ttPlannerOpen")?.addEventListener("click", () => {
-    // Apply all planner selections then open — same as "Build lesson" but goes straight to teach flow
-    ttBuildPlannerLesson({ startTeaching: true });
-  });
-  ttById("ttPlannerCustomizeToggle")?.addEventListener("click", () => {
-    ttPlannerCustomizeOpen = !ttPlannerCustomizeOpen;
-    ttRenderPlannerCustomizeState();
-  });
   ttById("ttPlannerDuplicatePrevious")?.addEventListener("click", () => ttDuplicatePreviousLesson());
   ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence", "ttPlannerPassage", "ttPlannerPassageApproach"].forEach((id) => {
     ttById(id)?.addEventListener("change", () => {
@@ -17139,7 +17138,6 @@ function ttBind() {
     ttSetWordlistPageIndex(event.target.value);
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
-  ttById("ttStartLesson")?.addEventListener("click", () => ttStartCurrentLesson());
   ttById("ttSaveLesson").addEventListener("click", () => ttSaveCurrentLesson());
   ttById("ttPdfPlan").addEventListener("click", () => ttOpenPdfLessonPlan());
   ttById("ttWilsonPlan").addEventListener("click", () => ttOpenWilsonLessonPlan());

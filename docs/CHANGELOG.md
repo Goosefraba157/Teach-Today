@@ -4,6 +4,11 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-29
 
+- Simplified Home to one lesson path per selected group: unfinished lessons now hide the new planner and show their exact identity with one primary Continue Lesson action, while groups without an open lesson show the full Customize planner by default.
+- Removed the competing Home Open current lesson, hidden Customize toggle, duplicate preview-only launch, and teaching-toolbar Start Teaching controls; renamed the remaining actions to Start Planned Lesson, Continue Lesson, End & Plan New, and Finish Lesson according to their actual effects.
+- Made Customize the authoritative quick-planning surface and moved lesson history beneath it. Starting a lesson now consumes the exact visible preview, while End & Plan New returns to Home planning instead of generating a competing lesson immediately.
+- Added hard guards against starting a second lesson while one is unfinished and against overwriting a completed or incomplete same-date plan. Explicit incomplete closure preserves the original lesson, its history, and combined-session links.
+- Added single-path Home regression coverage and verified a synthetic 3.5 Reader 3 page 142 preview opened with the identical Section 2 selections and became the sole active Home continuity lesson.
 - Added a generated, curriculum-only enhanced planning index for Substeps 1.3-7.5: 347 charting pages, 9,073 indexed words with structure metadata, 320 chart-page sentence recommendations, and 262 chart-page dictation recommendation sets. Existing logic remains the fallback for 1.1-1.2 and Steps 8-12.
 - Made the exact Section 4 charting page the planning anchor and automatically recommend a matching available Section 5 sentence page; direct charting-page changes update the recommendation without changing Section 4 scoring, halves, timer, stage, or record behavior.
 - Made Customize, preview, and Start Teaching share one canonical planned lesson snapshot, with additive planning source/anchor/selection metadata preserved in the existing whole-lesson JSON save path.
