@@ -23,6 +23,7 @@
 
 ## Recovery Point
 - Active branch: `main`
+- Current enhanced-planner commit: `695e605` (`Connect enhanced lesson planning index`)
 - Pre-enhanced-planner recovery commit: `60f0092` (`Speed up Scoop scroll strip`)
 - Older presenter recovery commit: `bf63641` (`Preserve recovered V1 slide presenter work`)
 - Privacy baseline through: `05f5ea1` (`Protect student portal data and repository privacy`)
