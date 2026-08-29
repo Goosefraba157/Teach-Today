@@ -39,6 +39,7 @@ let ttLaserFrame = null;
 let ttLaserActivePointerId = null;
 let ttLaserScrollPadPointerId = null;
 let ttLaserScrollPadLastY = 0;
+const ttLaserScrollPadSpeed = 4;
 let ttWhiteboardMode = "move";
 let ttWhiteboardDrawing = false;
 let ttWhiteboardLastPoint = null;
@@ -16220,7 +16221,7 @@ function ttLaserScrollPadMove(event) {
   const deltaY = event.clientY - ttLaserScrollPadLastY;
   ttLaserScrollPadLastY = event.clientY;
   const scrollingElement = document.scrollingElement || document.documentElement;
-  scrollingElement.scrollTop += deltaY * 1.5;
+  scrollingElement.scrollTop += deltaY * ttLaserScrollPadSpeed;
 }
 
 function ttLaserScrollPadEnd(event) {
@@ -16889,7 +16890,7 @@ function ttBind() {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     const scrollingElement = document.scrollingElement || document.documentElement;
-    scrollingElement.scrollTop += event.key === "ArrowUp" ? -90 : 90;
+    scrollingElement.scrollTop += event.key === "ArrowUp" ? -240 : 240;
   });
   ttById("ttGlobalInkInteract")?.addEventListener("click", () => ttSetGlobalInkActive(false));
   ttById("ttGlobalInkUndo")?.addEventListener("click", () => ttUndoGlobalInk());
