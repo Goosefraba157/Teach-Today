@@ -2,6 +2,14 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-30
+
+- Expanded Customize Section 2 and Section 2B review-source buttons from the recent eight substeps to the current substep plus every earlier substep; Sections 3 and 7 keep their existing recent-substep scope.
+- Added view-only Reader concept filters after a review source is chosen. The default `All {substep}` view preserves the complete existing pool, Reader page concept/subtitle buttons narrow it, and pages without concept labels receive a `Regular {substep}` group.
+- Added filters for word elements introduced at the selected review substep. Substep 2.1 now includes `ng & nk words`, `+ suffix`, and separate `/ang/`, `/ing/`, `/ong/`, `/ung/`, `/ank/`, `/ink/`, `/onk/`, and `/unk/` choices.
+- Made Section 2 and Section 2B source/filter state independent. Changing a filter never changes selected words or adds filter state to saved lessons, student records, Firebase sync, backups, or storage schemas.
+- Added chart-page concept grouping and regression coverage, refreshed offline asset versions, and verified all-prior navigation, unlabeled-page grouping, preserved selections, Section 2/2B independence, unchanged Sections 3/7, and a clean console in a local browser walkthrough.
+
 ## 2026-08-29
 
 - Simplified Home to one lesson path per selected group: unfinished lessons now hide the new planner and show their exact identity with one primary Continue Lesson action, while groups without an open lesson show the full Customize planner by default.

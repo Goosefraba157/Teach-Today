@@ -37,6 +37,20 @@ test("exact charting page drives sentence and dictation recommendations", () => 
   assert.ok(api.wordMetadataAtOrBefore("3.5", "landed").s.includes("ed"));
 });
 
+test("charting concepts preserve page subtitles for review-word filtering", () => {
+  const api = loadPlanningRuntime().TeachTodayEnhancedPlanning;
+  const groups = api.pageConceptGroups("2.1", "AB");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(groups.map((group) => ({ concepts: [...group.concepts], pages: [...group.pages] })))),
+    [
+      { concepts: ["ng", "nk"], pages: [2, 3, 4] },
+      { concepts: ["suffix"], pages: [5, 6] }
+    ]
+  );
+  assert.ok(groups[0].words.includes("bang"));
+  assert.ok(groups[1].words.length > 0);
+});
+
 test("generated curriculum asset contains no local source path or student schema", () => {
   const source = fs.readFileSync(path.join(root, "enhanced-planning-index.js"), "utf8");
   assert.doesNotMatch(source, /\/Users\//);

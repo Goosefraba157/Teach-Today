@@ -6,6 +6,7 @@ const test = require("node:test");
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "TeachToday.html"), "utf8");
 const source = fs.readFileSync(path.join(root, "teach-today.js"), "utf8");
+const appSource = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
 function functionBody(name, nextName) {
   const start = source.indexOf(`function ${name}`);
@@ -52,4 +53,23 @@ test("new lessons never overwrite a completed or incomplete same-day plan", () =
   assert.match(saveGenerated, /!\["Complete", "Incomplete", "Test"\]\.includes\(dailyPlan\.status\)/);
   assert.match(source, /openPlan\.closedReason = "Teacher chose End & Plan New"/);
   assert.match(source, /ttSyncCombinedLessonLinks\(openPlan, group\)/);
+});
+
+test("Section 2 review filters are additive, independent, and view-only", () => {
+  assert.match(source, /section2B: \"section2ReviewB2\"/);
+  assert.match(source, /"section2B", skill/);
+  const substepButtons = functionBody("ttSubstepBubblesHtml", "ttReviewConceptLabel");
+  assert.match(substepButtons, /\["section2", "section2B"\]\.includes\(sectionKey\) \? 0/);
+  assert.match(substepButtons, /scopeMap\.slice\(firstIndex, currentIndex \+ 1\)/);
+  assert.match(source, /pageConceptGroups\?\.\(substep, level\)/);
+
+  const filterHandler = functionBody("ttSetReviewWordFilter", "ttTogglePlannerChip");
+  assert.match(filterHandler, /ttReviewWordFilters\[pickerId\]/);
+  assert.doesNotMatch(filterHandler, /ttPickerSelections|saveState|ttRefreshPreview/);
+
+  const applySelections = functionBody("ttApplyPlannerSelectionsToLesson", "ttKnownWeldedValues");
+  assert.doesNotMatch(applySelections, /ttReviewWordFilters/);
+  ["ang", "ing", "ong", "ung", "ank", "ink", "onk", "unk"].forEach((sound) => {
+    assert.match(appSource, new RegExp(`\\[\"2\\.1\", \"${sound}\"\\]`));
+  });
 });

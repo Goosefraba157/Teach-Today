@@ -47,6 +47,28 @@
     return bestEntry(matches, level, (page) => page.l);
   };
 
+  api.pageConceptGroups = (substep, level) => {
+    const data = index();
+    if (!data || !api.isCovered(substep)) return [];
+    const groups = new Map();
+    Object.values(data.pages || {})
+      .filter((page) => page.s === clean(substep) && !page.n && levelScore(page.l, level) >= 0)
+      .sort((left, right) => Number(left.p) - Number(right.p))
+      .forEach((page) => {
+        const concepts = unique(page.c || []);
+        const key = concepts.length ? concepts.join("|") : "regular";
+        if (!groups.has(key)) groups.set(key, { key, concepts, pages: [], words: [] });
+        const group = groups.get(key);
+        group.pages.push(Number(page.p));
+        group.words.push(...(page.w || []));
+      });
+    return [...groups.values()].map((group) => ({
+      ...group,
+      pages: [...new Set(group.pages)],
+      words: unique(group.words)
+    }));
+  };
+
   api.findSentenceRecommendation = (substep, level, readerPage) => {
     const data = index();
     if (!data || !api.isCovered(substep)) return null;

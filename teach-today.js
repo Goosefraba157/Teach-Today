@@ -55,6 +55,7 @@ let ttPlannerDraft = {};
 let ttSectionReviewSubsteps = {};
 let ttPickerSelections = {};      // { pickerId: string[] }  — ordered selected words
 let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — word pools per substep
+let ttReviewWordFilters = {};     // { pickerId: filterKey } — temporary view filters only
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttSection8SoundElementsManual = false;
 let ttPlannerHomeScrollPositions = {};
@@ -6084,10 +6085,12 @@ function ttEnsurePlannerDraft(group) {
   const priorStep = priorSubstep(skill.id);
   ttPickerSelections = {};
   ttPickerSubstepCache = {};
+  ttReviewWordFilters = {};
   ttSection8RealSlots = [];
   ttSection8SoundElementsManual = false;
   ttSectionReviewSubsteps = {
     section2: [priorStep],
+    section2B: [priorStep],
     section3: [priorStep],
     section7: [priorStep],
     section8Real: [skill.id]
@@ -6566,6 +6569,7 @@ function ttDuplicatePreviousLesson() {
   };
   ttPickerSelections = {};
   ttPickerSubstepCache = {};
+  ttReviewWordFilters = {};
   ttSection8RealSlots = [];
   ttSection8SoundElementsManual = false;
   const preview = ttPlannerPreviewLesson(group);
@@ -6592,6 +6596,7 @@ function ttDuplicatePreviousLesson() {
   };
   ttSectionReviewSubsteps = {
     section2: [priorSubstep(skill.id)],
+    section2B: [priorSubstep(skill.id)],
     section3: [priorSubstep(skill.id)],
     section7: [priorSubstep(skill.id)],
     section8Real: [skill.id]
@@ -7221,7 +7226,7 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
 
   // Part 2 uses a distinct set of Section 2 words (Day 2 — different from Day 1)
   const row2Encoding = plannerRow(2, "#10b981", "§2B · Teach & Review Concepts", "Day 2 words — different from Day 1 §2",
-    ttPlannerReviewPickerHtml("section2ReviewB2", "Review words (Day 2)", reviewPool, enhancedReviewDefaults.slice(6, 12).length ? enhancedReviewDefaults.slice(6, 12) : (lesson.sectionTwoReviewWordsB2 || []), 6, "section2", skill) +
+    ttPlannerReviewPickerHtml("section2ReviewB2", "Review words (Day 2)", reviewPool, enhancedReviewDefaults.slice(6, 12).length ? enhancedReviewDefaults.slice(6, 12) : (lesson.sectionTwoReviewWordsB2 || []), 6, "section2B", skill) +
     ttPlannerPickerHtml("section2CurrentB2", "Current words (Day 2)", currentPool, lesson.sectionTwoCurrentWordsB2 || [], 6),
     "", "5 min"
   );
@@ -7408,7 +7413,8 @@ function ttBuildReviewPreselect(pickerId, skill, numTarget, level) {
 
 function ttSubstepBubblesHtml(sectionKey, skill) {
   const currentIndex = scopeMap.findIndex((item) => item.id === skill.id);
-  const options = scopeMap.slice(Math.max(0, currentIndex - 8), currentIndex + 1).map((item) => item.id).reverse();
+  const firstIndex = ["section2", "section2B"].includes(sectionKey) ? 0 : Math.max(0, currentIndex - 8);
+  const options = scopeMap.slice(firstIndex, currentIndex + 1).map((item) => item.id).reverse();
   const current = (ttSectionReviewSubsteps[sectionKey] || [])[0];
   return `<div class="planner-substep-row" data-substep-section="${escapeHtml(sectionKey)}">
     <span class="planner-substep-label">From:</span>
@@ -7417,11 +7423,141 @@ function ttSubstepBubblesHtml(sectionKey, skill) {
   </div>`;
 }
 
+function ttReviewConceptLabel(concepts) {
+  const values = new Set((concepts || []).map((value) => String(value || "").trim().toLowerCase()));
+  const exact = [...values].sort().join("|");
+  const exactLabels = {
+    "ng|nk": "ng & nk words",
+    "suffix": "+ suffix",
+    "all": "all words",
+    "am|an": "am & an words",
+    "blend|digraph": "Digraphs & blends",
+    "closed_exception": "Closed exceptions",
+    "mixed": "Mixed practice",
+    "blend|welded_sound": "Blends & welded sounds",
+    "latin_base|latin_base_practice_page": "Latin bases",
+    "compound_word|cw|syllable_division": "Compound words",
+    "cactus_word|syllable_division|vccv": "VCCV / cactus words",
+    "relish_word|syllable_division|vcv": "VCV / relish words"
+  };
+  if (exactLabels[exact]) return exactLabels[exact];
+  const ignored = /^(all_taught_elements|upper_steps|mixed_syllable_types|complex_baseword|base_word|latin_base_practice_page)$/;
+  const friendly = [...values]
+    .filter((value) => !ignored.test(value) && !value.startsWith("substep_") && !value.startsWith("prefix_set_"))
+    .map((value) => ({
+      prefix: "Prefixes",
+      suffix: "+ suffix",
+      latin_base: "Latin bases",
+      syllable_division: "Syllable division",
+      schwa: "Schwa",
+      nonsense: "Nonsense words"
+    }[value] || value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())))
+    .filter((value, index, list) => list.indexOf(value) === index);
+  return friendly.slice(0, 3).join(" · ") || "Reader concept";
+}
+
+function ttIntroducedReviewFilters(substep, pool) {
+  const wordKey = (value) => String(value || "").toLowerCase().replace(/[^a-z]/g, "");
+  const candidates = [];
+  knownWeldedAndExceptions
+    .filter(([introduced]) => introduced === substep)
+    .forEach(([, value]) => {
+      const pattern = wordKey(value);
+      if (pattern && !String(value).includes(" ")) {
+        candidates.push({ key: `sound:${pattern}`, label: `/${pattern}/`, matches: (word) => wordKey(word).includes(pattern) });
+      }
+    });
+  knownPrefixes
+    .filter(([introduced]) => introduced === substep)
+    .forEach(([, value]) => {
+      const pattern = wordKey(value);
+      candidates.push({ key: `prefix:${pattern}`, label: `${pattern}-`, matches: (word) => wordKey(word).startsWith(pattern) });
+    });
+  knownSuffixes
+    .filter(([introduced]) => introduced === substep)
+    .forEach(([, value]) => {
+      const pattern = wordKey(value);
+      candidates.push({ key: `suffix:${pattern}`, label: `-${pattern}`, matches: (word) => wordKey(word).endsWith(pattern) });
+    });
+  knownLatinBases
+    .filter(([introduced]) => introduced === substep)
+    .forEach(([, value]) => {
+      const pattern = wordKey(value);
+      candidates.push({ key: `base:${pattern}`, label: `-${pattern}-`, matches: (word) => wordKey(word).includes(pattern) });
+    });
+  return candidates.map((candidate) => ({
+    key: candidate.key,
+    label: candidate.label,
+    title: `Words containing ${candidate.label}`,
+    words: pool.filter(candidate.matches)
+  })).filter((filter) => filter.words.length);
+}
+
+function ttReviewWordFilterModel(pickerId, substep, level, pool) {
+  const wordKey = (value) => String(value || "").trim().toLowerCase();
+  const poolByKey = new Map(pool.map((word) => [wordKey(word), word]));
+  const pageGroups = ttEnhancedPlanning()?.pageConceptGroups?.(substep, level) || [];
+  const filters = [{ key: "all", label: `All ${substep}`, title: `Show every ${substep} word`, words: pool.slice() }];
+  const classified = new Set();
+  let hasRegularPages = pageGroups.length === 0;
+  let regularWords = [];
+
+  pageGroups.forEach((group) => {
+    const words = uniqueWords((group.words || []).map((word) => poolByKey.get(wordKey(word))).filter(Boolean));
+    if (!group.concepts?.length) {
+      hasRegularPages = true;
+      regularWords.push(...words);
+      return;
+    }
+    if (group.concepts.includes("nonsense") || !words.length) return;
+    words.forEach((word) => classified.add(wordKey(word)));
+    filters.push({
+      key: `concept:${group.key}`,
+      label: ttReviewConceptLabel(group.concepts),
+      title: `Reader pages ${group.pages.join(", ")}`,
+      words
+    });
+  });
+
+  const unmatched = pool.filter((word) => !classified.has(wordKey(word)));
+  regularWords = uniqueWords(regularWords.concat(unmatched));
+  if (regularWords.length) {
+    filters.push({
+      key: "regular",
+      label: hasRegularPages ? `Regular ${substep}` : `Other ${substep}`,
+      title: hasRegularPages ? `Words from ${substep} pages without a subtitle` : `Other indexed ${substep} words`,
+      words: regularWords
+    });
+  }
+  filters.push(...ttIntroducedReviewFilters(substep, pool));
+
+  const uniqueFilters = filters.filter((filter, index, list) => (
+    list.findIndex((candidate) => candidate.key === filter.key) === index
+  ));
+  const requested = ttReviewWordFilters[pickerId] || "all";
+  const active = uniqueFilters.some((filter) => filter.key === requested) ? requested : "all";
+  ttReviewWordFilters[pickerId] = active;
+  return {
+    active,
+    filters: uniqueFilters,
+    words: uniqueFilters.find((filter) => filter.key === active)?.words || pool
+  };
+}
+
+function ttReviewWordFiltersHtml(model) {
+  if (!model?.filters?.length) return "";
+  return `<div class="planner-concept-row" data-review-filter-row>
+    <span class="planner-concept-label">Narrow by:</span>
+    ${model.filters.map((filter) => `<button type="button" class="planner-concept-btn${model.active === filter.key ? " selected" : ""}" data-review-filter="${escapeHtml(filter.key)}" title="${escapeHtml(filter.title || filter.label)}">${escapeHtml(filter.label)} <small>${filter.words.length}</small></button>`).join("")}
+  </div>`;
+}
+
 function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sectionKey, skill) {
   const level = ttPlannerDraft?.level || "AB";
   const numTarget = Number(targetCount) || 0;
   const currentSubstep = (ttSectionReviewSubsteps[sectionKey] || [])[0] || priorSubstep(skill.id);
   const isNView = currentSubstep === "N";
+  const supportsConceptFilters = ["section2", "section2B"].includes(sectionKey);
 
   // Build display pool for the current substep
   const nsWords = new Set(readerNonsenseWordsFromSubstep(currentSubstep));
@@ -7433,6 +7569,11 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
 
   // Cache current substep pool
   ttPickerSubstepCache[`${id}::${currentSubstep}`] = currentPool;
+  const filterModel = supportsConceptFilters
+    ? (isNView
+      ? { active: "all", filters: [{ key: "all", label: "All nonsense", title: "Show nonsense words", words: currentPool }], words: currentPool }
+      : ttReviewWordFilterModel(id, currentSubstep, level, currentPool))
+    : { active: "all", filters: [], words: currentPool };
 
   // Initial preselection: spread across multiple substeps + 1-2 nonsense
   if (!ttPickerSelections[id]) {
@@ -7457,7 +7598,7 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     : "";
   const customInput = `<div class="picker-custom-row"><input type="text" class="picker-custom-input" placeholder="Type a word…" onkeydown="if(event.key==='Enter'){ttAddCustomWord(this);event.preventDefault();}"><button type="button" class="picker-custom-add" onclick="ttAddCustomWord(this.previousElementSibling)">+</button></div>`;
 
-  return `<article class="planner-picker${selectedSet.size >= numTarget && numTarget > 0 ? " picker-complete" : ""}" data-picker="${escapeHtml(id)}" data-target-count="${numTarget}">
+  return `<article class="planner-picker${selectedSet.size >= numTarget && numTarget > 0 ? " picker-complete" : ""}" data-picker="${escapeHtml(id)}" data-review-section="${escapeHtml(sectionKey)}" data-target-count="${numTarget}">
     <header>
       <strong>${escapeHtml(title)}</strong>
       <span class="picker-target-pill">${numTarget} target</span>
@@ -7465,8 +7606,9 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
       ${reshuffleBtn}${clearBtn}${undoBtn}
     </header>
     ${ttSubstepBubblesHtml(sectionKey, skill)}
+    ${ttReviewWordFiltersHtml(filterModel)}
     <div class="planner-chip-row">
-      ${currentPool.map((item) => {
+      ${filterModel.words.map((item) => {
         const isNs = isNView || nsWords.has(item);
         return `<button type="button" class="${selectedSet.has(item) ? "selected" : ""}${isNs ? " chip-nonsense" : ""}" data-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
       }).join("")}
@@ -7684,6 +7826,18 @@ function ttBindPlannerChips() {
   ttById("ttPlannerSections")?.querySelectorAll(".planner-substep-btn").forEach((button) => {
     button.addEventListener("click", () => ttTogglePlannerChip(button));
   });
+  ttById("ttPlannerSections")?.querySelectorAll(".planner-concept-btn").forEach((button) => {
+    button.addEventListener("click", () => ttSetReviewWordFilter(button));
+  });
+}
+
+function ttSetReviewWordFilter(button) {
+  const picker = button.closest("[data-picker]");
+  const pickerId = picker?.dataset.picker;
+  const sectionKey = picker?.dataset.reviewSection;
+  if (!pickerId || !sectionKey) return;
+  ttReviewWordFilters[pickerId] = button.dataset.reviewFilter || "all";
+  ttUpdateSectionReviewChips(sectionKey);
 }
 
 function ttTogglePlannerChip(button) {
@@ -7697,6 +7851,7 @@ function ttTogglePlannerChip(button) {
     substepRow.querySelectorAll(".planner-substep-btn").forEach((b) => b.classList.remove("selected"));
     button.classList.add("selected");
     ttSectionReviewSubsteps[sectionKey] = [button.dataset.value];
+    ttReviewWordFilters[pickerId] = "all";
     ttUpdateSectionReviewChips(sectionKey);
     // Update lesson preview so newly-shown words feed through
     ttRefreshPreview();
@@ -7748,7 +7903,13 @@ function ttUpdateSectionReviewChips(sectionKey) {
   const level = ttPlannerDraft.level || group.readerLevel || "AB";
   const currentSubstep = (ttSectionReviewSubsteps[sectionKey] || [priorSubstep(skill.id)])[0];
 
-  const pickerIdMap = { section2: "section2Review", section3: "section3Review", section7: "section7Review", section8Real: "dictationReal" };
+  const pickerIdMap = {
+    section2: "section2Review",
+    section2B: "section2ReviewB2",
+    section3: "section3Review",
+    section7: "section7Review",
+    section8Real: "dictationReal"
+  };
   const pickerId = pickerIdMap[sectionKey];
   if (!pickerId) return;
 
@@ -7768,6 +7929,13 @@ function ttUpdateSectionReviewChips(sectionKey) {
   // Cache it
   ttPickerSubstepCache[`${pickerId}::${currentSubstep}`] = newPool;
 
+  const supportsConceptFilters = ["section2", "section2B"].includes(sectionKey);
+  const filterModel = supportsConceptFilters
+    ? (isNView
+      ? { active: "all", filters: [{ key: "all", label: "All nonsense", title: "Show nonsense words", words: newPool }], words: newPool }
+      : ttReviewWordFilterModel(pickerId, currentSubstep, level, newPool))
+    : { active: "all", filters: [], words: newPool };
+
   const currentSels = ttPickerSelections[pickerId] || [];
   const selectedSet = new Set(currentSels);
   // Cross-substep count badge update
@@ -7778,10 +7946,23 @@ function ttUpdateSectionReviewChips(sectionKey) {
     crossBadge.hidden = crossCount === 0;
   }
 
-  // Update chip row — only current substep words
+  const filterRow = picker.querySelector("[data-review-filter-row]");
+  if (filterRow) {
+    const replacement = document.createElement("div");
+    replacement.innerHTML = ttReviewWordFiltersHtml(filterModel);
+    const newFilterRow = replacement.firstElementChild;
+    if (newFilterRow) {
+      filterRow.replaceWith(newFilterRow);
+      newFilterRow.querySelectorAll(".planner-concept-btn").forEach((button) => {
+        button.addEventListener("click", () => ttSetReviewWordFilter(button));
+      });
+    }
+  }
+
+  // Update chip row — only the active substep/filter view. Selections stay intact.
   const chipRow = picker.querySelector(".planner-chip-row");
   if (!chipRow) return;
-  chipRow.innerHTML = newPool.map((item) => {
+  chipRow.innerHTML = filterModel.words.map((item) => {
     const isNs = isNView || nsWordsSet.has(item);
     return `<button type="button" class="${selectedSet.has(item) ? "selected" : ""}${isNs ? " chip-nonsense" : ""}" data-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
   }).join("");
@@ -7834,6 +8015,7 @@ function ttUsePlannerDefaults() {
   ttPlannerDraft = {};
   ttPickerSelections = {};
   ttPickerSubstepCache = {};
+  ttReviewWordFilters = {};
   ttSection8RealSlots = [];
   ttSection8SoundElementsManual = false;
   ttSectionReviewSubsteps = {};
@@ -11850,6 +12032,7 @@ function ttNewLesson() {
   ttPlannerDraft = {};
   ttPickerSelections = {};
   ttPickerSubstepCache = {};
+  ttReviewWordFilters = {};
   ttSection8RealSlots = [];
   ttSection8SoundElementsManual = false;
   const draft = ttEnsurePlannerDraft(group);
@@ -17098,10 +17281,12 @@ function ttBind() {
         const priorStep = priorSubstep(skill.id);
         ttPickerSelections = {};
         ttPickerSubstepCache = {};
+        ttReviewWordFilters = {};
         ttSection8RealSlots = [];
         ttSection8SoundElementsManual = false;
         ttSectionReviewSubsteps = {
           section2: [priorStep],
+          section2B: [priorStep],
           section3: [priorStep],
           section7: [priorStep],
           section8Real: [skill.id]
