@@ -9,6 +9,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added filters for word elements introduced at the selected review substep. Substep 2.1 now includes `ng & nk words`, `+ suffix`, and separate `/ang/`, `/ing/`, `/ong/`, `/ung/`, `/ank/`, `/ink/`, `/onk/`, and `/unk/` choices.
 - Made Section 2 and Section 2B source/filter state independent. Changing a filter never changes selected words or adds filter state to saved lessons, student records, Firebase sync, backups, or storage schemas.
 - Added chart-page concept grouping and regression coverage, refreshed offline asset versions, and verified all-prior navigation, unlabeled-page grouping, preserved selections, Section 2/2B independence, unchanged Sections 3/7, and a clean console in a local browser walkthrough.
+- Published the review-word concept filters to GitHub `main` at commit `b0c6d70`.
 
 ## 2026-08-29
 
