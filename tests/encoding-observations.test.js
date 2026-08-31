@@ -50,22 +50,21 @@ test("each observation tap is linked and persisted immediately", () => {
   assert.match(save, /observationCode/);
 });
 
-test("Student Profile visibly lists Section 6–8 observations", () => {
-  assert.match(profileHtml, /<h2>Section 6–8 Instructional Summary<\/h2>/);
-  assert.match(profileHtml, /id="encodingObservationSummary"/);
-  assert.match(profileHtml, /<h2>Section 6–8 Observations<\/h2>/);
-  assert.match(profileHtml, /id="encodingObservationRows"/);
-  assert.ok(profileHtml.indexOf("encodingObservationSummary") < profileHtml.indexOf("encodingObservationRows"));
-  assert.match(profileSource, /renderEncodingObservationSummary\(encodingObservations, student\)/);
-  const renderSummary = functionBody(profileSource, "renderEncodingObservationSummary", "renderEncodingObservationRows");
-  ["Mostly", "Auto", "Acc", "Strug", "Trouble spots observed", "most to least frequent"].forEach((marker) => {
-    assert.match(renderSummary, new RegExp(marker));
+test("the restarted Student Profile summarizes and lists Section 6–8 observations", () => {
+  assert.match(profileHtml, /data-profile-tab="encoding">Sections 6–8<\/button>/);
+  ["section6Summary", "section7Summary", "section8Summary", "observationRows"].forEach((id) => {
+    assert.match(profileHtml, new RegExp(`id="${id}"`));
   });
+  assert.ok(profileHtml.indexOf("section6Summary") < profileHtml.indexOf("observationRows"));
   ["section6", "section7", "section8"].forEach((marker) => assert.match(profileSource, new RegExp(marker)));
-  assert.match(profileSource, /right\.count - left\.count/);
-  assert.match(renderSummary, /section !== "section6" \|\| code !== "HFW"/);
-  assert.match(profileSource, /renderEncodingObservationRows\(encodingObservations\)/);
-  const renderRows = functionBody(profileSource, "renderEncodingObservationRows", "metricClass");
-  assert.match(renderRows, /\["section6", "section7", "section8"\]/);
-  assert.match(renderRows, /record\.lessonTitle/);
+  assert.match(profileSource, /function observations\(\)/);
+  assert.match(profileSource, /const encodingKeys = new Set/);
+  assert.match(profileSource, /function sectionSummary\(section\)/);
+  assert.match(profileSource, /function renderEncoding\(\)/);
+  assert.match(profileSource, /section !== "section6" \|\| code !== "HFW"/);
+  const renderEncoding = functionBody(profileSource, "renderEncoding", "renderTimeline");
+  assert.match(renderEncoding, /sectionSummary\("section6"\)/);
+  assert.match(renderEncoding, /sectionSummary\("section7"\)/);
+  assert.match(renderEncoding, /sectionSummary\("section8"\)/);
+  assert.match(renderEncoding, /record\.lessonTitle/);
 });

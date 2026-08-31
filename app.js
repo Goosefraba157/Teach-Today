@@ -164,6 +164,9 @@ const troubleOptions = [
 ];
 
 const storageKey = "dyslexiaInstructionEngine.v2";
+const teachTodayStateChannel = "BroadcastChannel" in window
+  ? new BroadcastChannel("teachTodayState.v1")
+  : null;
 const privacySchemaVersion = 1;
 let appState = loadState();
 let activeTimers = new Map();
@@ -452,6 +455,14 @@ function saveState() {
   applyStudentPrivacySchema(appState);
   appState.lastSavedAt = new Date().toISOString();
   localStorage.setItem(storageKey, JSON.stringify(appState));
+  teachTodayStateChannel?.postMessage({
+    type: "state-saved",
+    savedAt: appState.lastSavedAt,
+    source: location.pathname
+  });
+  window.dispatchEvent(new CustomEvent("teachTodayStateSaved", {
+    detail: { savedAt: appState.lastSavedAt, source: location.pathname }
+  }));
   if (typeof window.teachTodayQueueCloudSync === "function") {
     window.teachTodayQueueCloudSync();
   }
