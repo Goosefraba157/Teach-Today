@@ -59,8 +59,9 @@ test("Section 2 review filters are additive, independent, and view-only", () => 
   assert.match(source, /section2B: \"section2ReviewB2\"/);
   assert.match(source, /"section2B", skill/);
   const substepButtons = functionBody("ttSubstepBubblesHtml", "ttReviewConceptLabel");
-  assert.match(substepButtons, /\["section2", "section2B"\]\.includes\(sectionKey\) \? 0/);
-  assert.match(substepButtons, /scopeMap\.slice\(firstIndex, currentIndex \+ 1\)/);
+  assert.match(substepButtons, /\["section2", "section2B", "section3"\]\.includes\(sectionKey\)/);
+  assert.match(substepButtons, /const endIndex = sectionKey === "section3" && currentIndex > 0 \? currentIndex : currentIndex \+ 1/);
+  assert.match(substepButtons, /scopeMap\.slice\(firstIndex, endIndex\)/);
   assert.match(source, /pageConceptGroups\?\.\(substep, level\)/);
   assert.match(source, /nonsensePageGroup\?\.\(substep\)/);
   assert.match(source, /label: "N words"/);
@@ -72,11 +73,97 @@ test("Section 2 review filters are additive, independent, and view-only", () => 
 
   const filterHandler = functionBody("ttSetReviewWordFilter", "ttTogglePlannerChip");
   assert.match(filterHandler, /ttReviewWordFilters\[pickerId\]/);
-  assert.doesNotMatch(filterHandler, /ttPickerSelections|saveState|ttRefreshPreview/);
+  assert.doesNotMatch(filterHandler, /ttPickerSelections|saveState/);
 
   const applySelections = functionBody("ttApplyPlannerSelectionsToLesson", "ttKnownWeldedValues");
   assert.doesNotMatch(applySelections, /ttReviewWordFilters/);
   ["ang", "ing", "ong", "ung", "ank", "ink", "onk", "unk"].forEach((sound) => {
     assert.match(appSource, new RegExp(`\\[\"2\\.1\", \"${sound}\"\\]`));
   });
+});
+
+test("Section 3 planning selects one prior concept and one current concept", () => {
+  const defaults = functionBody("ttDefaultSectionReviewSubsteps", "ttRenderPlannerPanel");
+  assert.match(defaults, /section3: \[ttRandomSection3ReviewSubstep\(skill, level\)\]/);
+  assert.match(defaults, /section3Current: \[skill\.id\]/);
+
+  const planner = functionBody("ttPlannerSectionsHtml", "ttPlannerScheduleBarHtml");
+  assert.match(planner, /"section3Review", "Review cards · one concept"/);
+  assert.match(planner, /"section3Current", "Current cards · one concept"/);
+  assert.match(planner, /autoConcept: true/);
+  assert.match(planner, /conceptOnly: true/);
+  assert.match(planner, /selectionDriven: true/);
+
+  const applySelections = functionBody("ttApplyPlannerSelectionsToLesson", "ttKnownWeldedValues");
+  assert.match(applySelections, /sectionThreeReviewSubstep/);
+  assert.match(applySelections, /sectionThreeReviewConcept/);
+  assert.match(applySelections, /sectionThreeCurrentSubstep/);
+  assert.match(applySelections, /sectionThreeCurrentConcept/);
+  assert.match(applySelections, /planningSelections = \{/);
+});
+
+test("Fat Stack is derived by group and school year with teacher-selectable miss thresholds", () => {
+  assert.match(html, /data-mode="fat"[^>]*>Fat Stack</);
+  assert.match(html, /data-fat-threshold="all"/);
+  assert.match(html, /data-fat-threshold="1"/);
+  assert.match(html, /data-fat-threshold="2"/);
+  assert.match(html, /data-fat-threshold="3"/);
+
+  const entries = functionBody("ttFatStackEntries", "ttFatStackForThreshold");
+  assert.match(entries, /ttGroupChartRecords\(group\)/);
+  assert.match(entries, /ttSchoolYearForChartRecord\(record\) === schoolYearId/);
+  assert.match(entries, /ttMissWordsFromChartRecord\(record\)/);
+  assert.match(entries, /prior\.count \+= 1/);
+  assert.match(entries, /b\.count - a\.count/);
+
+  const thresholds = functionBody("ttFatStackForThreshold", "ttFatStackCard");
+  assert.match(thresholds, /entry\.count === 1/);
+  assert.match(thresholds, /entry\.count === 2/);
+  assert.match(thresholds, /entry\.count >= 3/);
+  assert.doesNotMatch(source, /group\.fatStack\s*=/);
+  const misses = functionBody("ttMissWordsFromChartRecord", "ttSection2RelevantMisses");
+  assert.match(misses, /item\.section === record\.chartHalf/);
+});
+
+test("the default Lesson Deck follows the requested teaching order", () => {
+  assert.match(html, /class="card-mode active" data-mode="lesson"/);
+  const deck = functionBody("ttSection3LessonDeck", "wordPartCardsForMode");
+  const ordered = [
+    "const fat =",
+    "const review =",
+    "const current =",
+    "const hfw =",
+    "const wordParts =",
+    "const deck = [...fat, ...review, ...current, ...hfw, ...wordParts]"
+  ];
+  let cursor = -1;
+  ordered.forEach((needle) => {
+    const next = deck.indexOf(needle);
+    assert.ok(next > cursor, `${needle} appears in order`);
+    cursor = next;
+  });
+  assert.match(deck, /ttWeightedFatStackSample\(ttFatStackEntries\(ttActiveGroup\(\)\), 10/);
+  assert.match(deck, /section3ReviewCards\(lesson\)\.slice\(0, 3\)/);
+  assert.match(deck, /section3CurrentCards\(lesson\)\.slice\(0, 3\)/);
+  ["welded", "latin", "prefixes", "suffixes"].forEach((mode) => {
+    assert.match(deck, new RegExp(`ttSection3IntroducedCards\\(lesson\\.substep, "${mode}", 2\\)`));
+  });
+
+  const refresh = functionBody("ttRefreshSection", "ttChooseReaderPage");
+  assert.match(refresh, /sectionThreeDeckSeed/);
+  assert.doesNotMatch(refresh, /delete ttLesson\.sectionThreeReviewWords/);
+  assert.doesNotMatch(refresh, /delete ttLesson\.sectionThreeCurrentWords/);
+});
+
+test("Section 3 HFW separates current-step and chosen prior-step cards", () => {
+  assert.match(html, /id="ttSection3HfwStep"/);
+  assert.match(html, /id="ttSection3HfwReviewStep"/);
+  const choices = functionBody("ttFillSection3HfwReviewChoices", "ttFatStackEntries");
+  assert.match(choices, /scopeMap\.slice\(0, currentIndex\)/);
+  assert.match(choices, /priorSubstep\(currentSubstep\)/);
+  const deck = functionBody("section3DeckForMode", "ttFillSection3HfwReviewChoices");
+  assert.match(deck, /ttSection3HfwStep/);
+  assert.match(deck, /ttSection3HfwReviewStep/);
+  assert.match(deck, /hfwWordsForSubstep\(currentSubstep, lesson\)/);
+  assert.match(deck, /hfwWordsForSubstep\(reviewSubstep, lesson\)/);
 });

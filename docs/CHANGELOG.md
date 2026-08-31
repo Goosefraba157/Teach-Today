@@ -4,6 +4,11 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-30
 
+- Made Customize Section 3 select one prior substep/concept for review cards and one current-substep concept for current cards. A new plan randomizes the prior source/concept, teachers can change either concept, and the saved exact card arrays plus additive labels now drive the lesson and Present views unchanged.
+- Added a cumulative per-group Fat Stack derived from existing current-school-year Section 4 charting records. It counts each actually charted miss, excludes the untouched chart half, ranks repeated/recent misses, and offers All, Once, Twice, and 3+ filters without creating a second saved student-data store.
+- Added the default Section 3 Lesson Deck in the requested order: up to 10 weighted Fat Stack cards, 3 planned review cards, 3 planned current cards, all current-substep HFW, then up to 2 newly introduced welded/glued sounds, Latin bases, prefixes, and suffixes. New Set rerolls the weighted deck without discarding the teacher's planned card selections.
+- Split Section 3 HFW controls into current and review selectors. Current defaults to the lesson substep, review defaults to the immediate prior substep, and the teacher may choose any earlier review step.
+- Added regression coverage and verified the exact Customize selections in the lesson view, one-concept reselection, automatic concept choice after changing substeps, HFW defaults, hidden unused rows, and a clean browser console using isolated synthetic data. Existing lessons and student/Firebase/sync/backup schemas remain unchanged.
 - Added a per-substep `N words` filter to Customize Section 2 and Section 2B whenever the indexed Reader includes N pages for that substep. The existing `All {substep}` view remains the unchanged real-word pool, and selected N words remain selected when switching filters.
 - Added compact Reader page references beside filter counts, including level-specific real-word pages, concept/subtitle pages, regular pages, introduced-element matches, and N pages.
 - Applied teacher-reviewed labels for `Bonus Letter 1.4`, 4.1 page 6 `V E Syllable - V-r-e`, and 4.4 page 111 `Closed Syllable - Final E Marker - Final se ve`; added a 1.4 `N /all/ words` filter that shows `zall` and `rall` from Reader page 64.

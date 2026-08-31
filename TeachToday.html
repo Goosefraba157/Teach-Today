@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260830-review-n-pages-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260830-section3-fat-stack-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -693,9 +693,14 @@
           <div><span>3</span><h2>Word Cards Activity</h2></div>
           <div class="card-mode-buttons">
             <button class="section-refresh" data-refresh-section="3" type="button" title="New Section 3 cards">↻ New set</button>
-            <button class="card-mode active" data-mode="words" type="button">Words</button>
+            <button class="card-mode active" data-mode="lesson" type="button" title="Fat Stack, review, current, HFW, and current word parts">Lesson Deck</button>
+            <button class="card-mode" data-mode="words" type="button">Words</button>
+            <button class="card-mode" data-mode="fat" type="button">Fat Stack</button>
             <button class="card-mode" data-mode="hfw" type="button">HFW</button>
-            <select id="ttSection3HfwStep" class="section3-hfw-step" title="HFW step"></select>
+            <span id="ttSection3HfwControls" class="section3-hfw-controls" hidden>
+              <label>Current <select id="ttSection3HfwStep" title="Current HFW step"></select></label>
+              <label>Review <select id="ttSection3HfwReviewStep" title="Review HFW step"></select></label>
+            </span>
             <button class="card-mode" data-mode="welded" type="button">Welded/Glued</button>
             <button class="card-mode" data-mode="latin" type="button">Latin Bases</button>
             <button class="card-mode" data-mode="prefixes" type="button">Prefixes</button>
@@ -703,6 +708,13 @@
           </div>
         </div>
         <span id="ttSection3Ref" class="section-ref-pill"></span>
+        <div id="ttFatStackFilters" class="fat-stack-filters" hidden>
+          <strong>Miss count:</strong>
+          <button type="button" data-fat-threshold="all" class="active">All</button>
+          <button type="button" data-fat-threshold="1">Once</button>
+          <button type="button" data-fat-threshold="2">Twice</button>
+          <button type="button" data-fat-threshold="3">3+</button>
+        </div>
         <h3 id="ttReviewCardsTitle">Review cards</h3>
         <div id="ttReviewCards" class="word-row"></div>
         <h3 id="ttCurrentCardsTitle">Current cards</h3>
@@ -1128,7 +1140,7 @@
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260830-review-n-pages-1"></script>
+    <script src="teach-today.js?v=20260830-section3-fat-stack-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>
