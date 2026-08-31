@@ -7435,6 +7435,8 @@ function ttReviewConceptLabel(concepts) {
     "closed_exception": "Closed exceptions",
     "mixed": "Mixed practice",
     "blend|welded_sound": "Blends & welded sounds",
+    "odd_vowel_sound_v_e|r_controlled_v_e|silent_e|v_e_syllable|v_e_with_r|vowel_consonant_e": "V E Syllable - V-r-e",
+    "closed_syllable|final_e_marker|final_se|final_ve|se_ve_closed_syllables": "Closed Syllable - Final E Marker - Final se ve",
     "latin_base|latin_base_practice_page": "Latin bases",
     "compound_word|cw|syllable_division": "Compound words",
     "cactus_word|syllable_division|vccv": "VCCV / cactus words",
@@ -7456,7 +7458,16 @@ function ttReviewConceptLabel(concepts) {
   return friendly.slice(0, 3).join(" · ") || "Reader concept";
 }
 
-function ttIntroducedReviewFilters(substep, pool) {
+function ttReaderPagesForWords(pageGroups, words) {
+  const wanted = new Set((words || []).map((word) => String(word || "").trim().toLowerCase()));
+  return [...new Set((pageGroups || []).flatMap((group) => (
+    (group.pageWords || []).filter((page) => (
+      (page.words || []).some((word) => wanted.has(String(word || "").trim().toLowerCase()))
+    )).map((page) => Number(page.page))
+  )))].filter(Number.isFinite).sort((left, right) => left - right);
+}
+
+function ttIntroducedReviewFilters(substep, pool, pageGroups) {
   const wordKey = (value) => String(value || "").toLowerCase().replace(/[^a-z]/g, "");
   const candidates = [];
   knownWeldedAndExceptions
@@ -7489,7 +7500,8 @@ function ttIntroducedReviewFilters(substep, pool) {
     key: candidate.key,
     label: candidate.label,
     title: `Words containing ${candidate.label}`,
-    words: pool.filter(candidate.matches)
+    words: pool.filter(candidate.matches),
+    pages: ttReaderPagesForWords(pageGroups, pool.filter(candidate.matches))
   })).filter((filter) => filter.words.length);
 }
 
@@ -7497,16 +7509,19 @@ function ttReviewWordFilterModel(pickerId, substep, level, pool) {
   const wordKey = (value) => String(value || "").trim().toLowerCase();
   const poolByKey = new Map(pool.map((word) => [wordKey(word), word]));
   const pageGroups = ttEnhancedPlanning()?.pageConceptGroups?.(substep, level) || [];
-  const filters = [{ key: "all", label: `All ${substep}`, title: `Show every ${substep} word`, words: pool.slice() }];
+  const allPages = [...new Set(pageGroups.flatMap((group) => group.pages || []))].sort((left, right) => left - right);
+  const filters = [{ key: "all", label: `All ${substep}`, title: `Show every ${substep} word`, words: pool.slice(), pages: allPages }];
   const classified = new Set();
   let hasRegularPages = pageGroups.length === 0;
   let regularWords = [];
+  let regularPages = [];
 
   pageGroups.forEach((group) => {
     const words = uniqueWords((group.words || []).map((word) => poolByKey.get(wordKey(word))).filter(Boolean));
     if (!group.concepts?.length) {
       hasRegularPages = true;
       regularWords.push(...words);
+      regularPages.push(...(group.pages || []));
       return;
     }
     if (group.concepts.includes("nonsense") || !words.length) return;
@@ -7515,21 +7530,49 @@ function ttReviewWordFilterModel(pickerId, substep, level, pool) {
       key: `concept:${group.key}`,
       label: ttReviewConceptLabel(group.concepts),
       title: `Reader pages ${group.pages.join(", ")}`,
-      words
+      words,
+      pages: group.pages || []
     });
   });
 
   const unmatched = pool.filter((word) => !classified.has(wordKey(word)));
   regularWords = uniqueWords(regularWords.concat(unmatched));
   if (regularWords.length) {
+    const regularLabel = hasRegularPages && substep === "1.4"
+      ? "Bonus Letter 1.4"
+      : hasRegularPages ? `Regular ${substep}` : `Other ${substep}`;
     filters.push({
       key: "regular",
-      label: hasRegularPages ? `Regular ${substep}` : `Other ${substep}`,
+      label: regularLabel,
       title: hasRegularPages ? `Words from ${substep} pages without a subtitle` : `Other indexed ${substep} words`,
-      words: regularWords
+      words: regularWords,
+      pages: [...new Set(regularPages)].sort((left, right) => left - right)
     });
   }
-  filters.push(...ttIntroducedReviewFilters(substep, pool));
+  const nonsenseGroup = ttEnhancedPlanning()?.nonsensePageGroup?.(substep);
+  const nonsenseWords = uniqueWords(nonsenseGroup?.words || []).filter(isValidDictationWord);
+  if (nonsenseWords.length) {
+    filters.push({
+      key: "nonsense",
+      label: "N words",
+      title: `Nonsense words from Reader pages ${(nonsenseGroup.pages || []).join(", ")}`,
+      words: nonsenseWords,
+      pages: nonsenseGroup.pages || []
+    });
+    if (substep === "1.4") {
+      const nonsenseAllWords = nonsenseWords.filter((word) => wordKey(word).includes("all"));
+      if (nonsenseAllWords.length) {
+        filters.push({
+          key: "nonsense:sound:all",
+          label: "N /all/ words",
+          title: "Nonsense words containing /all/",
+          words: nonsenseAllWords,
+          pages: ttReaderPagesForWords([{ pageWords: nonsenseGroup.pageWords || [] }], nonsenseAllWords)
+        });
+      }
+    }
+  }
+  filters.push(...ttIntroducedReviewFilters(substep, pool, pageGroups));
 
   const uniqueFilters = filters.filter((filter, index, list) => (
     list.findIndex((candidate) => candidate.key === filter.key) === index
@@ -7544,11 +7587,31 @@ function ttReviewWordFilterModel(pickerId, substep, level, pool) {
   };
 }
 
+function ttReviewPageLabel(pages) {
+  const numbers = [...new Set((pages || []).map(Number).filter(Number.isFinite))].sort((left, right) => left - right);
+  if (!numbers.length) return "";
+  const parts = [];
+  let start = numbers[0];
+  let previous = numbers[0];
+  for (let index = 1; index <= numbers.length; index += 1) {
+    const current = numbers[index];
+    if (current === previous + 1) {
+      previous = current;
+      continue;
+    }
+    const span = previous - start >= 2 ? `${start}–${previous}` : previous === start ? `${start}` : `${start},${previous}`;
+    parts.push(span);
+    start = current;
+    previous = current;
+  }
+  return `(p.${parts.join(",")})`;
+}
+
 function ttReviewWordFiltersHtml(model) {
   if (!model?.filters?.length) return "";
   return `<div class="planner-concept-row" data-review-filter-row>
     <span class="planner-concept-label">Narrow by:</span>
-    ${model.filters.map((filter) => `<button type="button" class="planner-concept-btn${model.active === filter.key ? " selected" : ""}" data-review-filter="${escapeHtml(filter.key)}" title="${escapeHtml(filter.title || filter.label)}">${escapeHtml(filter.label)} <small>${filter.words.length}</small></button>`).join("")}
+    ${model.filters.map((filter) => `<button type="button" class="planner-concept-btn${model.active === filter.key ? " selected" : ""}" data-review-filter="${escapeHtml(filter.key)}" title="${escapeHtml(filter.title || filter.label)}">${escapeHtml(filter.label)} <small class="planner-concept-count">${filter.words.length}</small>${filter.pages?.length ? ` <small class="planner-concept-pages">${escapeHtml(ttReviewPageLabel(filter.pages))}</small>` : ""}</button>`).join("")}
   </div>`;
 }
 

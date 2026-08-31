@@ -51,6 +51,33 @@ test("charting concepts preserve page subtitles for review-word filtering", () =
   assert.ok(groups[1].words.length > 0);
 });
 
+test("review metadata exposes level-specific real pages and substep N pages", () => {
+  const runtime = loadPlanningRuntime();
+  const api = runtime.TeachTodayEnhancedPlanning;
+  const realGroups = api.pageConceptGroups("1.4", "AB");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(realGroups.map((group) => ({ concepts: [...group.concepts], pages: [...group.pages] })))),
+    [
+      { concepts: [], pages: [58] },
+      { concepts: ["all"], pages: [59] }
+    ]
+  );
+  const nonsense = api.nonsensePageGroup("1.4");
+  assert.deepEqual(JSON.parse(JSON.stringify(nonsense.pages)), [63, 64]);
+  assert.deepEqual(JSON.parse(JSON.stringify(nonsense.pageWords.map((page) => page.page))), [63, 64]);
+  assert.ok(nonsense.words.includes("biss"));
+  assert.equal(api.nonsensePageGroup("3.5"), null);
+
+  const indexedNSubsteps = [...new Set(Object.values(runtime.teachTodayEnhancedPlanningIndex.pages)
+    .filter((page) => page.n)
+    .map((page) => page.s))];
+  assert.equal(indexedNSubsteps.length, 17);
+  indexedNSubsteps.forEach((substep) => {
+    assert.ok(api.nonsensePageGroup(substep)?.pages.length, `${substep} should expose its N Reader pages`);
+    assert.ok(api.nonsensePageGroup(substep)?.words.length, `${substep} should expose its N words`);
+  });
+});
+
 test("generated curriculum asset contains no local source path or student schema", () => {
   const source = fs.readFileSync(path.join(root, "enhanced-planning-index.js"), "utf8");
   assert.doesNotMatch(source, /\/Users\//);

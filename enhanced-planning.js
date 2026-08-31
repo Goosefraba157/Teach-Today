@@ -31,6 +31,16 @@
       .sort((left, right) => right.score - left.score)[0]?.entry || null;
   }
 
+  function entriesForLevel(entries, requestedLevel, getLevel) {
+    const candidates = (entries || [])
+      .map((entry) => ({ entry, score: levelScore(getLevel(entry), requestedLevel) }))
+      .filter((candidate) => candidate.score >= 0);
+    const direct = candidates.filter((candidate) => candidate.score >= 9);
+    if (direct.length) return direct.map((candidate) => candidate.entry);
+    const bestScore = Math.max(-1, ...candidates.map((candidate) => candidate.score));
+    return candidates.filter((candidate) => candidate.score === bestScore).map((candidate) => candidate.entry);
+  }
+
   api.isAvailable = () => Boolean(index()?.coverage?.substeps?.length);
 
   api.isCovered = (substep) => Boolean(index()?.coverage?.substeps?.includes(clean(substep)));
@@ -51,15 +61,19 @@
     const data = index();
     if (!data || !api.isCovered(substep)) return [];
     const groups = new Map();
-    Object.values(data.pages || {})
-      .filter((page) => page.s === clean(substep) && !page.n && levelScore(page.l, level) >= 0)
+    entriesForLevel(
+      Object.values(data.pages || {}).filter((page) => page.s === clean(substep) && !page.n),
+      level,
+      (page) => page.l
+    )
       .sort((left, right) => Number(left.p) - Number(right.p))
       .forEach((page) => {
         const concepts = unique(page.c || []);
         const key = concepts.length ? concepts.join("|") : "regular";
-        if (!groups.has(key)) groups.set(key, { key, concepts, pages: [], words: [] });
+        if (!groups.has(key)) groups.set(key, { key, concepts, pages: [], pageWords: [], words: [] });
         const group = groups.get(key);
         group.pages.push(Number(page.p));
+        group.pageWords.push({ page: Number(page.p), words: unique(page.w || []) });
         group.words.push(...(page.w || []));
       });
     return [...groups.values()].map((group) => ({
@@ -67,6 +81,20 @@
       pages: [...new Set(group.pages)],
       words: unique(group.words)
     }));
+  };
+
+  api.nonsensePageGroup = (substep) => {
+    const data = index();
+    if (!data || !api.isCovered(substep)) return null;
+    const pages = Object.values(data.pages || {})
+      .filter((page) => page.s === clean(substep) && page.n)
+      .sort((left, right) => Number(left.p) - Number(right.p));
+    if (!pages.length) return null;
+    return {
+      pages: [...new Set(pages.map((page) => Number(page.p)))],
+      pageWords: pages.map((page) => ({ page: Number(page.p), words: unique(page.w || []) })),
+      words: unique(pages.flatMap((page) => page.w || []))
+    };
   };
 
   api.findSentenceRecommendation = (substep, level, readerPage) => {

@@ -62,6 +62,13 @@ test("Section 2 review filters are additive, independent, and view-only", () => 
   assert.match(substepButtons, /\["section2", "section2B"\]\.includes\(sectionKey\) \? 0/);
   assert.match(substepButtons, /scopeMap\.slice\(firstIndex, currentIndex \+ 1\)/);
   assert.match(source, /pageConceptGroups\?\.\(substep, level\)/);
+  assert.match(source, /nonsensePageGroup\?\.\(substep\)/);
+  assert.match(source, /label: "N words"/);
+  assert.match(source, /label: "N \/all\/ words"/);
+  assert.match(source, /"Bonus Letter 1\.4"/);
+  assert.match(source, /"V E Syllable - V-r-e"/);
+  assert.match(source, /"Closed Syllable - Final E Marker - Final se ve"/);
+  assert.match(source, /planner-concept-pages/);
 
   const filterHandler = functionBody("ttSetReviewWordFilter", "ttTogglePlannerChip");
   assert.match(filterHandler, /ttReviewWordFilters\[pickerId\]/);

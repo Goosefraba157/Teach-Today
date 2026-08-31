@@ -9794,6 +9794,12 @@ body.home-mode .home-screen {
   font-weight: 900;
 }
 
+.planner-concept-btn .planner-concept-pages {
+  font-size: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .planner-concept-btn.selected {
   border-color: var(--ps-color, #0f766e) !important;
   background: color-mix(in srgb, var(--ps-color, #0f766e) 12%, #fff) !important;
