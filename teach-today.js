@@ -6990,6 +6990,27 @@ function ttSection8RealSlotsInit(skill, lesson = null) {
   const level = ttPlannerDraft?.level || "AB";
 
   const activeLesson = lesson || ttPlannerPreviewLesson(ttPlannerGroup());
+  const prior = priorSubstep(skill.id);
+  const sectionSeven = activeLesson ? ttBuildSectionSevenWordSets(activeLesson, skill) : { review: [], nonsense: [], current: [] };
+  const sectionSevenKeys = new Set([].concat(sectionSeven.review, sectionSeven.nonsense, sectionSeven.current).map(ttWordKey));
+  const dictationReview = ttDictationBookReviewWordPool([prior], level)
+    .filter((word) => !sectionSevenKeys.has(ttWordKey(word)));
+  const dictationCurrent = (activeLesson ? ttDictationBookCurrentWordPool(activeLesson, skill) : [])
+    .filter((word) => !sectionSevenKeys.has(ttWordKey(word)));
+  if (dictationReview.length || dictationCurrent.length) {
+    const review = ttDeterministicTake(dictationReview, 3);
+    const used = new Set(review.map(ttWordKey));
+    const current = ttDeterministicTake(
+      dictationCurrent.filter((word) => !used.has(ttWordKey(word))),
+      2
+    );
+    const selected = fillToCount(review.concat(current), dictationReview.concat(dictationCurrent), 5);
+    ttSection8RealSlots = selected.slice(0, 5).map((word, index) => ({
+      substep: index < Math.min(3, review.length) ? prior : skill.id,
+      word
+    }));
+    return;
+  }
   const enhanced = ttEnhancedPlanning();
   if (enhanced?.isCovered?.(skill.id) && activeLesson) {
     const review = ttDeterministicTake(ttEnhancedReviewWords(activeLesson, skill), 3);
@@ -7067,20 +7088,21 @@ function ttSection8RealSlotsHtml(skill, lesson = null) {
   const currentIdx = scopeMap.findIndex((s) => s.id === skill.id);
   const substepOptions = scopeMap.slice(Math.max(0, currentIdx - 8), currentIdx + 1).map((s) => s.id).reverse();
   const level = ttPlannerDraft?.level || "AB";
+  const activeLesson = lesson || ttPlannerPreviewLesson(ttPlannerGroup());
+  const reviewSubstep = priorSubstep(skill.id);
+  const currentPage = activeLesson?.wordlistPageNumber;
   const slotHints = [
-    "1-syllable · any prior step",
-    "1-syllable · early steps",
-    "mixed steps review",
-    "current substep",
-    "current substep"
+    `review · ${reviewSubstep}`,
+    `review · ${reviewSubstep}`,
+    `review · ${reviewSubstep}`,
+    currentPage ? `current · Reader p. ${currentPage}` : "current substep",
+    currentPage ? `current · Reader p. ${currentPage}` : "current substep"
   ];
 
   const slotHtml = ttSection8RealSlots.map((slot, i) => {
-    const wordPool = uniqueWords(readerWordsFromSubstep(slot.substep, level).concat(dictationWordsFor(slot.substep, level)))
-      .filter((w) => {
-        const ns = new Set(readerNonsenseWordsFromSubstep(slot.substep));
-        return isValidDictationWord(w) && !ns.has(w);
-      }).slice(0, 40);
+    const wordPool = (slot.substep === skill.id && activeLesson
+      ? ttDictationBookCurrentWordPool(activeLesson, skill)
+      : ttDictationBookWordsFor(slot.substep, level, "real")).slice(0, 80);
     const selectedWord = slot.word || "";
     return `<div class="s8-real-slot" data-slot="${i}">
       <div class="s8-slot-header">
@@ -7104,7 +7126,7 @@ function ttSection8RealSlotsHtml(skill, lesson = null) {
 
   return `<div class="s8-real-slots">
     <div class="s8-slots-header">
-      5 Real Words
+      5 Real Words · Dictation Book
       <span class="s8-slots-badge">Choose substep → choose word per slot</span>
     </div>
     ${slotHtml}
@@ -7242,13 +7264,12 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   const sec2Substeps = ttSectionReviewSubsteps.section2?.length ? ttSectionReviewSubsteps.section2 : fallbackPrior;
   const sec3Substeps = ttSectionReviewSubsteps.section3?.length ? ttSectionReviewSubsteps.section3 : fallbackPrior;
   const sec7Substeps = ttSectionReviewSubsteps.section7?.length ? ttSectionReviewSubsteps.section7 : fallbackPrior;
-  const sec8Substeps = ttSectionReviewSubsteps.section8Real?.length ? ttSectionReviewSubsteps.section8Real : [skill.id];
   const level = lesson.readerLevel || "AB";
   const reviewPool = ttPlannerReviewWordPool(sec2Substeps, level).slice(0, 64);
   const sec3ReviewPool = ttPlannerReviewWordPool(sec3Substeps, level).slice(0, 36);
-  const sec7ReviewPool = ttPlannerReviewWordPool(sec7Substeps, level).slice(0, 40);
-  const sec8RealPool = ttPlannerReviewWordPool(sec8Substeps, level).slice(0, 40);
+  const sec7ReviewPool = ttDictationBookReviewWordPool(sec7Substeps, level).slice(0, 80);
   const currentPool = chartWords.slice(0, 30);
+  const sec7CurrentPool = ttDictationBookCurrentWordPool(lesson, skill).slice(0, 80);
   const section3Review = uniqueWords([].concat(section3ReviewCards(lesson), sec3ReviewPool)).slice(0, 36);
   const section3Current = uniqueWords([].concat(section3CurrentCards(lesson), chartWords)).slice(0, 36);
   const vowels = vowelSoundList(skill.id);
@@ -7256,8 +7277,7 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   const welded = ttKnownWeldedValues(skill.id);
   const elements = wordElementList(skill.id);
   const sounds = uniqueWords([].concat(vowels, consonants, welded)).slice(0, 80);
-  const realWords = uniqueWords([].concat(ttCurrentRealWordPool(lesson, skill), ttReviewRealWordPool(lesson, skill))).slice(0, 40);
-  const nonsense = ttTrueNonsensePool(skill.id).slice(0, 60);
+  const nonsense = ttDictationBookNonsensePool(skill.id).slice(0, 80);
   const phraseRows = currentDictationPhraseRows(skill.id);
   const section7Hfw = uniqueWords([].concat(lesson.highFrequencyWords || [], hfwWordsForSubstep(skill.id, lesson))).slice(0, 32);
   const dictationSentences = uniqueWords(currentDictationSentencesForLesson(lesson, skill, group)).slice(0, 30);
@@ -7324,9 +7344,9 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   );
 
   const row7 = plannerRow(7, "#f43f5e", "Teach & Review for Spelling", "Words students will spell",
-    ttPlannerReviewPickerHtml("section7Review", "Review words", uniqueWords([].concat(sectionSeven.review, sec7ReviewPool)), sectionSeven.review, 5, "section7", skill) +
-    ttPlannerPickerHtml("section7Current", "Current words", uniqueWords([].concat(sectionSeven.current, currentPool)), sectionSeven.current, 5) +
-    ttPlannerPickerHtml("section7Nonsense", "Nonsense words", uniqueWords([].concat(sectionSeven.nonsense, nonsense)), sectionSeven.nonsense, 3) +
+    ttPlannerReviewPickerHtml("section7Review", "Review words · Dictation Book", uniqueWords([].concat(sectionSeven.review, sec7ReviewPool)), sectionSeven.review, 5, "section7", skill, { selectionDriven: true }) +
+    ttPlannerPickerHtml("section7Current", "Current words · Dictation Book", uniqueWords([].concat(sectionSeven.current, sec7CurrentPool)), sectionSeven.current, 5) +
+    ttPlannerPickerHtml("section7Nonsense", "Nonsense words · Dictation Book", uniqueWords([].concat(sectionSeven.nonsense, nonsense)), sectionSeven.nonsense, 3) +
     ttPlannerPickerHtml("section7Hfw", "High-frequency words", section7Hfw, section7Hfw.slice(0, 8), 8),
     "", "10 min"
   );
@@ -7721,7 +7741,9 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
 
   // Build display pool for the current substep
   const nsWords = new Set(readerNonsenseWordsFromSubstep(currentSubstep));
-  const currentPool = isNView
+  const currentPool = sectionKey === "section7"
+    ? ttDictationBookReviewWordPool([currentSubstep], level)
+    : isNView
     ? ttReviewNonsensePool(skill.id)
     : uniqueWords(
         readerWordsFromSubstep(currentSubstep, level).concat(dictationWordsFor(currentSubstep, level))
@@ -7741,7 +7763,9 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
 
   // Initial preselection: spread across multiple substeps + 1-2 nonsense
   if (!ttPickerSelections[id]) {
-    ttPickerSelections[id] = options.selectionDriven
+    ttPickerSelections[id] = options.selectionDriven && sectionKey === "section7" && (selected || []).length
+      ? uniqueWords(selected).slice(0, numTarget)
+      : options.selectionDriven
       ? ttSmartPreselect(filterModel.words, numTarget)
       : (selected || []).length
         ? uniqueWords(selected).slice(0, numTarget)
@@ -8090,7 +8114,9 @@ function ttUpdateSectionReviewChips(sectionKey) {
   const nsWordsSet = new Set(readerNonsenseWordsFromSubstep(currentSubstep));
 
   // Build pool for new substep
-  const newPool = isNView
+  const newPool = sectionKey === "section7"
+    ? ttDictationBookReviewWordPool([currentSubstep], level)
+    : isNView
     ? ttReviewNonsensePool(skill.id)
     : uniqueWords(
         readerWordsFromSubstep(currentSubstep, level).concat(dictationWordsFor(currentSubstep, level))
@@ -8274,6 +8300,8 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
   ) || null;
   ttLesson.planningIndexVersion = draft.planningIndexVersion || window.teachTodayEnhancedPlanningIndex?.schemaVersion || "legacy-index";
   ttLesson.planningSource = enhancedPage ? "enhanced-chart-page" : "legacy-index-fallback";
+  ttLesson.dictationWordIndexVersion = window.teachTodayDictationWordIndex?.schemaVersion || "legacy-dictation-words";
+  ttLesson.dictationWordSource = window.teachTodayDictationWordIndex ? "official-dictation-book-pages" : "legacy-fallback";
   ttLesson.planningAnchor = {
     substep: skill.id,
     level: ttLesson.readerLevel || group.readerLevel || "AB",
@@ -8381,6 +8409,8 @@ function ttKnownWeldedValues(substep) {
 }
 
 function ttTrueNonsensePool(substep) {
+  const dictationBookWords = ttDictationBookNonsensePool(substep);
+  if (dictationBookWords.length) return dictationBookWords;
   const currentIndex = scopeMap.findIndex((item) => item.id === substep);
   const words = [];
   for (let index = Math.max(0, currentIndex); index >= 0; index -= 1) {
@@ -11848,14 +11878,16 @@ function ttBuildReverseDrillOverride(skill, lesson) {
 }
 
 function ttBuildSectionSevenWordSets(lesson, skill) {
-  const enhanced = ttEnhancedPlanning();
-  if (enhanced?.isCovered?.(skill.id)) {
+  const dictationCurrent = ttDictationBookCurrentWordPool(lesson, skill);
+  const dictationReview = ttDictationBookReviewWordPool([priorSubstep(skill.id)], lesson.readerLevel || "AB");
+  const dictationNonsense = ttDictationBookNonsensePool(skill.id);
+  if (dictationCurrent.length || dictationReview.length || dictationNonsense.length) {
     const offset = Number(lesson.sectionSevenSeed || 0);
-    const review = ttDeterministicTake(ttEnhancedReviewWords(lesson, skill), 5, offset);
-    const nonsense = ttDeterministicTake(ttNonsenseWordPool(lesson, skill), 3, offset);
+    const review = ttDeterministicTake(dictationReview, 5, offset);
+    const nonsense = ttDeterministicTake(dictationNonsense, 3, offset);
     const used = new Set(review.concat(nonsense).map(ttWordKey));
     const current = ttDeterministicTake(
-      ttEnhancedPageWords(lesson, skill).filter((word) => !used.has(ttWordKey(word))),
+      dictationCurrent.filter((word) => !used.has(ttWordKey(word))),
       5,
       offset
     );
@@ -11921,6 +11953,8 @@ function ttReviewRealWordPool(lesson, skill) {
 
 function ttNonsenseWordPool(lesson, skill) {
   const level = lesson.readerLevel || "AB";
+  const dictationBookWords = ttDictationBookNonsensePool(skill.id);
+  if (dictationBookWords.length) return dictationBookWords;
   const chartWords = level === "N" ? (lesson.realWords || []) : [];
   return ttNonsenseWordCandidates(
     chartWords
@@ -11933,6 +11967,8 @@ function ttNonsenseWordPool(lesson, skill) {
 }
 
 function ttCurrentSectionSevenWordPool(lesson, skill) {
+  const dictationBookWords = ttDictationBookCurrentWordPool(lesson, skill);
+  if (dictationBookWords.length) return dictationBookWords;
   const level = lesson.readerLevel || "AB";
   const currentChartWords = (lesson.realWords || []).concat(lesson.nonsenseWords || []);
   const fallbackReal = ttCurrentRealWordPool(lesson, skill);
@@ -15593,7 +15629,7 @@ function ttReplaceSection7Word(groupTitle, wordIndex) {
     ? ttCurrentSectionSevenWordPool(ttLesson, skill)
     : groupTitle === "Nonsense"
       ? ttNonsenseWordPool(ttLesson, skill)
-      : ttReviewRealWordPool(ttLesson, skill);
+      : ttDictationBookReviewWordPool([priorSubstep(skill.id)], ttLesson.readerLevel || "AB");
   ttLesson[key] = current.map((word, index) => index === wordIndex ? ttPickReplacement(pool, current, word) : word);
   ttLesson.dictationPlanOverride = ttRerollDictationPlan(ttLesson, skill, {
     avoidWordKeys: ttSectionSevenWordKeys(ttLesson)
@@ -15705,7 +15741,7 @@ function dictationReviewWords(substep, level = "AB") {
   const candidates = [];
   for (let index = currentIndex - 1; index >= 0 && candidates.length < 30; index -= 1) {
     const prior = scopeMap[index];
-    const bank = dictationValues("words", prior.id, level);
+    const bank = ttDictationBookWordsFor(prior.id, level, "real");
     candidates.push(...bank.filter(isUsableReaderWord));
     if (candidates.length < 5) {
       candidates.push(...readerWordsFromSubstep(prior.id, level));
@@ -15715,7 +15751,7 @@ function dictationReviewWords(substep, level = "AB") {
 }
 
 function dictationCurrentWords(substep, level = "AB", pageWords = []) {
-  const bank = dictationValues("words", substep, level);
+  const bank = ttDictationBookWordsFor(substep, level, "real");
   const compatible = pageWords.filter((word) => bank.includes(word));
   const source = compatible.length >= 2 ? compatible : pageWords.concat(bank);
   return chooseEasyCurrentWords(source.filter(isUsableReaderWord), 2);
@@ -15938,7 +15974,10 @@ function ttDictationReplacementPool(label, lesson, skill) {
   const substep = lesson.substep || skill.id;
   if (/sounds/i.test(label)) return soundsFromWords((lesson.realWords || []).concat(lesson.nonsenseWords || []), skill.id).concat(fiveDictationSounds(skill.id));
   if (/word elements/i.test(label)) return elementsFromWords((lesson.realWords || []).concat(lesson.readerSentences || []), skill.id).concat(fiveWordElements(skill.id, lesson.realWords || []));
-  if (/real words/i.test(label)) return ttSection8RealWords().concat(ttCurrentRealWordPool(lesson, skill), ttReviewRealWordPool(lesson, skill));
+  if (/real words/i.test(label)) return ttSection8RealWords().concat(
+    ttDictationBookCurrentWordPool(lesson, skill),
+    ttDictationBookReviewWordPool([priorSubstep(skill.id)], lesson.readerLevel || "AB")
+  );
   if (/nonsense/i.test(label)) return ttNonsenseWordPool(lesson, skill);
   if (/phrases/i.test(label)) return rankedCurrentDictationPhraseRows(currentDictationPhraseRows(substep), lesson, skill)
     .concat(currentDictationPhraseBank(substep));
@@ -16069,12 +16108,18 @@ function ttDictationPlan(lesson, skill, options = {}) {
     : fillToCount(rankedSentences, sentenceBank.concat(currentReaderSentencesForDictation(lesson, skill)), 2);
   const sentenceTokens = tokenSet(sentences.join(" "));
   const sentenceHfw = highFrequencyWordsFromTexts(sentences, lesson);
-  const currentWordPool = enhancedCovered ? ttEnhancedPageWords(lesson, skill) : ttCurrentRealWordPool(lesson, skill);
-  const reviewWordPool = enhancedCovered ? ttEnhancedReviewWords(lesson, skill) : ttReviewRealWordPool(lesson, skill);
+  const dictationCurrentWordPool = ttDictationBookCurrentWordPool(lesson, skill);
+  const dictationReviewWordPool = ttDictationBookReviewWordPool([priorSubstep(skill.id)], level);
+  const currentWordPool = dictationCurrentWordPool.length
+    ? dictationCurrentWordPool
+    : enhancedCovered ? ttEnhancedPageWords(lesson, skill) : ttCurrentRealWordPool(lesson, skill);
+  const reviewWordPool = dictationReviewWordPool.length
+    ? dictationReviewWordPool
+    : enhancedCovered ? ttEnhancedReviewWords(lesson, skill) : ttReviewRealWordPool(lesson, skill);
   const currentWords = ttWithoutWordKeys(currentWordPool, avoidWordKeys).slice(0, 2);
   const reviewWords = ttWithoutWordKeys(reviewWordPool, avoidWordKeys);
-  const priorWords = ttWithoutWordKeys(ttReviewRealWordPool(lesson, skill).concat(ttCurrentRealWordPool(lesson, skill)), avoidWordKeys);
-  const fallbackCurrentWords = ttWithoutWordKeys(ttCurrentRealWordPool(lesson, skill).concat(ttReviewRealWordPool(lesson, skill)), avoidWordKeys);
+  const priorWords = ttWithoutWordKeys(reviewWordPool, avoidWordKeys);
+  const fallbackCurrentWords = ttWithoutWordKeys(currentWordPool.concat(reviewWordPool), avoidWordKeys);
   const selectedSlotWords = ttWithoutWordKeys(ttSection8RealWords(), avoidWordKeys);
   const indexedWords = fillToCount(reviewWords, priorWords, 3)
     .concat(fillToCount(currentWords, fallbackCurrentWords, 2))
@@ -16309,6 +16354,80 @@ function validDictationWords(words, preferred = []) {
     .sort((a, b) => Number(preferredSet.has(b)) - Number(preferredSet.has(a)));
 }
 
+function ttDictationBookEntry(substep) {
+  return window.teachTodayDictationWordIndex?.substeps?.[substep] || null;
+}
+
+function ttDictationBookWordsFor(substep, level = "AB", kind = "real") {
+  const entry = ttDictationBookEntry(substep);
+  if (!entry) return [];
+  const words = kind === "nonsense" ? (entry.n || []) : (entry.r || []);
+  const requested = ttRealReaderLevel(level || "AB");
+  const direct = words.filter((word) => (entry.l?.[word] || []).includes(requested));
+  if (direct.length) return direct.filter(isValidDictationWord);
+  const fallbackLevels = requested === "A" ? ["AB"] : requested === "B" ? ["AB"] : ["A", "B"];
+  const fallback = words.filter((word) => (entry.l?.[word] || []).some((item) => fallbackLevels.includes(item)));
+  return uniqueWords((fallback.length ? fallback : words)).filter(isValidDictationWord);
+}
+
+function ttDictationFeatureKeys(metadata = {}) {
+  return uniqueWords([].concat(
+    metadata.p || [],
+    metadata.s || [],
+    metadata.v || [],
+    metadata.d || [],
+    metadata.g || [],
+    metadata.k || [],
+    metadata.e || [],
+    metadata.y || [],
+    metadata.l || []
+  )).map((value) => String(value).toLowerCase());
+}
+
+function ttDictationBookCurrentWordPool(lesson, skill) {
+  const substep = lesson?.substep || skill?.id;
+  const level = lesson?.readerLevel || "AB";
+  const bookWords = ttDictationBookWordsFor(substep, level, "real");
+  if (!bookWords.length) return [];
+  const bookKeys = new Set(bookWords.map(ttWordKey));
+  const page = ttEnhancedPlanning()?.findPage?.(substep, level, lesson?.wordlistPageNumber) || null;
+  const pageWords = uniqueWords(page?.w || [].concat(lesson?.realWords || [], lesson?.nonsenseWords || []))
+    .filter(isValidDictationWord);
+  const exact = pageWords.filter((word) => bookKeys.has(ttWordKey(word)));
+  if (exact.length >= 5) return exact;
+
+  const enhanced = ttEnhancedPlanning();
+  const pageFeatures = new Set(pageWords.flatMap((word) =>
+    ttDictationFeatureKeys(enhanced?.wordMetadata?.(substep, word) || {})
+  ));
+  const rankedFallback = bookWords
+    .filter((word) => !exact.some((item) => ttWordKey(item) === ttWordKey(word)))
+    .map((word, index) => {
+      const features = ttDictationFeatureKeys(enhanced?.wordMetadata?.(substep, word) || {});
+      return { word, index, score: features.filter((feature) => pageFeatures.has(feature)).length };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .map((item) => item.word);
+  return uniqueWords(exact.concat(rankedFallback));
+}
+
+function ttDictationBookReviewWordPool(substeps, level = "AB") {
+  return uniqueWords((substeps || []).flatMap((substep) =>
+    ttDictationBookWordsFor(substep, level, "real")
+  )).filter(isValidDictationWord);
+}
+
+function ttDictationBookNonsensePool(substep) {
+  const currentIndex = scopeMap.findIndex((item) => item.id === substep);
+  const words = [];
+  for (let index = currentIndex; index >= 0; index -= 1) {
+    const candidate = scopeMap[index]?.id;
+    if (!candidate) continue;
+    words.push(...ttDictationBookWordsFor(candidate, "AB", "nonsense"));
+  }
+  return uniqueWords(words).filter(isValidDictationWord);
+}
+
 function isValidDictationWord(word) {
   const banned = new Set(["ing", "ang", "ong", "ung", "ank", "ink", "onk", "unk", "all", "am", "an", "ild", "ind", "old", "olt", "ost", "suffix", "prefix", "base"]);
   return isUsableReaderWord(word) && word.length >= 3 && !banned.has(word.toLowerCase());
@@ -16348,6 +16467,8 @@ function fiveWordElements(substep, pageWords) {
 }
 
 function threeNonsenseWords(substep, level) {
+  const dictationBookWords = ttDictationBookNonsensePool(substep);
+  if (dictationBookWords.length) return dictationBookWords.slice(0, 3);
   const candidates = ["2.2", "2.4", "2.5", "3.1", "3.2", "4.1", "4.2", substep]
     .flatMap((step) => readerNonsenseWordsForReview(step, substep));
   return [...new Set(candidates)].filter(isUsableReaderWord).slice(0, 3);

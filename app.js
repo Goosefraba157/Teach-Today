@@ -1220,9 +1220,15 @@ function sentenceDataForPage(skill, assignment) {
 }
 
 function dictationSelection(substep, level, pageWords) {
-  const bank = dictationValues("words", substep, level);
+  const entry = window.teachTodayDictationWordIndex?.substeps?.[substep];
+  const requested = level === "N" ? "AB" : level;
+  const indexedWords = (entry?.r || []).filter((word) => {
+    const levels = entry?.l?.[word] || [];
+    return levels.includes(requested) || (requested === "A" && levels.includes("AB"));
+  });
+  const bank = indexedWords.length ? indexedWords : (entry?.r || []);
   const compatible = pageWords.filter((word) => bank.includes(word));
-  const words = compatible.length >= 4 ? compatible : bank.slice(0, 12);
+  const words = compatible.length >= 4 ? compatible : compatible.concat(bank).slice(0, 12);
   return {
     words: words.length ? words : pageWords,
     phrases: dictationItems("phrases", substep, level, 3),

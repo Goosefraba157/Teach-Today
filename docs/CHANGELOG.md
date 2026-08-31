@@ -2,6 +2,13 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-08-31
+
+- Added a generated, curriculum-only word index from the official Wilson Dictation Book word pages: 34 substeps, 87 pages, 4,109 unique real words, and 424 marked nonsense words. The generator validates extracted words against the reviewed Reader chart index and stores no local source paths or student data.
+- Made new Section 7 plans choose current words from the Dictation Book that match the selected Reader charting page, review words from the selected prior substep's Dictation Book pages, and nonsense words only from marked Dictation Book nonsense lists. A current substep without a nonsense page uses the latest earlier indexed nonsense list instead of relabeling real words.
+- Made new Section 8 plans default to three prior-review plus two current-page-matched Dictation Book real words, without duplicating the default Section 7 list. Customize, the saved lesson snapshot, lesson view, and Present mode now use the same exact Section 7 and 8 arrays.
+- Preserved existing saved lesson arrays and all student, observation, Firebase, backup, and storage data. Added only source/version metadata to newly created lesson snapshots, refreshed the offline cache, and added regression coverage for exact 3.5 Reader page 142 matching, known nonsense lists, early-step coverage, asset wiring, and saved-array preservation.
+
 ## 2026-08-30
 
 - Added a Section 6–8 Instructional Summary immediately before the detailed observation table in Student Profile. Each section now explains the student’s predominant Auto/Acc/Strug pattern in terms of its actual task: sound-symbol recognition for Section 6, magnetic-letter word building for Section 7, and handwritten spelling for Section 8.

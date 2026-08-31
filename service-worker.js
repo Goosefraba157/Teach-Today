@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-30-encoding-observation-summary-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-31-dictation-word-index-1";
 
 const APP_SHELL = [
   "./",
@@ -51,6 +51,7 @@ const APP_SHELL = [
   "./reader-sentence-index.js",
   "./dictation-content.js",
   "./dictation-index.js",
+  "./dictation-word-index.js",
   "./dictation-phrase-index.js",
   "./dictation-sentence-index.js",
   "./enhanced-planning-index.js",
