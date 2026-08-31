@@ -558,6 +558,127 @@ button:hover:not(:disabled) {
   margin-bottom: 12px;
 }
 
+.encoding-summary-card {
+  border-color: #c4b5fd;
+  background: linear-gradient(135deg, #faf5ff 0%, #ffffff 58%);
+}
+
+.encoding-observation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.encoding-summary-section {
+  min-width: 0;
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.encoding-summary-head,
+.encoding-summary-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.encoding-summary-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+}
+
+.encoding-summary-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.encoding-summary-number {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.encoding-summary-status {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.encoding-summary-status.status-auto { background: #dcfce7; color: #166534; }
+.encoding-summary-status.status-acc { background: #fef3c7; color: #92400e; }
+.encoding-summary-status.status-strug { background: #fee2e2; color: #991b1b; }
+.encoding-summary-status.status-empty { background: #f1f5f9; color: #64748b; }
+
+.encoding-summary-interpretation {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.encoding-summary-counts,
+.encoding-summary-empty,
+.encoding-summary-trouble {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.encoding-summary-label {
+  margin: 11px 0 6px;
+  color: #5b21b6;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.encoding-summary-misses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.encoding-summary-miss {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  border: 1px solid #ddd6fe;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #faf5ff;
+  color: #4c1d95;
+  font-size: 12px;
+}
+
+.encoding-summary-miss small {
+  color: #7c3aed;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.encoding-summary-trouble strong {
+  color: #9f1239;
+}
+
+@media (max-width: 900px) {
+  .encoding-observation-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .chart-wrap svg {
   width: 100%;
   min-height: 260px;

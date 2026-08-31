@@ -51,8 +51,19 @@ test("each observation tap is linked and persisted immediately", () => {
 });
 
 test("Student Profile visibly lists Section 6–8 observations", () => {
+  assert.match(profileHtml, /<h2>Section 6–8 Instructional Summary<\/h2>/);
+  assert.match(profileHtml, /id="encodingObservationSummary"/);
   assert.match(profileHtml, /<h2>Section 6–8 Observations<\/h2>/);
   assert.match(profileHtml, /id="encodingObservationRows"/);
+  assert.ok(profileHtml.indexOf("encodingObservationSummary") < profileHtml.indexOf("encodingObservationRows"));
+  assert.match(profileSource, /renderEncodingObservationSummary\(encodingObservations, student\)/);
+  const renderSummary = functionBody(profileSource, "renderEncodingObservationSummary", "renderEncodingObservationRows");
+  ["Mostly", "Auto", "Acc", "Strug", "Trouble spots observed", "most to least frequent"].forEach((marker) => {
+    assert.match(renderSummary, new RegExp(marker));
+  });
+  ["section6", "section7", "section8"].forEach((marker) => assert.match(profileSource, new RegExp(marker)));
+  assert.match(profileSource, /right\.count - left\.count/);
+  assert.match(renderSummary, /section !== "section6" \|\| code !== "HFW"/);
   assert.match(profileSource, /renderEncodingObservationRows\(encodingObservations\)/);
   const renderRows = functionBody(profileSource, "renderEncodingObservationRows", "metricClass");
   assert.match(renderRows, /\["section6", "section7", "section8"\]/);

@@ -4,6 +4,9 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-30
 
+- Added a Section 6–8 Instructional Summary immediately before the detailed observation table in Student Profile. Each section now explains the student’s predominant Auto/Acc/Strug pattern in terms of its actual task: sound-symbol recognition for Section 6, magnetic-letter word building for Section 7, and handwritten spelling for Section 8.
+- Added transparent status counts, most-to-least-frequent missed-sound/word rankings, and frequency-ranked NS, blends, vowel-differentiation, HFW, and suffix trouble spots. Section 6 continues to exclude HFW. The summary is derived only from the selected school year’s existing records and makes no data changes.
+- Added regression coverage and verified the populated and partial-data states at an 851×915 viewport with a clean browser console; all 15 Node tests pass.
 - Copied the lesson toolbar's History, Records, and Profile access points to Home. Both locations use the same single History/Records panels and Profile route, so no lesson or record data is duplicated.
 - Made Section 6–8 observation taps explicitly immediate: Auto/Acc/Strug remain one mutually exclusive session observation per student/section, NS/Blends/Vowel Diff/HFW/Sfx remain independent diagnostic tags, and each white item button records a missed item. Tap-again removal remains available and now reports whether the mark was saved or removed.
 - Removed the HFW diagnostic tag from Section 6 only while retaining it in Sections 7 and 8. Added stable group, school-year, student, lesson, observation-code, and observation-kind metadata to new records without rewriting existing observations.

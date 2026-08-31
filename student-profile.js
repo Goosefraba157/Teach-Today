@@ -523,6 +523,7 @@ function render() {
   renderChartingSheet(records);
   renderRows(records);
   renderDictationRows(dictationMisses);
+  renderEncodingObservationSummary(encodingObservations, student);
   renderEncodingObservationRows(encodingObservations);
   renderRecordingsSection(records.filter((record) => record.type !== "soundsDrill"));
   renderSoundsDrillSection(activityRecords);
@@ -1717,6 +1718,113 @@ function encodingObservationLabel(record) {
     "encoding miss": "Miss"
   };
   return codes[record.note] || "Observation";
+}
+
+const ENCODING_SUMMARY_SECTIONS = {
+  section6: {
+    number: "6",
+    title: "Sounds in Reverse",
+    missedLabel: "Missed sounds",
+    interpretations: {
+      Auto: (student) => `${student} is mostly automatic at recognizing dictated sounds and identifying their written forms with ease.`,
+      Acc: (student) => `${student} is mostly accurate, but not yet automatic, at recognizing dictated sounds and identifying their written forms. More practice with the missed sounds should build automaticity.`,
+      Strug: (student) => `${student} is currently struggling to recognize dictated sounds and identify their written forms.`
+    }
+  },
+  section7: {
+    number: "7",
+    title: "Word Building",
+    missedLabel: "Missed words",
+    interpretations: {
+      Auto: (student) => `${student} is mostly automatic at segmenting sounds in dictated words and selecting the correct magnetic letters to build and spell them.`,
+      Acc: (student) => `${student} is mostly accurate at segmenting dictated words and building them with magnetic letters, but still makes some errors or needs more time and practice.`,
+      Strug: (student) => `${student} is currently struggling to segment sounds in dictated words, which is leading to errors when building and spelling them with magnetic letters.`
+    }
+  },
+  section8: {
+    number: "8",
+    title: "Written Dictation",
+    missedLabel: "Missed words",
+    interpretations: {
+      Auto: (student) => `${student} is mostly automatic at segmenting dictated words and spelling them correctly in handwriting.`,
+      Acc: (student) => `${student} is mostly accurate at segmenting and handwriting dictated words, but still makes some errors or needs more time and practice.`,
+      Strug: (student) => `${student} is currently struggling to segment dictated words, which is leading to errors when writing and spelling them.`
+    }
+  }
+};
+
+const ENCODING_TROUBLE_LABELS = {
+  NS: "nonsense words",
+  Blends: "blends",
+  "Vowel Diff": "vowel differentiation",
+  HFW: "high-frequency words",
+  Sfx: "suffixes"
+};
+
+function rankedEncodingObservations(records, allowedCodes, itemValue) {
+  const grouped = new Map();
+  records.forEach((record) => {
+    const code = encodingObservationLabel(record);
+    if (!allowedCodes.includes(code)) return;
+    const rawValue = itemValue ? itemValue(record) : code;
+    const value = String(rawValue || "").trim();
+    if (!value) return;
+    const key = value.toLocaleLowerCase();
+    const time = new Date(record.date || 0).getTime() || 0;
+    const entry = grouped.get(key) || { value, count: 0, latest: 0 };
+    entry.count += 1;
+    if (time >= entry.latest) {
+      entry.value = value;
+      entry.latest = time;
+    }
+    grouped.set(key, entry);
+  });
+  return Array.from(grouped.values()).sort((left, right) => right.count - left.count || right.latest - left.latest || left.value.localeCompare(right.value));
+}
+
+function predominantEncodingStatus(records) {
+  const ranked = rankedEncodingObservations(records, ["Auto", "Acc", "Strug"]);
+  return ranked[0]?.value || "";
+}
+
+function renderEncodingObservationSummary(observations, studentName) {
+  const container = byId("encodingObservationSummary");
+  if (!container) return;
+  const student = String(studentName || "This student").trim() || "This student";
+  const records = (observations || []).filter((record) => ENCODING_SUMMARY_SECTIONS[record.section]);
+  container.innerHTML = Object.entries(ENCODING_SUMMARY_SECTIONS).map(([section, details]) => {
+    const sectionRecords = records.filter((record) => record.section === section);
+    const statuses = rankedEncodingObservations(sectionRecords, ["Auto", "Acc", "Strug"]);
+    const status = predominantEncodingStatus(sectionRecords);
+    const statusCounts = Object.fromEntries(["Auto", "Acc", "Strug"].map((code) => [code, statuses.find((item) => item.value === code)?.count || 0]));
+    const statusTotal = statusCounts.Auto + statusCounts.Acc + statusCounts.Strug;
+    const misses = rankedEncodingObservations(sectionRecords, ["Miss"], (record) => record.item || record.category);
+    const troubleCodes = Object.keys(ENCODING_TROUBLE_LABELS).filter((code) => section !== "section6" || code !== "HFW");
+    const trouble = rankedEncodingObservations(sectionRecords, troubleCodes);
+    const interpretation = status
+      ? details.interpretations[status](student)
+      : `No Auto, Acc, or Strug observation has been saved for ${student} in Section ${details.number} yet.`;
+    const counts = statusTotal
+      ? `Based on ${statusTotal} status observation${statusTotal === 1 ? "" : "s"}: Auto ${statusCounts.Auto} · Acc ${statusCounts.Acc} · Strug ${statusCounts.Strug}`
+      : "Add a one-tap status during a lesson to begin this summary.";
+    const missMarkup = misses.length
+      ? `<div class="encoding-summary-misses">${misses.map((item) => `<span class="encoding-summary-miss"><strong>${escapeHtml(item.value)}</strong><small>${item.count} ${item.count === 1 ? "miss" : "misses"}</small></span>`).join("")}</div>`
+      : `<p class="encoding-summary-empty">No missed ${details.number === "6" ? "sounds" : "words"} saved yet.</p>`;
+    const troubleMarkup = trouble.length
+      ? `<p class="encoding-summary-trouble"><strong>Trouble spots observed:</strong> ${trouble.map((item) => `${escapeHtml(ENCODING_TROUBLE_LABELS[item.value] || item.value)} (${item.count})`).join(", ")}.</p>`
+      : `<p class="encoding-summary-empty">No category trouble spots saved yet.</p>`;
+    return `<article class="encoding-summary-section">
+      <div class="encoding-summary-head">
+        <div><span class="encoding-summary-number">${details.number}</span><h3>${escapeHtml(details.title)}</h3></div>
+        <span class="encoding-summary-status status-${status ? status.toLowerCase() : "empty"}">${escapeHtml(status ? `Mostly ${status}` : "Not enough data")}</span>
+      </div>
+      <p class="encoding-summary-interpretation">${escapeHtml(interpretation)}</p>
+      <p class="encoding-summary-counts">${escapeHtml(counts)}</p>
+      <p class="encoding-summary-label">${escapeHtml(details.missedLabel)} · most to least frequent</p>
+      ${missMarkup}
+      ${troubleMarkup}
+    </article>`;
+  }).join("");
 }
 
 function renderEncodingObservationRows(observations) {
