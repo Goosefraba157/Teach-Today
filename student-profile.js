@@ -523,6 +523,7 @@ function render() {
   renderChartingSheet(records);
   renderRows(records);
   renderDictationRows(dictationMisses);
+  renderEncodingObservationRows(encodingObservations);
   renderRecordingsSection(records.filter((record) => record.type !== "soundsDrill"));
   renderSoundsDrillSection(activityRecords);
 }
@@ -1699,6 +1700,47 @@ function renderDictationRows(misses) {
   });
   if (!misses.length) {
     body.innerHTML = "<tr><td colspan=\"4\">No dictation misses saved for this student yet.</td></tr>";
+  }
+}
+
+function encodingObservationLabel(record) {
+  if (record.observationCode) return record.observationCode;
+  const codes = {
+    "automatic encoding; no struggle": "Auto",
+    "accurate encoding; minor struggle": "Acc",
+    "struggling to identify and segment sounds properly": "Strug",
+    "struggles mainly with nonsense words": "NS",
+    "struggles with consonant blends": "Blends",
+    "struggles differentiating vowel sounds": "Vowel Diff",
+    "struggles with high-frequency words": "HFW",
+    "struggles with words that have suffixes": "Sfx",
+    "encoding miss": "Miss"
+  };
+  return codes[record.note] || "Observation";
+}
+
+function renderEncodingObservationRows(observations) {
+  const body = byId("encodingObservationRows");
+  if (!body) return;
+  const records = (observations || [])
+    .filter((record) => ["section6", "section7", "section8"].includes(record.section))
+    .slice()
+    .sort((left, right) => new Date(right.date || 0) - new Date(left.date || 0));
+  body.innerHTML = records.map((record) => {
+    const section = String(record.section || "").replace("section", "Section ");
+    const observation = encodingObservationLabel(record);
+    const detail = record.item || (observation === "Miss" ? record.category : record.note) || "";
+    return `<tr class="encoding-observation-row">
+      <td>${escapeHtml(formatDateTime(record.date))}</td>
+      <td><span class="type-pill">${escapeHtml(section || "Section")}</span></td>
+      <td>${escapeHtml(record.substep || "")}</td>
+      <td><strong>${escapeHtml(observation)}</strong></td>
+      <td>${escapeHtml(detail)}</td>
+      <td>${escapeHtml(record.lessonTitle || "Saved lesson")}</td>
+    </tr>`;
+  }).join("");
+  if (!records.length) {
+    body.innerHTML = "<tr><td colspan=\"6\">No Section 6–8 observations saved for this student yet.</td></tr>";
   }
 }
 

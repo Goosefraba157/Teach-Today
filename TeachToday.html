@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260830-section3-fat-stack-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260830-home-data-observations-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -151,8 +151,8 @@
         <div class="ribbon-group">
           <span class="ribbon-label">Data</span>
           <div class="ribbon-buttons">
-            <button id="ttSavedToggle" type="button" title="Saved lessons">History</button>
-            <button id="ttDataToggle" type="button" title="Data center &amp; records">Records</button>
+            <button id="ttSavedToggle" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
+            <button id="ttDataToggle" type="button" title="Data center &amp; records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
             <button id="ttProfile" type="button" title="Student profile">Profile</button>
           </div>
         </div>
@@ -205,7 +205,8 @@
         <button id="ttRosterClose" class="secondary" type="button">Close</button>
       </section>
 
-      <!-- ── History dropdown panel (moved from teach-flow) ── -->
+      <div id="ttLessonDataPanels" class="shared-data-panels">
+      <!-- ── History dropdown panel (shared by lesson and Home) ── -->
       <section id="ttSavedPanel" class="ribbon-dropdown-panel saved-panel" hidden>
         <div class="ribbon-dropdown-head">
           <span class="ribbon-dropdown-title">✓ Saved Lessons</span>
@@ -263,6 +264,7 @@
           </div>
         </section>
       </section>
+      </div>
     </header>
 
     <div id="ttBackupToast" class="backup-status-toast" role="status" aria-live="polite" hidden></div>
@@ -391,6 +393,14 @@
             </span>
           </div>
         </div>
+        <div class="home-data-actions" aria-label="Group data">
+          <span>Data</span>
+          <div class="home-data-grid">
+            <button id="ttHomeSavedToggle" class="home-data-button" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
+            <button id="ttHomeDataToggle" class="home-data-button" type="button" title="Data center and records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
+            <button id="ttHomeProfile" class="home-data-button home-data-profile" type="button" title="Student profile">Profile</button>
+          </div>
+        </div>
         <a class="home-game-hub-link" href="Games/index.html" aria-label="Open student game hub">
           <span>Student games</span>
           <strong>Game Quest</strong>
@@ -402,6 +412,7 @@
           <span id="ttHomeFirebaseUserBadge" class="firebase-user-badge" hidden></span>
         </div>
       </header>
+      <div id="ttHomeDataPanels" class="shared-data-panels home-data-panels"></div>
       <div class="home-school-year-bar" aria-label="School year view">
         <label for="ttHomeSchoolYear">School year</label>
         <select id="ttHomeSchoolYear"></select>
@@ -1140,7 +1151,7 @@
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260830-section3-fat-stack-1"></script>
+    <script src="teach-today.js?v=20260830-home-data-observations-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>

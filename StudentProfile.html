@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260827-charting-history-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260830-home-data-observations-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -326,6 +326,28 @@
 
       <section class="profile-card">
         <div class="section-title">
+          <h2>Section 6–8 Observations</h2>
+          <p>Immediate one-tap session observations and missed items</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Section</th>
+                <th>Substep</th>
+                <th>Observation</th>
+                <th>Item / detail</th>
+                <th>Lesson</th>
+              </tr>
+            </thead>
+            <tbody id="encodingObservationRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="profile-card">
+        <div class="section-title">
           <h2>Dictation Records</h2>
           <p>One-tap spelling misses from live dictation</p>
         </div>
@@ -345,7 +367,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260829-enhanced-planner-1"></script>
+    <script src="student-profile.js?v=20260830-home-data-observations-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

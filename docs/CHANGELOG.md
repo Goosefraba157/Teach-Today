@@ -4,6 +4,11 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-30
 
+- Copied the lesson toolbar's History, Records, and Profile access points to Home. Both locations use the same single History/Records panels and Profile route, so no lesson or record data is duplicated.
+- Made Section 6–8 observation taps explicitly immediate: Auto/Acc/Strug remain one mutually exclusive session observation per student/section, NS/Blends/Vowel Diff/HFW/Sfx remain independent diagnostic tags, and each white item button records a missed item. Tap-again removal remains available and now reports whether the mark was saved or removed.
+- Removed the HFW diagnostic tag from Section 6 only while retaining it in Sections 7 and 8. Added stable group, school-year, student, lesson, observation-code, and observation-kind metadata to new records without rewriting existing observations.
+- Added a dedicated Student Profile table for Section 6–8 observations, including status/tag/miss, item or detail, substep, timestamp, and linked lesson. Legacy observation records remain visible through label fallbacks.
+- Added regression coverage and verified a synthetic Section 6 status plus missed-item tap survived a complete lesson reload and appeared in Student Profile. No existing student, lesson, observation, Firebase, backup, or storage data was migrated or deleted.
 - Made Customize Section 3 select one prior substep/concept for review cards and one current-substep concept for current cards. A new plan randomizes the prior source/concept, teachers can change either concept, and the saved exact card arrays plus additive labels now drive the lesson and Present views unchanged.
 - Added a cumulative per-group Fat Stack derived from existing current-school-year Section 4 charting records. It counts each actually charted miss, excludes the untouched chart half, ranks repeated/recent misses, and offers All, Once, Twice, and 3+ filters without creating a second saved student-data store.
 - Added the default Section 3 Lesson Deck in the requested order: up to 10 weighted Fat Stack cards, 3 planned review cards, 3 planned current cards, all current-substep HFW, then up to 2 newly introduced welded/glued sounds, Latin bases, prefixes, and suffixes. New Set rerolls the weighted deck without discarding the teacher's planned card selections.

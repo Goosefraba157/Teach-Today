@@ -1765,6 +1765,7 @@ body.lesson-flow-enter .teach-flow {
 .home-head,
 .planner-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
@@ -1774,6 +1775,11 @@ body.lesson-flow-enter .teach-flow {
   padding: 14px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.home-head > :first-child {
+  min-width: 230px;
+  flex: 1 1 300px;
 }
 
 .home-head h2,
@@ -1846,10 +1852,10 @@ body.lesson-flow-enter .teach-flow {
   margin-left: auto;
 }
 
-.home-support-actions {
+.home-support-actions,
+.home-data-actions {
   display: grid;
   gap: 6px;
-  margin-left: auto;
   min-width: 190px;
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 14px;
@@ -1857,7 +1863,8 @@ body.lesson-flow-enter .teach-flow {
   background: #f8fafc;
 }
 
-.home-support-actions > span {
+.home-support-actions > span,
+.home-data-actions > span {
   margin: 0;
   color: #64748b;
   font-size: 10px;
@@ -1871,6 +1878,61 @@ body.lesson-flow-enter .teach-flow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+.home-data-actions {
+  min-width: 226px;
+}
+
+.home-data-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.home-data-button {
+  width: 100%;
+  min-height: 34px !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 7px 9px !important;
+  background: #fff;
+  color: #334155;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.home-data-button:hover,
+.home-data-button:focus-visible,
+.home-data-button.active {
+  border-color: #0f766e;
+  background: #ecfeff;
+  color: #0f766e;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+}
+
+.home-data-profile {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.home-data-profile:hover,
+.home-data-profile:focus-visible {
+  border-color: #115e59;
+  background: #115e59;
+  color: #fff;
+}
+
+.shared-data-panels:empty {
+  display: none;
+}
+
+.home-data-panels:not(:empty) {
+  margin: -2px 0 12px;
 }
 
 .home-reference-menu {
@@ -9321,7 +9383,8 @@ body.section4-stage-preview-open .teach-flow {
     align-items: start;
   }
 
-  .home-support-actions {
+  .home-support-actions,
+  .home-data-actions {
     width: 100%;
     margin-left: 0;
   }

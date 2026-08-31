@@ -5279,15 +5279,64 @@ function ttCloseSmallDropdownMenus(exceptId = "") {
   });
 }
 
+function ttSharedDataButtonIds(panelType) {
+  return panelType === "saved"
+    ? ["ttSavedToggle", "ttHomeSavedToggle"]
+    : ["ttDataToggle", "ttHomeDataToggle"];
+}
+
+function ttSetSharedDataButtonState(panelType, open) {
+  ttSharedDataButtonIds(panelType).forEach((buttonId) => {
+    const button = ttById(buttonId);
+    button?.classList.toggle("active", open);
+    button?.setAttribute("aria-expanded", String(open));
+  });
+}
+
+function ttMountSharedDataPanels(hostId) {
+  const host = ttById(hostId);
+  if (!host) return;
+  ["ttSavedPanel", "ttDataPanel"].forEach((panelId) => {
+    const panel = ttById(panelId);
+    if (panel && panel.parentElement !== host) host.appendChild(panel);
+  });
+}
+
+function ttCloseSharedDataPanels() {
+  const savedPanel = ttById("ttSavedPanel");
+  const dataPanel = ttById("ttDataPanel");
+  if (savedPanel) savedPanel.hidden = true;
+  if (dataPanel) dataPanel.hidden = true;
+  ttSetSharedDataButtonState("saved", false);
+  ttSetSharedDataButtonState("data", false);
+}
+
+function ttToggleSharedDataPanel(panelType, hostId) {
+  ttMountSharedDataPanels(hostId);
+  const isSaved = panelType === "saved";
+  const panel = ttById(isSaved ? "ttSavedPanel" : "ttDataPanel");
+  const otherPanel = ttById(isSaved ? "ttDataPanel" : "ttSavedPanel");
+  if (!panel) return;
+  const isOpen = !panel.hidden;
+  if (otherPanel) otherPanel.hidden = true;
+  ttSetSharedDataButtonState(isSaved ? "data" : "saved", false);
+  ttCloseSmallDropdownMenus();
+  panel.hidden = isOpen;
+  ttSetSharedDataButtonState(panelType, !isOpen);
+  if (panel.hidden) return;
+  if (isSaved) ttRenderSavedLessons(ttActiveGroup());
+  else {
+    ttRenderDataCenter();
+    ttLoadFirebaseTimeline();
+  }
+}
+
 function ttToggleSmallDropdown(trigger, options = {}) {
   const button = ttById(trigger);
   const menu = ttDropdownMenuForButton(button);
   if (!button || !menu) return;
   const isOpen = !menu.hidden;
-  ttById("ttSavedPanel") && (ttById("ttSavedPanel").hidden = true);
-  ttById("ttSavedToggle")?.classList.remove("active");
-  ttById("ttDataPanel") && (ttById("ttDataPanel").hidden = true);
-  ttById("ttDataToggle")?.classList.remove("active");
+  ttCloseSharedDataPanels();
   ttCloseSmallDropdownMenus(trigger);
   if (trigger === "ttAttendance") {
     ttSetAttendancePanel(isOpen ? false : true, options);
@@ -5527,6 +5576,8 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   if (flow) flow.hidden = true;
   if (ttById("ttLessonIdentity")) ttById("ttLessonIdentity").hidden = true;
   document.body.classList.add("home-mode");
+  ttCloseSharedDataPanels();
+  ttMountSharedDataPanels("ttHomeDataPanels");
   ttRenderHomeScreen();
   ttRestoreHomeScroll(groupId);
 }
@@ -5569,6 +5620,8 @@ function ttOpenTeachFlow(options = {}) {
     if (home) home.hidden = true;
     if (flow) flow.hidden = false;
     document.body.classList.remove("home-mode", "lesson-home-exit");
+    ttCloseSharedDataPanels();
+    ttMountSharedDataPanels("ttLessonDataPanels");
     document.body.classList.remove("legacy-full-lesson-mode");
     document.body.classList.remove("lesson-type-full", "lesson-type-full45", "lesson-type-group", "lesson-type-part1", "lesson-type-part2", "lesson-type-flash");
     const _ltRaw = ttLesson?.lessonType || "full";
@@ -9133,6 +9186,9 @@ function ttFillEncodingStudentGrid(container, section, label, items = []) {
       ["struggles with words that have suffixes", "Sfx"]
     ]
   ];
+  if (section === "section6") {
+    observationGroups[1] = observationGroups[1].filter(([, shortLabel]) => shortLabel !== "HFW");
+  }
   const visibleItems = ttNormalizeEncodingItems(items).slice(0, 32);
   const lessonId = ttLesson?.id || "";
   container.innerHTML = `
@@ -9174,12 +9230,15 @@ function ttFillEncodingStudentGrid(container, section, label, items = []) {
         );
         if (alreadySaved) quickButton.classList.add("saved", "encoding-selected-item");
         quickButton.addEventListener("click", () => {
+          let saved;
           if (groupIndex === 0) {
-            ttSetExclusiveEncodingObservation(quickButton, student, section, label, note);
+            saved = ttSetExclusiveEncodingObservation(quickButton, student, section, label, note);
           } else {
-            ttToggleEncodingObservation(quickButton, student, section, label, note, "");
+            saved = ttToggleEncodingObservation(quickButton, student, section, label, note, "");
           }
-          container.querySelector(".encoding-selected").textContent = `Saved: ${student} - ${shortLabel}`;
+          container.querySelector(".encoding-selected").textContent = saved
+            ? `Saved to ${student}'s profile: ${shortLabel}`
+            : `Removed from ${student}'s profile: ${shortLabel}`;
         });
         codeRows[groupIndex].appendChild(quickButton);
       });
@@ -9210,12 +9269,14 @@ function ttFillEncodingStudentGrid(container, section, label, items = []) {
         }) || [];
         if (suggestedTags.length) itemButton.title = `Possible tags: ${suggestedTags.join(", ")} (teacher confirms)`;
         itemButton.addEventListener("click", () => {
-          ttToggleEncodingObservation(itemButton, student, section, itemCategory, "encoding miss", item.value);
+          const saved = ttToggleEncodingObservation(itemButton, student, section, itemCategory, "encoding miss", item.value);
           const suggested = new Set(suggestedTags);
           column.querySelectorAll(".encoding-code-row-skill button").forEach((button) => {
             button.classList.toggle("suggested", suggested.has(button.textContent));
           });
-          container.querySelector(".encoding-selected").textContent = `${student}: ${item.value}`;
+          container.querySelector(".encoding-selected").textContent = saved
+            ? `Saved to ${student}'s profile: missed ${item.value}`
+            : `Removed from ${student}'s profile: ${item.value}`;
         });
         buttonRow.appendChild(itemButton);
       });
@@ -9258,6 +9319,7 @@ function ttSetExclusiveEncodingObservation(button, student, section, category, n
     button.classList.add("saved", "encoding-selected-item");
   }
   saveState();
+  return !wasSaved;
 }
 
 function ttNormalizeEncodingItems(items = []) {
@@ -9338,6 +9400,7 @@ function ttToggleEncodingObservation(button, student, section, category, note, i
     button.classList.add("saved", "encoding-selected-item");
   }
   saveState();
+  return existingIndex < 0;
 }
 
 function ttClearEncodingSelection(section) {
@@ -9390,20 +9453,41 @@ function ttSaveEncodingObservation(student, section, category, note, item = "") 
   const group = ttActiveGroup();
   const studentId = ttStudentIdForName(student, group);
   const lessonMeta = ttCurrentLessonRecordMeta(ttLesson);
+  const observedAt = new Date().toISOString();
+  const observationCodes = {
+    "automatic encoding; no struggle": "Auto",
+    "accurate encoding; minor struggle": "Acc",
+    "struggling to identify and segment sounds properly": "Strug",
+    "struggles mainly with nonsense words": "NS",
+    "struggles with consonant blends": "Blends",
+    "struggles differentiating vowel sounds": "Vowel Diff",
+    "struggles with high-frequency words": "HFW",
+    "struggles with words that have suffixes": "Sfx"
+  };
+  const observationCode = note === "encoding miss" ? "Miss" : observationCodes[note] || "Observation";
+  const observationKind = note === "encoding miss"
+    ? "missed-item"
+    : ["Auto", "Acc", "Strug"].includes(observationCode) ? "session-status" : "difficulty-tag";
   group.encodingObservations ||= [];
-  group.encodingObservations.push({
+  const record = {
     id: `encoding-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    date: new Date().toISOString(),
+    date: observedAt,
     student,
     studentId,
     homeGroupIdAtTime: ttStudentHomeGroupId(studentId, group.schoolYearId) || group.id,
+    groupIdAtTime: group.id,
+    schoolYearId: group.schoolYearId || appState.activeSchoolYearId || "",
     section,
     substep: ttLesson?.substep || group.substep,
     category,
     item,
     note,
+    observationCode,
+    observationKind,
+    savedImmediately: true,
     ...lessonMeta
-  });
+  };
+  group.encodingObservations.push(record);
   if (item || note.includes("difficult") || note.includes("strategies")) {
     group.markedReviewWords ||= [];
     group.markedReviewWords.push({
@@ -9416,6 +9500,7 @@ function ttSaveEncodingObservation(student, section, category, note, item = "") 
   }
   saveState();
   ttRenderMarkedWords();
+  return record;
 }
 
 function vowelSoundList(substep) {
@@ -17878,38 +17963,25 @@ function ttBind() {
       else ttRememberScroll();
     }, 120);
   }, { passive: true });
-  ttById("ttSavedToggle").addEventListener("click", () => {
-    const panel = ttById("ttSavedPanel");
-    const isOpen = !panel.hidden;
-    // Close other ribbon panels first
-    ttById("ttDataPanel").hidden = true;
-    ttById("ttDataToggle").classList.remove("active");
-    ttCloseSmallDropdownMenus();
-    panel.hidden = isOpen;
-    ttById("ttSavedToggle").classList.toggle("active", !isOpen);
-    if (!panel.hidden) ttRenderSavedLessons(ttActiveGroup());
+  ["ttSavedToggle", "ttHomeSavedToggle"].forEach((buttonId) => {
+    ttById(buttonId)?.addEventListener("click", () => ttToggleSharedDataPanel(
+      "saved",
+      buttonId === "ttHomeSavedToggle" ? "ttHomeDataPanels" : "ttLessonDataPanels"
+    ));
   });
   ttById("ttSavedClose")?.addEventListener("click", () => {
     ttById("ttSavedPanel").hidden = true;
-    ttById("ttSavedToggle").classList.remove("active");
+    ttSetSharedDataButtonState("saved", false);
   });
-  ttById("ttDataToggle").addEventListener("click", () => {
-    const panel = ttById("ttDataPanel");
-    const isOpen = !panel.hidden;
-    // Close other ribbon panels first
-    ttById("ttSavedPanel").hidden = true;
-    ttById("ttSavedToggle").classList.remove("active");
-    ttCloseSmallDropdownMenus();
-    panel.hidden = isOpen;
-    ttById("ttDataToggle").classList.toggle("active", !isOpen);
-    if (!panel.hidden) {
-      ttRenderDataCenter();
-      ttLoadFirebaseTimeline();
-    }
+  ["ttDataToggle", "ttHomeDataToggle"].forEach((buttonId) => {
+    ttById(buttonId)?.addEventListener("click", () => ttToggleSharedDataPanel(
+      "data",
+      buttonId === "ttHomeDataToggle" ? "ttHomeDataPanels" : "ttLessonDataPanels"
+    ));
   });
   ttById("ttDataClose")?.addEventListener("click", () => {
     ttById("ttDataPanel").hidden = true;
-    ttById("ttDataToggle").classList.remove("active");
+    ttSetSharedDataButtonState("data", false);
   });
 
   ttById("ttRibbonReaders")?.addEventListener("click", () => ttToggleSmallDropdown("ttRibbonReaders"));
@@ -17923,7 +17995,9 @@ function ttBind() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") ttCloseSmallDropdownMenus();
   });
-  ttById("ttProfile").addEventListener("click", () => ttOpenStudentProfile());
+  ["ttProfile", "ttHomeProfile"].forEach((buttonId) => {
+    ttById(buttonId)?.addEventListener("click", () => ttOpenStudentProfile());
+  });
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttDownloadRecovery")?.addEventListener("click", () => ttDownloadLatestRecovery());
   ttById("ttDownloadRecoveryBundle")?.addEventListener("click", () => ttDownloadRecoveryBundle());

@@ -25,6 +25,22 @@ test("Home exposes one primary planning surface", () => {
   assert.doesNotMatch(source, /Continue where I left off/);
 });
 
+test("Home copies the lesson data actions without duplicating their records", () => {
+  ["ttHomeSavedToggle", "ttHomeDataToggle", "ttHomeProfile"].forEach((id) => {
+    assert.match(html, new RegExp(`id="${id}"`));
+  });
+  ["ttSavedPanel", "ttDataPanel"].forEach((id) => {
+    assert.equal((html.match(new RegExp(`id="${id}"`, "g")) || []).length, 1, `${id} remains a single shared panel`);
+  });
+  assert.match(html, /id="ttHomeDataPanels" class="shared-data-panels home-data-panels"/);
+  assert.match(source, /function ttMountSharedDataPanels\(hostId\)/);
+  assert.match(source, /\["ttSavedToggle", "ttHomeSavedToggle"\]/);
+  assert.match(source, /\["ttDataToggle", "ttHomeDataToggle"\]/);
+  assert.match(source, /\["ttProfile", "ttHomeProfile"\]/);
+  assert.match(source, /ttMountSharedDataPanels\("ttHomeDataPanels"\)/);
+  assert.match(source, /ttMountSharedDataPanels\("ttLessonDataPanels"\)/);
+});
+
 test("an unfinished lesson hides and blocks the new-lesson planner", () => {
   const renderPlanner = functionBody("ttRenderPlannerPanel", "ttRenderPlannerCustomizeState");
   assert.match(renderPlanner, /const openPlan = group \? ttActiveOpenPlan\(group\) : null/);
