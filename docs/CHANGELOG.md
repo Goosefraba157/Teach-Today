@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-08-31
 
+- Replaced Student Profile's group and student dropdowns with an always-visible, responsive group-column picker. School Year remains the only dropdown; every student in the selected year is a full-size one-tap button, and the active student/group are visibly highlighted.
+- Kept the profile picker read-only: changing students updates only the current view and URL. No group membership, student record, lesson, Firebase, backup, or storage data is rewritten. Added regression coverage and verified the populated iPad layout plus direct student switching with a clean console.
 - Repaired the iPad Home continuity controls that could leave a teacher trapped behind an unfinished lesson. `Continue Lesson` now re-resolves the selected group and plan by stable ID, marks that exact session in progress, follows combined-group links to the host plan when needed, and opens it through one guarded action with visible failure feedback.
 - Replaced the unreliable native JavaScript confirmation used by `Close as incomplete & plan new` with an in-page two-step confirmation. Confirming marks only the selected plan and active session incomplete, clears only its active pointer, preserves all lesson/student evidence and history, and immediately reveals Customize for the next plan.
 - Prevented old unfinished lessons from preparing another past date: the next-plan suggestion advances from the lesson date but never defaults earlier than the current instructional day. Added behavioral regression coverage proving Resume and Close leave older lessons and saved evidence untouched.

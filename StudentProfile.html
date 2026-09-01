@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260831-profile-restart-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260831-profile-roster-grid-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -43,14 +43,13 @@
 
       <section class="profile-card profile-picker-card" aria-labelledby="profilePickerTitle">
         <div class="section-heading">
-          <div><span class="section-kicker">One year at a time</span><h2 id="profilePickerTitle">Choose the student record</h2><p>Only students enrolled in the selected school year appear.</p></div>
+          <div><span class="section-kicker">One year at a time</span><h2 id="profilePickerTitle">Choose a student</h2><p>Every instructional group and student in the selected school year is ready for one-tap access.</p></div>
           <span id="yearModeBadge" class="year-mode-badge">Current</span>
         </div>
-        <div class="profile-picker-grid">
+        <div class="profile-year-control">
           <label>School year<select id="profileSchoolYear"></select></label>
-          <label>Group<select id="profileGroup"></select></label>
-          <label>Student<select id="profileStudent"></select></label>
         </div>
+        <div id="profileRosterPicker" class="profile-roster-grid" aria-label="Groups and students"></div>
         <p id="archiveNotice" class="archive-notice" hidden>Historical years are read-only. Nothing on this page can change archived records.</p>
       </section>
 
@@ -124,7 +123,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260831-profile-restart-1"></script>
+    <script src="student-profile.js?v=20260831-profile-roster-grid-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

@@ -289,16 +289,23 @@ function renderPickers() {
   byId("profileSchoolYear").value = selectedYearId;
 
   const groups = groupsForYear();
-  byId("profileGroup").innerHTML = groups.length
-    ? groups.map((group) => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name || "Unnamed group")}</option>`).join("")
-    : '<option value="">No instructional groups in this year</option>';
-  byId("profileGroup").value = selectedGroupId;
-
-  const students = studentsForGroup(selectedGroup());
-  byId("profileStudent").innerHTML = students.length
-    ? students.map((student) => `<option value="${escapeHtml(student.key)}">${escapeHtml(student.name)}</option>`).join("")
-    : '<option value="">No students in this group</option>';
-  byId("profileStudent").value = selectedStudent().key;
+  const chosenStudent = selectedStudent();
+  byId("profileRosterPicker").innerHTML = groups.length ? groups.map((group) => {
+    const students = studentsForGroup(group);
+    const groupSelected = group.id === selectedGroupId;
+    return `<section class="profile-group-column${groupSelected ? " selected" : ""}" aria-label="${escapeHtml(group.name || "Unnamed group")}">
+      <div class="profile-group-heading">
+        <h3>${escapeHtml(group.name || "Unnamed group")}</h3>
+        <span>${students.length} student${students.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="profile-student-buttons">
+        ${students.length ? students.map((student) => {
+          const active = groupSelected && student.key === chosenStudent.key;
+          return `<button type="button" class="profile-student-button${active ? " active" : ""}" data-profile-student data-group-id="${escapeHtml(group.id)}" data-student-key="${escapeHtml(student.key)}" aria-pressed="${active}">${escapeHtml(student.name)}</button>`;
+        }).join("") : '<p class="profile-group-empty">No students in this group.</p>'}
+      </div>
+    </section>`;
+  }).join("") : '<p class="profile-roster-empty">No instructional groups in this school year.</p>';
 
   const archived = selectedYearId !== currentYearId();
   byId("yearModeBadge").textContent = archived ? "Archived · Read only" : "Current";
@@ -492,15 +499,13 @@ byId("profileSchoolYear").addEventListener("change", (event) => {
   renderAll();
 });
 
-byId("profileGroup").addEventListener("change", (event) => {
-  selectedGroupId = event.target.value;
-  selectedStudentId = "";
-  selectedStudentName = "";
-  renderAll();
-});
-
-byId("profileStudent").addEventListener("change", (event) => {
-  const chosen = studentsForGroup(selectedGroup()).find((student) => student.key === event.target.value);
+byId("profileRosterPicker").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-profile-student]");
+  if (!button) return;
+  const group = groupsForYear().find((candidate) => candidate.id === button.dataset.groupId);
+  const chosen = studentsForGroup(group).find((student) => student.key === button.dataset.studentKey);
+  if (!group || !chosen) return;
+  selectedGroupId = group.id;
   selectedStudentId = chosen?.studentId || "";
   selectedStudentName = chosen?.name || "";
   renderAll();
