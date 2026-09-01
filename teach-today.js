@@ -4694,8 +4694,21 @@ function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
   lesson.activeGroupDay = day;
   const opened = ttOpenPlanInApp(plan.id, group.id);
   if (!opened || !ttLesson?.savedPlanId) return false;
-  ttSaveCurrentLesson({ render: false, starting: true, reason: "Continued teaching" });
-  ttOpenTeachFlow({ transition: false, presentation: true });
+  // ttOpenPlanInApp has already persisted the selected plan and loaded its
+  // lesson. Do not run a second save here: on iPad Stage that extra lookup can
+  // race the freshly loaded state and incorrectly turn a successful reopen
+  // into a failure. Presentation is an enhancement, not a condition of being
+  // able to teach the reopened lesson.
+  try {
+    ttOpenTeachFlow({ transition: false, presentation: true });
+  } catch (error) {
+    console.error("Teach Today: reopened lesson, but presentation mode could not start.", error);
+    try {
+      ttOpenTeachFlow({ transition: false, presentation: false });
+    } catch (fallbackError) {
+      console.error("Teach Today: lesson remains loaded after view transition failure.", fallbackError);
+    }
+  }
   return true;
 }
 

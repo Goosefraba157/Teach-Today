@@ -132,7 +132,7 @@ test("closing and resuming mutate only the selected fresh lesson record", () => 
   assert.equal(plan.status, "In progress");
   assert.equal(plan.sessions["1"].date, "2026-08-31");
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
-  assert.deepEqual({ open: calls.open, lessonSave: calls.lessonSave, teach: calls.teach }, { open: 1, lessonSave: 1, teach: 1 });
+  assert.deepEqual({ open: calls.open, lessonSave: calls.lessonSave, teach: calls.teach }, { open: 1, lessonSave: 0, teach: 1 });
 
   assert.equal(context.ttCloseOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
   assert.equal(plan.status, "Incomplete");
