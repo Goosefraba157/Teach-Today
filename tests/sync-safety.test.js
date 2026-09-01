@@ -102,4 +102,21 @@ assert.equal(installed.lessonScrollPositions["group-a"], 900);
 assert.equal(installed.groups[0].activeStudent, "student-b");
 assert.equal(installed.groups[0].history[0].day2Date, "2026-08-25");
 
+const continuityBase = structuredClone(sharedBase);
+continuityBase.groups[0].activeLessonPlanId = "plan-a";
+continuityBase.groups[0].history[0].status = "In progress";
+continuityBase.groups[0].history[0].sessions = { "1": { status: "In progress", date: "2026-08-24" } };
+const stageLocal = structuredClone(continuityBase);
+stageLocal.groups[0].encodingObservations = [{ id: "stage-observation", section: "7", item: "practice" }];
+const browserRemote = structuredClone(continuityBase);
+browserRemote.groups[0].activeLessonPlanId = "";
+browserRemote.groups[0].history[0].status = "Incomplete";
+browserRemote.groups[0].history[0].sessions["1"].status = "Incomplete";
+const continuityMerged = sync.mergePayloads(payload(continuityBase), payload(stageLocal), payload(browserRemote));
+assert.equal(continuityMerged.appState.groups[0].activeLessonPlanId, "");
+assert.equal(continuityMerged.appState.groups[0].history[0].status, "Incomplete");
+assert.equal(continuityMerged.appState.groups[0].history[0].sessions["1"].status, "Incomplete");
+assert.equal(continuityMerged.appState.groups[0].encodingObservations[0].id, "stage-observation");
+assert.deepEqual(continuityMerged.conflicts, []);
+
 console.log("sync-safety tests passed");

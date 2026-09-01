@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-31-continuity-actions-3";
+const CACHE_NAME = "teach-today-offline-v2026-08-31-stage-sync-parity-1";
 
 const APP_SHELL = [
   "./",

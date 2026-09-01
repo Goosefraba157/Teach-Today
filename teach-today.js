@@ -13499,7 +13499,6 @@ let ttFirebasePending = false;
 let ttFirebaseUser = null; // set after Google sign-in
 let ttFirebaseUnsubscribe = null;
 let ttFirebaseWritingRevisionId = "";
-let ttNativeFirebaseUploadPaused = false;
 let ttDriveAccessToken = "";
 let ttDriveFolderId = localStorage.getItem("teachToday.driveFolderId") || "";
 let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
@@ -14495,7 +14494,6 @@ async function ttLoadProtectedFirebaseCopy() {
     }
     const remoteSignature = ttFirebasePayloadSignature(envelope.payload);
     if (remoteSignature === ttCurrentFirebaseSignature()) {
-      ttNativeFirebaseUploadPaused = false;
       await ttMarkFirebaseSynced(envelope, "This device already matches the protected Firebase copy.");
       ttHideConnectionNotice();
       ttRenderDataCenter();
@@ -14512,7 +14510,6 @@ async function ttLoadProtectedFirebaseCopy() {
       return false;
     }
     await ttPreserveLocalRecovery("Before read-only protected Firebase load");
-    ttNativeFirebaseUploadPaused = false;
     ttWorkOffline = false;
     localStorage.setItem("teachToday.workOffline", "false");
     localStorage.setItem("teachToday.firebaseSyncStatus", "Loading the protected Firebase copy without writing to Firebase...");
@@ -14836,11 +14833,6 @@ async function ttSecureLegacyStudentData() {
 
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
-  if (ttIsNativeIpadShell() && ttNativeFirebaseUploadPaused) {
-    localStorage.setItem("teachToday.firebaseSyncStatus", "Stage automatic upload remains paused. Local changes are saved on this device; load the protected Firebase copy or deliberately choose Upload / merge with Firebase now.");
-    ttUpdateHomeFirebaseStatus();
-    return;
-  }
   if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {
     localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase is up to date.");
     ttUpdateHomeFirebaseStatus();
@@ -14939,21 +14931,13 @@ async function ttStartFirebaseRevisionListener() {
       return;
     }
     if (ttHasUnsyncedFirebaseChanges()) {
-      if (ttIsNativeIpadShell()) {
-        ttNativeFirebaseUploadPaused = true;
-        const message = "The Stage app has local changes while Firebase has newer data. Automatic upload is paused. Load the protected Firebase copy or keep this device offline; Firebase has not been changed.";
-        localStorage.setItem("teachToday.firebaseSyncStatus", message);
-        ttShowConnectionNotice(message, "Stage sync paused for safety", { conflict: true });
-        ttUpdateHomeFirebaseStatus();
-        return;
-      }
       localStorage.setItem("teachToday.firebaseSyncStatus", "Another device changed Firebase. Reconciling both copies safely...");
       ttQueueFirebaseSync();
       return;
     }
     localStorage.setItem("teachToday.firebaseSyncStatus", "Newer Firebase data detected. Updating this device...");
     ttUpdateHomeFirebaseStatus();
-    await ttFirebaseRestoreIfNewer({ force: true, revisionId, archiveLocal: !ttIsNativeIpadShell() });
+    await ttFirebaseRestoreIfNewer({ force: true, revisionId, archiveLocal: true });
   }, (error) => {
     const detail = error?.code || error?.message || "unknown error";
     localStorage.setItem("teachToday.firebaseSyncStatus", `Firebase change detection paused (${detail}). Local saves are still protected.`);
@@ -15023,20 +15007,12 @@ async function ttInitFirebaseSync() {
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Checking cloud data…`);
         ttRenderDataCenter();
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();
-        const restored = await ttFirebaseRestoreIfNewer({ archiveLocal: !ttIsNativeIpadShell() });
+        const restored = await ttFirebaseRestoreIfNewer({ archiveLocal: true });
         if (restored) return;
         await ttStartFirebaseRevisionListener();
         if (ttHasUnsyncedFirebaseChanges()) {
-          if (ttIsNativeIpadShell()) {
-            ttNativeFirebaseUploadPaused = true;
-            const message = "The Stage app's local copy differs from Firebase. Automatic upload is paused. Use Load protected Firebase copy to read the recovered cloud data without writing back.";
-            localStorage.setItem("teachToday.firebaseSyncStatus", message);
-            ttShowConnectionNotice(message, "Stage sync paused for safety", { conflict: true });
-          } else {
-            ttQueueFirebaseSync();
-          }
+          ttQueueFirebaseSync();
         } else {
-          ttNativeFirebaseUploadPaused = false;
           localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Firebase is up to date.`);
         }
         // Do not retry pending Firebase Storage audio automatically on startup.
@@ -15046,11 +15022,10 @@ async function ttInitFirebaseSync() {
         if (!ttDriveAccessToken) {
           localStorage.setItem("teachToday.driveStatus", "Google Drive needs permission for this browser session. Click Google Drive audio in Records.");
         }
-        if (ttHasUnsyncedFirebaseChanges() && !ttIsNativeIpadShell()) {
+        if (ttHasUnsyncedFirebaseChanges()) {
           localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Syncing automatically.`);
         }
       } else {
-        ttNativeFirebaseUploadPaused = false;
         if (ttFirebaseUnsubscribe) ttFirebaseUnsubscribe();
         ttFirebaseUnsubscribe = null;
         localStorage.setItem("teachToday.firebaseSyncStatus", "Sign in with Google to sync across all your devices.");
