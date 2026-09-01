@@ -5659,6 +5659,31 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   ttRestoreHomeScroll(groupId);
 }
 
+function ttResetHomeContinuityTransientUi() {
+  const continuity = ttById("ttHomeContinuity");
+  if (!continuity) return;
+  const confirmation = continuity.querySelector("[data-continuity-confirm]");
+  const status = continuity.querySelector("[data-continuity-status]");
+  if (confirmation) confirmation.hidden = true;
+  if (status) {
+    status.textContent = "";
+    status.classList.remove("is-error");
+  }
+}
+
+function ttRefreshHomeAfterPageRestore(event) {
+  if (!event?.persisted || !document.body.classList.contains("home-mode")) return;
+  const requestedGroupId = ttPlannerGroupId;
+  appState = loadState();
+  const groupId = (appState.groups || []).some((group) => group.id === requestedGroupId)
+    ? requestedGroupId
+    : appState.selectedGroupId || appState.groups?.[0]?.id || "";
+  ttPlannerGroupId = groupId;
+  ttPlannerDraft = {};
+  ttResetHomeContinuityTransientUi();
+  ttShowHomeScreen(groupId);
+}
+
 function ttReduceMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 }
@@ -18556,6 +18581,8 @@ window.addEventListener("beforeunload", () => {
   ttFinalizeActivePassageStroke();
   if (ttChartCard && !ttSection4FinalizePromise) saveLiveRecordIfNeeded(ttChartCard);
 });
+window.addEventListener("pagehide", ttResetHomeContinuityTransientUi);
+window.addEventListener("pageshow", ttRefreshHomeAfterPageRestore);
 window.addEventListener("scroll", () => {
   ttQueueStudentDisplayFollowSync();
   ttMonitorSection4AutoSave();

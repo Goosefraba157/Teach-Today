@@ -76,6 +76,16 @@ test("Home continuity uses direct fresh-ID actions without the iPad system confi
   assert.match(resumeAction, /ttLesson\.savedPlanId !== openedPlanId/);
 });
 
+test("Home discards cached continuity messages when returning from Profile", () => {
+  assert.match(source, /function ttRefreshHomeAfterPageRestore\(event\)/);
+  assert.match(source, /if \(!event\?\.persisted \|\| !document\.body\.classList\.contains\("home-mode"\)\) return/);
+  assert.match(source, /appState = loadState\(\)/);
+  assert.match(source, /ttPlannerDraft = \{\}/);
+  assert.match(source, /ttShowHomeScreen\(groupId\)/);
+  assert.match(source, /window\.addEventListener\("pagehide", ttResetHomeContinuityTransientUi\)/);
+  assert.match(source, /window\.addEventListener\("pageshow", ttRefreshHomeAfterPageRestore\)/);
+});
+
 test("closing and resuming mutate only the selected fresh lesson record", () => {
   const helperStart = source.indexOf("function ttContinuityRecord");
   const helperEnd = source.indexOf("function ttRecordPlanRevision", helperStart);
