@@ -8,6 +8,7 @@ let selectedYearId = params.get("schoolYear") || "";
 let selectedGroupId = params.get("group") || "";
 let selectedStudentId = params.get("studentId") || "";
 let selectedStudentName = params.get("student") || "";
+let selectedView = params.get("view") === "group" ? "group" : "student";
 let selectedTab = "overview";
 
 function byId(id) {
@@ -156,14 +157,13 @@ function isChartingRecord(record) {
   return record?.type !== "soundsDrill" && (record?.correct !== undefined || record?.wordlistPage || record?.chartHalf);
 }
 
-function chartingRecords() {
+function chartingRecords(student = selectedStudent()) {
   return (data.masterRecords || [])
-    .filter((record) => isChartingRecord(record) && matchesStudent(record) && recordYear(record) === selectedYearId)
+    .filter((record) => isChartingRecord(record) && matchesStudent(record, student) && recordYear(record) === selectedYearId)
     .sort((a, b) => recordTime(b) - recordTime(a));
 }
 
-function lessonPlans() {
-  const student = selectedStudent();
+function lessonPlans(student = selectedStudent()) {
   const seen = new Set();
   return groupsForYear(selectedYearId).flatMap((group) => (group.history || []).flatMap((plan) => {
     const participant = student.studentId && (plan.participantStudentIds || []).includes(student.studentId);
@@ -192,11 +192,12 @@ function observationCode(record) {
 }
 
 function observations() {
+  const student = arguments[0] || selectedStudent();
   const rows = groupsForYear(selectedYearId).flatMap((group) => {
-    const encoding = (group.encodingObservations || []).filter((record) => matchesStudent(record) && recordYear(record, group) === selectedYearId)
+    const encoding = (group.encodingObservations || []).filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
       .map((record) => ({ ...record, _group: group, section: record.section || "section8" }));
     const encodingKeys = new Set(encoding.map((record) => `${record.planId || record.lessonId || ""}|${normalizeName(record.item)}|${String(recordDate(record)).slice(0, 10)}`));
-    const dictationOnly = (group.dictationMisses || []).filter((record) => matchesStudent(record) && recordYear(record, group) === selectedYearId)
+    const dictationOnly = (group.dictationMisses || []).filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
       .filter((record) => !encodingKeys.has(`${record.planId || record.lessonId || ""}|${normalizeName(record.item)}|${String(recordDate(record)).slice(0, 10)}`))
       .map((record) => ({ ...record, _group: group, section: "section8", observationCode: "Miss", observationKind: "missed-item" }));
     return encoding.concat(dictationOnly);
@@ -210,8 +211,7 @@ function observations() {
   }).sort((a, b) => recordTime(b) - recordTime(a));
 }
 
-function attendanceEntries() {
-  const student = selectedStudent();
+function attendanceEntries(student = selectedStudent()) {
   return groupsForYear(selectedYearId).flatMap((group) => Object.entries(data.attendanceSessions?.[group.id] || {}).flatMap(([day, session]) => {
     if (academicYearId(day) !== selectedYearId || session?.status === "no-session") return [];
     const byId = student.studentId ? session?.attendanceByStudentId?.[student.studentId] : undefined;
@@ -250,29 +250,29 @@ function countNeeds(charts, marks) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 10);
 }
 
-function timelineEntries() {
-  const charts = chartingRecords().map((record) => ({
+function timelineEntries(student = selectedStudent()) {
+  const charts = chartingRecords(student).map((record) => ({
     id: record.id,
     date: recordDate(record),
     kind: "Charting",
     title: `${record.correct ?? "—"}/${record.total || 15} correct · ${record.substep || "Substep unavailable"}`,
     detail: `Reader ${record.reader || "—"}, p. ${record.wordlistPage || "—"}${record.wrongWords?.length ? ` · Missed: ${record.wrongWords.slice(0, 5).join(", ")}` : ""}`
   }));
-  const marks = observations().map((record) => ({
+  const marks = observations(student).map((record) => ({
     id: record.id,
     date: recordDate(record),
     kind: String(record.section || "").replace("section", "Section "),
     title: `${observationCode(record)}${record.item ? ` · ${record.item}` : ""}`,
     detail: `${record.substep || "Substep unavailable"}${record.category ? ` · ${record.category}` : ""}`
   }));
-  const lessons = lessonPlans().filter((plan) => plan.hasStudentData || ["Taught", "Complete"].includes(plan.status)).map((plan) => ({
+  const lessons = lessonPlans(student).filter((plan) => plan.hasStudentData || ["Taught", "Complete"].includes(plan.status)).map((plan) => ({
     id: plan.id,
     date: recordDate(plan),
     kind: "Lesson",
     title: plan.title || `Lesson ${plan.lessonNumber || ""}`,
     detail: `${plan.status || "Saved"} · ${plan.substep || plan.lessons?.[0]?.substep || "Substep unavailable"}`
   }));
-  const attendance = attendanceEntries().map((entry) => ({
+  const attendance = attendanceEntries(student).map((entry) => ({
     id: entry.id,
     date: entry.date,
     kind: "Attendance",
@@ -298,9 +298,10 @@ function renderPickers() {
         <h3>${escapeHtml(group.name || "Unnamed group")}</h3>
         <span>${students.length} student${students.length === 1 ? "" : "s"}</span>
       </div>
+      <button type="button" class="profile-group-button${groupSelected && selectedView === "group" ? " active" : ""}" data-profile-group data-group-id="${escapeHtml(group.id)}" aria-pressed="${groupSelected && selectedView === "group"}">Whole group</button>
       <div class="profile-student-buttons">
         ${students.length ? students.map((student) => {
-          const active = groupSelected && student.key === chosenStudent.key;
+          const active = selectedView === "student" && groupSelected && student.key === chosenStudent.key;
           return `<button type="button" class="profile-student-button${active ? " active" : ""}" data-profile-student data-group-id="${escapeHtml(group.id)}" data-student-key="${escapeHtml(student.key)}" aria-pressed="${active}">${escapeHtml(student.name)}</button>`;
         }).join("") : '<p class="profile-group-empty">No students in this group.</p>'}
       </div>
@@ -316,9 +317,10 @@ function renderPickers() {
 function renderHeader() {
   const student = selectedStudent();
   const group = selectedGroup();
-  byId("studentName").textContent = student.name || "No student selected";
-  byId("profileEyebrow").textContent = selectedYearId === currentYearId() ? "Current school year" : "Archived school year";
-  byId("studentMeta").textContent = group ? `${group.name} · ${selectedYearId}` : `${selectedYearId} · No group`;
+  const groupMode = selectedView === "group";
+  byId("studentName").textContent = groupMode ? (group?.name || "No group selected") : (student.name || "No student selected");
+  byId("profileEyebrow").textContent = groupMode ? "Whole-group summary" : (selectedYearId === currentYearId() ? "Current school year" : "Archived school year");
+  byId("studentMeta").textContent = group ? (groupMode ? `${studentsForGroup(group).length} students · ${selectedYearId}` : `${group.name} · ${selectedYearId}`) : `${selectedYearId} · No group`;
   const saved = dateValue(data.lastSavedAt);
   byId("lastSavedAt").textContent = saved ? `Device state saved ${formatDate(saved, true)}` : "No verified save time";
   const strip = document.querySelector(".profile-sync-strip");
@@ -353,6 +355,98 @@ function renderOverview() {
   renderTimeline(byId("latestActivity"), timelineEntries().slice(0, 5));
 }
 
+function chartingMetricClass(kind, value, total = 15) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "metric-empty";
+  if (kind === "correct") {
+    const ratio = number / (Number(total) || 15);
+    return ratio >= .8 ? "metric-good" : ratio >= .67 ? "metric-watch" : "metric-risk";
+  }
+  if (kind === "seconds") return number <= 30 ? "metric-good" : number <= 45 ? "metric-watch" : "metric-risk";
+  if (kind === "wcpm") return number >= 30 ? "metric-good" : number >= 20 ? "metric-watch" : "metric-risk";
+  return "metric-empty";
+}
+
+function chartingStatus(record) {
+  if (!record) return { label: "No data yet", className: "status-empty" };
+  const correct = Number(record.correct);
+  const seconds = Number(record.seconds);
+  const automatic = Boolean(record.automaticity) || (Number.isFinite(seconds) && seconds <= 30);
+  if (correct >= 12 && automatic) return { label: "Accurate and automatic", className: "status-good" };
+  if (correct >= 12) return { label: "Accurate, building speed", className: "status-watch" };
+  return { label: "Support needed", className: "status-risk" };
+}
+
+function renderGroupOverview() {
+  const group = selectedGroup();
+  const students = studentsForGroup(group);
+  const studentRows = students.map((student) => {
+    const charts = chartingRecords(student);
+    const latestChart = charts[0] || null;
+    const recentCharts = charts.slice(0, 5);
+    const marks = observations(student);
+    const missed = marks.filter((record) => record.item);
+    const needs = countNeeds([], marks);
+    const status = chartingStatus(latestChart);
+    const autoRate = recentCharts.length ? Math.round((recentCharts.filter((record) => record.automaticity || Number(record.seconds) <= 30).length / recentCharts.length) * 100) : null;
+    return { student, charts, latestChart, marks, missed, needs, status, autoRate };
+  });
+  const groupLessons = (group?.history || []).filter((plan) => recordYear(plan, group) === selectedYearId && (plan.hasStudentData || ["Taught", "Complete"].includes(plan.status)));
+  const allCharts = studentRows.flatMap((row) => row.charts);
+  const allMarks = studentRows.flatMap((row) => row.marks);
+  byId("groupStudentCount").textContent = students.length;
+  byId("groupLessonCount").textContent = groupLessons.length;
+  byId("groupChartingCount").textContent = allCharts.length;
+  byId("groupObservationCount").textContent = allMarks.length;
+
+  const decoding = [...studentRows].sort((a, b) => {
+    if (!a.latestChart) return b.latestChart ? 1 : a.student.name.localeCompare(b.student.name);
+    if (!b.latestChart) return -1;
+    return (Number(b.latestChart.correct) || 0) - (Number(a.latestChart.correct) || 0)
+      || (Number(a.latestChart.seconds) || 999) - (Number(b.latestChart.seconds) || 999)
+      || a.student.name.localeCompare(b.student.name);
+  });
+  byId("groupChartingRows").innerHTML = decoding.length ? decoding.map((row) => {
+    const record = row.latestChart;
+    return `<tr>
+      <td><button type="button" class="table-student-link" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button></td>
+      <td class="${chartingMetricClass("correct", record?.correct, record?.total)}">${record ? `${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}` : "—"}</td>
+      <td class="${chartingMetricClass("seconds", record?.seconds)}">${escapeHtml(record?.seconds ?? "—")}</td>
+      <td class="${chartingMetricClass("wcpm", record?.wcpm)}">${escapeHtml(record?.wcpm ?? "—")}</td>
+      <td class="${row.autoRate === null ? "metric-empty" : row.autoRate >= 75 ? "metric-good" : row.autoRate >= 40 ? "metric-watch" : "metric-risk"}">${row.autoRate === null ? "—" : `${row.autoRate}%`}</td>
+      <td><span class="comparison-status ${row.status.className}">${escapeHtml(row.status.label)}</span></td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="6" class="table-empty">No students in this group.</td></tr>';
+
+  const encoding = [...studentRows].sort((a, b) => a.missed.length - b.missed.length || a.student.name.localeCompare(b.student.name));
+  byId("groupEncodingRows").innerHTML = encoding.length ? encoding.map((row) => {
+    const last = row.marks[0];
+    const top = row.needs[0]?.[0] || "—";
+    return `<tr>
+      <td><button type="button" class="table-student-link" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button></td>
+      <td class="${row.missed.length ? "metric-watch" : "metric-good"}">${row.missed.length}</td>
+      <td>${row.marks.length}</td>
+      <td>${escapeHtml(top)}</td>
+      <td>${escapeHtml(last ? (last.item || observationCode(last)) : "—")}</td>
+    </tr>`;
+  }).join("") : '<tr><td colspan="5" class="table-empty">No students in this group.</td></tr>';
+
+  const groupNeeds = countNeeds(allCharts, allMarks);
+  byId("groupReviewNeeds").innerHTML = groupNeeds.length
+    ? groupNeeds.map(([need, count]) => `<span class="need-chip">${escapeHtml(need)} · ${count}</span>`).join("")
+    : "No repeated group needs yet.";
+}
+
+function updateViewMode() {
+  const groupMode = selectedView === "group";
+  byId("studentOverviewContent").hidden = groupMode;
+  byId("groupOverviewContent").hidden = !groupMode;
+  document.querySelectorAll("[data-profile-tab]").forEach((button) => {
+    if (button.dataset.profileTab !== "overview") button.hidden = groupMode;
+  });
+  if (groupMode) showTab("overview");
+}
+
 function renderCharting() {
   const charts = chartingRecords();
   const recent = charts.slice(0, 5);
@@ -364,17 +458,42 @@ function renderCharting() {
     `WCPM ${avgWcpm === null ? "—" : avgWcpm.toFixed(1)}`,
     `Seconds ${avgSeconds === null ? "—" : Math.round(avgSeconds)}`
   ].map((value) => `<span>${escapeHtml(value)}</span>`).join("");
+  renderChartingSheet(charts);
   byId("chartingRows").innerHTML = charts.length ? charts.map((record) => `
     <tr>
       <td>${escapeHtml(formatDate(recordDate(record)))}</td>
       <td><strong>${escapeHtml(record.substep || "—")}</strong></td>
       <td>Reader ${escapeHtml(record.reader || "—")}, p. ${escapeHtml(record.wordlistPage || "—")}</td>
       <td>${escapeHtml(record.chartHalf || record.wordType || "—")}</td>
-      <td>${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</td>
-      <td>${escapeHtml(record.seconds ?? "—")}</td>
-      <td>${escapeHtml(record.wcpm ?? "—")}</td>
+      <td class="${chartingMetricClass("correct", record.correct, record.total)}">${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</td>
+      <td class="${chartingMetricClass("seconds", record.seconds)}">${escapeHtml(record.seconds ?? "—")}</td>
+      <td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>
       <td>${escapeHtml((record.wrongWords || []).join(", ") || "None saved")}</td>
     </tr>`).join("") : '<tr><td colspan="8" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
+}
+
+function renderChartingSheet(charts) {
+  if (!charts.length) {
+    byId("chartingSheet").innerHTML = '<p class="table-empty">No Section 4 charting records in this school year.</p>';
+    return;
+  }
+  const columns = charts.slice(0, 12);
+  const metadata = [
+    ["Date", (record) => formatDate(recordDate(record))],
+    ["Substep", (record) => record.substep || "—"],
+    ["Concept", (record) => record.concept || record.skill || record.lessonConcept || "—"],
+    ["Page", (record) => `Reader ${record.reader || "—"}, p. ${record.wordlistPage || "—"}`],
+    ["R or N", (record) => record.chartHalf || record.wordType || "—"]
+  ];
+  const missedRows = Array.from({ length: 15 }, (_, index) => 15 - index);
+  const html = `<table class="charting-sheet-table"><tbody>
+    ${metadata.map(([label, getValue]) => `<tr><th>${escapeHtml(label)}</th>${columns.map((record) => `<td>${escapeHtml(getValue(record))}</td>`).join("")}</tr>`).join("")}
+    ${missedRows.map((score, index) => `<tr><th>${score}</th>${columns.map((record) => `<td class="charting-word-cell">${escapeHtml(record.wrongWords?.[index] || "")}</td>`).join("")}</tr>`).join("")}
+    <tr><th>Status</th>${columns.map((record) => { const status = chartingStatus(record); return `<td><span class="comparison-status ${status.className}">${escapeHtml(status.label)}</span></td>`; }).join("")}</tr>
+    <tr><th>Seconds</th>${columns.map((record) => `<td class="${chartingMetricClass("seconds", record.seconds)}">${escapeHtml(record.seconds ?? "—")} sec</td>`).join("")}</tr>
+    <tr><th>WCPM</th>${columns.map((record) => `<td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>`).join("")}</tr>
+  </tbody></table>`;
+  byId("chartingSheet").innerHTML = html;
 }
 
 function sectionSummary(section) {
@@ -388,9 +507,16 @@ function sectionSummary(section) {
     && (section !== "section6" || code !== "HFW")
   ))];
   if (!rows.length) return "No observations.";
-  return `<p><strong>${escapeHtml(predominant)}</strong> from ${rows.length} saved mark${rows.length === 1 ? "" : "s"}.</p>
-    <p>${items.length ? `Most missed: ${items.map(([item, count]) => `${escapeHtml(item)} (${count})`).join(", ")}` : "No missed items saved."}</p>
-    ${tags.length ? `<p>Trouble spots: ${tags.map(escapeHtml).join(", ")}</p>` : ""}`;
+  const statusClass = predominant === "Auto" ? "status-good" : predominant === "Acc" ? "status-watch" : predominant === "Strug" ? "status-risk" : "status-empty";
+  const descriptions = {
+    section6: { Auto: "Recognizes dictated sounds and identifies their written forms with ease.", Acc: "Recognizes most dictated sounds accurately and is building automatic recall.", Strug: "Needs direct support recognizing dictated sounds and identifying their written forms." },
+    section7: { Auto: "Segments dictated words and selects the correct letter tiles with ease.", Acc: "Segments and builds words accurately but still needs practice for speed and consistency.", Strug: "Needs direct support segmenting dictated words and selecting the correct tiles." },
+    section8: { Auto: "Segments dictated words and records them accurately in handwriting with ease.", Acc: "Writes dictated words accurately but still needs practice for speed and consistency.", Strug: "Needs direct support segmenting and writing dictated words." }
+  };
+  return `<p><span class="comparison-status ${statusClass}">${escapeHtml(predominant)}</span></p>
+    <p>${escapeHtml(descriptions[section]?.[predominant] || `${rows.length} saved mark${rows.length === 1 ? "" : "s"}.`)}</p>
+    <div class="miss-chip-row">${items.length ? items.map(([item, count]) => `<span class="miss-chip">${escapeHtml(item)} <small>${count} miss${count === 1 ? "" : "es"}</small></span>`).join("") : "No missed items saved."}</div>
+    ${tags.length ? `<p><strong>Trouble spots:</strong> ${tags.map(escapeHtml).join(", ")}</p>` : ""}`;
 }
 
 function renderEncoding() {
@@ -403,7 +529,7 @@ function renderEncoding() {
       <td>${escapeHtml(formatDate(recordDate(record)))}</td>
       <td><strong>${escapeHtml(String(record.section || "").replace("section", "Section "))}</strong></td>
       <td>${escapeHtml(record.substep || "—")}</td>
-      <td>${escapeHtml(observationCode(record))}</td>
+      <td><span class="observation-status status-${escapeHtml(observationCode(record).toLowerCase().replaceAll(" ", "-"))}">${escapeHtml(observationCode(record))}</span></td>
       <td>${escapeHtml(record.item || record.note || record.category || "—")}</td>
       <td>${escapeHtml(record.lessonTitle || record.planId || "—")}</td>
     </tr>`).join("") : '<tr><td colspan="6" class="table-empty">No Section 6–8 observations in this school year.</td></tr>';
@@ -425,9 +551,11 @@ function renderAll() {
   renderPickers();
   renderHeader();
   renderOverview();
+  renderGroupOverview();
   renderCharting();
   renderEncoding();
   renderTimeline(byId("studentTimeline"), timelineEntries());
+  updateViewMode();
   updateUrl();
 }
 
@@ -436,12 +564,22 @@ function updateUrl() {
   if (selectedYearId) url.searchParams.set("schoolYear", selectedYearId);
   if (selectedGroupId) url.searchParams.set("group", selectedGroupId);
   else url.searchParams.delete("group");
-  if (selectedStudentId) {
+  if (selectedView === "group") {
+    url.searchParams.set("view", "group");
+    url.searchParams.delete("studentId");
+    url.searchParams.delete("student");
+  } else if (selectedStudentId) {
+    url.searchParams.delete("view");
     url.searchParams.set("studentId", selectedStudentId);
     url.searchParams.delete("student");
   } else if (selectedStudentName) {
+    url.searchParams.delete("view");
     url.searchParams.set("student", selectedStudentName);
     url.searchParams.delete("studentId");
+  } else {
+    url.searchParams.delete("view");
+    url.searchParams.delete("studentId");
+    url.searchParams.delete("student");
   }
   history.replaceState(null, "", url);
 }
@@ -500,14 +638,46 @@ byId("profileSchoolYear").addEventListener("change", (event) => {
 });
 
 byId("profileRosterPicker").addEventListener("click", (event) => {
+  const groupButton = event.target.closest("[data-profile-group]");
+  if (groupButton) {
+    const group = groupsForYear().find((candidate) => candidate.id === groupButton.dataset.groupId);
+    if (!group) return;
+    selectedGroupId = group.id;
+    selectedView = "group";
+    selectedTab = "overview";
+    renderAll();
+    return;
+  }
+  const jumpButton = event.target.closest("[data-profile-student-jump]");
+  if (jumpButton) {
+    const chosen = studentsForGroup(selectedGroup()).find((student) => student.key === jumpButton.dataset.studentKey);
+    if (!chosen) return;
+    selectedView = "student";
+    selectedStudentId = chosen.studentId || "";
+    selectedStudentName = chosen.name || "";
+    renderAll();
+    return;
+  }
   const button = event.target.closest("[data-profile-student]");
   if (!button) return;
   const group = groupsForYear().find((candidate) => candidate.id === button.dataset.groupId);
   const chosen = studentsForGroup(group).find((student) => student.key === button.dataset.studentKey);
   if (!group || !chosen) return;
   selectedGroupId = group.id;
+  selectedView = "student";
   selectedStudentId = chosen?.studentId || "";
   selectedStudentName = chosen?.name || "";
+  renderAll();
+});
+
+byId("groupOverviewContent").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-profile-student-jump]");
+  if (!button) return;
+  const chosen = studentsForGroup(selectedGroup()).find((student) => student.key === button.dataset.studentKey);
+  if (!chosen) return;
+  selectedView = "student";
+  selectedStudentId = chosen.studentId || "";
+  selectedStudentName = chosen.name || "";
   renderAll();
 });
 

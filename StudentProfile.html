@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260831-profile-roster-grid-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260901-compact-groups-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -42,12 +42,12 @@
       </section>
 
       <section class="profile-card profile-picker-card" aria-labelledby="profilePickerTitle">
-        <div class="section-heading">
-          <div><span class="section-kicker">One year at a time</span><h2 id="profilePickerTitle">Choose a student</h2><p>Every instructional group and student in the selected school year is ready for one-tap access.</p></div>
+        <div class="profile-picker-toolbar">
+          <div><span class="section-kicker">Quick profile menu</span><h2 id="profilePickerTitle">Groups and students</h2></div>
+          <div class="profile-year-control">
+            <label>School year<select id="profileSchoolYear"></select></label>
+          </div>
           <span id="yearModeBadge" class="year-mode-badge">Current</span>
-        </div>
-        <div class="profile-year-control">
-          <label>School year<select id="profileSchoolYear"></select></label>
         </div>
         <div id="profileRosterPicker" class="profile-roster-grid" aria-label="Groups and students"></div>
         <p id="archiveNotice" class="archive-notice" hidden>Historical years are read-only. Nothing on this page can change archived records.</p>
@@ -62,29 +62,54 @@
       </nav>
 
       <section class="profile-panel" data-profile-panel="overview">
-        <div class="metric-grid">
-          <article><span>Lesson sessions</span><strong id="lessonCount">0</strong></article>
-          <article><span>Charting records</span><strong id="chartingCount">0</strong></article>
-          <article><span>Section 6–8 marks</span><strong id="observationCount">0</strong></article>
-          <article><span>Attendance records</span><strong id="attendanceCount">0</strong></article>
-        </div>
-        <div class="overview-grid">
-          <article class="profile-card summary-card">
-            <div class="section-heading compact"><div><span class="section-kicker">At a glance</span><h2>Instructional snapshot</h2></div></div>
-            <div id="profileSummary" class="profile-summary empty-state">No saved records for this student in this school year.</div>
+        <div id="studentOverviewContent">
+          <div class="metric-grid">
+            <article><span>Lesson sessions</span><strong id="lessonCount">0</strong></article>
+            <article><span>Charting records</span><strong id="chartingCount">0</strong></article>
+            <article><span>Section 6–8 marks</span><strong id="observationCount">0</strong></article>
+            <article><span>Attendance records</span><strong id="attendanceCount">0</strong></article>
+          </div>
+          <div class="overview-grid">
+            <article class="profile-card summary-card">
+              <div class="section-heading compact"><div><span class="section-kicker">At a glance</span><h2>Instructional snapshot</h2></div></div>
+              <div id="profileSummary" class="profile-summary empty-state">No saved records for this student in this school year.</div>
+            </article>
+            <article class="profile-card summary-card attention-card">
+              <div class="section-heading compact"><div><span class="section-kicker">Review next</span><h2>Most frequent needs</h2></div></div>
+              <div id="reviewNeeds" class="review-needs empty-state">No repeated misses or difficulty observations yet.</div>
+            </article>
+          </div>
+          <article class="profile-card">
+            <div class="section-heading compact"><div><span class="section-kicker">Most recent</span><h2>Latest saved activity</h2></div></div>
+            <div id="latestActivity" class="timeline-list empty-state">No activity saved for this school year.</div>
           </article>
-          <article class="profile-card summary-card attention-card">
-            <div class="section-heading compact"><div><span class="section-kicker">Review next</span><h2>Most frequent needs</h2></div></div>
-            <div id="reviewNeeds" class="review-needs empty-state">No repeated misses or difficulty observations yet.</div>
+        </div>
+        <div id="groupOverviewContent" hidden>
+          <div class="metric-grid group-metric-grid">
+            <article><span>Students</span><strong id="groupStudentCount">0</strong></article>
+            <article><span>Lesson sessions</span><strong id="groupLessonCount">0</strong></article>
+            <article><span>Charting records</span><strong id="groupChartingCount">0</strong></article>
+            <article><span>Sections 6–8 marks</span><strong id="groupObservationCount">0</strong></article>
+          </div>
+          <article class="profile-card group-comparison-card">
+            <div class="section-heading compact"><div><span class="section-kicker">Whole-group view</span><h2>Student comparison</h2><p>Current group, ranked from strongest performance to most support needed.</p></div></div>
+            <div class="group-comparison-grid">
+              <section><h3>Decoding / Charting</h3><div class="table-wrap"><table><thead><tr><th>Student</th><th>Correct</th><th>Sec/15w</th><th>WCPM</th><th>Auto</th><th>Status</th></tr></thead><tbody id="groupChartingRows"></tbody></table></div></section>
+              <section><h3>Encoding / Spelling</h3><div class="table-wrap"><table><thead><tr><th>Student</th><th>Misses</th><th>Recent</th><th>Top area</th><th>Last item</th></tr></thead><tbody id="groupEncodingRows"></tbody></table></div></section>
+            </div>
+          </article>
+          <article class="profile-card attention-card">
+            <div class="section-heading compact"><div><span class="section-kicker">Plan next</span><h2>Group review needs</h2></div></div>
+            <div id="groupReviewNeeds" class="review-needs empty-state">No repeated group needs yet.</div>
           </article>
         </div>
-        <article class="profile-card">
-          <div class="section-heading compact"><div><span class="section-kicker">Most recent</span><h2>Latest saved activity</h2></div></div>
-          <div id="latestActivity" class="timeline-list empty-state">No activity saved for this school year.</div>
-        </article>
       </section>
 
       <section class="profile-panel" data-profile-panel="charting" hidden>
+        <article class="profile-card charting-sheet-card">
+          <div class="section-heading compact"><div><span class="section-kicker">Color-coded history</span><h2>Charting sheet</h2><p>Newest saves appear first; each column is one saved charting record.</p></div></div>
+          <div id="chartingSheet" class="charting-sheet-wrap"></div>
+        </article>
         <article class="profile-card">
           <div class="section-heading"><div><span class="section-kicker">Section 4</span><h2>Charting history</h2><p>One row per verified charting save.</p></div><div id="chartingStats" class="inline-stats"></div></div>
           <div class="table-wrap"><table><thead><tr><th>Date</th><th>Substep</th><th>Reader page</th><th>Words</th><th>Correct</th><th>Seconds</th><th>WCPM</th><th>Missed</th></tr></thead><tbody id="chartingRows"></tbody></table></div>
@@ -123,7 +148,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260831-profile-roster-grid-1"></script>
+    <script src="student-profile.js?v=20260901-compact-groups-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

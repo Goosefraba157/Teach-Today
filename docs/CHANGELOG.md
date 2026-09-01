@@ -2,6 +2,14 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-01
+
+- Compressed Student Profile's group/student picker into a small quick-profile menu. School Year remains the only dropdown; every instructional group now has a direct whole-group button and compact one-tap student chips so profile data begins near the top of the page.
+- Restored a read-only whole-group summary with color-coded decoding/charting and encoding/spelling comparisons, plus student-level color-coded Section 4 charting sheets and task-specific Section 6–8 instructional summaries. Profile navigation changes only the view and URL; it does not rewrite app data.
+- Added a private, additive-only recovery-preview builder for Teach Today backup and legacy-profile JSON files. It remaps regenerated legacy student IDs only when names produce one unique current match, proposes missing stable-ID records and map leaves, preserves and reports same-ID differences, and holds unknown groups separately.
+- Generated a local private preview from the retained Aug. 30/Aug. 31 sources: 293 additions proposed, 33 conflicts preserved, 36 unique student-ID mappings, and one unresolved demo group. Nothing was uploaded, merged, deleted, or overwritten; private source and preview files remain outside Git.
+- Added recovery and Student Profile regression coverage and passed the full planning, Dictation Book sourcing, Section 6–8 observation, native Stage, Student Profile, and sync-safety test suite.
+
 ## 2026-08-31
 
 - Replaced Student Profile's group and student dropdowns with an always-visible, responsive group-column picker. School Year remains the only dropdown; every student in the selected year is a full-size one-tap button, and the active student/group are visibly highlighted.
