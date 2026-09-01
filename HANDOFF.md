@@ -15,6 +15,7 @@
 - Do not create competing handoff/status files. Do not include student-identifying information here.
 
 ## Active Direction
+- **Emergency classroom mode (2026-09-01):** the installed iPad Stage shell is now local-only. It must not automatically read, restore, listen to, reconcile with, or upload to Firebase. Its persistent WebKit store is the classroom authority and ordinary saves queue the native Files backup. Browser/Safari retains protected Firebase sync. Do not re-enable Stage automatic Firebase sync without a separately reviewed, explicit additive transfer design.
 - **V1 Teach Today is the active product.** Preserve its current visual design and working teacher/student flows.
 - **Slides and presentation mode are the current priority.** Work through the path: Teacher Home -> select group -> build/open lesson -> presentation mode -> slides.
 - **The `/v2/` lesson-engine experiment is paused.** Keep it intact for reference, but do not extend it or route users into it while V1 slide work is active.
@@ -23,6 +24,7 @@
 
 ## Recovery Point
 - Active branch: `main`
+- Current emergency Stage local-only change: pending publication in this session. Exact teacher step after Pages deploy: fully force-close the Stage app, reopen it with internet once so the new service worker activates, then reopen the selected group. Do not sign out, clear app data, restore, or upload/merge while missing lesson evidence is assessed.
 - Current Section 3 planning/Fat Stack commit: `05a1b7e` (`Add focused Section 3 lesson decks`).
 - Current review-filter commit: `248c6cb` (`Add review N-page filters`)
 - Current single-lesson Home commit: `8f6a0cc` (`Simplify single-lesson planning flow`)

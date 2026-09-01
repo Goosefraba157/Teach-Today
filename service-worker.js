@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-01-compact-group-profile-1";
+const CACHE_NAME = "teach-today-offline-v2026-09-01-stage-local-only-1";
 
 const APP_SHELL = [
   "./",

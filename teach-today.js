@@ -3681,6 +3681,26 @@ function ttIsNativeIpadShell() {
     && Boolean(window.webkit?.messageHandlers?.teachTodayProjectionMode);
 }
 
+// The installed iPad Stage app is deliberately local-first. Its WebKit data
+// store is the authority while teaching; Firebase must never restore over it
+// or reintroduce an older active-lesson pointer in the background.
+function ttStageLocalOnlyMode() {
+  return ttIsNativeIpadShell();
+}
+
+function ttStageLocalOnlyStatus() {
+  return "Stage local mode: saved on this iPad. Automatic Firebase sync is paused.";
+}
+
+function ttBackupCurrentStageState(options = {}) {
+  if (!ttStageLocalOnlyMode()) return Promise.resolve();
+  const payload = ttFirebasePayload();
+  return ttEnsureIndependentBackups({
+    payload,
+    revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
+  }, { force: Boolean(options.force), manual: Boolean(options.manual) });
+}
+
 function ttSetNativeProjectionMode(mode = "stage") {
   if (!ttIsNativeIpadShell()) return false;
   const nextMode = mode === "mirror" ? "mirror" : "stage";
@@ -4178,6 +4198,15 @@ function ttSetWorkOffline(value) {
 }
 
 async function ttRetryCloudConnections() {
+  if (ttStageLocalOnlyMode()) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
+    ttHideConnectionNotice();
+    ttRenderDataCenter();
+    await ttBackupCurrentStageState().catch((error) => {
+      ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+    });
+    return;
+  }
   ttWorkOffline = false;
   localStorage.setItem("teachToday.workOffline", "false");
   if (!navigator.onLine) {
@@ -14020,7 +14049,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
 async function ttRunIndependentBackup(options = {}) {
   if (options.connectDrive) localStorage.setItem(ttIndependentBackupEnabledKey, "true");
   let envelope = null;
-  if (ttFirebaseUser) envelope = await ttFirebaseReadEnvelope();
+  if (ttFirebaseUser && !ttStageLocalOnlyMode()) envelope = await ttFirebaseReadEnvelope();
   if (!envelope) envelope = { payload: ttFirebasePayload(), revisionId: "" };
   await ttEnsureIndependentBackups(envelope, { force: true, manual: true, requestDrivePermission: options.connectDrive });
 }
@@ -14642,6 +14671,14 @@ async function ttMarkFirebaseSynced(envelope, reason) {
 }
 
 async function ttFirebaseSyncWrite(reason = "Saved to Firebase.") {
+  if (ttStageLocalOnlyMode()) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
+    ttUpdateHomeFirebaseStatus();
+    await ttBackupCurrentStageState().catch((error) => {
+      ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+    });
+    return;
+  }
   if (!ttFirebaseUser) return; // require sign-in
   if (ttFirebaseBusy) {
     ttFirebasePending = true;
@@ -14833,6 +14870,14 @@ async function ttSecureLegacyStudentData() {
 
 function ttQueueFirebaseSync() {
   clearTimeout(ttFirebaseTimer);
+  if (ttStageLocalOnlyMode()) {
+    localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
+    ttUpdateHomeFirebaseStatus();
+    ttBackupCurrentStageState().catch((error) => {
+      ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+    });
+    return;
+  }
   if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {
     localStorage.setItem("teachToday.firebaseSyncStatus", "Firebase is up to date.");
     ttUpdateHomeFirebaseStatus();
@@ -14910,7 +14955,7 @@ async function ttStartFirebaseRevisionListener() {
     ttFirebaseUnsubscribe();
     ttFirebaseUnsubscribe = null;
   }
-  if (!ttFirebaseUser) return;
+  if (!ttFirebaseUser || ttStageLocalOnlyMode()) return;
   const { firestoreDb, doc, onSnapshot } = await ttFirebaseSdk();
   const mainRef = doc(firestoreDb, ...ttFirebaseDocPath());
   let receivedInitialSnapshot = false;
@@ -15004,6 +15049,16 @@ async function ttInitFirebaseSync() {
       ttFirebaseUser = user;
       ttUpdateFirebaseAuthUI();
       if (user) {
+        if (ttStageLocalOnlyMode()) {
+          localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
+          localStorage.setItem("teachToday.workOffline", "true");
+          ttWorkOffline = true;
+          await ttBackupCurrentStageState().catch((error) => {
+            ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+          });
+          ttRenderDataCenter();
+          return;
+        }
         localStorage.setItem("teachToday.firebaseSyncStatus", `Signed in as ${user.email}. Checking cloud data…`);
         ttRenderDataCenter();
         if (!wasSignedIn) await ttFirebaseMigrateLegacyData();

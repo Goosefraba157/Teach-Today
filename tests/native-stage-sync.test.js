@@ -12,27 +12,30 @@ function functionBody(name, nextName) {
   return source.slice(start, end);
 }
 
-test("the native Stage shell uses the same protected automatic sync path as the browser", () => {
-  assert.doesNotMatch(source, /ttNativeFirebaseUploadPaused/);
-  assert.doesNotMatch(source, /Stage automatic upload remains paused/);
-  assert.doesNotMatch(source, /Stage sync paused for safety/);
+test("the native Stage shell is local-only while browsers retain protected automatic sync", () => {
+  assert.match(source, /function ttStageLocalOnlyMode\(\)/);
+  assert.match(source, /Stage local mode: saved on this iPad\. Automatic Firebase sync is paused\./);
 
   const queue = functionBody("ttQueueFirebaseSync", "ttSyncFirebaseAndLocalNow");
+  assert.match(queue, /if \(ttStageLocalOnlyMode\(\)\)/);
+  assert.match(queue, /ttBackupCurrentStageState\(\)/);
   assert.match(queue, /ttFirebaseTimer = setTimeout\(\(\) => ttFirebaseSyncWrite\(\), 1200\)/);
-  assert.doesNotMatch(queue, /ttIsNativeIpadShell/);
 
   const listener = functionBody("ttStartFirebaseRevisionListener", "ttFirebaseSignIn");
+  assert.match(listener, /!ttFirebaseUser \|\| ttStageLocalOnlyMode\(\)/);
   assert.match(listener, /Another device changed Firebase\. Reconciling both copies safely/);
   assert.match(listener, /ttQueueFirebaseSync\(\)/);
   assert.match(listener, /archiveLocal: true/);
-  assert.doesNotMatch(listener, /ttIsNativeIpadShell/);
 
   const init = functionBody("ttInitFirebaseSync", "ttBackupData");
+  assert.match(init, /if \(ttStageLocalOnlyMode\(\)\)/);
+  assert.match(init, /ttBackupCurrentStageState\(\)/);
   assert.match(init, /ttFirebaseRestoreIfNewer\(\{ archiveLocal: true \}\)/);
   assert.match(init, /if \(ttHasUnsyncedFirebaseChanges\(\)\) \{\s*ttQueueFirebaseSync\(\)/);
-  assert.doesNotMatch(init, /ttIsNativeIpadShell/);
 
   const write = functionBody("ttFirebaseSyncWrite", "ttSecureLegacyStudentData");
+  assert.match(write, /if \(ttStageLocalOnlyMode\(\)\)/);
+  assert.match(write, /ttBackupCurrentStageState\(\)/);
   const preserveLocal = write.indexOf("ttPreserveLocalRecovery");
   const archiveCloud = write.indexOf("ttArchiveFirebaseBranch");
   const reconcile = write.indexOf("mergePayloads");

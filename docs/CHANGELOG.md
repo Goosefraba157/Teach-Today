@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-01
 
+- Changed the installed iPad Stage app to emergency local-only classroom mode after automatic Firebase reconciliation repeatedly reintroduced stale lesson continuity state during instruction. Stage now exits before every automatic Firebase read, restore, revision listener, reconciliation, or upload; browser/Safari cloud synchronization remains unchanged.
+- Kept Stage saves in its persistent WebKit device store and connected each normal save attempt to the verified native Files backup path. Manual backup also uses the current iPad payload instead of reading Firebase. Refreshed the public asset and service-worker cache versions and added a regression test for the Stage/browser boundary.
 - Compressed Student Profile's group/student picker into a small quick-profile menu. School Year remains the only dropdown; every instructional group now has a direct whole-group button and compact one-tap student chips so profile data begins near the top of the page.
 - Restored a read-only whole-group summary with color-coded decoding/charting and encoding/spelling comparisons, plus student-level color-coded Section 4 charting sheets and task-specific Section 6–8 instructional summaries. Profile navigation changes only the view and URL; it does not rewrite app data.
 - Added a private, additive-only recovery-preview builder for Teach Today backup and legacy-profile JSON files. It remaps regenerated legacy student IDs only when names produce one unique current match, proposes missing stable-ID records and map leaves, preserves and reports same-ID differences, and holds unknown groups separately.
