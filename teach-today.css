@@ -11177,6 +11177,26 @@ body.home-mode .home-screen {
   color: #9a3412;
   font-weight: 900;
 }
+.continuity-inline-confirm {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  background: #fff7ed;
+}
+.continuity-inline-confirm[hidden] { display: none; }
+.continuity-inline-confirm > div { display: grid; gap: 2px; margin-right: auto; min-width: 240px; }
+.continuity-inline-confirm strong { color: #7c2d12; font-size: 13px; }
+.continuity-inline-confirm span { color: #9a3412; font-size: 11px; font-weight: 700; }
+.continuity-inline-confirm .continuity-confirm-close { border-color: #c2410c; background: #c2410c; color: #fff; font-weight: 900; }
+.continuity-action-status { width: 100%; min-height: 0; margin: 0; color: #0f766e; font-size: 11px; font-weight: 800; text-align: right; }
+.continuity-action-status:empty { display: none; }
+.continuity-action-status.is-error { color: #b91c1c; }
 .continuity-more { width: 100%; color: #64748b; font-size: 11px; font-weight: 850; }
 .continuity-more summary { width: fit-content; cursor: pointer; }
 .continuity-more > div { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }

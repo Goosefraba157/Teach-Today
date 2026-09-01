@@ -4594,6 +4594,76 @@ function ttCompletedSectionSummary(lesson) {
   return { done, skipped };
 }
 
+function ttNextPlanningDateKey(value) {
+  const nextAfterLesson = ttNextInstructionDateKey(value || ttTodayKey());
+  const today = ttTodayKey();
+  if (nextAfterLesson >= today) return nextAfterLesson;
+  const todayDate = ttDateFromKey(today);
+  return [0, 5, 6].includes(todayDate.getDay()) ? ttNextInstructionDateKey(today) : today;
+}
+
+function ttContinuityPlan(groupId, planId) {
+  const group = (appState.groups || []).find((item) => item.id === groupId);
+  const plan = (group?.history || []).find((item) => item.id === planId);
+  if (!group || !plan?.lessons?.[0] || plan.excludedFromLessonSequence || ["Complete", "Incomplete", "Test"].includes(plan.status)) {
+    return null;
+  }
+  return { group, plan, lesson: plan.lessons[0] };
+}
+
+function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
+  const current = ttContinuityPlan(groupId, planId);
+  if (!current) return false;
+  const { group, plan, lesson } = current;
+  const now = new Date().toISOString();
+  const day = ttPlanSessionDay(plan, lesson);
+  plan.status = "Incomplete";
+  plan.closedAt = now;
+  plan.closedReason = "Teacher chose to start a new lesson";
+  plan.sessions ||= {};
+  plan.sessions[day] = {
+    ...plan.sessions[day],
+    date: plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey(),
+    status: "Incomplete",
+    closedAt: now
+  };
+  if (group.activeLessonPlanId === plan.id) group.activeLessonPlanId = "";
+  ttPlannerGroupId = group.id;
+  ttPlannerDraft = {};
+  ttEnsurePlannerDraft(group).scheduledDate = nextDate || ttNextPlanningDateKey(plan.sessions[day].date);
+  ttSyncCombinedLessonLinks(plan, group);
+  saveState();
+  return true;
+}
+
+function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
+  const current = ttContinuityPlan(groupId, planId);
+  if (!current) return false;
+  const { group, plan, lesson } = current;
+  const openedPlanId = plan.combinedParticipation && plan.hostPlanId ? plan.hostPlanId : plan.id;
+  const day = ttPlanSessionDay(plan, lesson);
+  const date = sessionDate || plan.sessions?.[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
+  appState.selectedGroupId = group.id;
+  ttPlannerGroupId = group.id;
+  group.activeLessonPlanId = plan.id;
+  plan.sessions ||= {};
+  plan.sessions[day] = {
+    ...plan.sessions[day],
+    date,
+    status: "In progress",
+    startedAt: plan.sessions[day]?.startedAt || new Date().toISOString()
+  };
+  plan.activeDay = day;
+  plan.status = "In progress";
+  lesson.scheduledDate = date;
+  lesson.activeGroupDay = day;
+  ttOpenPlanInApp(plan.id);
+  if (!ttLesson || ttLesson.savedPlanId !== openedPlanId) return false;
+  ttSaveCurrentLesson({ render: false, starting: true, reason: "Continued teaching" });
+  ttOpenTeachFlow({ transition: false, presentation: true });
+  return true;
+}
+
 function ttRecordPlanRevision(plan, lesson, reason = "Saved changes") {
   if (!plan || !lesson) return;
   const snapshot = ttClone(lesson);
@@ -5755,6 +5825,8 @@ function ttRenderHomeContinuity(enabled = true) {
   const sessionDate = openPlan.sessions?.[day]?.date || openPlan.scheduledDate;
   const canContinueDay2 = ["group", "part1", "part2"].includes(lesson.lessonType) && day === "1" && !openPlan.sessions?.["2"];
   const plannedDay2Date = openPlan.plannedDay2Date || ttNextInstructionDateKey(openPlan.sessions?.["1"]?.date || sessionDate);
+  const nextPlanDate = ttNextPlanningDateKey(openPlan.sessions?.[day]?.date || sessionDate);
+  const nextPlanNumber = Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1;
   container.innerHTML = `<div class="continuity-copy"><span>Current lesson</span>
       <strong>${escapeHtml(group.name)} · Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} · Substep ${escapeHtml(lesson.substep || group.substep || "--")}</strong>
       <small>${escapeHtml(ttLongLessonDate(sessionDate))} · Reader ${escapeHtml(lesson.reader || "--")}, wordlist p. ${escapeHtml(lesson.wordlistPageNumber || "--")}${summary.done.length ? ` · Finished sections: ${escapeHtml(summary.done.join(", "))}` : ""}${summary.skipped.length ? ` · Skipped: ${escapeHtml(summary.skipped.join(", "))}` : ""}</small></div>
@@ -5763,7 +5835,19 @@ function ttRenderHomeContinuity(enabled = true) {
       <button class="continuity-primary" type="button" data-continuity="resume">Continue Lesson</button>
       <button type="button" data-continuity="new">Close as incomplete &amp; plan new</button>
       ${canContinueDay2 ? `<details class="continuity-more"><summary>Day 1 options</summary><div><label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Start Day 2</button><button type="button" data-continuity="complete-day1">Finish Lesson As Is</button></div></details>` : ""}
+      <div class="continuity-inline-confirm" data-continuity-confirm hidden>
+        <div><strong>Close Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} as incomplete?</strong><span>Its saved work stays preserved. The planner will prepare Lesson ${escapeHtml(nextPlanNumber)} for ${escapeHtml(ttLongLessonDate(nextPlanDate))}.</span></div>
+        <button type="button" data-continuity-cancel-close>Keep lesson open</button>
+        <button type="button" class="continuity-confirm-close" data-continuity-confirm-close>Close lesson &amp; show planner</button>
+      </div>
+      <p class="continuity-action-status" data-continuity-status aria-live="polite"></p>
     </div>`;
+  const showActionStatus = (message, isError = false) => {
+    const actionStatus = container.querySelector("[data-continuity-status]");
+    if (!actionStatus) return;
+    actionStatus.textContent = message;
+    actionStatus.classList.toggle("is-error", isError);
+  };
   const saveSessionDate = (date) => {
     if (!date) return;
     openPlan.sessions ||= {};
@@ -5794,11 +5878,14 @@ function ttRenderHomeContinuity(enabled = true) {
   };
   ["input", "change"].forEach((eventName) => plannedDay2Input?.addEventListener(eventName, savePlannedDay2Date));
   container.querySelector('[data-continuity="resume"]')?.addEventListener("click", () => {
-    saveSessionDate(container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
-    ttOpenPlanInApp(openPlan.id);
-    if (lesson.activeGroupDay || openPlan.activeDay) ttSetGroupDay(String(openPlan.activeDay || lesson.activeGroupDay));
-    ttSaveCurrentLesson({ render: false, starting: true, reason: "Continued teaching" });
-    ttOpenTeachFlow({ transition: false, presentation: true });
+    showActionStatus("Opening the saved lesson…");
+    try {
+      const resumed = ttResumeOpenPlanFromHome(group.id, openPlan.id, container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
+      if (!resumed) showActionStatus("This lesson could not be reopened. Its saved work remains preserved.", true);
+    } catch (error) {
+      console.error("Teach Today could not resume the selected lesson:", error);
+      showActionStatus("This lesson could not be reopened. Its saved work remains preserved.", true);
+    }
   });
   container.querySelector('[data-continuity="day2"]')?.addEventListener("click", () => {
     const date = container.querySelector("[data-continuity-date]")?.value || openPlan.plannedDay2Date || ttTodayKey();
@@ -5831,18 +5918,27 @@ function ttRenderHomeContinuity(enabled = true) {
     ttRenderHomeScreen();
   });
   container.querySelector('[data-continuity="new"]')?.addEventListener("click", () => {
-    const nextDate = ttNextInstructionDateKey(openPlan.sessions?.[day]?.date || sessionDate);
-    const nextNumber = Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1;
-    if (!confirm(`Keep Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} marked incomplete and prepare Lesson ${nextNumber} for ${ttLongLessonDate(nextDate)}?`)) return;
-    openPlan.status = "Incomplete";
-    openPlan.closedAt = new Date().toISOString();
-    openPlan.closedReason = "Teacher chose to start a new lesson";
-    group.activeLessonPlanId = "";
-    ttPlannerDraft = {};
-    ttEnsurePlannerDraft(group).scheduledDate = nextDate;
-    ttSyncCombinedLessonLinks(openPlan, group);
-    saveState();
-    ttRenderHomeScreen();
+    const inlineConfirm = container.querySelector("[data-continuity-confirm]");
+    if (inlineConfirm) inlineConfirm.hidden = false;
+  });
+  container.querySelector("[data-continuity-cancel-close]")?.addEventListener("click", () => {
+    const inlineConfirm = container.querySelector("[data-continuity-confirm]");
+    if (inlineConfirm) inlineConfirm.hidden = true;
+    showActionStatus("");
+  });
+  container.querySelector("[data-continuity-confirm-close]")?.addEventListener("click", () => {
+    showActionStatus("Closing only this lesson and preserving its saved work…");
+    try {
+      const closed = ttCloseOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
+      if (!closed) {
+        showActionStatus("This lesson was already closed or could not be found. Its saved work remains preserved.", true);
+        return;
+      }
+      ttRenderHomeScreen();
+    } catch (error) {
+      console.error("Teach Today could not close the selected lesson:", error);
+      showActionStatus("This lesson could not be closed. Its saved work remains preserved.", true);
+    }
   });
 }
 

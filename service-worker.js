@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-08-31-profile-restart-1";
+const CACHE_NAME = "teach-today-offline-v2026-08-31-continuity-actions-1";
 
 const APP_SHELL = [
   "./",

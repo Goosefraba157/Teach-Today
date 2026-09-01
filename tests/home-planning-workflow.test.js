@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "TeachToday.html"), "utf8");
@@ -52,6 +53,74 @@ test("an unfinished lesson hides and blocks the new-lesson planner", () => {
   const groupMutation = buildLesson.indexOf("appState.selectedGroupId = group.id");
   assert.ok(guard >= 0 && groupMutation > guard, "the open-lesson guard runs before group or lesson mutation");
   assert.match(buildLesson.slice(guard, groupMutation), /return;/);
+});
+
+test("Home continuity uses direct fresh-ID actions without the iPad system confirm", () => {
+  const continuity = functionBody("ttRenderHomeContinuity", "ttCreateDemoGroup");
+  assert.match(source, /function ttContinuityPlan\(groupId, planId\)/);
+  assert.match(source, /function ttResumeOpenPlanFromHome\(groupId, planId, sessionDate\)/);
+  assert.match(source, /function ttCloseOpenPlanFromHome\(groupId, planId, nextDate\)/);
+  assert.match(continuity, /data-continuity-confirm-close/);
+  assert.match(continuity, /ttResumeOpenPlanFromHome\(group\.id, openPlan\.id/);
+  assert.match(continuity, /ttCloseOpenPlanFromHome\(group\.id, openPlan\.id, nextPlanDate\)/);
+  assert.doesNotMatch(continuity, /if \(!confirm\(`Keep Lesson/);
+  const closeAction = functionBody("ttCloseOpenPlanFromHome", "ttResumeOpenPlanFromHome");
+  assert.match(closeAction, /plan\.status = "Incomplete"/);
+  assert.match(closeAction, /plan\.sessions\[day\]/);
+  assert.match(closeAction, /status: "Incomplete"/);
+  assert.match(closeAction, /if \(group\.activeLessonPlanId === plan\.id\) group\.activeLessonPlanId = ""/);
+  assert.match(closeAction, /saveState\(\)/);
+  const resumeAction = functionBody("ttResumeOpenPlanFromHome", "ttRecordPlanRevision");
+  assert.match(resumeAction, /const openedPlanId = plan\.combinedParticipation && plan\.hostPlanId \? plan\.hostPlanId : plan\.id/);
+  assert.match(resumeAction, /ttLesson\.savedPlanId !== openedPlanId/);
+});
+
+test("closing and resuming mutate only the selected fresh lesson record", () => {
+  const helperStart = source.indexOf("function ttContinuityPlan");
+  const helperEnd = source.indexOf("function ttRecordPlanRevision", helperStart);
+  assert.ok(helperStart >= 0 && helperEnd > helperStart);
+  const plan = {
+    id: "plan-current",
+    status: "In progress",
+    scheduledDate: "2026-08-25",
+    activeDay: "1",
+    sessions: { "1": { date: "2026-08-25", status: "In progress" } },
+    lessons: [{ id: "lesson-current", scheduledDate: "2026-08-25", evidence: ["preserve-me"] }]
+  };
+  const older = { id: "plan-older", status: "Complete", lessons: [{ id: "lesson-older" }] };
+  const group = { id: "group-current", activeLessonPlanId: plan.id, history: [older, plan] };
+  const calls = { save: 0, sync: 0, open: 0, lessonSave: 0, teach: 0 };
+  const context = {
+    appState: { selectedGroupId: "", groups: [group] },
+    ttPlanSessionDay: () => "1",
+    ttTodayKey: () => "2026-08-31",
+    ttNextPlanningDateKey: () => "2026-08-31",
+    ttEnsurePlannerDraft: () => (context.draft = { groupId: group.id }),
+    ttSyncCombinedLessonLinks: () => { calls.sync += 1; },
+    saveState: () => { calls.save += 1; },
+    ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; },
+    ttSaveCurrentLesson: () => { calls.lessonSave += 1; },
+    ttOpenTeachFlow: () => { calls.teach += 1; },
+    console,
+    Date
+  };
+  vm.createContext(context);
+  vm.runInContext(`var ttPlannerGroupId = ""; var ttPlannerDraft = {}; var ttLesson = null;\n${source.slice(helperStart, helperEnd)}`, context);
+
+  assert.equal(context.ttResumeOpenPlanFromHome(group.id, plan.id, "2026-08-31"), true);
+  assert.equal(plan.status, "In progress");
+  assert.equal(plan.sessions["1"].date, "2026-08-31");
+  assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
+  assert.deepEqual({ open: calls.open, lessonSave: calls.lessonSave, teach: calls.teach }, { open: 1, lessonSave: 1, teach: 1 });
+
+  assert.equal(context.ttCloseOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
+  assert.equal(plan.status, "Incomplete");
+  assert.equal(plan.sessions["1"].status, "Incomplete");
+  assert.equal(group.activeLessonPlanId, "");
+  assert.equal(context.draft.scheduledDate, "2026-09-01");
+  assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
+  assert.equal(older.status, "Complete");
+  assert.deepEqual({ save: calls.save, sync: calls.sync }, { save: 1, sync: 1 });
 });
 
 test("the one preview action starts the exact planned snapshot", () => {
