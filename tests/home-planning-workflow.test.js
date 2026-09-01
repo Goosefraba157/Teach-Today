@@ -72,8 +72,18 @@ test("Home continuity uses direct fresh-ID actions without the iPad system confi
   assert.match(closeAction, /if \(group\.activeLessonPlanId === plan\.id\) group\.activeLessonPlanId = ""/);
   assert.match(closeAction, /saveState\(\)/);
   const resumeAction = functionBody("ttResumeOpenPlanFromHome", "ttRecordPlanRevision");
-  assert.match(resumeAction, /const openedPlanId = plan\.combinedParticipation && plan\.hostPlanId \? plan\.hostPlanId : plan\.id/);
-  assert.match(resumeAction, /ttLesson\.savedPlanId !== openedPlanId/);
+  assert.match(resumeAction, /ttOpenPlanInApp\(plan\.id, group\.id\)/);
+  assert.match(resumeAction, /!opened \|\| !ttLesson\?\.savedPlanId/);
+});
+
+test("opening a lesson prefers its selected group and survives a stale combined host link", () => {
+  const opener = functionBody("ttOpenPlanInApp", "section2CardsForWord");
+  assert.match(opener, /preferredGroupId = ""/);
+  assert.match(opener, /visitedPlanIds = new Set\(\)/);
+  assert.match(opener, /if \(!found\?\.plan\)/);
+  assert.match(opener, /if \(openedHost\) return true/);
+  assert.match(opener, /participant lesson remains a complete, teachable snapshot/);
+  assert.match(opener, /return true/);
 });
 
 test("Home discards cached continuity messages when returning from Profile", () => {
@@ -109,7 +119,7 @@ test("closing and resuming mutate only the selected fresh lesson record", () => 
     ttEnsurePlannerDraft: () => (context.draft = { groupId: group.id }),
     ttSyncCombinedLessonLinks: () => { calls.sync += 1; },
     saveState: () => { calls.save += 1; },
-    ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; },
+    ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; return true; },
     ttSaveCurrentLesson: () => { calls.lessonSave += 1; },
     ttOpenTeachFlow: () => { calls.teach += 1; },
     console,

@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-01
 
+- Fixed the intermittent Stage `lesson could not be reopened` continuity failure. Lesson opening now prefers the exact selected group's stable plan ID instead of allowing a later global duplicate to win, detects combined-link loops, and safely opens an intact participant snapshot when its older host pointer no longer exists on that device. No lesson, student, charting, dictation, attendance, or observation evidence is rewritten.
+- Added continuity regression coverage, refreshed the hosted asset/offline cache version, and passed all 23 application safety tests plus JavaScript syntax and diff checks.
 - Changed the installed iPad Stage app to emergency local-only classroom mode after automatic Firebase reconciliation repeatedly reintroduced stale lesson continuity state during instruction. Stage now exits before every automatic Firebase read, restore, revision listener, reconciliation, or upload; browser/Safari cloud synchronization remains unchanged.
 - Kept Stage saves in its persistent WebKit device store and connected each normal save attempt to the verified native Files backup path. Manual backup also uses the current iPad payload instead of reading Firebase. Refreshed the public asset and service-worker cache versions and added a regression test for the Stage/browser boundary.
 - Compressed Student Profile's group/student picker into a small quick-profile menu. School Year remains the only dropdown; every instructional group now has a direct whole-group button and compact one-tap student chips so profile data begins near the top of the page.

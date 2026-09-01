@@ -4676,7 +4676,6 @@ function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
   const current = ttContinuityPlan(groupId, planId);
   if (!current) return false;
   const { group, plan, lesson } = current;
-  const openedPlanId = plan.combinedParticipation && plan.hostPlanId ? plan.hostPlanId : plan.id;
   const day = ttPlanSessionDay(plan, lesson);
   const date = sessionDate || plan.sessions?.[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
   appState.selectedGroupId = group.id;
@@ -4693,8 +4692,8 @@ function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
   plan.status = "In progress";
   lesson.scheduledDate = date;
   lesson.activeGroupDay = day;
-  ttOpenPlanInApp(plan.id);
-  if (!ttLesson || ttLesson.savedPlanId !== openedPlanId) return false;
+  const opened = ttOpenPlanInApp(plan.id, group.id);
+  if (!opened || !ttLesson?.savedPlanId) return false;
   ttSaveCurrentLesson({ render: false, starting: true, reason: "Continued teaching" });
   ttOpenTeachFlow({ transition: false, presentation: true });
   return true;
@@ -15394,18 +15393,33 @@ function ttRenderSavedLessons(group) {
   });
 }
 
-function ttOpenPlanInApp(planId) {
+function ttOpenPlanInApp(planId, preferredGroupId = "", visitedPlanIds = new Set()) {
   ttRememberScroll();
-  let found = null;
-  appState.groups.forEach((group) => {
-    const plan = (group.history || []).find((item) => item.id === planId);
-    if (plan) found = { group, plan };
-  });
-  if (found?.plan?.combinedParticipation && found.plan.hostPlanId) {
-    ttOpenPlanInApp(found.plan.hostPlanId);
-    return;
+  if (!planId || visitedPlanIds.has(planId)) return false;
+  visitedPlanIds.add(planId);
+  const preferredGroup = preferredGroupId
+    ? (appState.groups || []).find((group) => group.id === preferredGroupId)
+    : null;
+  let found = preferredGroup
+    ? { group: preferredGroup, plan: (preferredGroup.history || []).find((item) => item.id === planId) }
+    : null;
+  if (!found?.plan) {
+    for (const group of (appState.groups || [])) {
+      const plan = (group.history || []).find((item) => item.id === planId);
+      if (plan) {
+        found = { group, plan };
+        break;
+      }
+    }
   }
-  if (!found?.plan?.lessons?.[0]) return;
+  if (found?.plan?.combinedParticipation && found.plan.hostPlanId) {
+    const openedHost = ttOpenPlanInApp(found.plan.hostPlanId, found.plan.hostGroupId || "", visitedPlanIds);
+    if (openedHost) return true;
+    // A participant lesson remains a complete, teachable snapshot even when an
+    // older host pointer is unavailable on this device. Open it locally rather
+    // than stranding the teacher or changing any saved evidence.
+  }
+  if (!found?.plan?.lessons?.[0]) return false;
   appState.selectedGroupId = found.group.id;
   ttLesson = ttClone(found.plan.lessons[0]);
   ttLesson.savedPlanId = found.plan.id;
@@ -15416,6 +15430,7 @@ function ttOpenPlanInApp(planId) {
   history.replaceState(null, "", ttPlanUrl(found.plan.id));
   ttRender();
   ttRestoreScroll(found.plan.id);
+  return true;
 }
 
 function section2CardsForWord(word, substep) {
