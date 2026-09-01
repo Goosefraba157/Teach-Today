@@ -9,6 +9,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 - Added a private, additive-only recovery-preview builder for Teach Today backup and legacy-profile JSON files. It remaps regenerated legacy student IDs only when names produce one unique current match, proposes missing stable-ID records and map leaves, preserves and reports same-ID differences, and holds unknown groups separately.
 - Generated a local private preview from the retained Aug. 30/Aug. 31 sources: 293 additions proposed, 33 conflicts preserved, 36 unique student-ID mappings, and one unresolved demo group. Nothing was uploaded, merged, deleted, or overwritten; private source and preview files remain outside Git.
 - Added recovery and Student Profile regression coverage and passed the full planning, Dictation Book sourcing, Section 6–8 observation, native Stage, Student Profile, and sync-safety test suite.
+- Published the compact profile and additive-recovery preview tooling to GitHub `main` at core commit `4e50855`; Pages deployment 147 completed successfully and the public profile plus offline-cache version markers were verified.
 
 ## 2026-08-31
 
