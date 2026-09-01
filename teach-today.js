@@ -9516,8 +9516,9 @@ function ttSetExclusiveEncodingObservation(button, student, section, category, n
   if (!wasSaved) {
     ttSaveEncodingObservation(student, section, category, note, "");
     button.classList.add("saved", "encoding-selected-item");
+  } else {
+    saveState();
   }
-  saveState();
   return !wasSaved;
 }
 
@@ -9594,11 +9595,11 @@ function ttToggleEncodingObservation(button, student, section, category, note, i
   if (existingIndex >= 0) {
     group.encodingObservations.splice(existingIndex, 1);
     button.classList.remove("saved", "encoding-selected-item");
+    saveState();
   } else {
     ttSaveEncodingObservation(student, section, category, note, item);
     button.classList.add("saved", "encoding-selected-item");
   }
-  saveState();
   return existingIndex < 0;
 }
 
@@ -13547,6 +13548,45 @@ let ttConnectionConflict = false;
 let ttFirebaseSafetyDbPromise = null;
 let ttIndependentBackupBusy = false;
 let ttBackupToastTimer = null;
+let ttStageBackupTimer = null;
+let ttStageBackupPending = false;
+let ttStageBackupInFlight = null;
+
+function ttQueueStageNativeBackup(options = {}) {
+  if (!ttStageLocalOnlyMode()) return Promise.resolve();
+  ttStageBackupPending = true;
+  if (ttStageBackupTimer) {
+    clearTimeout(ttStageBackupTimer);
+    ttStageBackupTimer = null;
+  }
+  if (options.immediate) return ttFlushStageNativeBackup(options);
+  ttStageBackupTimer = setTimeout(() => {
+    ttStageBackupTimer = null;
+    ttFlushStageNativeBackup().catch((error) => {
+      ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+    });
+  }, 1200);
+  return Promise.resolve();
+}
+
+function ttFlushStageNativeBackup(options = {}) {
+  if (!ttStageLocalOnlyMode()) return Promise.resolve();
+  if (ttStageBackupTimer) {
+    clearTimeout(ttStageBackupTimer);
+    ttStageBackupTimer = null;
+  }
+  if (ttStageBackupInFlight) {
+    ttStageBackupPending = true;
+    return ttStageBackupInFlight;
+  }
+  if (!ttStageBackupPending && !options.force) return Promise.resolve();
+  ttStageBackupPending = false;
+  ttStageBackupInFlight = ttBackupCurrentStageState(options).finally(() => {
+    ttStageBackupInFlight = null;
+    if (ttStageBackupPending) ttQueueStageNativeBackup();
+  });
+  return ttStageBackupInFlight;
+}
 
 function ttFirebaseDeviceId() {
   let value = localStorage.getItem(ttFirebaseDeviceIdKey);
@@ -14885,9 +14925,9 @@ function ttQueueFirebaseSync() {
   if (ttStageLocalOnlyMode()) {
     localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
     ttUpdateHomeFirebaseStatus();
-    ttBackupCurrentStageState().catch((error) => {
-      ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
-    });
+    // The localStorage write has already completed. Coalesce the much heavier
+    // full-state Files backup so rapid classroom taps never block WebKit.
+    ttQueueStageNativeBackup();
     return;
   }
   if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {

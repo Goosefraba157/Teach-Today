@@ -2364,19 +2364,35 @@ function stopAudioRecording(save = true) {
   const chunks = activeAudioChunks;
   activeMediaRecorder = null;
   activeAudioChunks = [];
-  recorder.stream?.getTracks().forEach((t) => t.stop());
+  const stopTracks = () => recorder.stream?.getTracks().forEach((track) => track.stop());
   if (!save) {
     try { recorder.stop(); } catch (_) {}
+    stopTracks();
     return Promise.resolve(null);
   }
   return new Promise((resolve) => {
-    recorder.onstop = () => {
+    let settled = false;
+    let fallbackTimer = null;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      stopTracks();
       const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
       window._lastAudioBlob = blob;
       window._lastAudioUrl = URL.createObjectURL(blob);
       resolve(blob);
     };
-    try { recorder.stop(); } catch (_) { resolve(null); }
+    recorder.onstop = finish;
+    // WKWebView occasionally never sends MediaRecorder.onstop. Student
+    // switching and chart saving must not remain blocked behind that event.
+    fallbackTimer = setTimeout(finish, 2000);
+    try {
+      if (recorder.state === "inactive") finish();
+      else recorder.stop();
+    } catch (_) {
+      finish();
+    }
   });
 }
 

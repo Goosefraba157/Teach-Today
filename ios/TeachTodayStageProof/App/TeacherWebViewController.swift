@@ -26,6 +26,10 @@ final class TeacherWebViewController: UIViewController {
     private weak var popupController: PopupWebViewController?
     private var mirrorTimer: Timer?
     private var snapshotInFlight = false
+    private let backupQueue = DispatchQueue(
+        label: "io.goosefraba.TeachTodayStageProof.backup",
+        qos: .utility
+    )
 
     init() {
         let configuration = WKWebViewConfiguration()
@@ -200,6 +204,12 @@ final class TeacherWebViewController: UIViewController {
 
     private func saveBackup(_ command: [String: Any]) {
         let requestId = command["requestId"] as? String ?? ""
+        backupQueue.async { [weak self] in
+            self?.performBackup(command, requestId: requestId)
+        }
+    }
+
+    private func performBackup(_ command: [String: Any], requestId: String) {
         do {
             guard !requestId.isEmpty,
                   let content = command["content"] as? String,
@@ -272,7 +282,11 @@ final class TeacherWebViewController: UIViewController {
               let data = try? JSONSerialization.data(withJSONObject: detail),
               let json = String(data: data, encoding: .utf8)
         else { return }
-        webView.evaluateJavaScript("window.dispatchEvent(new CustomEvent('teachTodayNativeBackupResult', {detail: \(json)}));")
+        DispatchQueue.main.async { [weak self] in
+            self?.webView.evaluateJavaScript(
+                "window.dispatchEvent(new CustomEvent('teachTodayNativeBackupResult', {detail: \(json)}));"
+            )
+        }
     }
 }
 

@@ -18,7 +18,7 @@ test("the native Stage shell is local-only while browsers retain protected autom
 
   const queue = functionBody("ttQueueFirebaseSync", "ttSyncFirebaseAndLocalNow");
   assert.match(queue, /if \(ttStageLocalOnlyMode\(\)\)/);
-  assert.match(queue, /ttBackupCurrentStageState\(\)/);
+  assert.match(queue, /ttQueueStageNativeBackup\(\)/);
   assert.match(queue, /ttFirebaseTimer = setTimeout\(\(\) => ttFirebaseSyncWrite\(\), 1200\)/);
 
   const listener = functionBody("ttStartFirebaseRevisionListener", "ttFirebaseSignIn");
@@ -42,4 +42,27 @@ test("the native Stage shell is local-only while browsers retain protected autom
   assert.ok(preserveLocal >= 0, "sync must preserve a local Recovery snapshot first");
   assert.ok(archiveCloud > preserveLocal, "sync must archive the Firebase branch after local recovery");
   assert.ok(reconcile > archiveCloud, "sync must reconcile only after preserving both copies");
+});
+
+test("ordinary Stage saves coalesce native Files backups instead of blocking each tap", () => {
+  const queue = functionBody("ttQueueStageNativeBackup", "ttFlushStageNativeBackup");
+  assert.match(queue, /ttStageBackupPending = true/);
+  assert.match(queue, /setTimeout\(\(\) => \{/);
+  assert.match(queue, /1200/);
+
+  const flush = functionBody("ttFlushStageNativeBackup", "ttFirebaseDeviceId");
+  assert.match(flush, /if \(ttStageBackupInFlight\)/);
+  assert.match(flush, /ttBackupCurrentStageState\(options\)/);
+  assert.match(flush, /if \(ttStageBackupPending\) ttQueueStageNativeBackup\(\)/);
+});
+
+test("native Stage verifies Files backups away from the WebKit UI thread", () => {
+  const swift = fs.readFileSync(
+    path.join(__dirname, "..", "ios", "TeachTodayStageProof", "App", "TeacherWebViewController.swift"),
+    "utf8"
+  );
+  assert.match(swift, /private let backupQueue = DispatchQueue/);
+  assert.match(swift, /backupQueue\.async \{ \[weak self\] in/);
+  assert.match(swift, /private func performBackup/);
+  assert.match(swift, /DispatchQueue\.main\.async \{ \[weak self\] in/);
 });
