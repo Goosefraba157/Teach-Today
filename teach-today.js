@@ -4602,36 +4602,43 @@ function ttNextPlanningDateKey(value) {
   return [0, 5, 6].includes(todayDate.getDay()) ? ttNextInstructionDateKey(today) : today;
 }
 
-function ttContinuityPlan(groupId, planId) {
+function ttContinuityRecord(groupId, planId) {
   const group = (appState.groups || []).find((item) => item.id === groupId);
   const plan = (group?.history || []).find((item) => item.id === planId);
-  if (!group || !plan?.lessons?.[0] || plan.excludedFromLessonSequence || ["Complete", "Incomplete", "Test"].includes(plan.status)) {
-    return null;
-  }
+  if (!group || !plan?.lessons?.[0]) return null;
   return { group, plan, lesson: plan.lessons[0] };
 }
 
+function ttContinuityPlan(groupId, planId) {
+  const current = ttContinuityRecord(groupId, planId);
+  if (!current || current.plan.excludedFromLessonSequence || ["Complete", "Incomplete", "Test"].includes(current.plan.status)) return null;
+  return current;
+}
+
 function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
-  const current = ttContinuityPlan(groupId, planId);
-  if (!current) return false;
+  const current = ttContinuityRecord(groupId, planId);
+  if (!current || current.plan.excludedFromLessonSequence || current.plan.status === "Test") return false;
   const { group, plan, lesson } = current;
   const now = new Date().toISOString();
   const day = ttPlanSessionDay(plan, lesson);
-  plan.status = "Incomplete";
-  plan.closedAt = now;
-  plan.closedReason = "Teacher chose to start a new lesson";
   plan.sessions ||= {};
-  plan.sessions[day] = {
-    ...plan.sessions[day],
-    date: plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey(),
-    status: "Incomplete",
-    closedAt: now
-  };
+  const planDate = plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
+  if (!["Complete", "Incomplete"].includes(plan.status)) {
+    plan.status = "Incomplete";
+    plan.closedAt = now;
+    plan.closedReason = "Teacher chose to start a new lesson";
+    plan.sessions[day] = {
+      ...plan.sessions[day],
+      date: planDate,
+      status: "Incomplete",
+      closedAt: now
+    };
+    ttSyncCombinedLessonLinks(plan, group);
+  }
   if (group.activeLessonPlanId === plan.id) group.activeLessonPlanId = "";
   ttPlannerGroupId = group.id;
   ttPlannerDraft = {};
-  ttEnsurePlannerDraft(group).scheduledDate = nextDate || ttNextPlanningDateKey(plan.sessions[day].date);
-  ttSyncCombinedLessonLinks(plan, group);
+  ttEnsurePlannerDraft(group).scheduledDate = nextDate || ttNextPlanningDateKey(planDate);
   saveState();
   return true;
 }
