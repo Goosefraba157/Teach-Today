@@ -6063,10 +6063,17 @@ body.presentation-mode #ttEditSection2Cards {
   font-weight: 800;
 }
 
-.data-actions button:first-child {
-  border-color: var(--teal);
-  background: var(--teal);
+.data-actions #ttIndependentBackupNow {
+  border-color: #15803d;
+  background: #15803d;
   color: #fff;
+  box-shadow: 0 3px 0 #14532d, 0 6px 14px rgba(21, 128, 61, 0.22);
+}
+
+.data-actions #ttIndependentBackupNow:hover,
+.data-actions #ttIndependentBackupNow:focus-visible {
+  border-color: #166534;
+  background: #166534;
 }
 
 .firebase-backup-timeline {
