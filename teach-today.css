@@ -11196,6 +11196,12 @@ body.home-mode .home-screen {
 .continuity-actions { display: flex; align-items: end; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .continuity-actions button { min-height: 39px; }
 .continuity-actions .continuity-primary { background: #0f766e; border-color: #0f766e; color: white; font-weight: 900; }
+.continuity-actions .continuity-edit {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 900;
+}
 .continuity-actions [data-continuity="complete-day1"] {
   border-color: #16a34a;
   background: #dcfce7;
