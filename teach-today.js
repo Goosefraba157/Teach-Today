@@ -4716,10 +4716,10 @@ function ttRecordPlanRevision(plan, lesson, reason = "Saved changes") {
   if (!plan || !lesson) return;
   const snapshot = ttClone(lesson);
   delete snapshot.savedPlanId;
-  const fingerprint = JSON.stringify(snapshot);
+  const fingerprint = teachTodayStateFingerprint(snapshot);
   if (plan.lastRevisionFingerprint === fingerprint) return;
   plan.revisions ||= [];
-  plan.revisions.push({ id: `revision-${Date.now()}`, savedAt: new Date().toISOString(), reason, lesson: snapshot });
+  plan.revisions.push({ id: `revision-${Date.now()}`, savedAt: new Date().toISOString(), reason });
   plan.revisions = plan.revisions.slice(-10);
   plan.lastRevisionFingerprint = fingerprint;
 }

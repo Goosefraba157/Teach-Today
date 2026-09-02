@@ -345,6 +345,40 @@ function applyStudentPrivacySchema(state) {
   return state;
 }
 
+function teachTodayStateFingerprint(value) {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}-${text.length}`;
+}
+
+function compactLessonRevisionStorage(state) {
+  (state.groups || []).forEach((group) => {
+    (group.history || []).forEach((plan) => {
+      // Revision lesson snapshots were never read or restorable; the current
+      // lesson and every student record live elsewhere. Keep the visible audit
+      // metadata without duplicating nearly a megabyte of full lesson JSON.
+      plan.revisions = (plan.revisions || []).slice(-10).map((revision) => ({
+        id: revision.id,
+        savedAt: revision.savedAt,
+        reason: revision.reason
+      }));
+      const lesson = plan.lessons?.[0];
+      if (lesson) {
+        const snapshot = JSON.parse(JSON.stringify(lesson));
+        delete snapshot.savedPlanId;
+        plan.lastRevisionFingerprint = teachTodayStateFingerprint(snapshot);
+      } else {
+        delete plan.lastRevisionFingerprint;
+      }
+    });
+  });
+  return state;
+}
+
 function upgradeTeachTodayState(data) {
   const upgraded = data && typeof data === "object" ? data : {};
   upgraded.masterRecords ||= [];
@@ -367,7 +401,7 @@ function upgradeTeachTodayState(data) {
   }
   mergeSampleBlueGroup(upgraded);
   upgraded.rosterVersion = 3;
-  return applyStudentPrivacySchema(upgraded);
+  return compactLessonRevisionStorage(applyStudentPrivacySchema(upgraded));
 }
 
 function mergeSampleBlueGroup(state) {
@@ -453,6 +487,7 @@ function loadState() {
 
 function saveState() {
   applyStudentPrivacySchema(appState);
+  compactLessonRevisionStorage(appState);
   appState.lastSavedAt = new Date().toISOString();
   localStorage.setItem(storageKey, JSON.stringify(appState));
   teachTodayStateChannel?.postMessage({
