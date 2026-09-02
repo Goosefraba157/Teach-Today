@@ -4145,6 +4145,34 @@ function ttRenderDataCenter() {
   const secureLegacyButton = ttById("ttSecureLegacyStudentData");
   const recoveryButton = ttById("ttDownloadRecovery");
   const recoveryBundleButton = ttById("ttDownloadRecoveryBundle");
+  const stageParkedDataActions = [
+    "ttBackupData",
+    "ttDownloadRecovery",
+    "ttDownloadRecoveryBundle",
+    "ttConnectCloudSync",
+    "ttSyncCloudNow",
+    "ttDriveConnect",
+    "ttFirebaseLoadProtected",
+    "ttFirebaseSyncNow",
+    "ttRestoreData",
+    "ttImportHistoricalWrs",
+    "ttExportCsv",
+    "ttFirebaseTimelineRefresh"
+  ];
+  stageParkedDataActions.forEach((id) => {
+    const button = ttById(id);
+    if (!button) return;
+    const parked = ttStageLocalOnlyMode();
+    button.disabled = parked;
+    button.classList.toggle("stage-parked-control", parked);
+    if (parked) {
+      button.setAttribute("aria-disabled", "true");
+      button.title = "Not needed during normal Stage use";
+    } else {
+      button.removeAttribute("aria-disabled");
+      if (button.title === "Not needed during normal Stage use") button.removeAttribute("title");
+    }
+  });
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
   if (lastBackupEl) {
     lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";

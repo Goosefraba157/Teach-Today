@@ -6089,6 +6089,17 @@ body.presentation-mode #ttEditSection2Cards {
   filter: brightness(0.94);
 }
 
+.data-actions button.stage-parked-control:disabled,
+.firebase-backup-timeline button.stage-parked-control:disabled {
+  border-color: #cbd5e1;
+  background: #e5e7eb;
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.78;
+}
+
 .firebase-backup-timeline {
   margin-top: 10px;
   border-top: 1px solid #99f6e4;
