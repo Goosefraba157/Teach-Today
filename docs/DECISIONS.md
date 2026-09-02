@@ -128,3 +128,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 - **Decision:** Private files may be supplied as chat attachments or placed temporarily in `private-input/`, but must not be committed.
 - **Decision:** Imports must minimize fields, preview mappings/counts, avoid exposing identifiers in logs, and preserve source data until verification succeeds.
+## Drive backup authentication boundary (2026-09-01)
+
+- Native Stage remains local-only for application authority: no automatic Firestore read, restore, listener, reconciliation, or write may be reintroduced.
+- Optional off-device backup JSON is uploaded directly to the Google Drive API with the narrow `drive.file` scope, into files the app creates under `My Drive/Teach Today Backups`.
+- The existing Firebase Auth Google provider may broker the interactive Google consent and temporary Drive access token; that authentication event does not authorize Stage application-data synchronization with Firestore.
+- A Drive failure must never prevent or invalidate the verified native iPad Files backup. The interface must report iPad and Drive verification separately.

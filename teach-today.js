@@ -4122,7 +4122,9 @@ function ttRenderDataCenter() {
   const lastCloudSync = localStorage.getItem("teachToday.lastCloudSyncAt");
   const cloudStatus = localStorage.getItem("teachToday.cloudSyncStatus") || "Choose a local backup folder to save a file on this Mac.";
   const cloudFolder = localStorage.getItem("teachToday.cloudSyncFolderName");
-  const driveStatus = localStorage.getItem("teachToday.driveStatus") || "Connect Google Drive to upload audio into your Drive.";
+  const driveStatus = localStorage.getItem("teachToday.driveStatus") || (ttStageLocalOnlyMode()
+    ? "Google Drive backup is not connected. Tap Connect Google Drive backup to authorize it."
+    : "Connect Google Drive to upload audio into your Drive.");
   const lastFirebaseSync = localStorage.getItem("teachToday.lastFirebaseSyncAt");
   const firebaseStatus = localStorage.getItem("teachToday.firebaseSyncStatus") || "Firebase internet sync is ready.";
   const independentStatus = localStorage.getItem("teachToday.independentBackupStatus.v1") || "Automatic iPad Files and Google Drive backups are ready for setup.";
@@ -4150,11 +4152,13 @@ function ttRenderDataCenter() {
   }
   if (lastDriveBackupEl) lastDriveBackupEl.textContent = lastDriveBackup ? formatDateTime(new Date(lastDriveBackup)) : "Not connected";
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
-  if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced";
+  if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = ttStageLocalOnlyMode()
+    ? "Paused in Stage"
+    : (lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced");
   if (countsEl) countsEl.textContent = `${records} / ${lessons}${dictation || encoding ? ` / ${dictation + encoding}` : ""}`;
   if (cloudStatusEl) cloudStatusEl.textContent = `${cloudFolder ? `${cloudFolder}: ` : ""}${cloudStatus} Local browser storage is still saved first.`;
   if (driveStatusEl) driveStatusEl.textContent = `${driveStatus} Local browser storage is still saved first.`;
-  if (firebaseStatusEl) firebaseStatusEl.textContent = `${firebaseStatus} Local browser storage is still saved first.`;
+  if (firebaseStatusEl) firebaseStatusEl.textContent = `${ttStageLocalOnlyMode() ? ttStageLocalOnlyStatus() : firebaseStatus} Local browser storage is still saved first.`;
   if (independentStatusEl) independentStatusEl.textContent = independentStatus;
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
   if (recoveryButton) recoveryButton.hidden = !ttRecoveryIndex().length;
