@@ -35,6 +35,7 @@ final class TeacherWebViewController: UIViewController {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
+        configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         configuration.userContentController.addUserScript(WKUserScript(
             source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1';",
             injectionTime: .atDocumentStart,
