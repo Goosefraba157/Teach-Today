@@ -3701,7 +3701,7 @@ function ttBackupCurrentStageState(options = {}) {
   }, {
     force: Boolean(options.force),
     manual: Boolean(options.manual),
-    nativeOnly: Boolean(options.nativeOnly)
+    nativeOnly: true
   });
 }
 
@@ -14062,6 +14062,7 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
       const verifiedAt = new Date().toISOString();
       localStorage.setItem("teachToday.lastIndependentNativeRevision", revisionId);
       localStorage.setItem("teachToday.lastIndependentNativeAt", verifiedAt);
+      localStorage.setItem("teachToday.lastIndependentNativeDate", names.daily.slice("teach-today-daily-".length, -".json".length));
       localStorage.setItem("teachToday.lastIndependentNativeDailyPath", event.detail.dailyPath || `Backups/Daily/${names.daily}`);
       resolve(event.detail);
     }
@@ -14079,7 +14080,11 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
 async function ttEnsureIndependentBackups(envelope, options = {}) {
   if (ttIndependentBackupInFlight) await ttIndependentBackupInFlight;
   const revisionId = envelope?.revisionId || ttFirebasePayloadSignature(envelope?.payload || ttFirebasePayload());
-  const needsNative = ttIsNativeIpadShell() && (options.force || localStorage.getItem("teachToday.lastIndependentNativeRevision") !== revisionId);
+  const needsNative = ttIsNativeIpadShell() && (
+    options.force
+    || localStorage.getItem("teachToday.lastIndependentNativeDate") !== ttBackupDateKey()
+    || localStorage.getItem("teachToday.lastIndependentNativeRevision") !== revisionId
+  );
   const driveEnabled = localStorage.getItem(ttIndependentBackupEnabledKey) === "true";
   const needsDrive = !options.nativeOnly && driveEnabled && (options.force || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId);
   if (!needsNative && !needsDrive) return;
