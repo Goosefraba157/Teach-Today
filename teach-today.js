@@ -9037,6 +9037,10 @@ function ttCompleteLessonWrapUp(options = {}) {
   plan.lastStudentDataAt = new Date().toISOString();
   ttSyncCombinedLessonLinks(plan, group);
   saveState();
+  ttArchiveCurrentLessonPlanPdf("Completed").catch((error) => {
+    console.warn("Teach Today could not archive the completed lesson PDF:", error);
+    ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
+  });
   ttUpdateSaveStatus(plan);
   ttRenderSavedLessons(group);
   ttRenderWrapUpPanel(group, ttLesson);
@@ -12791,6 +12795,10 @@ function ttStartCurrentLesson() {
   }
   ttLesson.scheduledDate ||= ttTodayKey();
   ttSaveCurrentLesson({ render: false, starting: true, reason: "Started teaching" });
+  ttArchiveCurrentLessonPlanPdf("Planned").catch((error) => {
+    console.warn("Teach Today could not archive the planned lesson PDF:", error);
+    ttShowBackupToast(`Planned lesson PDF needs attention. ${error.message || error}`, "warning");
+  });
   ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
   ttOpenTeachFlow({
     forceLaunch: true,
@@ -12988,6 +12996,141 @@ async function ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate,
   return pdfDoc.save();
 }
 
+function ttDocumentBytesBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function ttDocumentSha256Hex(bytes) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function ttLessonPlanArchiveFileName(group, lesson, plan, stage) {
+  const date = dateKey(lesson?.scheduledDate || plan?.scheduledDate || new Date());
+  const lessonNumber = lesson?.lessonSequence || plan?.lessonNumber || group?.lessonSerial || "Lesson";
+  const safeGroup = String(group?.name || "Group")
+    .replace(/[^a-z0-9 ._()-]+/gi, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "Group";
+  return `${date} - ${safeGroup} - Lesson ${lessonNumber} - ${stage.toLowerCase()}.pdf`;
+}
+
+function ttNativeDocumentAvailable() {
+  return document.documentElement.dataset.teachTodayNativeDocuments === "1"
+    && Boolean(window.webkit?.messageHandlers?.teachTodayDocument);
+}
+
+function ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage) {
+  return new Promise((resolve, reject) => {
+    if (!ttNativeDocumentAvailable()) {
+      reject(new Error("Run the latest Stage build from Xcode to enable automatic lesson-plan files."));
+      return;
+    }
+    const requestId = crypto.randomUUID?.() || `document-${Date.now()}`;
+    const timeout = setTimeout(() => {
+      window.removeEventListener("teachTodayNativeDocumentResult", onResult);
+      reject(new Error("The iPad lesson-plan file did not finish saving."));
+    }, 20000);
+    function onResult(event) {
+      if (event.detail?.requestId !== requestId) return;
+      clearTimeout(timeout);
+      window.removeEventListener("teachTodayNativeDocumentResult", onResult);
+      if (!event.detail.ok) {
+        reject(new Error(event.detail.error || "The iPad lesson-plan file failed."));
+        return;
+      }
+      resolve(event.detail);
+    }
+    window.addEventListener("teachTodayNativeDocumentResult", onResult);
+    window.webkit.messageHandlers.teachTodayDocument.postMessage({
+      requestId,
+      contentBase64: ttDocumentBytesBase64(bytes),
+      sha256: digest,
+      fileName,
+      stage
+    });
+  });
+}
+
+async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage) {
+  if (!ttDriveAccessToken) throw new Error("Google Drive is not connected in this app session.");
+  const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
+  const lessonPlans = await ttDriveNamedFolder("Lesson Plans", root);
+  const stageFolder = await ttDriveNamedFolder(stage, lessonPlans);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  return ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
+}
+
+async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
+  if (!ttIsNativeIpadShell() || !ttLesson) return;
+  const group = ttActiveGroup();
+  const plan = ttCurrentPlan();
+  if (!group || !plan) return;
+  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
+  const savedDate = plan.savedAt ? new Date(plan.savedAt) : new Date();
+  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate, { fillable: true });
+  const digest = await ttDocumentSha256Hex(pdfBytes);
+  const fileName = ttLessonPlanArchiveFileName(group, ttLesson, plan, stage);
+  const results = { savedAt: new Date().toISOString(), fileName, localPath: "", driveFileId: "" };
+  const failures = [];
+
+  try {
+    const local = await ttSaveNativeLessonPlanPdf(pdfBytes, digest, fileName, stage);
+    results.localPath = local.path || `Lesson Plans/${stage}/${fileName}`;
+  } catch (error) {
+    failures.push(`iPad Files: ${error.message}`);
+  }
+  if (localStorage.getItem(ttIndependentBackupEnabledKey) === "true") {
+    if (!ttDriveAccessToken) {
+      failures.push("Google Drive: reconnect Drive backup in Records for this app session; the iPad copy is safe.");
+    } else {
+      try {
+        const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage);
+        results.driveFileId = drive.id || "";
+        results.driveWebViewLink = drive.webViewLink || "";
+      } catch (error) {
+        failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
+      }
+    }
+  }
+
+  plan.lessonPlanArchives ||= {};
+  plan.lessonPlanArchives[stage.toLowerCase()] = results;
+  saveState();
+  const destination = [results.localPath ? "iPad Files" : "", results.driveFileId ? "Google Drive" : ""].filter(Boolean).join(" and ");
+  if (destination) ttShowBackupToast(`${stage} fillable lesson plan saved to ${destination}.`, failures.length ? "warning" : "success");
+  if (failures.length) {
+    ttShowBackupToast(`${stage} lesson plan needs attention. ${failures.join(" ")}`, "warning");
+    console.warn("Teach Today lesson-plan archive:", failures.join(" "));
+  }
+}
+
+function ttWilsonCompletedLessonNotes(group, lesson, plan) {
+  if (plan?.status !== "Complete") return "";
+  const wrapUp = plan.wrapUp || {};
+  const attendance = Object.entries(wrapUp.attendance || {});
+  const present = attendance.filter(([, value]) => value === true).map(([name]) => name);
+  const absent = attendance.filter(([, value]) => value === false).map(([name]) => name);
+  const evidence = ttTodaysLessonData(group, lesson);
+  const observedItems = uniqueWords(evidence.dictation.concat(evidence.encoding)
+    .map((record) => record.item || record.note || record.category)
+    .filter(Boolean))
+    .slice(0, 12);
+  return [
+    wrapUp.note ? `Teacher notes: ${wrapUp.note}` : "",
+    attendance.length ? `Attendance: ${present.length}/${attendance.length} present${absent.length ? `; absent: ${absent.join(", ")}` : ""}` : "",
+    `Saved evidence: ${wrapUp.chartRecordCount ?? evidence.chart.length} chart record(s); ${(wrapUp.dictationMissCount ?? evidence.dictation.length) + (wrapUp.encodingMarkCount ?? evidence.encoding.length)} Section 6-8 mark(s).`,
+    observedItems.length ? `Observed/missed items: ${observedItems.join(", ")}` : "",
+    wrapUp.recommendation ? `Next step: ${wrapUp.recommendation}` : ""
+  ].filter(Boolean).join("\n");
+}
+
 function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
   const date = savedDate.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
   const sounds = soundsForSubstep(skill.id);
@@ -13072,7 +13215,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "10 LRF Sources": "",
     "10 LRF Title": "",
     "10 LRF Pages": "",
-    "10 LRF Notes": ""
+    "10 LRF Notes": ttWilsonCompletedLessonNotes(group, lesson, plan)
   };
   const checks = [
     "Introduction Check",
@@ -14168,14 +14311,14 @@ async function ttDriveNamedFolder(name, parentId = "") {
   return folderId;
 }
 
-async function ttDriveUpsertBackup(folderId, name, blob) {
+async function ttDriveUpsertBackup(folderId, name, blob, mimeType = "application/json") {
   const query = [`name='${ttDriveQueryValue(name)}'`, `'${ttDriveQueryValue(folderId)}' in parents`, "trashed=false"].join(" and ");
   const found = await ttDriveRequest(`files?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id,name,size)&pageSize=1`);
   const existingId = found.files?.[0]?.id || "";
   const file = await ttDriveUploadMultipart({
     name,
     parents: existingId ? undefined : [folderId],
-    mimeType: "application/json"
+    mimeType
   }, blob, existingId);
   if (Number(file.size) !== blob.size) throw new Error(`Drive verification failed for ${name}.`);
   return file;

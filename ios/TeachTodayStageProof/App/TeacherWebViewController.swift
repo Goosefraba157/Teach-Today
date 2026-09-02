@@ -18,6 +18,7 @@ final class TeacherWebViewController: UIViewController {
     private let messageName = "teachTodayStage"
     private let projectionMessageName = "teachTodayProjectionMode"
     private let backupMessageName = "teachTodayBackup"
+    private let documentMessageName = "teachTodayDocument"
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
     private let errorView = UIView()
@@ -37,7 +38,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1';",
+            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1'; document.documentElement.dataset.teachTodayNativeDocuments = '1';",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -46,6 +47,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: messageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: projectionMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: backupMessageName)
+        configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: documentMessageName)
     }
 
     @available(*, unavailable)
@@ -58,6 +60,7 @@ final class TeacherWebViewController: UIViewController {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: messageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: projectionMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: backupMessageName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: documentMessageName)
     }
 
     override func viewDidLoad() {
@@ -270,6 +273,59 @@ final class TeacherWebViewController: UIViewController {
         }
     }
 
+    private func saveDocument(_ command: [String: Any]) {
+        let requestId = command["requestId"] as? String ?? ""
+        backupQueue.async { [weak self] in
+            self?.performDocumentSave(command, requestId: requestId)
+        }
+    }
+
+    private func performDocumentSave(_ command: [String: Any], requestId: String) {
+        do {
+            guard !requestId.isEmpty,
+                  let contentBase64 = command["contentBase64"] as? String,
+                  let expectedHash = command["sha256"] as? String,
+                  let fileName = command["fileName"] as? String,
+                  let stage = command["stage"] as? String,
+                  ["Planned", "Completed"].contains(stage),
+                  Self.isAllowedDocumentName(fileName),
+                  let data = Data(base64Encoded: contentBase64),
+                  !data.isEmpty,
+                  data.count <= 15_000_000
+            else { throw BackupError.invalidRequest }
+
+            let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            guard digest == expectedHash.lowercased() else { throw BackupError.hashMismatch }
+
+            let documents = try FileManager.default.url(
+                for: .documentDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            let folder = documents
+                .appendingPathComponent("Lesson Plans", isDirectory: true)
+                .appendingPathComponent(stage, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let fileURL = folder.appendingPathComponent(fileName)
+            try data.write(to: fileURL, options: .atomic)
+            guard try Data(contentsOf: fileURL) == data else { throw BackupError.verificationFailed }
+
+            dispatchEvent("teachTodayNativeDocumentResult", detail: [
+                "requestId": requestId,
+                "ok": true,
+                "bytes": data.count,
+                "path": "Lesson Plans/\(stage)/\(fileName)"
+            ])
+        } catch {
+            dispatchEvent("teachTodayNativeDocumentResult", detail: [
+                "requestId": requestId,
+                "ok": false,
+                "error": error.localizedDescription
+            ])
+        }
+    }
+
     private static func isAllowedBackupName(_ name: String, prefix: String) -> Bool {
         guard name.hasPrefix(prefix), name.hasSuffix(".json"), name.count == prefix.count + 10 + 5 else { return false }
         let datePart = name.dropFirst(prefix.count).dropLast(5)
@@ -278,14 +334,24 @@ final class TeacherWebViewController: UIViewController {
         }
     }
 
+    private static func isAllowedDocumentName(_ name: String) -> Bool {
+        guard name.hasSuffix(".pdf"), name.count <= 180 else { return false }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " ._-()"))
+        return name.unicodeScalars.allSatisfy { allowed.contains($0) }
+    }
+
     private func dispatchBackupResult(_ detail: [String: Any]) {
+        dispatchEvent("teachTodayNativeBackupResult", detail: detail)
+    }
+
+    private func dispatchEvent(_ name: String, detail: [String: Any]) {
         guard JSONSerialization.isValidJSONObject(detail),
               let data = try? JSONSerialization.data(withJSONObject: detail),
               let json = String(data: data, encoding: .utf8)
         else { return }
         DispatchQueue.main.async { [weak self] in
             self?.webView.evaluateJavaScript(
-                "window.dispatchEvent(new CustomEvent('teachTodayNativeBackupResult', {detail: \(json)}));"
+                "window.dispatchEvent(new CustomEvent('\(name)', {detail: \(json)}));"
             )
         }
     }
@@ -348,6 +414,12 @@ extension TeacherWebViewController: WKScriptMessageHandler {
         if message.name == backupMessageName,
            let command = message.body as? [String: Any] {
             saveBackup(command)
+            return
+        }
+
+        if message.name == documentMessageName,
+           let command = message.body as? [String: Any] {
+            saveDocument(command)
         }
     }
 }

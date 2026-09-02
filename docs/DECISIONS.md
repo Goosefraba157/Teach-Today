@@ -134,3 +134,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 - Optional off-device backup JSON is uploaded directly to the Google Drive API with the narrow `drive.file` scope, into files the app creates under `My Drive/Teach Today Backups`.
 - The existing Firebase Auth Google provider may broker the interactive Google consent and temporary Drive access token; that authentication event does not authorize Stage application-data synchronization with Firestore.
 - A Drive failure must never prevent or invalidate the verified native iPad Files backup. The interface must report iPad and Drive verification separately.
+
+## Lesson-plan record archive (2026-09-01)
+
+- Each newly taught lesson has two stable fillable-PDF records: Planned at Start Teaching and Completed at Finish Lesson. Repeated lifecycle taps update the matching record rather than creating duplicate files.
+- The native iPad Files copy is authoritative and must be written and hash-verified independently of Google Drive. Drive receives the same bytes only while its temporary authorization is active, and a Drive failure may not interrupt teaching or invalidate the local document.
+- Planned and Completed documents live in separate folders under `Lesson Plans` in both the Stage Files container and `My Drive/Teach Today Backups`. The completed document may summarize saved lesson evidence but must not mutate student records or lesson history merely to render the PDF.
