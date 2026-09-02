@@ -287,7 +287,7 @@ final class TeacherWebViewController: UIViewController {
                   let expectedHash = command["sha256"] as? String,
                   let fileName = command["fileName"] as? String,
                   let stage = command["stage"] as? String,
-                  ["Planned", "Completed"].contains(stage),
+                  ["Planned", "Completed", "Downloaded"].contains(stage),
                   Self.isAllowedDocumentName(fileName),
                   let data = Data(base64Encoded: contentBase64),
                   !data.isEmpty,

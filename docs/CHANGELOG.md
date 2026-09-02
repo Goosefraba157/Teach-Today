@@ -2,6 +2,11 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-02
+
+- Expanded only the Completed fillable lesson-plan PDF's page-three Additional Notes area with a readable student-by-student copy of detailed Section 4 charting and Section 6–8 evidence. Pages 1–2 and Planned PDFs remain unchanged, and generating the document remains read-only with respect to saved student evidence.
+- Made the Fillable export viewer's Download action archive the displayed PDF into separate `Lesson Plans/Downloaded` folders in iPad Files and, while Drive is authorized, Google Drive. Those destinations are attempted independently; the ordinary browser download remains the fallback when neither Stage archive destination succeeds.
+
 ## 2026-09-01
 
 - Added automatic fillable lesson-plan record archiving. Start Teaching saves a Planned PDF and Finish Lesson saves a separate Completed PDF locally and, while Drive authorization is active, to matching Google Drive folders. The completed template includes wrap-up notes, attendance, evidence counts, observed/missed items, and the next recommendation; files are hash-verified locally, use stable names, and never block teaching when Drive is unavailable.

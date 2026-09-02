@@ -12900,7 +12900,7 @@ function ttEnsureCurrentLessonSavedForData() {
   return ttMarkCurrentPlanHasData(ttLesson);
 }
 
-function ttOpenExportViewer({ url, title, filename, contentType = "pdf" }) {
+function ttOpenExportViewer({ url, title, filename, contentType = "pdf", bytes = null, archiveDownload = false }) {
   const overlay = ttById("ttExportViewer");
   const frame = ttById("ttExportViewerFrame");
   const titleEl = ttById("ttExportViewerTitle");
@@ -12908,6 +12908,8 @@ function ttOpenExportViewer({ url, title, filename, contentType = "pdf" }) {
   overlay._exportBlobUrl = url;
   overlay._exportFilename = filename;
   overlay._exportContentType = contentType;
+  overlay._exportBytes = bytes;
+  overlay._archiveDownload = archiveDownload;
   titleEl.textContent = title;
   frame.src = url;
   overlay.removeAttribute("hidden");
@@ -12925,6 +12927,8 @@ function ttCloseExportViewer() {
     URL.revokeObjectURL(overlay._exportBlobUrl);
     overlay._exportBlobUrl = null;
   }
+  overlay._exportBytes = null;
+  overlay._archiveDownload = false;
 }
 
 function ttOpenPdfLessonPlan() {
@@ -12971,7 +12975,9 @@ async function ttOpenWilsonLessonPlanPdf({ fillable = false } = {}) {
       url,
       title: group?.name ? `${group.name} — ${label}` : label,
       filename,
-      contentType: "pdf"
+      contentType: "pdf",
+      bytes: pdfBytes,
+      archiveDownload: fillable
     });
   } catch (error) {
     console.error(error);
@@ -13067,6 +13073,34 @@ async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage) {
   return ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
 }
 
+async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
+  const stage = "Downloaded";
+  const digest = await ttDocumentSha256Hex(bytes);
+  const saved = [];
+  const failures = [];
+  try {
+    await ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage);
+    saved.push("iPad Files");
+  } catch (error) {
+    failures.push(`iPad Files: ${error.message}`);
+  }
+  if (localStorage.getItem(ttIndependentBackupEnabledKey) === "true") {
+    if (!ttDriveAccessToken) {
+      failures.push("Google Drive: reconnect Drive backup in Records for this app session.");
+    } else {
+      try {
+        await ttSaveDriveLessonPlanPdf(bytes, fileName, stage);
+        saved.push("Google Drive");
+      } catch (error) {
+        failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
+      }
+    }
+  }
+  if (saved.length) ttShowBackupToast(`Downloaded fillable lesson plan saved to ${saved.join(" and ")}.`, failures.length ? "warning" : "success");
+  if (failures.length) ttShowBackupToast(`Downloaded lesson plan needs attention. ${failures.join(" ")}`, "warning");
+  if (!saved.length) throw new Error(failures.join(" ") || "No lesson-plan destination was available.");
+}
+
 async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
   if (!ttIsNativeIpadShell() || !ttLesson) return;
   const group = ttActiveGroup();
@@ -13111,7 +13145,7 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
   }
 }
 
-function ttWilsonCompletedLessonNotes(group, lesson, plan) {
+function ttWilsonCompletedLessonSummary(group, lesson, plan) {
   if (plan?.status !== "Complete") return "";
   const wrapUp = plan.wrapUp || {};
   const attendance = Object.entries(wrapUp.attendance || {});
@@ -13129,6 +13163,70 @@ function ttWilsonCompletedLessonNotes(group, lesson, plan) {
     observedItems.length ? `Observed/missed items: ${observedItems.join(", ")}` : "",
     wrapUp.recommendation ? `Next step: ${wrapUp.recommendation}` : ""
   ].filter(Boolean).join("\n");
+}
+
+function ttWilsonCompletedLessonNotes(group, lesson, plan) {
+  if (plan?.status !== "Complete") return "";
+  const evidence = ttTodaysLessonData(group, lesson);
+  const studentName = (record) => record?.student || "Group";
+  const students = uniqueWords(ttTeachingStudents(group, lesson?.scheduledDate).concat(
+    evidence.chart.concat(evidence.dictation, evidence.encoding).map(studentName)
+  ));
+  const chartLines = students.flatMap((student) => evidence.chart
+    .filter((record) => studentName(record) === student)
+    .map((record) => {
+      const half = titleCase(record.chartHalf || "chart");
+      const status = record.automaticity ? "Auto" : record.accuracy ? "Acc" : "Strug";
+      const wordRecords = (record.wordRecords || []).filter((item) => !record.chartHalf || item.section === record.chartHalf);
+      const correctWords = wordRecords.filter((item) => item.correct).map((item) => item.word).filter(Boolean);
+      const missedWords = wordRecords.filter((item) => !item.correct).map((item) => {
+        if (!item.word) return "";
+        return item.said ? `${item.word} -> ${item.said}` : item.word;
+      }).filter(Boolean);
+      const fallbackMisses = (record.wrongWords || []).filter(Boolean);
+      const misses = missedWords.length ? missedWords : fallbackMisses;
+      return [
+        `${student} - CHARTING: Reader ${record.reader || lesson?.reader || "--"}, p. ${record.wordlistPage || lesson?.wordlistPageNumber || "--"}, ${half}; ${record.correct ?? "--"}/${record.total || 15}, ${record.seconds || "--"} sec, ${record.wcpm || wcpmForRecord(record) || "--"} wcpm, ${status}.`,
+        correctWords.length ? `  Correct: ${correctWords.join(", ")}.` : "",
+        `  Missed: ${misses.length ? misses.join(", ") : "none"}.`,
+        record.notes ? `  Chart notes: ${record.notes}` : "",
+        record.recommendation ? `  Recommendation: ${record.recommendation}` : ""
+      ].filter(Boolean).join("\n");
+    }));
+
+  const sectionEightDictationKeys = new Set(evidence.dictation.map((record) => [
+    studentName(record),
+    String(record.category || "").toLowerCase(),
+    String(record.item || record.word || "").toLowerCase()
+  ].join("|")));
+  const observationRecords = evidence.encoding.filter((record) => {
+    if (record.section !== "section8" || record.note !== "encoding miss") return true;
+    return !sectionEightDictationKeys.has([
+      studentName(record),
+      String(record.category || "").toLowerCase(),
+      String(record.item || "").toLowerCase()
+    ].join("|"));
+  }).concat(evidence.dictation.map((record) => ({ ...record, section: "section8", note: "encoding miss" })));
+  const observationLines = students.flatMap((student) => ["section6", "section7", "section8"].map((section) => {
+    const records = observationRecords.filter((record) => studentName(record) === student && record.section === section);
+    if (!records.length) return "";
+    const details = [];
+    const seen = new Set();
+    records.forEach((record) => {
+      const code = record.observationCode || (record.note === "encoding miss" ? "Miss" : record.note) || "Observation";
+      const target = record.item || record.category || "general";
+      const category = record.item && record.category ? ` (${record.category})` : "";
+      const detail = `${target}${category}: ${code}`;
+      const key = detail.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        details.push(detail);
+      }
+    });
+    return `${student} - SECTION ${section.replace("section", "")}: ${details.join("; ")}.`;
+  }).filter(Boolean));
+
+  return [ttWilsonCompletedLessonSummary(group, lesson, plan)].concat(chartLines, observationLines).filter(Boolean).join("\n\n");
 }
 
 function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
@@ -13215,7 +13313,8 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "10 LRF Sources": "",
     "10 LRF Title": "",
     "10 LRF Pages": "",
-    "10 LRF Notes": ttWilsonCompletedLessonNotes(group, lesson, plan)
+    "10 LRF Notes": ttWilsonCompletedLessonSummary(group, lesson, plan),
+    "Additional Notes": ttWilsonCompletedLessonNotes(group, lesson, plan)
   };
   const checks = [
     "Introduction Check",
@@ -13266,7 +13365,11 @@ function ttSetPdfTextField(form, name, value) {
   try {
     const field = form.getTextField(name);
     field.setText(ttPdfFieldText(value));
-    if (String(value || "").length > 120 || String(value || "").includes("\n")) field.setFontSize(7.5);
+    const length = String(value || "").length;
+    if (name === "Additional Notes") {
+      field.enableMultiline();
+      field.setFontSize(length > 5200 ? 6 : length > 3400 ? 6.75 : length > 1800 ? 7.5 : 8.25);
+    } else if (length > 120 || String(value || "").includes("\n")) field.setFontSize(7.5);
     else field.setFontSize(9);
   } catch {
     /* Template field may not exist in older copies. */
@@ -18445,9 +18548,30 @@ function ttBind() {
     const frame = ttById("ttExportViewerFrame");
     try { frame?.contentWindow?.print(); } catch (_) {}
   });
-  ttById("ttExportViewerDownload")?.addEventListener("click", () => {
+  ttById("ttExportViewerDownload")?.addEventListener("click", async () => {
     const overlay = ttById("ttExportViewer");
     if (!overlay?._exportBlobUrl) return;
+    const button = ttById("ttExportViewerDownload");
+    if (overlay._archiveDownload && overlay._exportBytes && ttIsNativeIpadShell()) {
+      const priorLabel = button?.textContent || "Download";
+      let archived = false;
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Saving...";
+      }
+      try {
+        await ttSaveDownloadedLessonPlanPdf(overlay._exportBytes, overlay._exportFilename || "Teach Today Fillable Lesson Plan.pdf");
+        archived = true;
+      } catch (error) {
+        console.warn("Teach Today could not save the downloaded lesson plan:", error);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = priorLabel;
+        }
+      }
+      if (archived) return;
+    }
     const a = document.createElement("a");
     a.href = overlay._exportBlobUrl;
     a.download = overlay._exportFilename || "export";
