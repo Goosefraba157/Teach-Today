@@ -3698,7 +3698,11 @@ function ttBackupCurrentStageState(options = {}) {
   return ttEnsureIndependentBackups({
     payload,
     revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
-  }, { force: Boolean(options.force), manual: Boolean(options.manual) });
+  }, {
+    force: Boolean(options.force),
+    manual: Boolean(options.manual),
+    nativeOnly: Boolean(options.nativeOnly)
+  });
 }
 
 function ttSetNativeProjectionMode(mode = "stage") {
@@ -4110,7 +4114,9 @@ function ttFillSectionRefs(lesson) {
 
 function ttRenderDataCenter() {
   const lastSave = appState.lastSavedAt ? new Date(appState.lastSavedAt) : null;
-  const lastBackup = localStorage.getItem("teachToday.lastBackupAt");
+  const lastManualBackup = localStorage.getItem("teachToday.lastBackupAt");
+  const lastNativeBackup = localStorage.getItem("teachToday.lastIndependentNativeAt");
+  const lastBackup = ttStageLocalOnlyMode() && lastNativeBackup ? lastNativeBackup : lastManualBackup;
   const lastCloudSync = localStorage.getItem("teachToday.lastCloudSyncAt");
   const cloudStatus = localStorage.getItem("teachToday.cloudSyncStatus") || "Choose a local backup folder to save a file on this Mac.";
   const cloudFolder = localStorage.getItem("teachToday.cloudSyncFolderName");
@@ -4135,7 +4141,10 @@ function ttRenderDataCenter() {
   const recoveryButton = ttById("ttDownloadRecovery");
   const recoveryBundleButton = ttById("ttDownloadRecoveryBundle");
   if (lastSaveEl) lastSaveEl.textContent = lastSave ? formatDateTime(lastSave) : "Not saved yet";
-  if (lastBackupEl) lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
+  if (lastBackupEl) {
+    lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
+    if (ttStageLocalOnlyMode() && lastBackupEl.nextElementSibling) lastBackupEl.nextElementSibling.textContent = "Last verified iPad backup";
+  }
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
   if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced";
   if (countsEl) countsEl.textContent = `${records} / ${lessons}${dictation || encoding ? ` / ${dictation + encoding}` : ""}`;
@@ -13552,6 +13561,7 @@ let ttWorkOffline = localStorage.getItem("teachToday.workOffline") === "true";
 let ttConnectionConflict = false;
 let ttFirebaseSafetyDbPromise = null;
 let ttIndependentBackupBusy = false;
+let ttIndependentBackupInFlight = null;
 let ttBackupToastTimer = null;
 let ttStageBackupTimer = null;
 let ttStageBackupPending = false;
@@ -14049,8 +14059,10 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
         reject(new Error(event.detail.error || "The iPad Files backup failed."));
         return;
       }
+      const verifiedAt = new Date().toISOString();
       localStorage.setItem("teachToday.lastIndependentNativeRevision", revisionId);
-      localStorage.setItem("teachToday.lastIndependentNativeAt", new Date().toISOString());
+      localStorage.setItem("teachToday.lastIndependentNativeAt", verifiedAt);
+      localStorage.setItem("teachToday.lastIndependentNativeDailyPath", event.detail.dailyPath || `Backups/Daily/${names.daily}`);
       resolve(event.detail);
     }
     window.addEventListener("teachTodayNativeBackupResult", onResult);
@@ -14065,14 +14077,14 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
 }
 
 async function ttEnsureIndependentBackups(envelope, options = {}) {
-  if (ttIndependentBackupBusy) return;
+  if (ttIndependentBackupInFlight) await ttIndependentBackupInFlight;
   const revisionId = envelope?.revisionId || ttFirebasePayloadSignature(envelope?.payload || ttFirebasePayload());
   const needsNative = ttIsNativeIpadShell() && (options.force || localStorage.getItem("teachToday.lastIndependentNativeRevision") !== revisionId);
   const driveEnabled = localStorage.getItem(ttIndependentBackupEnabledKey) === "true";
-  const needsDrive = driveEnabled && (options.force || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId);
+  const needsDrive = !options.nativeOnly && driveEnabled && (options.force || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId);
   if (!needsNative && !needsDrive) return;
   ttIndependentBackupBusy = true;
-  try {
+  ttIndependentBackupInFlight = (async () => {
     const now = new Date();
     const names = {
       daily: `teach-today-daily-${ttBackupDateKey(now)}.json`,
@@ -14096,9 +14108,17 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       ttSetIndependentBackupStatus(`Backup needs attention. ${failures.join(" ")}`, { notify: true });
     } else {
       const destinations = [needsNative ? "iPad Files" : "", needsDrive ? "Google Drive" : ""].filter(Boolean).join(" and ");
-      ttSetIndependentBackupStatus(`Automatic backup verified in ${destinations}.`, { success: true, notify: options.manual });
+      const verifiedAt = new Date();
+      const nativeDetail = needsNative
+        ? ` Daily file verified ${formatDateTime(verifiedAt)} (${names.daily}).`
+        : "";
+      ttSetIndependentBackupStatus(`Backup verified in ${destinations}.${nativeDetail}`, { success: true, notify: options.manual });
     }
+  })();
+  try {
+    await ttIndependentBackupInFlight;
   } finally {
+    ttIndependentBackupInFlight = null;
     ttIndependentBackupBusy = false;
   }
 }
@@ -14109,6 +14129,12 @@ async function ttRunIndependentBackup(options = {}) {
   if (ttFirebaseUser && !ttStageLocalOnlyMode()) envelope = await ttFirebaseReadEnvelope();
   if (!envelope) envelope = { payload: ttFirebasePayload(), revisionId: "" };
   await ttEnsureIndependentBackups(envelope, { force: true, manual: true, requestDrivePermission: options.connectDrive });
+}
+
+async function ttRunNativeBackupNow() {
+  if (!ttStageLocalOnlyMode()) return ttRunIndependentBackup();
+  ttSetIndependentBackupStatus("Saving a complete Stage backup to iPad Files…");
+  await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true });
 }
 
 async function ttDriveCreateMetadata(metadata) {
@@ -18380,7 +18406,7 @@ function ttBind() {
       ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true });
     }
   });
-  ttById("ttIndependentBackupNow")?.addEventListener("click", () => ttRunIndependentBackup({ connectDrive: true }).catch((error) => {
+  ttById("ttIndependentBackupNow")?.addEventListener("click", () => ttRunNativeBackupNow().catch((error) => {
     ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true });
   }));
   ttById("ttFirebaseLoadProtected")?.addEventListener("click", () => ttLoadProtectedFirebaseCopy());
