@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-01
 
+- Stabilized the native iPad Stage save path against the real 2.6 MB classroom checkpoint. Stage charting no longer starts MediaRecorder or speech recognition, ordinary student/observation taps retain immediate WebKit persistence without preparing a full Files backup, and verified native Files checkpoints now run at startup, lesson exit/Home, and app backgrounding.
+- Refreshed the hosted/offline cache marker to `20260901-stage-stability-1`. JavaScript syntax, diff checks, 25 relevant regression tests, a Stage-specific lifecycle contract test, and a generic physical-iOS Xcode build pass. The protected pre-change checkpoint remains in the Git-ignored private recovery folder.
 - Repaired the iPad Stage lesson controls that could freeze after the first Section 4 student or Section 6–8 observation tap. Ordinary saves still commit the immediate lesson/student state to the persistent WebKit store, while the native Files backup is now coalesced after a short delay and parsed, hashed, written, and verified off the WebKit UI thread.
 - Added a bounded Section 4 audio-stop fallback so switching students cannot wait forever when WKWebView omits `MediaRecorder.onstop`, and removed the duplicate Section 6–8 save performed by wrapper actions. A private 2.5 MB native daily checkpoint was copied from the connected iPad before the update; no student data was committed or rewritten.
 - Added interaction-resilience regression coverage. All 27 tests, JavaScript syntax, repeated local Section 4 student switching, rapid Section 6–8 taps, and a physical-iPad Xcode build pass.

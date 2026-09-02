@@ -5698,6 +5698,11 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   ttMountSharedDataPanels("ttHomeDataPanels");
   ttRenderHomeScreen();
   ttRestoreHomeScroll(groupId);
+  // Returning Home is the classroom lesson-exit checkpoint. The action state
+  // is already durable locally; now create the independent verified Files copy.
+  ttQueueStageNativeBackup({ immediate: true }).catch((error) => {
+    ttSetIndependentBackupStatus(`iPad backup needs attention. ${error.message}`, { notify: true });
+  });
 }
 
 function ttResetHomeContinuityTransientUi() {
@@ -14925,9 +14930,10 @@ function ttQueueFirebaseSync() {
   if (ttStageLocalOnlyMode()) {
     localStorage.setItem("teachToday.firebaseSyncStatus", ttStageLocalOnlyStatus());
     ttUpdateHomeFirebaseStatus();
-    // The localStorage write has already completed. Coalesce the much heavier
-    // full-state Files backup so rapid classroom taps never block WebKit.
-    ttQueueStageNativeBackup();
+    // saveState() has already persisted the classroom action. A complete Files
+    // checkpoint is intentionally reserved for lesson/app lifecycle boundaries;
+    // preparing a multi-megabyte backup after ordinary taps can stall WKWebView.
+    if (document.visibilityState === "hidden") ttQueueStageNativeBackup();
     return;
   }
   if (ttFirebaseUser && !ttHasUnsyncedFirebaseChanges()) {
@@ -17998,6 +18004,12 @@ function ttResetWhiteboardWordAndCards() {
 
 function ttBind() {
   let scrollSaveTimer = null;
+  if (ttStageLocalOnlyMode()) {
+    document.querySelectorAll(".mic-toggle").forEach((button) => {
+      button.hidden = true;
+      button.setAttribute("aria-hidden", "true");
+    });
+  }
   ttById("ttGroup").addEventListener("change", (event) => {
     ttRememberScroll();
     if (appStateSwitchGroup(event.target.value)) return;
@@ -18689,10 +18701,16 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && ttChartCard && !ttSection4FinalizePromise) {
     saveLiveRecordIfNeeded(ttChartCard);
   }
+  if (document.visibilityState === "hidden" && ttStageLocalOnlyMode()) {
+    ttQueueStageNativeBackup({ immediate: true }).catch(() => {});
+  }
 });
 window.addEventListener("resize", ttQueueStudentDisplayFollowSync, { passive: true });
 ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
+if (ttStageLocalOnlyMode()) {
+  setTimeout(() => ttQueueStageNativeBackup({ immediate: true }).catch(() => {}), 5000);
+}
 const ttAttendanceEditDate = new URLSearchParams(location.search).get("editAttendance");
 if (ttAttendanceEditDate) requestAnimationFrame(() => ttOpenAttendanceSessionModal(ttAttendanceEditDate, { history: true }));
 ttHandleDeveloperRoute();

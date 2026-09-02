@@ -2050,7 +2050,8 @@ async function startLiveTimer(card, withMic) {
   card.dataset.startElapsed = String(startElapsed);
   card.classList.add("is-timing");
   card.querySelector(".start-timer").classList.add("active");
-  card.querySelector(".mic-toggle").classList.toggle("active", withMic);
+  const stageLocalMode = document.documentElement.dataset.teachTodayNative === "ipad";
+  card.querySelector(".mic-toggle").classList.toggle("active", !stageLocalMode && withMic);
   setRecordingStatus(card, "Timing", "live");
   const timer = setInterval(() => {
     const elapsed = startElapsed + Math.round((Date.now() - startedAt) / 1000);
@@ -2059,9 +2060,13 @@ async function startLiveTimer(card, withMic) {
     updateLiveScore(card);
   }, 250);
   activeTimers.set(card.dataset.lessonId, timer);
-  // Await mic permission before starting speech recognition — avoids conflict
-  await startAudioRecording(card);
-  startSpeechCapture(card); // always on — word-matching engine
+  // The native classroom shell deliberately avoids MediaRecorder and speech
+  // recognition. Neither is required for charting, and WKWebView audio cleanup
+  // must never delay student switching or saving.
+  if (!stageLocalMode) {
+    await startAudioRecording(card);
+    startSpeechCapture(card); // browser-only word-matching engine
+  }
 }
 
 function stopLiveTimer(card, stopMic = true) {
