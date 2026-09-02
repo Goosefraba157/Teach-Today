@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260901-daily-backup-primary-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260901-drive-backup-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -226,6 +226,7 @@
         <div class="data-status-grid">
           <article><strong id="ttLastInternalSave">--</strong><span>Last internal save</span></article>
           <article><strong id="ttLastBackup">No backup yet</strong><span>Last backup file</span></article>
+          <article><strong id="ttLastDriveBackup">Not connected</strong><span>Last verified Drive backup</span></article>
           <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
           <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
           <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
@@ -237,7 +238,7 @@
           <button id="ttConnectCloudSync" type="button">Choose local folder</button>
           <button id="ttSyncCloudNow" type="button">Save local file now</button>
           <button id="ttIndependentBackupNow" type="button">Back up today</button>
-          <button id="ttDriveBackupConnect" type="button">Connect Drive backups</button>
+          <button id="ttDriveBackupConnect" type="button">Connect Google Drive backup</button>
           <button id="ttDriveConnect" type="button">Google Drive audio</button>
           <button id="ttFirebaseLoadProtected" type="button">Load protected Firebase copy</button>
           <button id="ttFirebaseSyncNow" type="button">Upload / merge with Firebase now</button>
@@ -1148,11 +1149,11 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=20260901-daily-backup-1"></script>
+    <script src="app.js?v=20260901-drive-backup-1"></script>
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260901-daily-backup-1"></script>
+    <script src="teach-today.js?v=20260901-drive-backup-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>

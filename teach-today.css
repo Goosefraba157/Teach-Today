@@ -6023,7 +6023,7 @@ body.presentation-mode #ttEditSection2Cards {
 
 .data-status-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
   gap: 8px;
   margin: 12px 0;
 }

@@ -3695,13 +3695,14 @@ function ttStageLocalOnlyStatus() {
 function ttBackupCurrentStageState(options = {}) {
   if (!ttStageLocalOnlyMode()) return Promise.resolve();
   const payload = ttFirebasePayload();
+  const driveReady = localStorage.getItem(ttIndependentBackupEnabledKey) === "true" && Boolean(ttDriveAccessToken);
   return ttEnsureIndependentBackups({
     payload,
     revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
   }, {
     force: Boolean(options.force),
     manual: Boolean(options.manual),
-    nativeOnly: true
+    nativeOnly: !driveReady
   });
 }
 
@@ -4116,6 +4117,7 @@ function ttRenderDataCenter() {
   const lastSave = appState.lastSavedAt ? new Date(appState.lastSavedAt) : null;
   const lastManualBackup = localStorage.getItem("teachToday.lastBackupAt");
   const lastNativeBackup = localStorage.getItem("teachToday.lastIndependentNativeAt");
+  const lastDriveBackup = localStorage.getItem("teachToday.lastIndependentDriveAt");
   const lastBackup = ttStageLocalOnlyMode() && lastNativeBackup ? lastNativeBackup : lastManualBackup;
   const lastCloudSync = localStorage.getItem("teachToday.lastCloudSyncAt");
   const cloudStatus = localStorage.getItem("teachToday.cloudSyncStatus") || "Choose a local backup folder to save a file on this Mac.";
@@ -4130,6 +4132,7 @@ function ttRenderDataCenter() {
   const encoding = (appState.groups || []).reduce((sum, group) => sum + (group.encodingObservations?.length || 0), 0);
   const lastSaveEl = ttById("ttLastInternalSave");
   const lastBackupEl = ttById("ttLastBackup");
+  const lastDriveBackupEl = ttById("ttLastDriveBackup");
   const lastCloudSyncEl = ttById("ttLastCloudSync");
   const lastFirebaseSyncEl = ttById("ttLastFirebaseSync");
   const countsEl = ttById("ttDataCounts");
@@ -4145,6 +4148,7 @@ function ttRenderDataCenter() {
     lastBackupEl.textContent = lastBackup ? formatDateTime(new Date(lastBackup)) : "No backup yet";
     if (ttStageLocalOnlyMode() && lastBackupEl.nextElementSibling) lastBackupEl.nextElementSibling.textContent = "Last verified iPad backup";
   }
+  if (lastDriveBackupEl) lastDriveBackupEl.textContent = lastDriveBackup ? formatDateTime(new Date(lastDriveBackup)) : "Not connected";
   if (lastCloudSyncEl) lastCloudSyncEl.textContent = lastCloudSync ? formatDateTime(new Date(lastCloudSync)) : "Not connected";
   if (lastFirebaseSyncEl) lastFirebaseSyncEl.textContent = lastFirebaseSync ? formatDateTime(new Date(lastFirebaseSync)) : "Not synced";
   if (countsEl) countsEl.textContent = `${records} / ${lessons}${dictation || encoding ? ` / ${dictation + encoding}` : ""}`;
@@ -13924,10 +13928,10 @@ function ttFriendlyDriveError(err) {
     return `Google Drive API is not enabled yet. Enable it here: ${apiEnableUrl}`;
   }
   if (message.includes("PERMISSION_DENIED")) {
-    return "Google Drive permission was denied. Open Records and connect Google Drive audio again.";
+    return "Google Drive permission was denied. Open Records and connect Google Drive backup again.";
   }
   if (message.includes("401") || message.includes("invalid_token")) {
-    return "Google Drive permission expired. Open Records and connect Google Drive audio again.";
+    return "Google Drive permission expired. Open Records and connect Google Drive backup again.";
   }
   return message.length > 180 ? `${message.slice(0, 180)}...` : message;
 }
@@ -13941,7 +13945,7 @@ async function ttEnsureDrivePermission() {
   const credential = GoogleAuthProvider.credentialFromResult(result);
   ttDriveAccessToken = credential?.accessToken || "";
   if (ttDriveAccessToken) {
-    localStorage.setItem("teachToday.driveStatus", "Google Drive audio is connected.");
+    localStorage.setItem("teachToday.driveStatus", "Google Drive is connected for backups and audio.");
     ttRenderDataCenter();
   }
   return Boolean(ttDriveAccessToken);
@@ -14033,6 +14037,7 @@ async function ttSaveIndependentDriveBackup(content, names, revisionId) {
   await ttDriveUpsertBackup(weekly, names.weekly, blob);
   localStorage.setItem("teachToday.lastIndependentDriveRevision", revisionId);
   localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
+  localStorage.setItem("teachToday.lastIndependentDriveDate", names.daily.slice("teach-today-daily-".length, -".json".length));
 }
 
 function ttNativeBackupAvailable() {
@@ -14086,7 +14091,11 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
     || localStorage.getItem("teachToday.lastIndependentNativeRevision") !== revisionId
   );
   const driveEnabled = localStorage.getItem(ttIndependentBackupEnabledKey) === "true";
-  const needsDrive = !options.nativeOnly && driveEnabled && (options.force || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId);
+  const needsDrive = !options.nativeOnly && driveEnabled && (
+    options.force
+    || localStorage.getItem("teachToday.lastIndependentDriveDate") !== ttBackupDateKey()
+    || localStorage.getItem("teachToday.lastIndependentDriveRevision") !== revisionId
+  );
   if (!needsNative && !needsDrive) return;
   ttIndependentBackupBusy = true;
   ttIndependentBackupInFlight = (async () => {
@@ -14104,13 +14113,22 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       if (!ttDriveAccessToken && !options.requestDrivePermission) {
         failures.push("Google Drive needs permission. Open Records and tap Connect Drive backups.");
       } else {
-        if (options.requestDrivePermission) await ttEnsureDrivePermission();
-        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+        try {
+          if (options.requestDrivePermission) await ttEnsureDrivePermission();
+          if (!ttDriveAccessToken) throw new Error("Google Drive permission was not granted.");
+          jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+        } catch (error) {
+          failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
+        }
       }
     }
     await Promise.all(jobs);
     if (failures.length) {
-      ttSetIndependentBackupStatus(`Backup needs attention. ${failures.join(" ")}`, { notify: true });
+      const nativeFailed = failures.some((failure) => failure.startsWith("iPad Files:"));
+      const safeLocalPrefix = needsNative && !nativeFailed
+        ? `iPad backup verified (${names.daily}). `
+        : "";
+      ttSetIndependentBackupStatus(`${safeLocalPrefix}Backup needs attention. ${failures.join(" ")}`, { notify: true });
     } else {
       const destinations = [needsNative ? "iPad Files" : "", needsDrive ? "Google Drive" : ""].filter(Boolean).join(" and ");
       const verifiedAt = new Date();
