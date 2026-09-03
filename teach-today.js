@@ -5441,11 +5441,25 @@ function ttAttendanceCentralPlanForDay(group, dayKey, session = ttAttendanceSess
 
 function ttAttendanceCentralEvidence(group, plan, dayKey) {
   const planId = plan?.id || "";
-  const lessonId = plan?.lessons?.[0]?.id || plan?.lessons?.[0]?.lessonId || "";
-  const onDay = (record) => !dayKey || [record.date, record.dailyKey, dateKey(record.savedAt || record.createdAt || record.timestamp)].filter(Boolean).includes(dayKey);
-  const belongs = (record) => (planId && record.planId === planId) || (lessonId && record.lessonId === lessonId) || (!planId && onDay(record));
-  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record) && onDay(record));
-  const sections = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record) && onDay(record));
+  const lesson = plan?.lessons?.[0] || {};
+  const lessonId = lesson.id || lesson.lessonId || "";
+  const onDay = (record) => !dayKey || [record.date, record.displayDate, record.dailyKey, record.savedAt, record.createdAt, record.timestamp]
+    .some((value) => value && dateKey(value) === dayKey);
+  const exactLesson = (record) => Boolean((planId && record.planId === planId) || (lessonId && record.lessonId === lessonId));
+  const compatibleDayFallback = (record) => onDay(record)
+    && (!lesson.substep || !record.substep || record.substep === lesson.substep)
+    && (!lesson.wordlistPageNumber || !record.wordlistPage || String(record.wordlistPage) === String(lesson.wordlistPageNumber));
+  const belongs = (record) => exactLesson(record) || compatibleDayFallback(record);
+  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record));
+  const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record));
+  const dictation = (group.dictationMisses || []).filter(belongs).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));
+  const seen = new Set();
+  const sections = encoding.concat(dictation).filter((record) => {
+    const key = [record.section, record.studentId || record.student, record.category, record.item || record.word, record.observationCode || record.note].join("|").toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   return { charts, sections };
 }
 
@@ -5491,17 +5505,40 @@ function ttAttendanceCentralMonthHtml(monthDate, groups, compact = false) {
 
 function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
   const { charts, sections } = ttAttendanceCentralEvidence(group, plan, dayKey);
-  const chartHtml = charts.length ? charts.map((record) => {
+  const lesson = plan?.lessons?.[0] || {};
+  const skill = scopeMap.find((item) => item.id === lesson.substep);
+  const rankedCharts = charts.slice().sort((a, b) => Number(b.correct || 0) - Number(a.correct || 0) || Number(a.seconds || 9999) - Number(b.seconds || 9999) || String(a.student || "").localeCompare(String(b.student || "")));
+  const page = rankedCharts[0]?.wordlistPage || lesson.wordlistPageNumber || lesson.wordlistPage || "—";
+  const concept = rankedCharts[0]?.concept || skill?.title || lesson.wordlistMeta || lesson.substep || "";
+  const chartRows = rankedCharts.map((record) => {
     const total = Number(record.total || 15), correct = Number(record.correct || 0);
     const level = correct / Math.max(1, total) >= .9 ? "good" : correct / Math.max(1, total) >= .8 ? "watch" : "needs";
-    return `<span class="ac-evidence ${level}">${escapeHtml(record.student || "Student")}: ${correct}/${total}${record.seconds ? ` · ${escapeHtml(record.seconds)}s` : ""}</span>`;
-  }).join("") : `<span class="ac-empty">No charting saved</span>`;
-  const sectionHtml = sections.length ? sections.map((record) => {
-    const code = String(record.observationCode || record.status || "Saved");
-    const level = /auto|correct|accur/i.test(code) ? "good" : /strug|miss|error/i.test(code) ? "needs" : "watch";
-    return `<span class="ac-evidence ${level}">S${escapeHtml(String(record.section).replace("section", ""))} · ${escapeHtml(record.student || "Student")}: ${escapeHtml(code)}${record.item ? ` (${escapeHtml(record.item)})` : ""}</span>`;
-  }).join("") : `<span class="ac-empty">No Sections 6–8 data saved</span>`;
-  return `<div class="ac-evidence-row">${chartHtml}</div><div class="ac-evidence-row">${sectionHtml}</div>`;
+    const misses = (record.wordRecords || []).filter((item) => !item.correct && item.word).map((item) => item.said ? `${item.word}→${item.said}` : item.word);
+    const fallback = (record.wrongWords || []).filter(Boolean);
+    return `<li class="${level}"><strong>${escapeHtml(record.student || "Student")}</strong><b>${correct}/${total}</b><span>${escapeHtml(record.seconds || "—")} sec</span><em>Missed: ${escapeHtml((misses.length ? misses : fallback).join(", ") || "none")}</em></li>`;
+  }).join("");
+  const missCounts = new Map();
+  rankedCharts.forEach((record) => {
+    const words = (record.wordRecords || []).filter((item) => !item.correct && item.word).map((item) => item.word).concat(record.wordRecords?.length ? [] : (record.wrongWords || []));
+    words.forEach((word) => { const clean = String(word || "").trim(); if (clean) missCounts.set(clean, (missCounts.get(clean) || 0) + 1); });
+  });
+  const rankedMisses = [...missCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([word, count]) => `${word}${count > 1 ? ` ×${count}` : ""}`);
+  const chartHtml = rankedCharts.length
+    ? `<section class="ac-performance"><header><strong>Charting · Reader ${escapeHtml(rankedCharts[0]?.reader || lesson.reader || "—")}, p. ${escapeHtml(page)}</strong>${concept ? `<span>${escapeHtml(concept)}</span>` : ""}</header><ol>${chartRows}</ol>${rankedMisses.length ? `<p><strong>Most missed:</strong> ${escapeHtml(rankedMisses.join(" · "))}</p>` : ""}</section>`
+    : `<p class="ac-empty">No charting saved for this lesson.</p>`;
+  const missedSections = sections.filter((record) => record.item || record.word || record.observationKind === "missed-item" || record.note === "encoding miss" || /miss/i.test(record.observationCode || ""));
+  const sectionLabels = {
+    section6: "Section 6 sounds missed",
+    section7: "Section 7 words missed",
+    section8: "Section 8 dictation missed"
+  };
+  const sectionHtml = ["section6", "section7", "section8"].map((section) => {
+    const records = missedSections.filter((record) => record.section === section);
+    if (!records.length) return "";
+    const items = records.map((record) => `${record.student || "Student"}: ${record.item || record.word || record.category || "miss"}${section === "section8" && record.category ? ` (${record.category})` : ""}`);
+    return `<p><strong>${sectionLabels[section]}:</strong> ${escapeHtml(items.join(" · "))}</p>`;
+  }).filter(Boolean).join("");
+  return `${chartHtml}${sectionHtml ? `<section class="ac-section-misses">${sectionHtml}</section>` : `<p class="ac-empty">No Section 6–8 misses saved for this lesson.</p>`}`;
 }
 
 function ttAttendanceCentralDayHtml(day, groups) {

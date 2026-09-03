@@ -4,6 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-02
 
+- Fixed Attendance Central's read-only evidence lookup so a stable lesson match is sufficient for multi-day lessons instead of being incorrectly rejected by the evidence timestamp. Added compact charting details ranked by score/time, individual seconds and misses, frequency-ranked group misses, Reader/page/concept context, and missed-only Section 6–8 summaries with duplicate Section 8 records removed.
 - Ordered Attendance Central Day cards by the numeric Group number, followed by other named groups alphabetically and Demo/Sample groups last; this presentation-only change does not rewrite schedules or records.
 - Added Attendance Central on Home with school-year Year, Month, and Day views; weekday group/time schedules; attendance states; linked lesson/charting details; color-coded charting and Sections 6–8 summaries; present/absent lists; group-day notes; and read-only lesson/completed-PDF actions. Corrections and no-session reasons reuse the existing audited attendance ledger, so complete iPad and Drive backups include them without a parallel store or Firebase dependency.
 - Organized new lesson-plan archives by group in both iPad Files and Google Drive: each sanitized group folder contains its own Planned, Completed, and Downloaded subfolders. Added a stable short lesson identity to every archived filename so two distinct lessons with the same visible name, date, or number remain separate; existing archive files are preserved without migration or deletion.
