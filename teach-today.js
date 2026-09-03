@@ -5503,6 +5503,30 @@ function ttAttendanceCentralMonthHtml(monthDate, groups, compact = false) {
   return `<article class="ac-month${compact ? " compact" : ""}"><button type="button" class="ac-month-title" data-ac-month="${year}-${String(month + 1).padStart(2, "0")}">${monthDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</button><div class="ac-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div class="ac-month-grid">${blanks}${days}</div></article>`;
 }
 
+function ttAttendanceCentralStudentStyle(student) {
+  const palette = [
+    ["#5b21b6", "#f3e8ff"], ["#3730a3", "#e0e7ff"], ["#9d174d", "#fce7f3"],
+    ["#155e75", "#cffafe"], ["#7e22ce", "#fae8ff"], ["#1e3a8a", "#dbeafe"],
+    ["#6b21a8", "#f5d0fe"], ["#334155", "#e2e8f0"]
+  ];
+  const hash = [...String(student || "Student")].reduce((sum, char) => ((sum * 31) + char.charCodeAt(0)) >>> 0, 0);
+  const [color, background] = palette[hash % palette.length];
+  return `--ac-student-color:${color};--ac-student-bg:${background}`;
+}
+
+function ttAttendanceCentralStudentNameHtml(student) {
+  return `<strong class="ac-student-name" style="${ttAttendanceCentralStudentStyle(student)}">${escapeHtml(student || "Student")}</strong>`;
+}
+
+function ttAttendanceCentralChartMissesHtml(record) {
+  const wordRecords = (record.wordRecords || []).filter((item) => !item.correct && item.word);
+  const misses = wordRecords.length
+    ? wordRecords.map((item) => ({ word: item.word, said: item.said || "" }))
+    : (record.wrongWords || []).filter(Boolean).map((word) => ({ word, said: "" }));
+  if (!misses.length) return `<span class="ac-miss-label">Missed:</span> <span class="ac-no-misses">none</span>`;
+  return `<span class="ac-miss-label">Missed:</span> ${misses.map((item) => `<span class="ac-correct-word">${escapeHtml(item.word)}</span>${item.said ? `<span class="ac-miss-arrow">→</span><span class="ac-student-response">${escapeHtml(item.said)}</span>` : ""}`).join(`<span class="ac-miss-comma">, </span>`)}`;
+}
+
 function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
   const { charts, sections } = ttAttendanceCentralEvidence(group, plan, dayKey);
   const lesson = plan?.lessons?.[0] || {};
@@ -5513,9 +5537,9 @@ function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
   const chartRows = rankedCharts.map((record) => {
     const total = Number(record.total || 15), correct = Number(record.correct || 0);
     const level = correct / Math.max(1, total) >= .9 ? "good" : correct / Math.max(1, total) >= .8 ? "watch" : "needs";
-    const misses = (record.wordRecords || []).filter((item) => !item.correct && item.word).map((item) => item.said ? `${item.word}→${item.said}` : item.word);
-    const fallback = (record.wrongWords || []).filter(Boolean);
-    return `<li class="${level}"><strong>${escapeHtml(record.student || "Student")}</strong><b>${correct}/${total}</b><span>${escapeHtml(record.seconds || "—")} sec</span><em>Missed: ${escapeHtml((misses.length ? misses : fallback).join(", ") || "none")}</em></li>`;
+    const seconds = Number(record.seconds || 0);
+    const timeClass = seconds > 0 && seconds <= 35 ? "auto" : seconds > 0 && seconds <= 60 ? "developing" : seconds > 60 ? "urgent" : "unknown";
+    return `<li class="${level}">${ttAttendanceCentralStudentNameHtml(record.student)}<b>${correct}/${total}</b><span class="ac-chart-time ${timeClass}">${escapeHtml(record.seconds || "—")} sec</span><em>${ttAttendanceCentralChartMissesHtml(record)}</em></li>`;
   }).join("");
   const missCounts = new Map();
   rankedCharts.forEach((record) => {
@@ -5524,7 +5548,7 @@ function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
   });
   const rankedMisses = [...missCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([word, count]) => `${word}${count > 1 ? ` ×${count}` : ""}`);
   const chartHtml = rankedCharts.length
-    ? `<section class="ac-performance"><header><strong>Charting · Reader ${escapeHtml(rankedCharts[0]?.reader || lesson.reader || "—")}, p. ${escapeHtml(page)}</strong>${concept ? `<span>${escapeHtml(concept)}</span>` : ""}</header><ol>${chartRows}</ol>${rankedMisses.length ? `<p><strong>Most missed:</strong> ${escapeHtml(rankedMisses.join(" · "))}</p>` : ""}</section>`
+    ? `<section class="ac-performance"><header><strong>Charting · Reader ${escapeHtml(rankedCharts[0]?.reader || lesson.reader || "—")}, p. ${escapeHtml(page)}</strong><span>${escapeHtml(concept)}</span><div class="ac-time-legend"><i class="auto">≤35s Auto</i><i class="developing">36–60s</i><i class="urgent">&gt;60s Urgent</i></div></header><ol>${chartRows}</ol>${rankedMisses.length ? `<p><strong>Most missed:</strong> ${escapeHtml(rankedMisses.join(" · "))}</p>` : ""}</section>`
     : `<p class="ac-empty">No charting saved for this lesson.</p>`;
   const missedSections = sections.filter((record) => record.item || record.word || record.observationKind === "missed-item" || record.note === "encoding miss" || /miss/i.test(record.observationCode || ""));
   const sectionLabels = {
@@ -5535,8 +5559,15 @@ function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
   const sectionHtml = ["section6", "section7", "section8"].map((section) => {
     const records = missedSections.filter((record) => record.section === section);
     if (!records.length) return "";
-    const items = records.map((record) => `${record.student || "Student"}: ${record.item || record.word || record.category || "miss"}${section === "section8" && record.category ? ` (${record.category})` : ""}`);
-    return `<p><strong>${sectionLabels[section]}:</strong> ${escapeHtml(items.join(" · "))}</p>`;
+    const byStudent = new Map();
+    records.forEach((record) => {
+      const student = record.student || "Student";
+      const item = `${record.item || record.word || record.category || "miss"}${section === "section8" && record.category ? ` (${record.category})` : ""}`;
+      if (!byStudent.has(student)) byStudent.set(student, []);
+      if (!byStudent.get(student).includes(item)) byStudent.get(student).push(item);
+    });
+    const students = [...byStudent].map(([student, items]) => `<span class="ac-section-student">${ttAttendanceCentralStudentNameHtml(student)}<span>${escapeHtml(items.join(", "))}</span></span>`).join("");
+    return `<div class="ac-section-miss-row"><strong>${sectionLabels[section]}</strong><div>${students}</div></div>`;
   }).filter(Boolean).join("");
   return `${chartHtml}${sectionHtml ? `<section class="ac-section-misses">${sectionHtml}</section>` : `<p class="ac-empty">No Section 6–8 misses saved for this lesson.</p>`}`;
 }
