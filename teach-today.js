@@ -5457,6 +5457,18 @@ function ttAttendanceCentralStatus(group, dayKey) {
   return "blank";
 }
 
+function ttAttendanceCentralGroupOrder(left, right) {
+  const details = (group) => {
+    const name = String(group?.name || "").trim();
+    const numbered = name.match(/^group\s*(\d+)\b/i);
+    if (numbered) return { tier: 0, number: Number(numbered[1]), name };
+    if (/^(demo|sample)\b/i.test(name)) return { tier: 2, number: 0, name };
+    return { tier: 1, number: 0, name };
+  };
+  const a = details(left), b = details(right);
+  return a.tier - b.tier || a.number - b.number || a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+}
+
 function ttAttendanceCentralDayButton(day, groups) {
   const key = dateKey(day);
   const statuses = groups.map((group) => ttAttendanceCentralStatus(group, key));
@@ -5494,7 +5506,7 @@ function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
 
 function ttAttendanceCentralDayHtml(day, groups) {
   const dayKey = dateKey(day);
-  const cards = groups.slice().sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))).map((group) => {
+  const cards = groups.slice().sort(ttAttendanceCentralGroupOrder).map((group) => {
     const session = ttAttendanceSession(group, dayKey);
     const status = ttAttendanceCentralStatus(group, dayKey);
     const plan = ttAttendanceCentralPlanForDay(group, dayKey, session);
