@@ -13019,12 +13019,35 @@ async function ttDocumentSha256Hex(bytes) {
 function ttLessonPlanArchiveFileName(group, lesson, plan, stage) {
   const date = dateKey(lesson?.scheduledDate || plan?.scheduledDate || new Date());
   const lessonNumber = lesson?.lessonSequence || plan?.lessonNumber || group?.lessonSerial || "Lesson";
+  const archiveIdentity = ttLessonPlanArchiveIdentity(lesson, plan);
   const safeGroup = String(group?.name || "Group")
     .replace(/[^a-z0-9 ._()-]+/gi, "-")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 80) || "Group";
-  return `${date} - ${safeGroup} - Lesson ${lessonNumber} - ${stage.toLowerCase()}.pdf`;
+  return `${date} - ${safeGroup} - Lesson ${lessonNumber} - ${archiveIdentity} - ${stage.toLowerCase()}.pdf`;
+}
+
+function ttLessonPlanArchiveIdentity(lesson = ttLesson, plan = ttCurrentPlan()) {
+  const source = String(plan?.id || lesson?.savedPlanId || lesson?.id || [
+    lesson?.scheduledDate || plan?.scheduledDate || "",
+    lesson?.lessonSequence || plan?.lessonNumber || "",
+    plan?.savedAt || lesson?.created || ""
+  ].join("|"));
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `id-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function ttLessonPlanGroupFolderName(group = ttActiveGroup()) {
+  return String(group?.name || "Group")
+    .replace(/[^a-z0-9 ._()-]+/gi, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "Group";
 }
 
 function ttNativeDocumentAvailable() {
@@ -13032,7 +13055,7 @@ function ttNativeDocumentAvailable() {
     && Boolean(window.webkit?.messageHandlers?.teachTodayDocument);
 }
 
-function ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage) {
+function ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage, groupFolder) {
   return new Promise((resolve, reject) => {
     if (!ttNativeDocumentAvailable()) {
       reject(new Error("Run the latest Stage build from Xcode to enable automatic lesson-plan files."));
@@ -13059,27 +13082,38 @@ function ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage) {
       contentBase64: ttDocumentBytesBase64(bytes),
       sha256: digest,
       fileName,
-      stage
+      stage,
+      groupFolder
     });
   });
 }
 
-async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage) {
+async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
   if (!ttDriveAccessToken) throw new Error("Google Drive is not connected in this app session.");
   const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
   const lessonPlans = await ttDriveNamedFolder("Lesson Plans", root);
-  const stageFolder = await ttDriveNamedFolder(stage, lessonPlans);
+  const groupFolderId = await ttDriveNamedFolder(groupFolder, lessonPlans);
+  const stageFolder = await ttDriveNamedFolder(stage, groupFolderId);
   const blob = new Blob([bytes], { type: "application/pdf" });
   return ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
 }
 
 async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
   const stage = "Downloaded";
+  const groupFolder = ttLessonPlanGroupFolderName();
+  const archiveIdentity = ttLessonPlanArchiveIdentity();
+  const archiveBaseName = String(fileName || "Teach Today Fillable Lesson Plan")
+    .replace(/\.pdf$/i, "")
+    .replace(/[^a-z0-9 ._()-]+/gi, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 145) || "Teach Today Fillable Lesson Plan";
+  const archiveFileName = `${archiveBaseName} - ${archiveIdentity}.pdf`;
   const digest = await ttDocumentSha256Hex(bytes);
   const saved = [];
   const failures = [];
   try {
-    await ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage);
+    await ttSaveNativeLessonPlanPdf(bytes, digest, archiveFileName, stage, groupFolder);
     saved.push("iPad Files");
   } catch (error) {
     failures.push(`iPad Files: ${error.message}`);
@@ -13089,7 +13123,7 @@ async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
       failures.push("Google Drive: reconnect Drive backup in Records for this app session.");
     } else {
       try {
-        await ttSaveDriveLessonPlanPdf(bytes, fileName, stage);
+        await ttSaveDriveLessonPlanPdf(bytes, archiveFileName, stage, groupFolder);
         saved.push("Google Drive");
       } catch (error) {
         failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
@@ -13111,12 +13145,13 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
   const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate, { fillable: true });
   const digest = await ttDocumentSha256Hex(pdfBytes);
   const fileName = ttLessonPlanArchiveFileName(group, ttLesson, plan, stage);
+  const groupFolder = ttLessonPlanGroupFolderName(group);
   const results = { savedAt: new Date().toISOString(), fileName, localPath: "", driveFileId: "" };
   const failures = [];
 
   try {
-    const local = await ttSaveNativeLessonPlanPdf(pdfBytes, digest, fileName, stage);
-    results.localPath = local.path || `Lesson Plans/${stage}/${fileName}`;
+    const local = await ttSaveNativeLessonPlanPdf(pdfBytes, digest, fileName, stage, groupFolder);
+    results.localPath = local.path || `Lesson Plans/${groupFolder}/${stage}/${fileName}`;
   } catch (error) {
     failures.push(`iPad Files: ${error.message}`);
   }
@@ -13125,7 +13160,7 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
       failures.push("Google Drive: reconnect Drive backup in Records for this app session; the iPad copy is safe.");
     } else {
       try {
-        const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage);
+        const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage, groupFolder);
         results.driveFileId = drive.id || "";
         results.driveWebViewLink = drive.webViewLink || "";
       } catch (error) {

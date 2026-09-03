@@ -282,12 +282,14 @@ final class TeacherWebViewController: UIViewController {
 
     private func performDocumentSave(_ command: [String: Any], requestId: String) {
         do {
+            let groupFolder = command["groupFolder"] as? String ?? "Unsorted"
             guard !requestId.isEmpty,
                   let contentBase64 = command["contentBase64"] as? String,
                   let expectedHash = command["sha256"] as? String,
                   let fileName = command["fileName"] as? String,
                   let stage = command["stage"] as? String,
                   ["Planned", "Completed", "Downloaded"].contains(stage),
+                  Self.isAllowedDocumentFolderName(groupFolder),
                   Self.isAllowedDocumentName(fileName),
                   let data = Data(base64Encoded: contentBase64),
                   !data.isEmpty,
@@ -305,6 +307,7 @@ final class TeacherWebViewController: UIViewController {
             )
             let folder = documents
                 .appendingPathComponent("Lesson Plans", isDirectory: true)
+                .appendingPathComponent(groupFolder, isDirectory: true)
                 .appendingPathComponent(stage, isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let fileURL = folder.appendingPathComponent(fileName)
@@ -315,7 +318,7 @@ final class TeacherWebViewController: UIViewController {
                 "requestId": requestId,
                 "ok": true,
                 "bytes": data.count,
-                "path": "Lesson Plans/\(stage)/\(fileName)"
+                "path": "Lesson Plans/\(groupFolder)/\(stage)/\(fileName)"
             ])
         } catch {
             dispatchEvent("teachTodayNativeDocumentResult", detail: [
@@ -336,6 +339,12 @@ final class TeacherWebViewController: UIViewController {
 
     private static func isAllowedDocumentName(_ name: String) -> Bool {
         guard name.hasSuffix(".pdf"), name.count <= 180 else { return false }
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " ._-()"))
+        return name.unicodeScalars.allSatisfy { allowed.contains($0) }
+    }
+
+    private static func isAllowedDocumentFolderName(_ name: String) -> Bool {
+        guard !name.isEmpty, name.count <= 80, name != ".", name != ".." else { return false }
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " ._-()"))
         return name.unicodeScalars.allSatisfy { allowed.contains($0) }
     }

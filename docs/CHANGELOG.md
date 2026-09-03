@@ -4,6 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-02
 
+- Organized new lesson-plan archives by group in both iPad Files and Google Drive: each sanitized group folder contains its own Planned, Completed, and Downloaded subfolders. Added a stable short lesson identity to every archived filename so two distinct lessons with the same visible name, date, or number remain separate; existing archive files are preserved without migration or deletion.
 - Expanded only the Completed fillable lesson-plan PDF's page-three Additional Notes area with a readable student-by-student copy of detailed Section 4 charting and Section 6–8 evidence. Pages 1–2 and Planned PDFs remain unchanged, and generating the document remains read-only with respect to saved student evidence.
 - Made the Fillable export viewer's Download action archive the displayed PDF into separate `Lesson Plans/Downloaded` folders in iPad Files and, while Drive is authorized, Google Drive. Those destinations are attempted independently; the ordinary browser download remains the fallback when neither Stage archive destination succeeds.
 
