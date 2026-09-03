@@ -11346,3 +11346,62 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 @media (prefers-reduced-motion: reduce) {
   .attendance-reminder { animation: none; }
 }
+
+/* Attendance Central: read-only calendar summaries with audited attendance edits. */
+.home-data-grid { flex-wrap: wrap; }
+.home-data-attendance { border-color: #f59e0b !important; background: #fff7ed !important; color: #9a3412 !important; }
+.attendance-central[hidden] { display: none; }
+.attendance-central { min-height: 100dvh; padding: 22px; background: linear-gradient(180deg, #f8fafc, #fff7ed); color: #0f172a; }
+.attendance-central button, .attendance-central select { font: inherit; }
+.attendance-central-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 22px; border: 1px solid #cbd5e1; border-radius: 22px; background: white; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
+.attendance-central-head > button { min-height: 44px; padding: 8px 15px; border: 1px solid #99f6e4; border-radius: 12px; background: #f0fdfa; color: #0f766e; font-weight: 900; }
+.attendance-central-head h2, .ac-day-heading h2 { margin: 2px 0; }
+.attendance-central-head > div > span, .ac-day-heading p { color: #64748b; font-weight: 700; }
+.attendance-central-head label { display: grid; gap: 5px; color: #64748b; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.attendance-central-head select { min-height: 42px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 7px 11px; background: white; color: #0f172a; font-weight: 800; }
+.attendance-central-toolbar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 16px 0; padding: 12px; border: 1px solid #dbe3ee; border-radius: 16px; background: rgba(255,255,255,.95); backdrop-filter: blur(10px); }
+.attendance-central-tabs, .attendance-central-nav { display: flex; align-items: center; gap: 7px; }
+.attendance-central-tabs button, .attendance-central-nav button, .ac-day-card footer button { min-height: 39px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 7px 12px; background: white; color: #334155; font-weight: 900; cursor: pointer; }
+.attendance-central-tabs button.active { border-color: #0f766e; background: #0f766e; color: white; }
+.attendance-central-nav strong { min-width: 180px; text-align: center; }
+.ac-year-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 15px; }
+.ac-month { padding: 18px; border: 1px solid #dbe3ee; border-radius: 18px; background: white; box-shadow: 0 6px 18px rgba(15,23,42,.06); }
+.ac-month-title { width: 100%; border: 0; background: transparent; color: #0f766e; font-size: 18px; font-weight: 950; text-align: left; cursor: pointer; }
+.ac-weekdays, .ac-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; }
+.ac-weekdays { margin: 12px 0 5px; color: #64748b; font-size: 10px; font-weight: 900; text-align: center; }
+.ac-calendar-day { min-height: 82px; display: flex; flex-direction: column; gap: 3px; padding: 7px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #334155; text-align: left; cursor: pointer; }
+.ac-calendar-day b { font-size: 14px; }
+.ac-calendar-day span { color: #166534; font-size: 10px; font-weight: 900; }
+.ac-calendar-day small { color: #64748b; font-size: 9px; font-weight: 800; }
+.ac-calendar-day em { margin-top: auto; color: #475569; font-size: 8px; font-style: normal; font-weight: 750; line-height: 1.25; }
+.ac-calendar-day.has-activity { border-color: #5eead4; background: #f0fdfa; }
+.ac-month.compact { padding: 13px; }
+.ac-month.compact .ac-calendar-day { min-height: 48px; padding: 4px; }
+.ac-month.compact .ac-calendar-day span, .ac-month.compact .ac-calendar-day small { font-size: 7px; }
+.ac-month.compact .ac-calendar-day em { display: none; }
+.ac-day-heading { margin: 8px 2px 16px; }
+.ac-day-heading p { margin: 3px 0; }
+.ac-day-list { display: grid; gap: 14px; }
+.ac-day-card { overflow: hidden; border: 2px solid #cbd5e1; border-radius: 18px; background: white; box-shadow: 0 7px 22px rgba(15,23,42,.06); }
+.ac-day-card > header { display: flex; justify-content: space-between; gap: 12px; padding: 15px 18px; background: #f8fafc; }
+.ac-day-card.confirmed { border-color: #4ade80; }.ac-day-card.confirmed > header { background: #f0fdf4; }
+.ac-day-card.no-session { border-color: #cbd5e1; }.ac-day-card.no-session > header { background: #f1f5f9; }
+.ac-day-card.review { border-color: #fbbf24; }.ac-day-card.review > header { background: #fffbeb; }
+.ac-day-card header span { color: #64748b; font-size: 11px; font-weight: 900; }
+.ac-day-card h3 { margin: 3px 0 0; }
+.ac-day-card header b { align-self: center; color: #475569; font-size: 12px; }
+.ac-day-facts { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 12px; padding: 13px 18px; }
+.ac-day-facts p { display: grid; gap: 3px; margin: 0; color: #334155; font-weight: 700; }
+.ac-day-facts strong { color: #64748b; font-size: 10px; text-transform: uppercase; }
+.ac-evidence-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 18px 8px; }
+.ac-evidence { padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 900; }
+.ac-evidence.good { background: #dcfce7; color: #166534; }.ac-evidence.watch { background: #dbeafe; color: #1e40af; }.ac-evidence.needs { background: #fee2e2; color: #991b1b; }
+.ac-empty { color: #94a3b8; font-size: 11px; font-weight: 750; }
+.ac-day-note { margin: 3px 18px 10px; padding: 9px 11px; border-radius: 10px; background: #fff7ed; color: #7c2d12; }
+.ac-day-card footer { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 18px; border-top: 1px solid #e2e8f0; }
+.ac-day-card footer button:first-child { border-color: #0f766e; background: #0f766e; color: white; }
+.attendance-reasons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.attendance-reasons span { color: #64748b; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.attendance-reasons button { min-height: 30px; padding: 5px 8px; border: 1px solid #fed7aa; border-radius: 999px; background: #fff7ed; color: #9a3412; font-size: 10px; font-weight: 850; }
+@media (max-width: 1000px) { .ac-year-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 700px) { .attendance-central { padding: 10px; }.attendance-central-head { grid-template-columns: 1fr; }.attendance-central-toolbar { align-items: stretch; flex-direction: column; }.attendance-central-nav { justify-content: space-between; }.attendance-central-nav strong { min-width: 0; }.ac-year-grid { grid-template-columns: 1fr; }.ac-day-facts { grid-template-columns: 1fr; } }

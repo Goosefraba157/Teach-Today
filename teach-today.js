@@ -5168,7 +5168,10 @@ function ttAttendanceStatusButton(student, status) {
 function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) {
   const overlay = ttAttendanceModalElement();
   const body = ttById("ttAttendanceSessionBody");
-  const { group, plan, lesson, lessonNumber, planId } = ttAttendanceContext();
+  const requestedGroup = options.groupId
+    ? (appState.groups || []).find((item) => item.id === options.groupId)
+    : null;
+  const { group, plan, lesson, lessonNumber, planId } = ttAttendanceContext(requestedGroup || undefined);
   if (!group || !body) return;
   const existing = ttAttendanceSession(group, dayKey);
   const legacyAttendance = appState.attendanceRecords?.[group.id]?.[dayKey] || {};
@@ -5200,7 +5203,8 @@ function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) 
     <div class="attendance-identity-fields"><label class="attendance-date-field">Attendance date<input id="ttAttendanceEditDate" type="date" value="${escapeHtml(dayKey)}"></label><label class="attendance-date-field">Lesson used<select id="ttAttendancePlanSelect">${lessonOptions || `<option value="${escapeHtml(planId)}" data-lesson-number="${escapeHtml(lessonNumber)}">Lesson ${escapeHtml(lessonNumber)}</option>`}</select></label></div>
     <details class="attendance-coverage" ${!isFreshToday || detectedSections.length ? "open" : ""}><summary><strong>Lesson coverage</strong><span>${escapeHtml(detectedLabel)}</span></summary><fieldset class="attendance-parts"><legend>Adjust lesson portions if needed</legend><label><input type="checkbox" value="1" ${parts.includes("1") ? "checked" : ""}> Day 1 portions</label><label><input type="checkbox" value="2" ${parts.includes("2") ? "checked" : ""}> Day 2 portions</label></fieldset></details>
     <div class="attendance-people">${sessionStudents.map((student) => ttAttendanceStatusButton(student, attendance[student])).join("") || "<p>No students are assigned to this group.</p>"}</div>
-    <label class="attendance-note-field">Optional note<textarea id="ttAttendanceSessionNote" rows="2" placeholder="Fire drill, shortened lesson, sections revisited…">${escapeHtml(existing?.note || "")}</textarea></label>
+    <label class="attendance-note-field">Group-day note<textarea id="ttAttendanceSessionNote" rows="2" placeholder="Testing day, ARD conflict, teacher absent, school event…">${escapeHtml(existing?.note || "")}</textarea></label>
+    <div class="attendance-reasons" aria-label="Common no-session reasons"><span>Quick reasons:</span>${["Testing day", "Teacher assigned to testing", "ARD conflict", "Teacher absent", "School or class event"].map((reason) => `<button type="button" data-attendance-reason="${escapeHtml(reason)}">${escapeHtml(reason)}</button>`).join("")}</div>
     <div class="attendance-session-actions"><button type="button" data-attendance-all>Reset all present</button><button type="button" class="attendance-confirm" data-attendance-confirm>Confirm attendance</button><button type="button" class="attendance-no-session" data-attendance-none>No session held</button></div>
     <details class="attendance-history" ${options.history ? "open" : ""}><summary>Edit a previous date</summary>${ttAttendanceHistoryCalendarHtml(group, dayKey)}</details>`;
   overlay.hidden = false;
@@ -5220,13 +5224,17 @@ function ttOpenAttendanceSessionModal(dayKey = ttAttendanceKey(), options = {}) 
       button.querySelector("span").textContent = "Present";
     });
   });
+  body.querySelectorAll("[data-attendance-reason]").forEach((button) => button.addEventListener("click", () => {
+    const note = body.querySelector("#ttAttendanceSessionNote");
+    if (note) note.value = button.dataset.attendanceReason || "";
+  }));
   const selectedIdentity = () => {
     const select = body.querySelector("#ttAttendancePlanSelect");
     return { planId: select?.value || planId, lessonNumber: select?.selectedOptions?.[0]?.dataset.lessonNumber || lessonNumber };
   };
   body.querySelector("[data-attendance-confirm]")?.addEventListener("click", () => ttConfirmAttendanceSession(group, dayKey, selectedIdentity()));
   body.querySelector("[data-attendance-none]")?.addEventListener("click", () => ttSaveNoAttendanceSession(group, dayKey, selectedIdentity()));
-  body.querySelectorAll("[data-attendance-edit-date]").forEach((button) => button.addEventListener("click", () => ttOpenAttendanceSessionModal(button.dataset.attendanceEditDate, { history: true })));
+  body.querySelectorAll("[data-attendance-edit-date]").forEach((button) => button.addEventListener("click", () => ttOpenAttendanceSessionModal(button.dataset.attendanceEditDate, { ...options, history: true })));
 }
 
 function ttAttendanceModalValues() {
@@ -5389,6 +5397,7 @@ function ttCloseAttendanceSessionModal() {
     url.searchParams.delete("editAttendance");
     history.replaceState(null, "", url);
   }
+  if (!ttById("ttAttendanceCentral")?.hidden) ttRenderAttendanceCentral();
 }
 
 function ttRenderAttendancePanel(group) {
@@ -5403,6 +5412,188 @@ function ttRenderAttendancePanel(group) {
   panel.querySelector("[data-open-attendance]")?.addEventListener("click", () => ttOpenAttendanceSessionModal());
   panel.querySelector("[data-open-attendance-history]")?.addEventListener("click", () => ttOpenAttendanceSessionModal(ttAttendanceKey(), { history: true }));
 }
+
+// Attendance Central is a calendar projection over the existing attendance,
+// lesson, and evidence stores. Its only writes go through the audited
+// attendance-session editor above, so complete app backups include them.
+let ttAttendanceCentralView = "month";
+let ttAttendanceCentralDate = new Date();
+
+function ttAttendanceCentralGroups(yearId) {
+  return (appState.groups || []).filter((group) => group.schoolYearId === yearId);
+}
+
+function ttAttendanceCentralYearBounds(yearId) {
+  const startYear = Number(String(yearId || currentSchoolYearId()).slice(0, 4)) || new Date().getFullYear();
+  return { start: new Date(startYear, 6, 1), end: new Date(startYear + 1, 5, 30) };
+}
+
+function ttAttendanceCentralPlanForDay(group, dayKey, session = ttAttendanceSession(group, dayKey)) {
+  const plans = ttOfficialLessonPlans(group);
+  const linked = (session?.planIds || []).map((id) => plans.find((plan) => plan.id === id)).find(Boolean);
+  if (linked) return linked;
+  return plans.find((plan) => {
+    const lesson = plan.lessons?.[0] || {};
+    return [lesson.scheduledDate, lesson.day1Date, lesson.day2Date, plan.scheduledDate, dateKey(plan.savedAt || plan.created)]
+      .filter(Boolean).includes(dayKey);
+  }) || null;
+}
+
+function ttAttendanceCentralEvidence(group, plan, dayKey) {
+  const planId = plan?.id || "";
+  const lessonId = plan?.lessons?.[0]?.id || plan?.lessons?.[0]?.lessonId || "";
+  const onDay = (record) => !dayKey || [record.date, record.dailyKey, dateKey(record.savedAt || record.createdAt || record.timestamp)].filter(Boolean).includes(dayKey);
+  const belongs = (record) => (planId && record.planId === planId) || (lessonId && record.lessonId === lessonId) || (!planId && onDay(record));
+  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record) && onDay(record));
+  const sections = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record) && onDay(record));
+  return { charts, sections };
+}
+
+function ttAttendanceCentralStatus(group, dayKey) {
+  const session = ttAttendanceSession(group, dayKey);
+  if (session?.status === "confirmed") return "confirmed";
+  if (session?.status === "no-session") return "no-session";
+  if (appState.attendanceRecords?.[group.id]?.[dayKey]) return "review";
+  return "blank";
+}
+
+function ttAttendanceCentralDayButton(day, groups) {
+  const key = dateKey(day);
+  const statuses = groups.map((group) => ttAttendanceCentralStatus(group, key));
+  const held = statuses.filter((status) => status === "confirmed").length;
+  const missed = statuses.filter((status) => status === "no-session").length;
+  const activity = groups.some((group) => ttAttendanceCentralPlanForDay(group, key) || ttAttendanceSession(group, key));
+  const scheduled = day.getDay() > 0 && day.getDay() < 6
+    ? groups.slice().sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))).map((group) => `${group.time || "—"} ${group.name || "Group"}`)
+    : [];
+  return `<button type="button" class="ac-calendar-day${activity ? " has-activity" : ""}" data-ac-day="${key}"><b>${day.getDate()}</b>${held ? `<span>${held} held</span>` : ""}${missed ? `<small>${missed} no session</small>` : ""}${scheduled.length ? `<em>${escapeHtml(scheduled.slice(0, 3).join(" · "))}${scheduled.length > 3 ? ` · +${scheduled.length - 3}` : ""}</em>` : ""}</button>`;
+}
+
+function ttAttendanceCentralMonthHtml(monthDate, groups, compact = false) {
+  const year = monthDate.getFullYear(), month = monthDate.getMonth();
+  const first = new Date(year, month, 1), last = new Date(year, month + 1, 0);
+  const blanks = "<i></i>".repeat(first.getDay());
+  const days = Array.from({ length: last.getDate() }, (_, index) => ttAttendanceCentralDayButton(new Date(year, month, index + 1), groups)).join("");
+  return `<article class="ac-month${compact ? " compact" : ""}"><button type="button" class="ac-month-title" data-ac-month="${year}-${String(month + 1).padStart(2, "0")}">${monthDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</button><div class="ac-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div class="ac-month-grid">${blanks}${days}</div></article>`;
+}
+
+function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
+  const { charts, sections } = ttAttendanceCentralEvidence(group, plan, dayKey);
+  const chartHtml = charts.length ? charts.map((record) => {
+    const total = Number(record.total || 15), correct = Number(record.correct || 0);
+    const level = correct / Math.max(1, total) >= .9 ? "good" : correct / Math.max(1, total) >= .8 ? "watch" : "needs";
+    return `<span class="ac-evidence ${level}">${escapeHtml(record.student || "Student")}: ${correct}/${total}${record.seconds ? ` · ${escapeHtml(record.seconds)}s` : ""}</span>`;
+  }).join("") : `<span class="ac-empty">No charting saved</span>`;
+  const sectionHtml = sections.length ? sections.map((record) => {
+    const code = String(record.observationCode || record.status || "Saved");
+    const level = /auto|correct|accur/i.test(code) ? "good" : /strug|miss|error/i.test(code) ? "needs" : "watch";
+    return `<span class="ac-evidence ${level}">S${escapeHtml(String(record.section).replace("section", ""))} · ${escapeHtml(record.student || "Student")}: ${escapeHtml(code)}${record.item ? ` (${escapeHtml(record.item)})` : ""}</span>`;
+  }).join("") : `<span class="ac-empty">No Sections 6–8 data saved</span>`;
+  return `<div class="ac-evidence-row">${chartHtml}</div><div class="ac-evidence-row">${sectionHtml}</div>`;
+}
+
+function ttAttendanceCentralDayHtml(day, groups) {
+  const dayKey = dateKey(day);
+  const cards = groups.slice().sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))).map((group) => {
+    const session = ttAttendanceSession(group, dayKey);
+    const status = ttAttendanceCentralStatus(group, dayKey);
+    const plan = ttAttendanceCentralPlanForDay(group, dayKey, session);
+    const lesson = plan?.lessons?.[0] || {};
+    const attendance = session?.attendance || appState.attendanceRecords?.[group.id]?.[dayKey] || {};
+    const present = Object.entries(attendance).filter(([, value]) => value === true).map(([name]) => name);
+    const absent = Object.entries(attendance).filter(([, value]) => value === false).map(([name]) => name);
+    const page = lesson.wordlistPageNumber || lesson.wordlistPage || "";
+    return `<article class="ac-day-card ${status}"><header><div><span>${escapeHtml(group.time || "Time not set")}</span><h3>${escapeHtml(group.name || "Group")}</h3></div><b>${status === "confirmed" ? "Attendance confirmed" : status === "no-session" ? "No session" : status === "review" ? "Needs review" : "Not recorded"}</b></header>
+      <div class="ac-day-facts"><p><strong>Lesson</strong>${plan ? `Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(lesson.substep || plan.substep || "")}${page ? ` · chart p. ${escapeHtml(page)}` : ""}` : "No lesson linked"}</p><p><strong>Present</strong>${escapeHtml(present.join(", ") || "—")}</p><p><strong>Absent</strong>${escapeHtml(absent.join(", ") || "—")}</p></div>
+      ${ttAttendanceCentralPerformanceHtml(group, plan, dayKey)}${session?.note ? `<p class="ac-day-note"><strong>Group-day note:</strong> ${escapeHtml(session.note)}</p>` : ""}
+      <footer><button type="button" data-ac-attendance="${escapeHtml(group.id)}" data-ac-date="${dayKey}">${session ? "Edit attendance / note" : "Add attendance / note"}</button>${plan ? `<button type="button" data-ac-plan="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open lesson</button>${String(plan.status || "").toLowerCase().includes("complete") ? `<button type="button" data-ac-pdf="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open completed PDF</button>` : ""}` : ""}<button type="button" data-edit-group="${escapeHtml(group.id)}">Edit group time</button></footer></article>`;
+  }).join("");
+  return `<div class="ac-day-heading"><h2>${escapeHtml(ttLongLessonDate(dayKey))}</h2><p>Lesson and student evidence below is view-only.</p></div><div class="ac-day-list">${cards || "<p>No groups are assigned to this school year.</p>"}</div>`;
+}
+
+async function ttAttendanceCentralOpenPdf(groupId, planId) {
+  try {
+    const group = (appState.groups || []).find((item) => item.id === groupId);
+    const plan = (group?.history || []).find((item) => item.id === planId);
+    const lesson = plan?.lessons?.[0];
+    if (!group || !plan || !lesson) throw new Error("The completed lesson could not be found.");
+    const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+    const savedDate = new Date(plan.completedAt || plan.savedAt || lesson.scheduledDate || Date.now());
+    const bytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate, { fillable: true });
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    ttOpenExportViewer({ url, title: `${group.name} — Completed Lesson PDF`, filename: `${ttLessonExportBaseName(group, lesson, plan, savedDate)} - Completed.pdf`, contentType: "pdf", bytes, archiveDownload: false });
+  } catch (error) { alert(error.message || error); }
+}
+
+function ttShowAttendanceCentral() {
+  const home = ttById("ttHomeScreen"), flow = document.querySelector(".teach-flow"), central = ttById("ttAttendanceCentral");
+  if (home) home.hidden = true;
+  if (flow) flow.hidden = true;
+  if (central) central.hidden = false;
+  document.body.classList.add("home-mode", "attendance-central-mode");
+  ttAttendanceCentralDate = new Date();
+  ttRenderAttendanceCentral();
+  window.scrollTo(0, 0);
+}
+
+function ttCloseAttendanceCentral() {
+  const central = ttById("ttAttendanceCentral");
+  if (central) central.hidden = true;
+  document.body.classList.remove("attendance-central-mode");
+  ttShowHomeScreen();
+}
+
+function ttRenderAttendanceCentral() {
+  const central = ttById("ttAttendanceCentral"), content = ttById("ttAttendanceCentralContent"), yearSelect = ttById("ttAttendanceCentralYear");
+  if (!central || central.hidden || !content || !yearSelect) return;
+  const years = (appState.schoolYears || []).slice().sort((a, b) => b.id.localeCompare(a.id));
+  const selected = years.some((year) => year.id === yearSelect.value) ? yearSelect.value : appState.activeSchoolYearId || currentSchoolYearId();
+  yearSelect.innerHTML = years.map((year) => `<option value="${escapeHtml(year.id)}">${escapeHtml(year.label || year.id)}${year.id === appState.activeSchoolYearId ? " (Current)" : ""}</option>`).join("");
+  yearSelect.value = selected;
+  const groups = ttAttendanceCentralGroups(selected);
+  central.querySelectorAll("[data-ac-view]").forEach((button) => button.classList.toggle("active", button.dataset.acView === ttAttendanceCentralView));
+  const period = ttById("ttAttendanceCentralPeriod");
+  if (ttAttendanceCentralView === "year") {
+    const bounds = ttAttendanceCentralYearBounds(selected);
+    if (period) period.textContent = selected;
+    content.innerHTML = `<div class="ac-year-grid">${Array.from({ length: 12 }, (_, index) => ttAttendanceCentralMonthHtml(new Date(bounds.start.getFullYear(), bounds.start.getMonth() + index, 1), groups, true)).join("")}</div>`;
+  } else if (ttAttendanceCentralView === "month") {
+    if (period) period.textContent = ttAttendanceCentralDate.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    content.innerHTML = ttAttendanceCentralMonthHtml(ttAttendanceCentralDate, groups);
+  } else {
+    if (period) period.textContent = ttLongLessonDate(dateKey(ttAttendanceCentralDate));
+    content.innerHTML = ttAttendanceCentralDayHtml(ttAttendanceCentralDate, groups);
+  }
+}
+
+function ttBindAttendanceCentral() {
+  ttById("ttHomeAttendanceCentral")?.addEventListener("click", ttShowAttendanceCentral);
+  ttById("ttAttendanceCentralBack")?.addEventListener("click", ttCloseAttendanceCentral);
+  ttById("ttAttendanceCentralYear")?.addEventListener("change", ttRenderAttendanceCentral);
+  const central = ttById("ttAttendanceCentral");
+  central?.addEventListener("click", (event) => {
+    const view = event.target.closest("[data-ac-view]");
+    if (view) { ttAttendanceCentralView = view.dataset.acView; ttRenderAttendanceCentral(); return; }
+    const day = event.target.closest("[data-ac-day]");
+    if (day) { ttAttendanceCentralDate = ttDateFromKey(day.dataset.acDay); ttAttendanceCentralView = "day"; ttRenderAttendanceCentral(); return; }
+    const month = event.target.closest("[data-ac-month]");
+    if (month) { ttAttendanceCentralDate = ttDateFromKey(`${month.dataset.acMonth}-01`); ttAttendanceCentralView = "month"; ttRenderAttendanceCentral(); return; }
+    if (event.target.closest("[data-ac-today]")) { ttAttendanceCentralDate = new Date(); ttRenderAttendanceCentral(); return; }
+    const move = event.target.closest("[data-ac-move]");
+    if (move) { const amount = Number(move.dataset.acMove); if (ttAttendanceCentralView === "day") ttAttendanceCentralDate.setDate(ttAttendanceCentralDate.getDate() + amount); else ttAttendanceCentralDate.setMonth(ttAttendanceCentralDate.getMonth() + amount); ttRenderAttendanceCentral(); return; }
+    const attendance = event.target.closest("[data-ac-attendance]");
+    if (attendance) { ttOpenAttendanceSessionModal(attendance.dataset.acDate, { groupId: attendance.dataset.acAttendance, history: true }); return; }
+    const plan = event.target.closest("[data-ac-plan]");
+    if (plan) { ttOpenPlanInApp(plan.dataset.acPlan, plan.dataset.acGroup); ttOpenTeachFlow({ transition: false }); return; }
+    const pdf = event.target.closest("[data-ac-pdf]");
+    if (pdf) { ttAttendanceCentralOpenPdf(pdf.dataset.acGroup, pdf.dataset.acPdf); return; }
+    const edit = event.target.closest("[data-edit-group]");
+    if (edit) ttOpenEditGroupModal(edit.dataset.editGroup);
+  });
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ttBindAttendanceCentral);
+else ttBindAttendanceCentral();
 
 function ttSetAttendancePanel(open = true, options = {}) {
   const panel = ttById("ttAttendancePanel");
@@ -5736,9 +5927,12 @@ function ttShowHomeScreen(groupId = ttPlannerGroupId || ttActiveGroup().id) {
   ttPlannerGroupId = groupId;
   const home = ttById("ttHomeScreen");
   const flow = document.querySelector(".teach-flow");
+  const attendanceCentral = ttById("ttAttendanceCentral");
   if (home) home.hidden = false;
   if (flow) flow.hidden = true;
+  if (attendanceCentral) attendanceCentral.hidden = true;
   if (ttById("ttLessonIdentity")) ttById("ttLessonIdentity").hidden = true;
+  document.body.classList.remove("attendance-central-mode");
   document.body.classList.add("home-mode");
   ttCloseSharedDataPanels();
   ttMountSharedDataPanels("ttHomeDataPanels");
@@ -5813,6 +6007,8 @@ function ttOpenTeachFlow(options = {}) {
   const revealFlow = () => {
     if (home) home.hidden = true;
     if (flow) flow.hidden = false;
+    if (ttById("ttAttendanceCentral")) ttById("ttAttendanceCentral").hidden = true;
+    document.body.classList.remove("attendance-central-mode");
     document.body.classList.remove("home-mode", "lesson-home-exit");
     ttCloseSharedDataPanels();
     ttMountSharedDataPanels("ttLessonDataPanels");

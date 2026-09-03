@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260902-group-lesson-folders-1">
+    <link rel="stylesheet" href="teach-today.css?v=20260902-attendance-central-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -397,6 +397,7 @@
         <div class="home-data-actions" aria-label="Group data">
           <span>Data</span>
           <div class="home-data-grid">
+            <button id="ttHomeAttendanceCentral" class="home-data-button home-data-attendance" type="button" title="Attendance calendar and daily summaries">Attendance</button>
             <button id="ttHomeSavedToggle" class="home-data-button" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
             <button id="ttHomeDataToggle" class="home-data-button" type="button" title="Data center and records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
             <button id="ttHomeProfile" class="home-data-button home-data-profile" type="button" title="Student profile">Profile</button>
@@ -562,6 +563,19 @@
       <div class="export-viewer-frame-wrap">
         <iframe id="ttExportViewerFrame" class="export-viewer-frame" title="Export preview"></iframe>
       </div>
+    </section>
+
+    <section id="ttAttendanceCentral" class="attendance-central" hidden>
+      <header class="attendance-central-head">
+        <button id="ttAttendanceCentralBack" type="button">‹ Home</button>
+        <div><p class="eyebrow">Attendance Central</p><h2>School Year Calendar</h2><span>Review lessons and evidence. Attendance and group-day notes are the only editable records here.</span></div>
+        <label>School year<select id="ttAttendanceCentralYear"></select></label>
+      </header>
+      <nav class="attendance-central-toolbar" aria-label="Calendar view">
+        <div class="attendance-central-tabs"><button type="button" data-ac-view="year">Year</button><button type="button" data-ac-view="month">Month</button><button type="button" data-ac-view="day">Day</button></div>
+        <div class="attendance-central-nav"><button type="button" data-ac-move="-1" aria-label="Previous">‹</button><button type="button" data-ac-today>Today</button><strong id="ttAttendanceCentralPeriod"></strong><button type="button" data-ac-move="1" aria-label="Next">›</button></div>
+      </nav>
+      <main id="ttAttendanceCentralContent" class="attendance-central-content"></main>
     </section>
 
     <main class="teach-flow">
@@ -1149,11 +1163,11 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=20260902-group-lesson-folders-1"></script>
+    <script src="app.js?v=20260902-attendance-central-1"></script>
     <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
     <script src="section9-passage-companions.js?v=section9-companion-7"></script>
     <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260902-group-lesson-folders-1"></script>
+    <script src="teach-today.js?v=20260902-attendance-central-1"></script>
     <script src="pwa-register.js"></script>
     <script src="onboarding.js?v=lesson-assistant-3"></script>
     <script src="add-group.js?v=20260828-roster-membership-2"></script>

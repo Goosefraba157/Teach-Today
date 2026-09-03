@@ -144,3 +144,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 - The completed document may summarize saved lesson evidence but must not mutate student records or lesson history merely to render the PDF.
 - Detailed charting and Section 6–8 evidence belongs only in the Completed document's page-three Additional Notes field. Planned documents and the established page-one/page-two field layout remain unchanged.
 - A teacher-requested Fillable export download is a third, manual document class stored under `Lesson Plans/Downloaded`. Native Files and Drive writes remain independent, and a browser download remains the last fallback if neither Stage destination succeeds.
+
+## Attendance Central uses the existing attendance ledger (2026-09-02)
+
+- Attendance Central is a calendar/read model over existing groups, lessons, attendance sessions, charting, and Sections 6–8 evidence; it does not create a second lesson, student, or attendance database.
+- Its only instructional-record mutation is through the existing audited `attendanceSessions[groupId][date]` correction/no-session workflow. Schedule changes continue through the existing group editor.
+- Group-day explanations are stored as the attendance session note, including explicit no-session reasons. Because complete backups serialize the whole application state, no separate backup pipeline or Firebase dependency is required for Attendance Central.
