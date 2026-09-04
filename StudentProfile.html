@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260901-compact-groups-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260904-group-carousel-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -35,7 +35,7 @@
     </header>
 
     <main class="profile-shell">
-      <section class="profile-sync-strip" aria-live="polite">
+      <section class="profile-sync-strip profile-sync-compact" aria-live="polite">
         <span class="sync-dot" aria-hidden="true"></span>
         <div><strong id="syncTitle">Reading this device</strong><span id="syncDetail">Student Profile refreshes whenever Teach Today saves.</span></div>
         <time id="lastSavedAt">No verified save time</time>
@@ -43,13 +43,15 @@
 
       <section class="profile-card profile-picker-card" aria-labelledby="profilePickerTitle">
         <div class="profile-picker-toolbar">
-          <div><span class="section-kicker">Quick profile menu</span><h2 id="profilePickerTitle">Groups and students</h2></div>
+          <button id="previousProfileGroup" type="button" class="profile-group-arrow" aria-label="Previous group">‹</button>
+          <div class="profile-active-group-heading"><span class="section-kicker">Group profile</span><h2 id="profilePickerTitle">Select a group</h2><span id="profileGroupPosition" class="profile-group-position"></span></div>
+          <button id="nextProfileGroup" type="button" class="profile-group-arrow" aria-label="Next group">›</button>
           <div class="profile-year-control">
             <label>School year<select id="profileSchoolYear"></select></label>
           </div>
           <span id="yearModeBadge" class="year-mode-badge">Current</span>
         </div>
-        <div id="profileRosterPicker" class="profile-roster-grid" aria-label="Groups and students"></div>
+        <div id="profileRosterPicker" class="profile-roster-grid" aria-label="Current group and students"></div>
         <p id="archiveNotice" class="archive-notice" hidden>Historical years are read-only. Nothing on this page can change archived records.</p>
       </section>
 
@@ -148,7 +150,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260901-compact-groups-1"></script>
+    <script src="student-profile.js?v=20260904-group-carousel-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>

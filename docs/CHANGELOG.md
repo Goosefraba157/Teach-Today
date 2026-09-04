@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-04
+
+- Compacted the read-only Student Profile around one whole-group view at a time: natural Group 1–8 navigation with Demo and Sample last, previous/next arrows, small in-group student selectors, a hidden live-device banner, and higher placement of the existing metrics and comparison data. No student, lesson, attendance, charting, or Sections 6–8 data is modified.
+
 ## 2026-09-02
 
 - Refined Attendance Central for quicker scanning without changing data: charting time uses labeled automatic/developing/urgent color bands, correct targets and student responses use distinct text colors, student names keep stable non-performance shades, and Sections 6–8 list each student once followed by all missed items.

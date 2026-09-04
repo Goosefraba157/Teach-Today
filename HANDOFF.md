@@ -6,7 +6,7 @@
 ---
 
 ## Last Updated
-2026-09-02
+2026-09-04
 
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
@@ -75,6 +75,7 @@
 - The `Teach-Today/` subfolder (~99 files) looks like a packaged copy of the app — intentional?
 
 ## In Progress / Next Up
+- Prepared `20260904-profile-carousel-1` as a display-only Student Profile compaction. The profile now opens in whole-group mode, hides the space-consuming live-device banner, shows only one active group with compact student buttons, and uses wraparound previous/next arrows ordered Group 1–8, Demo, then Sample. The group metrics and comparison tables move substantially higher on the screen. Existing charting, Sections 6–8, lesson, attendance, archive, and student-detail queries remain unchanged; the profile still contains no state-writing call. Exact next step: publish, force-close/reopen Stage once, then verify the arrows and one student-detail round trip on iPad.
 - Prepared `20260902-attendance-glance-1` as a display-only Attendance Central refinement. Charting seconds now use labeled green `≤35s Auto`, amber `36–60s`, and red `>60s Urgent` bands; missed correct targets are blue while recorded student responses are magenta. Student names receive deterministic, non-performance purple/indigo/plum/slate shades reused throughout the card. Sections 6–8 group missed items by student so each name appears once per section instead of before every item. No application data, evidence, backup, or schema changes.
 - Prepared `20260902-attendance-evidence-1` to fix Attendance Central evidence appearing empty despite Student Profile records. Stable plan/lesson matches no longer also require the evidence timestamp to equal the selected calendar day; dated/substep/page fallback remains for older records without stable IDs. Day view now shows the charting Reader/page/concept, students ranked by score then time, seconds and individual missed words, a frequency-ranked group miss list, and only actual Section 6 sounds, Section 7 words, and categorized Section 8 items missed. Dictation's paired records are deduplicated. This is a read-only projection and does not save, migrate, or rewrite evidence.
 - Prepared `20260902-attendance-group-order-1` so Attendance Central's Day view orders numbered groups naturally as Group 1, Group 2, … Group 10 regardless of pull time. Other named instructional groups follow alphabetically, while Demo and Sample groups remain at the end. No records, attendance, schedules, or backup data are changed.

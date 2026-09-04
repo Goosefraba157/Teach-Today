@@ -1,14 +1,13 @@
 const storageKey = "dyslexiaInstructionEngine.v2";
 const profileChannel = "BroadcastChannel" in window ? new BroadcastChannel("teachTodayState.v1") : null;
 const params = new URLSearchParams(location.search);
-const hiddenDemoGroupIds = new Set(["grp-demo", "grp-sample-blue"]);
 
 let data = readState();
 let selectedYearId = params.get("schoolYear") || "";
 let selectedGroupId = params.get("group") || "";
 let selectedStudentId = params.get("studentId") || "";
 let selectedStudentName = params.get("student") || "";
-let selectedView = params.get("view") === "group" ? "group" : "student";
+let selectedView = params.get("studentId") || params.get("student") ? "student" : "group";
 let selectedTab = "overview";
 
 function byId(id) {
@@ -83,8 +82,13 @@ function recordYear(record, fallbackGroup = null) {
   return academicYearId(record?.date || record?.displayDate) || currentYearId();
 }
 
-function isDemoGroup(group) {
-  return !group || hiddenDemoGroupIds.has(group.id) || group.isDemoGroup || group.isDemo;
+function groupDisplayOrder(group) {
+  const name = String(group?.name || "").trim();
+  const numbered = name.match(/^group\s+(\d+)\b/i);
+  if (numbered) return [0, Number(numbered[1]), name];
+  if (/^sample(?:\s+group)?$/i.test(name) || group?.id === "grp-sample-blue") return [2, 0, name];
+  if (/^demo(?:\s+group)?$/i.test(name) || group?.id === "grp-demo" || group?.isDemoGroup || group?.isDemo) return [1, 0, name];
+  return [0, Number.MAX_SAFE_INTEGER, name];
 }
 
 function availableYears() {
@@ -100,8 +104,12 @@ function availableYears() {
 
 function groupsForYear(yearId = selectedYearId) {
   return (data.groups || [])
-    .filter((group) => !isDemoGroup(group) && group.schoolYearId === yearId)
-    .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")) || String(a.name || "").localeCompare(String(b.name || "")));
+    .filter((group) => group.schoolYearId === yearId)
+    .sort((a, b) => {
+      const left = groupDisplayOrder(a);
+      const right = groupDisplayOrder(b);
+      return left[0] - right[0] || left[1] - right[1] || left[2].localeCompare(right[2]);
+    });
 }
 
 function studentIdFor(group, name) {
@@ -289,24 +297,22 @@ function renderPickers() {
   byId("profileSchoolYear").value = selectedYearId;
 
   const groups = groupsForYear();
+  const activeGroup = selectedGroup();
   const chosenStudent = selectedStudent();
-  byId("profileRosterPicker").innerHTML = groups.length ? groups.map((group) => {
-    const students = studentsForGroup(group);
-    const groupSelected = group.id === selectedGroupId;
-    return `<section class="profile-group-column${groupSelected ? " selected" : ""}" aria-label="${escapeHtml(group.name || "Unnamed group")}">
-      <div class="profile-group-heading">
-        <h3>${escapeHtml(group.name || "Unnamed group")}</h3>
-        <span>${students.length} student${students.length === 1 ? "" : "s"}</span>
-      </div>
-      <button type="button" class="profile-group-button${groupSelected && selectedView === "group" ? " active" : ""}" data-profile-group data-group-id="${escapeHtml(group.id)}" aria-pressed="${groupSelected && selectedView === "group"}">Whole group</button>
+  const students = studentsForGroup(activeGroup);
+  byId("profilePickerTitle").textContent = activeGroup?.name || "No group selected";
+  byId("profileGroupPosition").textContent = groups.length ? `${groups.findIndex((group) => group.id === activeGroup?.id) + 1} of ${groups.length} · ${students.length} student${students.length === 1 ? "" : "s"}` : "";
+  byId("profileRosterPicker").innerHTML = activeGroup ? `<section class="profile-group-column selected" aria-label="${escapeHtml(activeGroup.name || "Unnamed group")}">
+      <button type="button" class="profile-group-button${selectedView === "group" ? " active" : ""}" data-profile-group data-group-id="${escapeHtml(activeGroup.id)}" aria-pressed="${selectedView === "group"}">Whole group</button>
       <div class="profile-student-buttons">
         ${students.length ? students.map((student) => {
-          const active = selectedView === "student" && groupSelected && student.key === chosenStudent.key;
-          return `<button type="button" class="profile-student-button${active ? " active" : ""}" data-profile-student data-group-id="${escapeHtml(group.id)}" data-student-key="${escapeHtml(student.key)}" aria-pressed="${active}">${escapeHtml(student.name)}</button>`;
+          const active = selectedView === "student" && student.key === chosenStudent.key;
+          return `<button type="button" class="profile-student-button${active ? " active" : ""}" data-profile-student data-group-id="${escapeHtml(activeGroup.id)}" data-student-key="${escapeHtml(student.key)}" aria-pressed="${active}">${escapeHtml(student.name)}</button>`;
         }).join("") : '<p class="profile-group-empty">No students in this group.</p>'}
       </div>
-    </section>`;
-  }).join("") : '<p class="profile-roster-empty">No instructional groups in this school year.</p>';
+    </section>` : '<p class="profile-roster-empty">No instructional groups in this school year.</p>';
+  byId("previousProfileGroup").disabled = groups.length < 2;
+  byId("nextProfileGroup").disabled = groups.length < 2;
 
   const archived = selectedYearId !== currentYearId();
   byId("yearModeBadge").textContent = archived ? "Archived · Read only" : "Current";
@@ -634,8 +640,25 @@ byId("profileSchoolYear").addEventListener("change", (event) => {
   selectedGroupId = "";
   selectedStudentId = "";
   selectedStudentName = "";
+  selectedView = "group";
   renderAll();
 });
+
+function moveProfileGroup(direction) {
+  const groups = groupsForYear();
+  if (groups.length < 2) return;
+  const currentIndex = Math.max(0, groups.findIndex((group) => group.id === selectedGroupId));
+  const nextIndex = (currentIndex + direction + groups.length) % groups.length;
+  selectedGroupId = groups[nextIndex].id;
+  selectedStudentId = "";
+  selectedStudentName = "";
+  selectedView = "group";
+  selectedTab = "overview";
+  renderAll();
+}
+
+byId("previousProfileGroup").addEventListener("click", () => moveProfileGroup(-1));
+byId("nextProfileGroup").addEventListener("click", () => moveProfileGroup(1));
 
 byId("profileRosterPicker").addEventListener("click", (event) => {
   const groupButton = event.target.closest("[data-profile-group]");
