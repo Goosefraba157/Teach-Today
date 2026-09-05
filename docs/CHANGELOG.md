@@ -4,6 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-04
 
+- Expanded the read-only whole-group Student Profile with a visual learning dashboard: per-student last-10 charting score bars, average-seconds comparison, most-missed sounds/word elements/real words, and comparative real-word/nonsense/HFW totals. Moved School Year into the header and made fresh profile openings default to Whole group while retaining temporary student drill-down. Classification uses the saved Section/category metadata and does not alter or infer new student records.
 - Compacted the read-only Student Profile around one whole-group view at a time: natural Group 1–8 navigation with Demo and Sample last, previous/next arrows, small in-group student selectors, a hidden live-device banner, and higher placement of the existing metrics and comparison data. No student, lesson, attendance, charting, or Sections 6–8 data is modified.
 
 ## 2026-09-02

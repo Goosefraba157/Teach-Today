@@ -7,7 +7,7 @@ let selectedYearId = params.get("schoolYear") || "";
 let selectedGroupId = params.get("group") || "";
 let selectedStudentId = params.get("studentId") || "";
 let selectedStudentName = params.get("student") || "";
-let selectedView = params.get("studentId") || params.get("student") ? "student" : "group";
+let selectedView = "group";
 let selectedTab = "overview";
 
 function byId(id) {
@@ -383,6 +383,81 @@ function chartingStatus(record) {
   return { label: "Support needed", className: "status-risk" };
 }
 
+function encodingBucket(record) {
+  if (!record?.item) return "";
+  const detail = `${record.category || ""} ${record.observationKind || ""} ${record.type || ""}`.toLowerCase();
+  if (/high[- ]?frequency|\bhfw\b/.test(detail)) return "hfw";
+  if (/nonsense|\bns\b/.test(detail)) return "nonsense";
+  if (/word[- ]?element|syllable|element/.test(detail)) return "elements";
+  if (/sound|phoneme|letter[- ]?sound/.test(detail)) return "sounds";
+  if (record.section === "section6") return "sounds";
+  if (record.section === "section7") return "real";
+  if (record.section === "section8" && /real|word|review|current/.test(detail)) return "real";
+  return "";
+}
+
+function itemCounts(records, bucket, limit) {
+  const counts = new Map();
+  records.filter((record) => encodingBucket(record) === bucket).forEach((record) => {
+    const item = String(record.item || "").trim();
+    if (item) counts.set(item, (counts.get(item) || 0) + 1);
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, limit);
+}
+
+function miniItemBars(items, emptyText = "None saved") {
+  if (!items.length) return `<p class="mini-empty">${escapeHtml(emptyText)}</p>`;
+  const max = Math.max(...items.map(([, count]) => count), 1);
+  return `<div class="mini-item-bars">${items.map(([item, count]) => `<div class="mini-item-row"><span title="${escapeHtml(item)}">${escapeHtml(item)}</span><div><i style="width:${Math.max(10, Math.round((count / max) * 100))}%"></i></div><b>${count}</b></div>`).join("")}</div>`;
+}
+
+function comparisonBarRows(rows, valueLabel) {
+  if (!rows.length) return '<p class="mini-empty">No students in this group.</p>';
+  const max = Math.max(...rows.map((row) => row.value), 1);
+  return rows.map((row) => `<div class="comparison-bar-row">
+    <button type="button" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button>
+    <div><i style="width:${Math.max(row.value ? 7 : 0, Math.round((row.value / max) * 100))}%"></i></div>
+    <strong>${escapeHtml(valueLabel(row.value))}</strong>
+  </div>`).join("");
+}
+
+function renderGroupVisuals(studentRows) {
+  byId("groupChartingTrends").innerHTML = studentRows.map((row) => {
+    const recent = row.charts.slice(0, 10).reverse();
+    return `<article class="student-trend-card">
+      <button type="button" class="trend-student-name" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button>
+      ${recent.length ? `<div class="spark-bars" aria-label="${escapeHtml(row.student.name)} recent charting scores">${recent.map((record) => {
+        const correct = Math.max(0, Math.min(Number(record.correct) || 0, Number(record.total) || 15));
+        const total = Number(record.total) || 15;
+        return `<span title="${escapeHtml(formatDate(recordDate(record)))}: ${correct}/${total}" style="height:${Math.max(5, Math.round((correct / total) * 100))}%"><b>${correct}</b></span>`;
+      }).join("")}</div><small>${recent.length} saved session${recent.length === 1 ? "" : "s"}</small>` : '<p class="mini-empty">No charting yet</p>'}
+    </article>`;
+  }).join("") || '<p class="mini-empty">No students in this group.</p>';
+
+  const speedRows = studentRows.map((row) => {
+    const values = row.charts.slice(0, 10).map((record) => Number(record.seconds)).filter(Number.isFinite);
+    return { student: row.student, value: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0, hasData: values.length > 0 };
+  });
+  byId("groupSpeedComparison").innerHTML = comparisonBarRows(speedRows, (value) => value ? `${value}s` : "—");
+
+  byId("groupEncodingPatterns").innerHTML = studentRows.map((row) => `<article class="encoding-pattern-card">
+    <button type="button" class="trend-student-name" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button>
+    <section><h4>Sounds</h4>${miniItemBars(itemCounts(row.marks, "sounds", 10))}</section>
+    <section><h4>Word elements</h4>${miniItemBars(itemCounts(row.marks, "elements", 5))}</section>
+    <section><h4>Real words</h4>${miniItemBars(itemCounts(row.marks, "real", 5))}</section>
+  </article>`).join("") || '<p class="mini-empty">No students in this group.</p>';
+
+  const comparisons = [
+    ["Real words", "real"],
+    ["Nonsense words", "nonsense"],
+    ["High-frequency words", "hfw"]
+  ];
+  byId("groupEncodingComparison").innerHTML = comparisons.map(([label, bucket]) => {
+    const rows = studentRows.map((row) => ({ student: row.student, value: row.marks.filter((record) => encodingBucket(record) === bucket).length }));
+    return `<section class="encoding-comparison-card"><h4>${label}</h4><div class="comparison-bars">${comparisonBarRows(rows, (value) => String(value))}</div></section>`;
+  }).join("");
+}
+
 function renderGroupOverview() {
   const group = selectedGroup();
   const students = studentsForGroup(group);
@@ -404,6 +479,7 @@ function renderGroupOverview() {
   byId("groupLessonCount").textContent = groupLessons.length;
   byId("groupChartingCount").textContent = allCharts.length;
   byId("groupObservationCount").textContent = allMarks.length;
+  renderGroupVisuals(studentRows);
 
   const decoding = [...studentRows].sort((a, b) => {
     if (!a.latestChart) return b.latestChart ? 1 : a.student.name.localeCompare(b.student.name);

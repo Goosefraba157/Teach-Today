@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260904-group-carousel-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260904-group-dashboard-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -29,6 +29,10 @@
       </div>
       <div class="tt-header-spacer"></div>
       <div class="header-actions">
+        <div class="profile-year-control profile-year-header-control">
+          <label>School year<select id="profileSchoolYear"></select></label>
+        </div>
+        <span id="yearModeBadge" class="year-mode-badge">Current</span>
         <button id="printProfile" type="button" class="tt-btn">Print</button>
         <button id="backTeach" type="button" class="tt-btn tt-btn-back" data-tt-app-back>← Teach Today</button>
       </div>
@@ -46,10 +50,6 @@
           <button id="previousProfileGroup" type="button" class="profile-group-arrow" aria-label="Previous group">‹</button>
           <div class="profile-active-group-heading"><span class="section-kicker">Group profile</span><h2 id="profilePickerTitle">Select a group</h2><span id="profileGroupPosition" class="profile-group-position"></span></div>
           <button id="nextProfileGroup" type="button" class="profile-group-arrow" aria-label="Next group">›</button>
-          <div class="profile-year-control">
-            <label>School year<select id="profileSchoolYear"></select></label>
-          </div>
-          <span id="yearModeBadge" class="year-mode-badge">Current</span>
         </div>
         <div id="profileRosterPicker" class="profile-roster-grid" aria-label="Current group and students"></div>
         <p id="archiveNotice" class="archive-notice" hidden>Historical years are read-only. Nothing on this page can change archived records.</p>
@@ -100,6 +100,25 @@
               <section><h3>Encoding / Spelling</h3><div class="table-wrap"><table><thead><tr><th>Student</th><th>Misses</th><th>Recent</th><th>Top area</th><th>Last item</th></tr></thead><tbody id="groupEncodingRows"></tbody></table></div></section>
             </div>
           </article>
+          <section class="group-visual-dashboard" aria-labelledby="groupVisualTitle">
+            <div class="section-heading compact"><div><span class="section-kicker">Visual progress</span><h2 id="groupVisualTitle">Group learning dashboard</h2><p>Recent decoding and year-to-date encoding patterns. Select any student name for full details.</p></div></div>
+            <article class="profile-card visual-panel">
+              <div class="visual-panel-heading"><div><h3>Last 10 charting sessions</h3><p>Correct words out of 15, oldest to newest.</p></div><span class="visual-legend"><i></i> Words correct</span></div>
+              <div id="groupChartingTrends" class="student-trend-grid"></div>
+            </article>
+            <article class="profile-card visual-panel">
+              <div class="visual-panel-heading"><div><h3>Average charting time</h3><p>Average seconds across each student's 10 most recent sessions. Shorter is stronger.</p></div></div>
+              <div id="groupSpeedComparison" class="comparison-bars"></div>
+            </article>
+            <article class="profile-card visual-panel">
+              <div class="visual-panel-heading"><div><h3>Most-missed encoding items</h3><p>Up to 10 sounds and 5 word elements or real words per student from Sections 6–8.</p></div></div>
+              <div id="groupEncodingPatterns" class="encoding-pattern-grid"></div>
+            </article>
+            <article class="profile-card visual-panel">
+              <div class="visual-panel-heading"><div><h3>Encoding comparison</h3><p>Year-to-date missed real words, nonsense words, and high-frequency words.</p></div></div>
+              <div id="groupEncodingComparison" class="encoding-comparison-grid"></div>
+            </article>
+          </section>
           <article class="profile-card attention-card">
             <div class="section-heading compact"><div><span class="section-kicker">Plan next</span><h2>Group review needs</h2></div></div>
             <div id="groupReviewNeeds" class="review-needs empty-state">No repeated group needs yet.</div>
@@ -150,7 +169,7 @@
       </section>
     </main>
 
-    <script src="student-profile.js?v=20260904-group-carousel-1"></script>
+    <script src="student-profile.js?v=20260904-group-dashboard-1"></script>
     <script src="pwa-register.js"></script>
   </body>
 </html>
