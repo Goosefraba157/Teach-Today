@@ -61,6 +61,8 @@ test("lesson planning uses one permanent start date with visible schedule warnin
   assert.match(build, /ttLesson\.lessonStartDate = originalStartDate \|\| draft\.scheduledDate/);
   const pdf = functionBody("ttWilsonLessonPlanData", "ttWilsonSection9PlanData");
   assert.match(pdf, /ttDateFromKey\(ttLessonStartDateKey\(plan, lesson\)\)/);
+  const lastLesson = functionBody("ttPlannerLastLessonText", "ttFillPlannerCoreSelects");
+  assert.match(lastLesson, /ttLongLessonDate\(lastPlan\.savedAt\).*ttLessonTime\(new Date\(lastPlan\.savedAt\)\)/s);
 });
 
 test("Home copies the lesson data actions without duplicating their records", () => {

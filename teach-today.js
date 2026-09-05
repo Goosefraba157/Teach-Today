@@ -7629,7 +7629,7 @@ function ttPlannerLastLessonText(group) {
   const lastPlan = (group.history || []).slice().reverse().find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0]);
   if (!lastPlan?.lessons?.[0]) return "No saved lesson yet. Smart defaults use this group’s current substep.";
   const lesson = lastPlan.lessons[0];
-  const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
+  const saved = lastPlan.savedAt ? `${ttLongLessonDate(lastPlan.savedAt)} at ${ttLessonTime(new Date(lastPlan.savedAt))}` : lastPlan.created || "";
   return `Last taught: ${lesson.substep}, Reader ${lesson.reader}, wordlist p. ${lesson.wordlistPageNumber || "--"}${lastPlan.combinedParticipation ? ` · combined with ${lastPlan.hostGroupNameAtTime || "another group"}` : ""}${saved ? ` · ${saved}` : ""}`;
 }
 
@@ -7637,7 +7637,7 @@ function ttPlannerLastLessonHtml(group) {
   const lastPlan = (group.history || []).slice().reverse().find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0]);
   if (!lastPlan?.lessons?.[0]) return "No saved lesson yet. Smart defaults use this group’s current substep.";
   const lesson = lastPlan.lessons[0];
-  const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
+  const saved = lastPlan.savedAt ? `${ttLongLessonDate(lastPlan.savedAt)} at ${ttLessonTime(new Date(lastPlan.savedAt))}` : lastPlan.created || "";
   return `Last taught: <strong class="planner-last-substep">${escapeHtml(lesson.substep || "—")}</strong> · Reader <strong class="planner-last-page">${escapeHtml(lesson.reader || "—")}, p. ${escapeHtml(lesson.wordlistPageNumber || "—")}</strong>${lastPlan.combinedParticipation ? ` · combined with ${escapeHtml(lastPlan.hostGroupNameAtTime || "another group")}` : ""}${saved ? ` · <strong class="planner-last-date">${escapeHtml(saved)}</strong>` : ""}`;
 }
 
