@@ -2001,6 +2001,47 @@ body.lesson-flow-enter .teach-flow {
   font-weight: 750;
 }
 
+.home-lesson-date-wrap {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  justify-content: end;
+  gap: 3px 10px;
+}
+
+.home-lesson-date-long {
+  color: #0f766e;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.home-lesson-date-note {
+  grid-column: 1 / -1;
+  margin: 1px 0 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.home-lesson-date-warning {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2px;
+  margin-top: 3px;
+  border: 1px solid #fdba74;
+  border-radius: 9px;
+  padding: 6px 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 11px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.home-lesson-date-warning[hidden] { display: none; }
+
 .home-lesson-type .mode-pick-btn.compact {
   min-height: 68px;
   flex-direction: row;
@@ -2030,6 +2071,9 @@ body.lesson-flow-enter .teach-flow {
     flex-direction: column;
     gap: 3px;
   }
+
+  .home-lesson-date-wrap { justify-content: stretch; }
+  .home-lesson-date-note { text-align: left; }
 
   .home-lesson-type .mode-pick-row {
     grid-template-columns: repeat(2, 1fr);
@@ -2611,7 +2655,7 @@ body.lesson-flow-enter .teach-flow {
 .planner-snapshot-card > header strong mark { border-radius: 6px; padding: 2px 5px; background: #e0e7ff; color: #3730a3; }
 .planner-snapshot-card > header .snapshot-substep { color: #7c3aed; }
 .planner-snapshot-card > header .snapshot-page { color: #0369a1; }
-.planner-snapshot-card > header em { border-radius: 999px; padding: 3px 7px; background: #ccfbf1; color: #0f766e; font-size: 10px; font-style: normal; font-weight: 900; text-align: right; }
+.planner-snapshot-card > header em { border-radius: 999px; padding: 5px 9px; background: #ccfbf1; color: #0f766e; font-size: 13px; line-height: 1.15; font-style: normal; font-weight: 950; text-align: right; }
 .planner-section-progress { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
 .planner-section-progress span { min-width: 29px; border: 1px solid #cbd5e1; border-radius: 999px; padding: 4px 7px; background: #f8fafc; color: #64748b; font-size: 10px; font-weight: 950; text-align: center; }
 .planner-section-progress .done { border-color: #86efac; background: #dcfce7; color: #166534; }

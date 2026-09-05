@@ -4624,6 +4624,49 @@ function ttLongLessonDate(value) {
   return `${weekday}, ${month} ${ttOrdinalDay(date.getDate())}`;
 }
 
+function ttLessonStartDateKey(plan, lesson = plan?.lessons?.[0]) {
+  return dateKey(
+    lesson?.lessonStartDate
+    || plan?.lessonStartDate
+    || plan?.sessions?.["1"]?.date
+    || lesson?.day1Date
+    || plan?.scheduledDate
+    || lesson?.scheduledDate
+    || plan?.dailyKey
+    || plan?.savedAt
+    || lesson?.created
+    || ttTodayKey()
+  );
+}
+
+function ttLessonStartDateWarnings(group, value, excludedPlanId = "") {
+  const selected = dateKey(value);
+  const date = ttDateFromKey(selected);
+  const warnings = [];
+  if ([0, 5, 6].includes(date.getDay())) {
+    warnings.push(`${date.toLocaleDateString(undefined, { weekday: "long" })} is outside the usual Monday–Thursday teaching schedule.`);
+  }
+  const duplicate = (group?.history || []).find((plan) => plan?.id !== excludedPlanId
+    && plan?.source === "TeachToday"
+    && plan?.lessons?.[0]
+    && !plan.excludedFromLessonSequence
+    && ttLessonStartDateKey(plan, plan.lessons[0]) === selected);
+  if (duplicate) warnings.push(`Another lesson for this group already starts on this date (Lesson ${ttPlanLessonNumber(duplicate, duplicate.lessons[0], group)}).`);
+  return warnings;
+}
+
+function ttSuggestedLessonStartDate(group) {
+  const lessonPlans = (group?.history || []).filter((plan) => plan?.source === "TeachToday" && plan?.lessons?.[0] && !plan.excludedFromLessonSequence);
+  const latest = lessonPlans.map((plan) => ttLessonStartDateKey(plan, plan.lessons[0])).filter(Boolean).sort().at(-1) || "";
+  const today = ttTodayKey();
+  let candidate;
+  if (latest && latest >= today) candidate = ttNextInstructionDateKey(latest);
+  else candidate = [0, 5, 6].includes(ttDateFromKey(today).getDay()) ? ttNextInstructionDateKey(today) : today;
+  const used = new Set(lessonPlans.map((plan) => ttLessonStartDateKey(plan, plan.lessons[0])));
+  while (used.has(candidate)) candidate = ttNextInstructionDateKey(candidate);
+  return candidate;
+}
+
 function ttPlanLessonNumber(plan, lesson, group) {
   return plan?.lessonNumber || lesson?.lessonSequence || group?.lessonSerial || "Next";
 }
@@ -6563,17 +6606,24 @@ function ttRenderHomeModePicker(enabled = true) {
   if (!container) return;
   container.hidden = !enabled || !group || Boolean(ttActiveOpenPlan(group));
   if (container.hidden) return;
-  const lessonType = ttEnsurePlannerDraft(group).lessonType || ttPreferredLessonType(group);
+  const draft = ttEnsurePlannerDraft(group);
+  const lessonType = draft.lessonType || ttPreferredLessonType(group);
+  const scheduledDate = draft.scheduledDate || ttSuggestedLessonStartDate(group);
+  draft.scheduledDate = scheduledDate;
+  const warnings = ttLessonStartDateWarnings(group, scheduledDate);
   container.innerHTML = `<div class="home-lesson-type-copy">
       <div><span class="mode-pick-eyebrow">Lesson type for ${escapeHtml(group.name || "selected group")}</span>
         <small>Generate Best Lesson will keep this format.</small></div>
-      <label class="home-lesson-date">Teach on
-        <input type="date" value="${escapeHtml(ttEnsurePlannerDraft(group).scheduledDate || ttTodayKey())}" aria-label="Date planned for this lesson">
-      </label>
+      <div class="home-lesson-date-wrap"><label class="home-lesson-date">Lesson starts
+        <input type="date" value="${escapeHtml(scheduledDate)}" aria-label="Permanent start date for this lesson">
+      </label><strong class="home-lesson-date-long">${escapeHtml(ttLongLessonDate(scheduledDate))}</strong>
+      <p class="home-lesson-date-note">This date stays with the lesson on later teaching days and on its PDFs.</p>
+      <div class="home-lesson-date-warning" role="status"${warnings.length ? "" : " hidden"}>${warnings.map((warning) => `<span>${escapeHtml(warning)}</span>`).join("")}</div></div>
     </div>
     <div class="mode-pick-row">${ttModeButtonsHtml(lessonType, true)}</div>`;
   container.querySelector(".home-lesson-date input")?.addEventListener("change", (event) => {
-    ttEnsurePlannerDraft(group).scheduledDate = event.target.value || ttTodayKey();
+    draft.scheduledDate = event.target.value || ttSuggestedLessonStartDate(group);
+    ttRenderHomeModePicker(true);
   });
   container.querySelectorAll("[data-mode-pick]").forEach((button) => {
     button.addEventListener("click", () => ttSetPlannerLessonType(button.dataset.modePick));
@@ -6638,7 +6688,7 @@ function ttEnsurePlannerDraft(group) {
     passageApproach: group.section9Story?.approach || "comprehension-sos",
     reviewSubsteps: [priorSubstep(skill.id)],
     lessonType: ttPreferredLessonType(group),
-    scheduledDate: ttTodayKey(),
+    scheduledDate: ttSuggestedLessonStartDate(group),
     flashSections: ["1", "2", "3", "5"]
   };
   ttPickerSelections = {};
@@ -6664,10 +6714,7 @@ function ttBeginEditingOpenPlan(groupId, planId) {
     .filter((item) => String(item.group || "").toLowerCase().includes(groupLabel))
     .map((item) => item.value)
     .filter(Boolean);
-  const scheduledDate = plan.sessions?.[ttPlanSessionDay(plan, lesson)]?.date
-    || lesson.scheduledDate
-    || plan.scheduledDate
-    || ttTodayKey();
+  const scheduledDate = ttLessonStartDateKey(plan, lesson);
 
   ttPlannerGroupId = group.id;
   appState.selectedGroupId = group.id;
@@ -8985,7 +9032,11 @@ function ttBuildPlannerLesson(options = {}) {
   ttLesson.lessonSequence = originalLesson?.lessonSequence || ttLesson.lessonSequence;
   ttLesson.completedSections = originalLesson?.completedSections || ttLesson.completedSections;
   ttLesson.activeGroupDay = originalLesson?.activeGroupDay || ttLesson.activeGroupDay;
-  ttLesson.scheduledDate = draft.scheduledDate || originalLesson?.scheduledDate || ttTodayKey();
+  const originalStartDate = editingOpenPlan ? ttLessonStartDateKey(openPlan, originalLesson) : "";
+  ttLesson.lessonStartDate = originalStartDate || draft.scheduledDate || ttTodayKey();
+  ttLesson.scheduledDate = editingOpenPlan
+    ? (originalLesson?.scheduledDate || originalStartDate)
+    : ttLesson.lessonStartDate;
   ttApplySection9StoryToLesson(ttLesson, group, skill, {
     passageId: draft.passageId,
     approach: draft.passageApproach
@@ -13081,6 +13132,8 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
   const createdDate = now.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const createdTime = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   const scheduledDate = lesson.scheduledDate || ttTodayKey();
+  const lessonStartDate = lesson.lessonStartDate || scheduledDate;
+  lesson.lessonStartDate = lessonStartDate;
   const scheduled = ttDateFromKey(scheduledDate);
   const dailyKey = scheduledDate;
   const dailyPlan = options.upsertDaily === false ? null : ttDailyPlanFor(group, scheduled);
@@ -13094,6 +13147,7 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
     existing.title = ttLessonFileName(group, lesson, now);
     existing.tabLabel = ttLessonTabLabel(existing, group);
     existing.status = existing.status === "Complete" ? "Complete" : options.starting ? "In progress" : existing.hasStudentData ? "Taught" : (existing.status === "In progress" ? "In progress" : "Saved");
+    existing.lessonStartDate ||= ttLessonStartDateKey(existing, existing.lessons?.[0] || lesson);
     existing.scheduledDate = scheduledDate;
     ttEnsureLessonWorkflow(existing, lesson, group);
     const day = ttPlanSessionDay(existing, lesson);
@@ -13118,6 +13172,7 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
     savedAt: now.toISOString(),
     dailyKey,
     scheduledDate,
+    lessonStartDate,
     status: options.starting ? "In progress" : "Saved",
     substep: `${skill.id} - ${skill.title}`,
     source: "TeachToday",
@@ -13160,6 +13215,8 @@ function ttSaveCurrentLesson(options = {}) {
     return;
   }
   const now = new Date();
+  ttLesson.lessonStartDate ||= ttLessonStartDateKey(plan, ttLesson);
+  plan.lessonStartDate ||= ttLesson.lessonStartDate;
   plan.lessons = [ttLesson];
   plan.savedAt = now.toISOString();
   plan.dailyKey ||= ttPlanDayKey(now);
@@ -13414,7 +13471,7 @@ async function ttDocumentSha256Hex(bytes) {
 }
 
 function ttLessonPlanArchiveFileName(group, lesson, plan, stage) {
-  const date = dateKey(lesson?.scheduledDate || plan?.scheduledDate || new Date());
+  const date = ttLessonStartDateKey(plan, lesson);
   const lessonNumber = lesson?.lessonSequence || plan?.lessonNumber || group?.lessonSerial || "Lesson";
   const archiveIdentity = ttLessonPlanArchiveIdentity(lesson, plan);
   const safeGroup = String(group?.name || "Group")
@@ -13662,7 +13719,8 @@ function ttWilsonCompletedLessonNotes(group, lesson, plan) {
 }
 
 function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
-  const date = savedDate.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
+  const lessonDate = ttDateFromKey(ttLessonStartDateKey(plan, lesson));
+  const date = lessonDate.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" });
   const sounds = soundsForSubstep(skill.id);
   const dictationPlan = ttActiveDictationPlan(lesson, skill);
   const dictationBlock = (label) => dictationPlan.find((item) => item.label.toLowerCase().includes(label))?.values || [];

@@ -44,6 +44,25 @@ test("Home planning snapshot is read-only and uses rendered charting pages", () 
   assert.match(source, /function ttPlannerEncodingItemsHtml/);
 });
 
+test("lesson planning uses one permanent start date with visible schedule warnings", () => {
+  assert.match(source, /function ttLessonStartDateKey\(plan, lesson/);
+  assert.match(source, /plan\?\.sessions\?\.\["1"\]\?\.date/);
+  assert.match(source, /function ttSuggestedLessonStartDate\(group\)/);
+  assert.match(source, /\[0, 5, 6\]\.includes\(ttDateFromKey\(today\)\.getDay\(\)\)/);
+  assert.match(source, /while \(used\.has\(candidate\)\) candidate = ttNextInstructionDateKey\(candidate\)/);
+  assert.match(source, /outside the usual Monday–Thursday teaching schedule/);
+  assert.match(source, /Another lesson for this group already starts on this date/);
+  assert.match(source, /class="home-lesson-date-long">\$\{escapeHtml\(ttLongLessonDate\(scheduledDate\)\)\}/);
+  assert.match(source, /This date stays with the lesson on later teaching days and on its PDFs/);
+  const edit = functionBody("ttBeginEditingOpenPlan", "ttDefaultSectionReviewSubsteps");
+  assert.match(edit, /const scheduledDate = ttLessonStartDateKey\(plan, lesson\)/);
+  const build = functionBody("ttBuildPlannerLesson", "ttOpenPlannerPreviewSection");
+  assert.match(build, /const originalStartDate = editingOpenPlan \? ttLessonStartDateKey\(openPlan, originalLesson\) : ""/);
+  assert.match(build, /ttLesson\.lessonStartDate = originalStartDate \|\| draft\.scheduledDate/);
+  const pdf = functionBody("ttWilsonLessonPlanData", "ttWilsonSection9PlanData");
+  assert.match(pdf, /ttDateFromKey\(ttLessonStartDateKey\(plan, lesson\)\)/);
+});
+
 test("Home copies the lesson data actions without duplicating their records", () => {
   ["ttHomeSavedToggle", "ttHomeDataToggle", "ttHomeProfile"].forEach((id) => {
     assert.match(html, new RegExp(`id="${id}"`));

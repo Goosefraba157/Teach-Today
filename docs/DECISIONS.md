@@ -34,6 +34,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 ## Lesson planning defaults
 
+- **Permanent lesson start date:** Every newly created lesson owns one start-date label, chosen when it is first planned. The suggested date is the next unused Monday–Thursday instructional date; Friday–Sunday and same-group duplicate dates remain allowed only with a visible warning. Continuing on Day 2 or later may retain separate session dates, but it must not change the lesson start date used by editing, planned/completed PDFs, or lesson-plan archive filenames. This date is lesson metadata, not attendance evidence.
 - **Decision:** Lesson format is a per-group preference, selected in Customize and preserved when generating a recommended lesson.
 - **Default:** Groups without a saved preference begin with the 45+45 group-days format; selecting another format updates only that group.
 - **Boundary:** “Generate Best Lesson” may optimize instructional content but must not change the teacher-selected lesson format.
