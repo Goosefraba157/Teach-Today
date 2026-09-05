@@ -385,6 +385,9 @@ function chartingStatus(record) {
 
 function encodingBucket(record) {
   if (!record?.item) return "";
+  const rawItem = String(record.item).trim();
+  const cleanItem = cleanElement(rawItem);
+  if ((/^[-–—]/.test(rawItem) || /[-–—]$/.test(rawItem)) && (profilePrefixes.has(cleanItem) || profileSuffixes.has(cleanItem) || profileLatinBases.has(cleanItem))) return "elements";
   const detail = `${record.category || ""} ${record.observationKind || ""} ${record.type || ""}`.toLowerCase();
   if (/high[- ]?frequency|\bhfw\b/.test(detail)) return "hfw";
   if (/nonsense|\bns\b/.test(detail)) return "nonsense";
@@ -437,7 +440,10 @@ function itemCounts(records, bucket, limit) {
 function miniItemBars(items, bucket, emptyText = "None saved") {
   if (!items.length) return `<p class="mini-empty">${escapeHtml(emptyText)}</p>`;
   const max = Math.max(...items.map((entry) => entry.count), 1);
-  return `<div class="mini-item-bars">${items.map((entry) => `<div class="mini-item-row"><span class="${itemVisualClass(entry.item, bucket)}" title="${escapeHtml(entry.item)}${entry.substep ? ` (${escapeHtml(entry.substep)})` : ""}">${escapeHtml(entry.item)}${entry.substep ? ` <strong>(${escapeHtml(entry.substep)})</strong>` : ""}</span><div><i style="width:${Math.max(10, Math.round((entry.count / max) * 100))}%"></i></div><b>${entry.count}</b></div>`).join("")}</div>`;
+  return `<div class="mini-item-bars">${items.map((entry) => {
+    const showSubstep = bucket === "real" && entry.substep;
+    return `<div class="mini-item-row"><span class="${itemVisualClass(entry.item, bucket)}" title="${escapeHtml(entry.item)}${showSubstep ? ` (${escapeHtml(entry.substep)})` : ""}">${escapeHtml(entry.item)}${showSubstep ? ` <strong>(${escapeHtml(entry.substep)})</strong>` : ""}</span><div><i style="width:${Math.max(10, Math.round((entry.count / max) * 100))}%"></i></div><b>${entry.count}</b></div>`;
+  }).join("")}</div>`;
 }
 
 function comparisonBarRows(rows, valueLabel) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-04-profile-dashboard-colors-1";
+const CACHE_NAME = "teach-today-offline-v2026-09-04-real-word-substeps-1";
 
 const APP_SHELL = [
   "./",

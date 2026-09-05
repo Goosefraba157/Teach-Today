@@ -8,7 +8,7 @@ const profile = fs.readFileSync(path.join(root, "student-profile.js"), "utf8");
 const profileCss = fs.readFileSync(path.join(root, "student-profile.css"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
-assert.match(html, /20260904-group-dashboard-colors-1/);
+assert.match(html, /20260904-real-word-substeps-1/);
 assert.match(html, /Group profile/);
 assert.match(html, /id="profileSchoolYear"/);
 assert.match(html, /id="profileRosterPicker"/);
@@ -37,6 +37,7 @@ assert.match(profile, /correct <= 11 \? "score-risk" : correct <= 13 \? "score-w
 assert.match(profile, /value <= 35 \? "time-good" : value <= 60 \? "time-watch" : "time-risk"/);
 assert.match(profile, /function itemVisualClass/);
 assert.match(profile, /misses \/ sessions\.size/);
+assert.match(profile, /bucket === "real" && entry\.substep/);
 assert.match(profile, /function renderGroupOverview/);
 assert.match(profile, /function renderChartingSheet/);
 assert.match(profile, /profileRosterPicker"\)\.addEventListener\("click"/);
