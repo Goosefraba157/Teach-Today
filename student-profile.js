@@ -396,19 +396,48 @@ function encodingBucket(record) {
   return "";
 }
 
+const profileVowels = new Set(["a", "e", "i", "o", "u", "ă", "ĕ", "ĭ", "ŏ", "ŭ", "ā", "ē", "ī", "ō", "ū"]);
+const profileConsonants = new Set(["b", "c", "ch", "ck", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "qu", "r", "s", "sh", "t", "th", "v", "w", "wh", "x", "y", "z"]);
+const profileWeldedSounds = new Set(["all", "am", "an", "ang", "ing", "ong", "ung", "ank", "ink", "onk", "unk", "ild", "ind", "old", "ost", "olt"]);
+const profilePrefixes = new Set(["mid", "mis", "non", "tran", "trans", "un", "ab", "abs", "ad", "com", "con", "dis", "em", "en", "ex", "im", "in", "ob", "sub", "fore", "co", "de", "e", "pre", "pro", "re", "a"]);
+const profileSuffixes = new Set(["s", "es", "ed", "ing", "ive", "able", "en", "er", "est", "ish", "or", "y", "ful", "less", "ly", "ment", "ness", "ty"]);
+const profileLatinBases = new Set(["fess", "gress", "mand", "mit", "pel", "pend", "press", "rupt", "sent", "sist", "stant", "sult", "tend", "tent", "vent", "dict", "duct", "fect", "flect", "flict", "ject", "lect", "pact", "rect", "sect", "spect", "struct", "tact", "tract", "vict", "clude", "fuse", "pose", "pute", "quire", "scribe", "spire", "sume", "vise", "voke", "cede", "cept", "cess", "cide", "cise", "cite", "duce", "scend", "sess", "side"]);
+
+function cleanElement(value) {
+  return String(value || "").trim().toLowerCase().replace(/^[-–—]+|[-–—]+$/g, "");
+}
+
+function itemVisualClass(item, bucket) {
+  const clean = cleanElement(item);
+  if (bucket === "sounds") {
+    if (profileVowels.has(clean)) return "item-vowel";
+    if (profileWeldedSounds.has(clean)) return "item-welded";
+    if (profileConsonants.has(clean)) return "item-consonant";
+  }
+  if (bucket === "elements") {
+    if (profileLatinBases.has(clean)) return "item-latin-base";
+    if (profilePrefixes.has(clean) || profileSuffixes.has(clean)) return "item-affix";
+  }
+  return "";
+}
+
 function itemCounts(records, bucket, limit) {
   const counts = new Map();
   records.filter((record) => encodingBucket(record) === bucket).forEach((record) => {
     const item = String(record.item || "").trim();
-    if (item) counts.set(item, (counts.get(item) || 0) + 1);
+    if (!item) return;
+    const current = counts.get(item) || { item, count: 0, substep: "" };
+    current.count += 1;
+    if (!current.substep && record.substep) current.substep = String(record.substep);
+    counts.set(item, current);
   });
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, limit);
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.item.localeCompare(b.item)).slice(0, limit);
 }
 
-function miniItemBars(items, emptyText = "None saved") {
+function miniItemBars(items, bucket, emptyText = "None saved") {
   if (!items.length) return `<p class="mini-empty">${escapeHtml(emptyText)}</p>`;
-  const max = Math.max(...items.map(([, count]) => count), 1);
-  return `<div class="mini-item-bars">${items.map(([item, count]) => `<div class="mini-item-row"><span title="${escapeHtml(item)}">${escapeHtml(item)}</span><div><i style="width:${Math.max(10, Math.round((count / max) * 100))}%"></i></div><b>${count}</b></div>`).join("")}</div>`;
+  const max = Math.max(...items.map((entry) => entry.count), 1);
+  return `<div class="mini-item-bars">${items.map((entry) => `<div class="mini-item-row"><span class="${itemVisualClass(entry.item, bucket)}" title="${escapeHtml(entry.item)}${entry.substep ? ` (${escapeHtml(entry.substep)})` : ""}">${escapeHtml(entry.item)}${entry.substep ? ` <strong>(${escapeHtml(entry.substep)})</strong>` : ""}</span><div><i style="width:${Math.max(10, Math.round((entry.count / max) * 100))}%"></i></div><b>${entry.count}</b></div>`).join("")}</div>`;
 }
 
 function comparisonBarRows(rows, valueLabel) {
@@ -416,7 +445,7 @@ function comparisonBarRows(rows, valueLabel) {
   const max = Math.max(...rows.map((row) => row.value), 1);
   return rows.map((row) => `<div class="comparison-bar-row">
     <button type="button" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button>
-    <div><i style="width:${Math.max(row.value ? 7 : 0, Math.round((row.value / max) * 100))}%"></i></div>
+    <div><i class="${escapeHtml(row.className || "")}" style="width:${Math.max(row.value ? 7 : 0, Math.round((row.value / max) * 100))}%"></i></div>
     <strong>${escapeHtml(valueLabel(row.value))}</strong>
   </div>`).join("");
 }
@@ -429,22 +458,24 @@ function renderGroupVisuals(studentRows) {
       ${recent.length ? `<div class="spark-bars" aria-label="${escapeHtml(row.student.name)} recent charting scores">${recent.map((record) => {
         const correct = Math.max(0, Math.min(Number(record.correct) || 0, Number(record.total) || 15));
         const total = Number(record.total) || 15;
-        return `<span title="${escapeHtml(formatDate(recordDate(record)))}: ${correct}/${total}" style="height:${Math.max(5, Math.round((correct / total) * 100))}%"><b>${correct}</b></span>`;
+        const scoreClass = correct <= 11 ? "score-risk" : correct <= 13 ? "score-watch" : "score-good";
+        return `<span class="${scoreClass}" title="${escapeHtml(formatDate(recordDate(record)))}: ${correct}/${total}" style="height:${Math.max(5, Math.round((correct / total) * 100))}%"><b>${correct}</b></span>`;
       }).join("")}</div><small>${recent.length} saved session${recent.length === 1 ? "" : "s"}</small>` : '<p class="mini-empty">No charting yet</p>'}
     </article>`;
   }).join("") || '<p class="mini-empty">No students in this group.</p>';
 
   const speedRows = studentRows.map((row) => {
     const values = row.charts.slice(0, 10).map((record) => Number(record.seconds)).filter(Number.isFinite);
-    return { student: row.student, value: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0, hasData: values.length > 0 };
+    const value = values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+    return { student: row.student, value, className: !value ? "" : value <= 35 ? "time-good" : value <= 60 ? "time-watch" : "time-risk" };
   });
   byId("groupSpeedComparison").innerHTML = comparisonBarRows(speedRows, (value) => value ? `${value}s` : "—");
 
   byId("groupEncodingPatterns").innerHTML = studentRows.map((row) => `<article class="encoding-pattern-card">
     <button type="button" class="trend-student-name" data-profile-student-jump data-student-key="${escapeHtml(row.student.key)}">${escapeHtml(row.student.name)}</button>
-    <section><h4>Sounds</h4>${miniItemBars(itemCounts(row.marks, "sounds", 10))}</section>
-    <section><h4>Word elements</h4>${miniItemBars(itemCounts(row.marks, "elements", 5))}</section>
-    <section><h4>Real words</h4>${miniItemBars(itemCounts(row.marks, "real", 5))}</section>
+    <section><h4>Sounds</h4>${miniItemBars(itemCounts(row.marks, "sounds", 10), "sounds")}</section>
+    <section><h4>Word elements</h4>${miniItemBars(itemCounts(row.marks, "elements", 5), "elements")}</section>
+    <section><h4>Real words</h4>${miniItemBars(itemCounts(row.marks, "real", 5), "real")}</section>
   </article>`).join("") || '<p class="mini-empty">No students in this group.</p>';
 
   const comparisons = [
@@ -453,8 +484,12 @@ function renderGroupVisuals(studentRows) {
     ["High-frequency words", "hfw"]
   ];
   byId("groupEncodingComparison").innerHTML = comparisons.map(([label, bucket]) => {
-    const rows = studentRows.map((row) => ({ student: row.student, value: row.marks.filter((record) => encodingBucket(record) === bucket).length }));
-    return `<section class="encoding-comparison-card"><h4>${label}</h4><div class="comparison-bars">${comparisonBarRows(rows, (value) => String(value))}</div></section>`;
+    const rows = studentRows.map((row) => {
+      const sessions = new Set(row.marks.map((record) => record.planId || record.lessonId || String(recordDate(record)).slice(0, 10)).filter(Boolean));
+      const misses = row.marks.filter((record) => encodingBucket(record) === bucket).length;
+      return { student: row.student, value: sessions.size ? Number((misses / sessions.size).toFixed(1)) : 0 };
+    });
+    return `<section class="encoding-comparison-card"><h4>${label} · average per session</h4><div class="comparison-bars">${comparisonBarRows(rows, (value) => value ? value.toFixed(1) : "0")}</div></section>`;
   }).join("");
 }
 

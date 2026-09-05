@@ -241,7 +241,10 @@ button { cursor: pointer; }
 .trend-student-name { border: 0; padding: 0; background: transparent; color: var(--teal-dark); font-weight: 950; text-align: left; }
 .trend-student-name:hover { text-decoration: underline; }
 .spark-bars { display: flex; align-items: flex-end; gap: 4px; height: 82px; margin-top: 9px; padding: 6px 5px 0; border-bottom: 2px solid #bac7d2; background: repeating-linear-gradient(to top, transparent 0, transparent 24px, #e5ebf0 25px); }
-.spark-bars span { position: relative; flex: 1; min-width: 8px; max-width: 30px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #2dd4bf, var(--teal)); }
+.spark-bars span { position: relative; flex: 1; min-width: 8px; max-width: 30px; border-radius: 5px 5px 0 0; }
+.spark-bars .score-good { background: linear-gradient(180deg, #4ade80, #15803d); }
+.spark-bars .score-watch { background: linear-gradient(180deg, #fde047, #ca8a04); }
+.spark-bars .score-risk { background: linear-gradient(180deg, #fb7185, #dc2626); }
 .spark-bars b { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); color: #334155; font-size: 8px; }
 .student-trend-card small { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 750; }
 .comparison-bars { display: grid; gap: 7px; }
@@ -250,6 +253,9 @@ button { cursor: pointer; }
 .comparison-bar-row button:hover { color: var(--teal); text-decoration: underline; }
 .comparison-bar-row > div { height: 15px; overflow: hidden; border-radius: 999px; background: #e8eef3; }
 .comparison-bar-row i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5eead4, var(--teal)); }
+.comparison-bar-row i.time-good { background: linear-gradient(90deg, #4ade80, #15803d); }
+.comparison-bar-row i.time-watch { background: linear-gradient(90deg, #fde047, #ca8a04); }
+.comparison-bar-row i.time-risk { background: linear-gradient(90deg, #fb7185, #dc2626); }
 .comparison-bar-row strong { color: #475569; font-size: 10px; }
 .encoding-pattern-card { display: grid; gap: 9px; }
 .encoding-pattern-card section { min-width: 0; }
@@ -257,6 +263,12 @@ button { cursor: pointer; }
 .mini-item-bars { display: grid; gap: 3px; }
 .mini-item-row { display: grid; grid-template-columns: minmax(55px, 86px) 1fr 18px; align-items: center; gap: 5px; }
 .mini-item-row span { overflow: hidden; color: #475569; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 750; }
+.mini-item-row span strong { color: inherit; font-weight: 950; }
+.mini-item-row span.item-vowel { color: #b91c1c; }
+.mini-item-row span.item-consonant { color: #9a7b19; }
+.mini-item-row span.item-welded { color: #4d7c0f; }
+.mini-item-row span.item-affix { width: fit-content; max-width: 100%; padding: 2px 5px; border: 1px solid #e5b900; border-radius: 4px; background: #fff0a8; color: #5f4b00; }
+.mini-item-row span.item-latin-base { width: fit-content; max-width: 100%; padding: 2px 5px; border: 1px solid #aeb9c5; border-radius: 4px; background: #fff; color: #334155; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
 .mini-item-row > div { height: 7px; overflow: hidden; border-radius: 999px; background: #e8eef3; }
 .mini-item-row i { display: block; height: 100%; border-radius: inherit; background: #818cf8; }
 .mini-item-row b { color: #64748b; font-size: 8px; }
