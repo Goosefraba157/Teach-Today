@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-05
+
+- Made Section 3 Review and Current recommendations Reader-only. Review initially follows Section 2's earlier substep while independently choosing its own concept/words, and Current is constrained to the selected charting page. Kept the cumulative Fat Stack and deck order unchanged while making welded, prefix, and Latin-base deck guarantees aware of the exact current charting page.
+
 ## 2026-09-04
 
 - Restricted Section 2/2B automatic Review and Current recommendations to Reader charting-page words. New plans select a random earlier review concept with four real and two Reader nonsense words (borrowing nonsense from another earlier substep when necessary), select six current-page words, and persist the chosen review substeps without changing Last Misses, Priority, or student evidence.

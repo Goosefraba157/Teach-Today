@@ -158,3 +158,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 - A new lesson chooses one earlier review substep/concept per group day and recommends four real Reader words plus two Reader nonsense words. When the chosen concept has fewer than two nonsense words, the nonsense portion may come from another earlier Reader substep.
 - Current recommendations contain six words from the charting page selected for that lesson. Last Misses and Priority remain evidence-driven overlays and are not changed by this source rule.
 - Saved lesson plans retain their selected review words and review substep metadata; reopening a plan must not reroll its recommendation.
+
+## Section 3 Reader-only cards and deck composition (2026-09-05)
+
+- Section 3 Review and Current word-card recommendations use Reader charting-page sources, not Dictation Book pools. Review initially shares Section 2's earlier substep but independently selects its concept and words; Current is anchored to the selected charting page.
+- The Lesson Deck retains its established order: cumulative school-year Fat Stack, Review, Current, HFW, then word-element cards. Fat Stack retention and counts are unchanged.
+- When available in the taught scope, the deck includes at least two welded/glued cards and two Latin-base cards, prioritizing elements found on the exact current charting page and filling from earlier instruction. It also includes two earlier prefixes when available, plus up to two current-substep prefixes only when the exact charting page contains them.

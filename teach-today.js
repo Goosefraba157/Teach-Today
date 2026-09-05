@@ -6800,7 +6800,7 @@ function ttDefaultSectionReviewSubsteps(skill, level = "AB") {
   return {
     section2: [section2],
     section2B: [section2B],
-    section3: [ttRandomSection3ReviewSubstep(skill, level)],
+    section3: [section2],
     section3Current: [skill.id],
     section7: [priorStep],
     section8Real: [skill.id]
@@ -8098,13 +8098,16 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
     ttPlannerReviewPickerHtml("section3Review", "Review cards · one concept", section3Review, section3ReviewCards(lesson), 8, "section3", skill, {
       autoConcept: true,
       conceptOnly: true,
-      selectionDriven: true
+      selectionDriven: true,
+      readerOnly: true
     }) +
     ttPlannerReviewPickerHtml("section3Current", "Current cards · one concept", section3Current, section3CurrentCards(lesson), 8, "section3Current", skill, {
       fixedSubstep: skill.id,
       showSubsteps: false,
       conceptOnly: true,
       selectionDriven: true,
+      readerOnly: true,
+      sourceWords: chartWords,
       preferredPage: ttPlannerDraft.wordlist
     }),
     "", "5 min"
@@ -8559,6 +8562,8 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     ? ttDictationBookReviewWordPool([currentSubstep], level)
     : isNView
     ? ttReviewNonsensePool(skill.id)
+    : options.sourceWords
+    ? uniqueWords(options.sourceWords).filter(isValidDictationWord)
     : options.readerOnly
     ? ttSection2ReaderRealWords(currentSubstep, level)
     : uniqueWords(
@@ -8867,6 +8872,11 @@ function ttTogglePlannerChip(button) {
     ttSectionReviewSubsteps[sectionKey] = [button.dataset.value];
     ttReviewWordFilters[pickerId] = picker.dataset.autoConcept === "true" ? "" : "all";
     ttUpdateSectionReviewChips(sectionKey);
+    if (sectionKey === "section2" && ttById("ttPlannerSections")?.querySelector('[data-picker="section3Review"]')) {
+      ttSectionReviewSubsteps.section3 = [button.dataset.value];
+      ttReviewWordFilters.section3Review = "";
+      ttUpdateSectionReviewChips("section3");
+    }
     // Update lesson preview so newly-shown words feed through
     ttRefreshPreview();
     return;
@@ -10788,6 +10798,77 @@ function ttSection3IntroducedCards(substep, mode, limit = 2) {
     }));
 }
 
+function ttSection3PageElementCards(lesson, mode, limit = 2) {
+  const sources = {
+    welded: { entries: knownWeldedAndExceptions, key: "g", typeLabel: "Welded/Glued" },
+    latin: { entries: knownLatinBases, key: "l", typeLabel: "Latin Base" },
+    prefixes: { entries: knownPrefixes, key: "p", typeLabel: "Prefix" }
+  };
+  const source = sources[mode];
+  if (!source || !lesson) return [];
+  const substep = lesson.substep;
+  const level = lesson.readerLevel || "AB";
+  const page = ttEnhancedPlanning()?.findPage?.(substep, level, lesson.wordlistPageNumber) || null;
+  const words = uniqueWords(page?.w || [].concat(lesson.realWords || [], lesson.nonsenseWords || []));
+  const pageValues = new Set(words.flatMap((word) => (
+    ttEnhancedPlanning()?.wordMetadata?.(substep, word)?.[source.key] || []
+  )).map(ttWordKey));
+  return source.entries
+    .filter(([introduced, value]) => introduced === substep && pageValues.has(ttWordKey(value)))
+    .slice(0, limit)
+    .map(([introduced, word]) => ({
+      word: displayWordPart(word, mode),
+      type: mode,
+      label: `${introduced} · on current charting page`,
+      typeLabel: source.typeLabel
+    }));
+}
+
+function ttSection3EarlierElementCards(lesson, mode, limit, seed) {
+  const sources = {
+    welded: { entries: knownWeldedAndExceptions, typeLabel: "Welded/Glued" },
+    latin: { entries: knownLatinBases, typeLabel: "Latin Base" },
+    prefixes: { entries: knownPrefixes, typeLabel: "Prefix" }
+  };
+  const source = sources[mode];
+  if (!source || !lesson) return [];
+  const currentIndex = scopeMap.findIndex((item) => item.id === lesson.substep);
+  return source.entries
+    .filter(([introduced]) => scopeMap.findIndex((item) => item.id === introduced) < currentIndex)
+    .map((entry) => ({ entry, score: ttStableDeckUnit(seed, `${mode}|${entry[0]}|${entry[1]}`) }))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, limit)
+    .map(({ entry: [introduced, word] }) => ({
+      word: displayWordPart(word, mode),
+      type: mode,
+      label: `${introduced} · prior review`,
+      typeLabel: source.typeLabel
+    }));
+}
+
+function ttSection3RequiredElementCards(lesson, seed) {
+  const currentWelded = ttSection3PageElementCards(lesson, "welded", 2);
+  const earlierWelded = ttSection3EarlierElementCards(lesson, "welded", 2, seed)
+    .filter((card) => !currentWelded.some((current) => ttWordKey(current.word) === ttWordKey(card.word)))
+    .slice(0, Math.max(0, 2 - currentWelded.length));
+  const earlierPrefixes = ttSection3EarlierElementCards(lesson, "prefixes", 2, seed);
+  const currentPrefixes = ttSection3PageElementCards(lesson, "prefixes", 2)
+    .filter((card) => !earlierPrefixes.some((prior) => ttWordKey(prior.word) === ttWordKey(card.word)));
+  const currentLatin = ttSection3PageElementCards(lesson, "latin", 2);
+  const earlierLatin = ttSection3EarlierElementCards(lesson, "latin", 2, seed)
+    .filter((card) => !currentLatin.some((current) => ttWordKey(current.word) === ttWordKey(card.word)))
+    .slice(0, Math.max(0, 2 - currentLatin.length));
+  return [
+    ...currentWelded,
+    ...earlierWelded,
+    ...earlierPrefixes,
+    ...currentPrefixes,
+    ...currentLatin,
+    ...earlierLatin,
+    ...ttSection3IntroducedCards(lesson.substep, "suffixes", 2)
+  ];
+}
+
 function ttSection3LessonDeck(lesson) {
   const seed = [
     ttActiveGroup()?.id || "group",
@@ -10802,12 +10883,7 @@ function ttSection3LessonDeck(lesson) {
     .map((word) => ({ word, type: "Current", label: lesson.sectionThreeCurrentConcept || "Current concept" }));
   const hfw = hfwWordsForSubstep(lesson.substep, lesson)
     .map((word) => ({ word, type: "Current HFW", label: `${lesson.substep} current HFW` }));
-  const wordParts = [
-    ...ttSection3IntroducedCards(lesson.substep, "welded", 2),
-    ...ttSection3IntroducedCards(lesson.substep, "latin", 2),
-    ...ttSection3IntroducedCards(lesson.substep, "prefixes", 2),
-    ...ttSection3IntroducedCards(lesson.substep, "suffixes", 2)
-  ];
+  const wordParts = ttSection3RequiredElementCards(lesson, seed);
   const deck = [...fat, ...review, ...current, ...hfw, ...wordParts];
   return {
     reviewTitle: `Lesson Deck · ${deck.length} cards`,

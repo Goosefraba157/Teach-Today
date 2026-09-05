@@ -265,7 +265,7 @@ test("Section 2 recommendations use Reader charting pages with a four-real two-n
 
 test("Section 3 planning selects one prior concept and one current concept", () => {
   const defaults = functionBody("ttDefaultSectionReviewSubsteps", "ttRenderPlannerPanel");
-  assert.match(defaults, /section3: \[ttRandomSection3ReviewSubstep\(skill, level\)\]/);
+  assert.match(defaults, /section3: \[section2\]/);
   assert.match(defaults, /section3Current: \[skill\.id\]/);
 
   const planner = functionBody("ttPlannerSectionsHtml", "ttPlannerScheduleBarHtml");
@@ -274,6 +274,12 @@ test("Section 3 planning selects one prior concept and one current concept", () 
   assert.match(planner, /autoConcept: true/);
   assert.match(planner, /conceptOnly: true/);
   assert.match(planner, /selectionDriven: true/);
+  assert.match(planner, /readerOnly: true/);
+  assert.match(planner, /sourceWords: chartWords/);
+
+  const reviewPicker = functionBody("ttPlannerReviewPickerHtml", "ttSmartPreselect");
+  assert.match(reviewPicker, /options\.sourceWords/);
+  assert.match(reviewPicker, /ttSection2ReaderRealWords\(currentSubstep, level\)/);
 
   const applySelections = functionBody("ttApplyPlannerSelectionsToLesson", "ttKnownWeldedValues");
   assert.match(applySelections, /sectionThreeReviewSubstep/);
@@ -314,7 +320,7 @@ test("the default Lesson Deck follows the requested teaching order", () => {
     "const review =",
     "const current =",
     "const hfw =",
-    "const wordParts =",
+    "const wordParts = ttSection3RequiredElementCards",
     "const deck = [...fat, ...review, ...current, ...hfw, ...wordParts]"
   ];
   let cursor = -1;
@@ -326,9 +332,18 @@ test("the default Lesson Deck follows the requested teaching order", () => {
   assert.match(deck, /ttWeightedFatStackSample\(ttFatStackEntries\(ttActiveGroup\(\)\), 10/);
   assert.match(deck, /section3ReviewCards\(lesson\)\.slice\(0, 3\)/);
   assert.match(deck, /section3CurrentCards\(lesson\)\.slice\(0, 3\)/);
-  ["welded", "latin", "prefixes", "suffixes"].forEach((mode) => {
-    assert.match(deck, new RegExp(`ttSection3IntroducedCards\\(lesson\\.substep, "${mode}", 2\\)`));
-  });
+  const required = functionBody("ttSection3RequiredElementCards", "ttSection3LessonDeck");
+  assert.match(required, /ttSection3PageElementCards\(lesson, "welded", 2\)/);
+  assert.match(required, /Math\.max\(0, 2 - currentWelded\.length\)/);
+  assert.match(required, /ttSection3EarlierElementCards\(lesson, "prefixes", 2, seed\)/);
+  assert.match(required, /ttSection3PageElementCards\(lesson, "prefixes", 2\)/);
+  assert.match(required, /ttSection3PageElementCards\(lesson, "latin", 2\)/);
+  assert.match(required, /Math\.max\(0, 2 - currentLatin\.length\)/);
+  assert.match(required, /ttSection3IntroducedCards\(lesson\.substep, "suffixes", 2\)/);
+
+  const currentPage = functionBody("ttSection3PageElementCards", "ttSection3EarlierElementCards");
+  assert.match(currentPage, /findPage\?\.\(substep, level, lesson\.wordlistPageNumber\)/);
+  assert.match(currentPage, /wordMetadata\?\.\(substep, word\)/);
 
   const refresh = functionBody("ttRefreshSection", "ttChooseReaderPage");
   assert.match(refresh, /sectionThreeDeckSeed/);
