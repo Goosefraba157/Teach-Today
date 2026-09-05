@@ -151,3 +151,10 @@ This file records decisions future chats should not accidentally reverse. Curren
 - Attendance Central is a calendar/read model over existing groups, lessons, attendance sessions, charting, and Sections 6–8 evidence; it does not create a second lesson, student, or attendance database.
 - Its only instructional-record mutation is through the existing audited `attendanceSessions[groupId][date]` correction/no-session workflow. Schedule changes continue through the existing group editor.
 - Group-day explanations are stored as the attendance session note, including explicit no-session reasons. Because complete backups serialize the whole application state, no separate backup pipeline or Firebase dependency is required for Attendance Central.
+
+## Section 2 Reader-only recommendation boundary (2026-09-04)
+
+- Section 2 and Section 2B automatic word recommendations draw only from the Wilson Reader charting-page index, never Dictation Book page pools.
+- A new lesson chooses one earlier review substep/concept per group day and recommends four real Reader words plus two Reader nonsense words. When the chosen concept has fewer than two nonsense words, the nonsense portion may come from another earlier Reader substep.
+- Current recommendations contain six words from the charting page selected for that lesson. Last Misses and Priority remain evidence-driven overlays and are not changed by this source rule.
+- Saved lesson plans retain their selected review words and review substep metadata; reopening a plan must not reroll its recommendation.

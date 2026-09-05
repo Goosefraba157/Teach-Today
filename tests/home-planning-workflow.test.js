@@ -213,7 +213,7 @@ test("Section 2 review filters are additive, independent, and view-only", () => 
   assert.match(source, /"section2B", skill/);
   const substepButtons = functionBody("ttSubstepBubblesHtml", "ttReviewConceptLabel");
   assert.match(substepButtons, /\["section2", "section2B", "section3"\]\.includes\(sectionKey\)/);
-  assert.match(substepButtons, /const endIndex = sectionKey === "section3" && currentIndex > 0 \? currentIndex : currentIndex \+ 1/);
+  assert.match(substepButtons, /const endIndex = allPrior && currentIndex > 0 \? currentIndex : currentIndex \+ 1/);
   assert.match(substepButtons, /scopeMap\.slice\(firstIndex, endIndex\)/);
   assert.match(source, /pageConceptGroups\?\.\(substep, level\)/);
   assert.match(source, /nonsensePageGroup\?\.\(substep\)/);
@@ -233,6 +233,34 @@ test("Section 2 review filters are additive, independent, and view-only", () => 
   ["ang", "ing", "ong", "ung", "ank", "ink", "onk", "unk"].forEach((sound) => {
     assert.match(appSource, new RegExp(`\\[\"2\\.1\", \"${sound}\"\\]`));
   });
+});
+
+test("Section 2 recommendations use Reader charting pages with a four-real two-nonsense review mix", () => {
+  const readerReal = functionBody("ttSection2ReaderRealWords", "ttSection2ReviewPreselect");
+  assert.match(readerReal, /readerWordsFromSubstep\(substep, level\)/);
+  assert.doesNotMatch(readerReal, /dictationWordsFor|ttDictationBook/);
+
+  const preselect = functionBody("ttSection2ReviewPreselect", "ttPlannerReviewSourceHtml");
+  assert.match(preselect, /const realTarget = Math\.min\(4, total\)/);
+  assert.match(preselect, /ttSection2ReaderNonsenseWords\(substep\)/);
+  assert.match(preselect, /scopeMap\.slice\(0, currentIndex\)/);
+  assert.match(preselect, /flatMap\(ttSection2ReaderNonsenseWords\)/);
+
+  const defaults = functionBody("ttDefaultSectionReviewSubsteps", "ttRenderPlannerPanel");
+  assert.match(defaults, /section2: \[section2\]/);
+  assert.match(defaults, /section2B: \[section2B\]/);
+  assert.match(defaults, /ttRandomReaderReviewSubstep\(skill, level/);
+
+  const planner = functionBody("ttPlannerSectionsHtml", "ttPlannerScheduleBarHtml");
+  assert.match(planner, /readerOnly: true/);
+  assert.match(planner, /mixReaderNonsense: true/);
+  assert.match(planner, /sectionTwoCurrentWords \|\| \[\]\)\.slice\(0, 6\)/);
+  assert.match(planner, /sectionTwoCurrentWordsB2 \|\| \[\]\)\.slice\(0, 6\)/);
+
+  const saved = functionBody("ttApplyPlannerSelectionsToLesson", "ttKnownWeldedValues");
+  assert.match(saved, /source: "reader-charting-pages"/);
+  assert.match(saved, /reviewSubstep/);
+  assert.match(saved, /reviewDay2Substep/);
 });
 
 test("Section 3 planning selects one prior concept and one current concept", () => {

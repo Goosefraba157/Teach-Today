@@ -6766,6 +6766,8 @@ function ttBeginEditingOpenPlan(groupId, planId) {
   ttSection8SoundElementsManual = true;
   ttSectionReviewSubsteps = {
     ...ttDefaultSectionReviewSubsteps(skill, level),
+    section2: [planning.section2?.reviewSubstep || priorSubstep(skill.id)],
+    section2B: [planning.section2?.reviewDay2Substep || planning.section2?.reviewSubstep || priorSubstep(skill.id)],
     section3: [planning.section3?.reviewSubstep || lesson.sectionThreeReviewSubstep || priorSubstep(skill.id)],
     section3Current: [planning.section3?.currentSubstep || lesson.sectionThreeCurrentSubstep || skill.id]
   };
@@ -6775,22 +6777,29 @@ function ttBeginEditingOpenPlan(groupId, planId) {
   return true;
 }
 
-function ttRandomSection3ReviewSubstep(skill, level = "AB") {
+function ttRandomReaderReviewSubstep(skill, level = "AB", excluded = []) {
   const currentIndex = scopeMap.findIndex((item) => item.id === skill?.id);
   if (currentIndex <= 0) return skill?.id || scopeMap[0]?.id || "1.1";
+  const blocked = new Set(excluded || []);
   const candidates = scopeMap.slice(0, currentIndex)
     .map((item) => item.id)
-    .filter((substep) => readerWordsFromSubstep(substep, level).length || readerNonsenseWordsFromSubstep(substep).length);
+    .filter((substep) => !blocked.has(substep) && ttSection2ReaderRealWords(substep, level).length);
   return candidates.length
     ? candidates[Math.floor(Math.random() * candidates.length)]
     : priorSubstep(skill.id);
 }
 
+function ttRandomSection3ReviewSubstep(skill, level = "AB") {
+  return ttRandomReaderReviewSubstep(skill, level);
+}
+
 function ttDefaultSectionReviewSubsteps(skill, level = "AB") {
   const priorStep = priorSubstep(skill.id);
+  const section2 = ttRandomReaderReviewSubstep(skill, level);
+  const section2B = ttRandomReaderReviewSubstep(skill, level, [section2]);
   return {
-    section2: [priorStep],
-    section2B: [priorStep],
+    section2: [section2],
+    section2B: [section2B],
     section3: [ttRandomSection3ReviewSubstep(skill, level)],
     section3Current: [skill.id],
     section7: [priorStep],
@@ -8044,10 +8053,6 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   const dictationSentences = uniqueWords(currentDictationSentencesForLesson(lesson, skill, group)).slice(0, 30);
   const readerSentences = uniqueWords(currentReaderSentencesForDictation(lesson, skill)).slice(0, 24);
   const lessonType = ttPlannerDraft.lessonType || "full";
-  const enhancedReviewDefaults = ttEnhancedPlanning()?.isCovered?.(skill.id)
-    ? ttEnhancedReviewWords(lesson, skill, 16)
-    : [];
-
   const plannerRow = (num, color, label, subtitle, pickers, extraAction = "", timeMins = null) =>
     `<div class="planner-section-row" data-sec="${num}" style="--ps-color:${color}">
       <div class="planner-section-label">
@@ -8065,15 +8070,27 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   const scheduleBar = ttPlannerScheduleBarHtml(lessonType);
 
   const row2Decoding = plannerRow(2, "#10b981", "Teach & Review Concepts", "Review first, then current words",
-    ttPlannerReviewPickerHtml("section2Review", "Review words", reviewPool, enhancedReviewDefaults.slice(0, 6).length ? enhancedReviewDefaults.slice(0, 6) : (lesson.sectionTwoReviewWords || []), 6, "section2", skill) +
-    ttPlannerPickerHtml("section2Current", "Current words", currentPool, lesson.sectionTwoCurrentWords || [], 6),
+    ttPlannerReviewPickerHtml("section2Review", "Review words", reviewPool, [], 6, "section2", skill, {
+      autoConcept: true,
+      conceptOnly: true,
+      selectionDriven: true,
+      readerOnly: true,
+      mixReaderNonsense: true
+    }) +
+    ttPlannerPickerHtml("section2Current", "Current words", currentPool, (lesson.sectionTwoCurrentWords || []).slice(0, 6), 6),
     "", "5 min"
   );
 
   // Part 2 uses a distinct set of Section 2 words (Day 2 — different from Day 1)
   const row2Encoding = plannerRow(2, "#10b981", "§2B · Teach & Review Concepts", "Day 2 words — different from Day 1 §2",
-    ttPlannerReviewPickerHtml("section2ReviewB2", "Review words (Day 2)", reviewPool, enhancedReviewDefaults.slice(6, 12).length ? enhancedReviewDefaults.slice(6, 12) : (lesson.sectionTwoReviewWordsB2 || []), 6, "section2B", skill) +
-    ttPlannerPickerHtml("section2CurrentB2", "Current words (Day 2)", currentPool, lesson.sectionTwoCurrentWordsB2 || [], 6),
+    ttPlannerReviewPickerHtml("section2ReviewB2", "Review words (Day 2)", reviewPool, [], 6, "section2B", skill, {
+      autoConcept: true,
+      conceptOnly: true,
+      selectionDriven: true,
+      readerOnly: true,
+      mixReaderNonsense: true
+    }) +
+    ttPlannerPickerHtml("section2CurrentB2", "Current words (Day 2)", currentPool, (lesson.sectionTwoCurrentWordsB2 || []).slice(0, 6), 6),
     "", "5 min"
   );
 
@@ -8196,6 +8213,42 @@ function ttPlannerReviewWordPool(substeps, level) {
   return nsWord ? uniqueWords([...real, nsWord]) : real;
 }
 
+function ttSection2ReaderNonsenseWords(substep) {
+  const enhanced = ttEnhancedPlanning()?.nonsensePageGroup?.(substep)?.words || [];
+  return uniqueWords(enhanced.concat(readerNonsenseWordsFromSubstep(substep))).filter(isValidDictationWord);
+}
+
+function ttSection2ReaderRealWords(substep, level) {
+  const nonsense = new Set(ttSection2ReaderNonsenseWords(substep).map(ttWordKey));
+  return uniqueWords(readerWordsFromSubstep(substep, level))
+    .filter(isValidDictationWord)
+    .filter((word) => !nonsense.has(ttWordKey(word)));
+}
+
+function ttSection2ReviewPreselect(substep, conceptWords, skill, level, targetCount = 6) {
+  const total = Number(targetCount) || 6;
+  const realTarget = Math.min(4, total);
+  const allReal = ttSection2ReaderRealWords(substep, level);
+  const allRealKeys = new Set(allReal.map(ttWordKey));
+  const conceptReal = uniqueWords(conceptWords || []).filter((word) => allRealKeys.has(ttWordKey(word)));
+  const real = chooseWords(conceptReal, realTarget, true);
+  if (real.length < realTarget) {
+    real.push(...chooseWords(allReal.filter((word) => !real.includes(word)), realTarget - real.length, true));
+  }
+  let nonsensePool = ttSection2ReaderNonsenseWords(substep);
+  if (nonsensePool.length < total - real.length) {
+    const currentIndex = scopeMap.findIndex((item) => item.id === skill.id);
+    const alternatives = scopeMap.slice(0, currentIndex).map((item) => item.id).filter((id) => id !== substep);
+    nonsensePool = uniqueWords(nonsensePool.concat(shuffled(alternatives).flatMap(ttSection2ReaderNonsenseWords)));
+  }
+  const nonsense = chooseWords(nonsensePool.filter((word) => !real.includes(word)), total - real.length, true);
+  const selected = uniqueWords(real.concat(nonsense));
+  if (selected.length < total) {
+    selected.push(...chooseWords(allReal.filter((word) => !selected.includes(word)), total - selected.length, true));
+  }
+  return selected.slice(0, total);
+}
+
 function ttPlannerReviewSourceHtml(skill, selectedSubsteps) {
   const currentIndex = scopeMap.findIndex((item) => item.id === skill.id);
   const options = scopeMap.slice(Math.max(0, currentIndex - 8), currentIndex + 1).map((item) => item.id).reverse();
@@ -8271,7 +8324,7 @@ function ttSubstepBubblesHtml(sectionKey, skill) {
   const currentIndex = scopeMap.findIndex((item) => item.id === skill.id);
   const allPrior = ["section2", "section2B", "section3"].includes(sectionKey);
   const firstIndex = allPrior ? 0 : Math.max(0, currentIndex - 8);
-  const endIndex = sectionKey === "section3" && currentIndex > 0 ? currentIndex : currentIndex + 1;
+  const endIndex = allPrior && currentIndex > 0 ? currentIndex : currentIndex + 1;
   const options = scopeMap.slice(firstIndex, endIndex).map((item) => item.id).reverse();
   const current = (ttSectionReviewSubsteps[sectionKey] || [])[0];
   return `<div class="planner-substep-row" data-substep-section="${escapeHtml(sectionKey)}">
@@ -8506,6 +8559,8 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     ? ttDictationBookReviewWordPool([currentSubstep], level)
     : isNView
     ? ttReviewNonsensePool(skill.id)
+    : options.readerOnly
+    ? ttSection2ReaderRealWords(currentSubstep, level)
     : uniqueWords(
         readerWordsFromSubstep(currentSubstep, level).concat(dictationWordsFor(currentSubstep, level))
       ).filter(isValidDictationWord);
@@ -8527,7 +8582,9 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     ttPickerSelections[id] = options.selectionDriven && sectionKey === "section7" && (selected || []).length
       ? uniqueWords(selected).slice(0, numTarget)
       : options.selectionDriven
-      ? ttSmartPreselect(filterModel.words, numTarget)
+      ? options.mixReaderNonsense
+        ? ttSection2ReviewPreselect(currentSubstep, filterModel.words, skill, level, numTarget)
+        : ttSmartPreselect(filterModel.words, numTarget)
       : (selected || []).length
         ? uniqueWords(selected).slice(0, numTarget)
         : ttBuildReviewPreselect(id, skill, numTarget, level);
@@ -8549,7 +8606,7 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     : "";
   const customInput = `<div class="picker-custom-row"><input type="text" class="picker-custom-input" placeholder="Type a word…" onkeydown="if(event.key==='Enter'){ttAddCustomWord(this);event.preventDefault();}"><button type="button" class="picker-custom-add" onclick="ttAddCustomWord(this.previousElementSibling)">+</button></div>`;
 
-  return `<article class="planner-picker${selectedSet.size >= numTarget && numTarget > 0 ? " picker-complete" : ""}" data-picker="${escapeHtml(id)}" data-review-section="${escapeHtml(sectionKey)}" data-target-count="${numTarget}" data-selection-driven="${options.selectionDriven ? "true" : "false"}" data-auto-concept="${options.autoConcept ? "true" : "false"}" data-concept-only="${options.conceptOnly ? "true" : "false"}"${options.preferredPage ? ` data-preferred-page="${escapeHtml(options.preferredPage)}"` : ""}>
+  return `<article class="planner-picker${selectedSet.size >= numTarget && numTarget > 0 ? " picker-complete" : ""}" data-picker="${escapeHtml(id)}" data-review-section="${escapeHtml(sectionKey)}" data-target-count="${numTarget}" data-selection-driven="${options.selectionDriven ? "true" : "false"}" data-auto-concept="${options.autoConcept ? "true" : "false"}" data-concept-only="${options.conceptOnly ? "true" : "false"}" data-reader-only="${options.readerOnly ? "true" : "false"}" data-mix-reader-nonsense="${options.mixReaderNonsense ? "true" : "false"}"${options.preferredPage ? ` data-preferred-page="${escapeHtml(options.preferredPage)}"` : ""}>
     <header>
       <strong>${escapeHtml(title)}</strong>
       <span class="picker-target-pill">${numTarget} target</span>
@@ -8647,7 +8704,12 @@ function ttReshufflePicker(btn) {
   ttPickerSelections[pickerId] = [];
   if (targetCount > 0) {
     const pool = chips.map((c) => c.dataset.value);
-    const pick = ttSmartPreselect(pool, targetCount);
+    const sectionKey = picker.dataset.reviewSection;
+    const skill = scopeMap.find((item) => item.id === (ttPlannerDraft.substep || ttPlannerGroup()?.substep)) || activeStep(ttPlannerGroup());
+    const reviewSubstep = (ttSectionReviewSubsteps[sectionKey] || [priorSubstep(skill.id)])[0];
+    const pick = picker.dataset.mixReaderNonsense === "true"
+      ? ttSection2ReviewPreselect(reviewSubstep, pool, skill, ttPlannerDraft.level || ttPlannerGroup()?.readerLevel || "AB", targetCount)
+      : ttSmartPreselect(pool, targetCount);
     ttPickerSelections[pickerId] = pick;
     const pickSet = new Set(pick);
     chips.forEach((c) => { if (pickSet.has(c.dataset.value)) c.classList.add("selected"); });
@@ -8879,6 +8941,8 @@ function ttUpdateSectionReviewChips(sectionKey) {
     ? ttDictationBookReviewWordPool([currentSubstep], level)
     : isNView
     ? ttReviewNonsensePool(skill.id)
+    : picker.dataset.readerOnly === "true"
+    ? ttSection2ReaderRealWords(currentSubstep, level)
     : uniqueWords(
         readerWordsFromSubstep(currentSubstep, level).concat(dictationWordsFor(currentSubstep, level))
       ).filter(isValidDictationWord);
@@ -8898,7 +8962,9 @@ function ttUpdateSectionReviewChips(sectionKey) {
     : { active: "all", filters: [], words: newPool };
 
   if (picker.dataset.selectionDriven === "true") {
-    ttPickerSelections[pickerId] = ttSmartPreselect(filterModel.words, Number(picker.dataset.targetCount) || 0);
+    ttPickerSelections[pickerId] = picker.dataset.mixReaderNonsense === "true"
+      ? ttSection2ReviewPreselect(currentSubstep, filterModel.words, skill, level, Number(picker.dataset.targetCount) || 0)
+      : ttSmartPreselect(filterModel.words, Number(picker.dataset.targetCount) || 0);
   }
   const currentSels = ttPickerSelections[pickerId] || [];
   const selectedSet = new Set(currentSels);
@@ -9165,7 +9231,10 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
       review: (ttLesson.sectionTwoReviewWords || []).slice(),
       current: (ttLesson.sectionTwoCurrentWords || []).slice(),
       reviewDay2: (ttLesson.sectionTwoReviewWordsB2 || []).slice(),
-      currentDay2: (ttLesson.sectionTwoCurrentWordsB2 || []).slice()
+      currentDay2: (ttLesson.sectionTwoCurrentWordsB2 || []).slice(),
+      reviewSubstep: (ttSectionReviewSubsteps.section2 || [priorSubstep(skill.id)])[0],
+      reviewDay2Substep: (ttSectionReviewSubsteps.section2B || [priorSubstep(skill.id)])[0],
+      source: "reader-charting-pages"
     },
     section3: {
       review: (ttLesson.sectionThreeReviewWords || []).slice(),
