@@ -6765,14 +6765,15 @@ function ttRenderPlannerPanel() {
   const draft = ttEnsurePlannerDraft(group);
   const skill = scopeMap.find((item) => item.id === draft.substep) || activeStep(group);
   const level = draft.level || group.readerLevel || "AB";
-  ttById("ttPlannerTitle").textContent = editingOpenPlan
-    ? `${group.name || "Group"} · Edit Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)}`
-    : group.name || "Lesson builder";
+  const lessonNumber = editingOpenPlan ? ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group) : "";
+  ttById("ttPlannerTitle").innerHTML = editingOpenPlan
+    ? `${escapeHtml(group.name || "Group")} · <mark>Edit Lesson ${escapeHtml(lessonNumber)}</mark>`
+    : escapeHtml(group.name || "Lesson builder");
   const plannerEyebrow = panel.querySelector(".planner-head .eyebrow");
   if (plannerEyebrow) plannerEyebrow.textContent = editingOpenPlan ? "Edit Current Lesson" : "Plan New Lesson";
   const customizeTitle = panel.querySelector(".planner-customize-heading strong");
   if (customizeTitle) customizeTitle.textContent = editingOpenPlan ? "Review or change the saved lesson" : "Review or customize before teaching";
-  ttById("ttPlannerLastLesson").textContent = ttPlannerLastLessonText(group);
+  ttById("ttPlannerLastLesson").innerHTML = ttPlannerLastLessonHtml(group);
   ttFillPlannerCoreSelects(group, skill, level);
   ttRenderModePicker();
   const lesson = ttPlannerPreviewLesson(group);
@@ -6782,7 +6783,10 @@ function ttRenderPlannerPanel() {
   ttRenderLessonAssistant(group, skill, lesson);
   ttRenderPlannerCustomizeState();
   const resetButton = ttById("ttPlannerUseDefaults");
-  if (resetButton) resetButton.textContent = editingOpenPlan ? "Reset to Saved Plan" : "Reset to Best Plan";
+  if (resetButton) {
+    resetButton.textContent = editingOpenPlan ? "Undo unsaved plan edits" : "Restore recommended plan";
+    resetButton.title = editingOpenPlan ? "Discard only the unsaved Customize changes and reload this lesson's saved plan." : "Restore the app's recommended selections for this new lesson.";
+  }
   ttUpdateHomeReferenceLinks();
 }
 
@@ -6794,10 +6798,14 @@ function ttRenderPlannerCustomizeState() {
 function ttInstructionalLessonType(group, lesson) {
   const records = ttGroupChartRecords(group).filter((record) => !lesson?.substep || record.substep === lesson.substep);
   const latest = records.at(-1);
-  const misses = ttAssistantTroubleItems(group, lesson, 8);
   if (!records.length) return "Introduction";
-  if (misses.length || Number(latest?.correct || 0) < 12) return "Accuracy";
-  if (latest && !latest.automaticity) return "Fluency";
+  const latestDay = dateKey(latest?.date || latest?.displayDate);
+  const session = records.filter((record) => latest?.planId ? record.planId === latest.planId : dateKey(record.date || record.displayDate) === latestDay);
+  const averageCorrect = session.reduce((sum, record) => sum + Number(record.correct || 0), 0) / Math.max(1, session.length);
+  const timed = session.map((record) => Number(record.seconds || 0)).filter((seconds) => seconds > 0);
+  const averageSeconds = timed.reduce((sum, seconds) => sum + seconds, 0) / Math.max(1, timed.length);
+  if (averageCorrect < 12) return "Accuracy";
+  if (averageSeconds > 35 || session.some((record) => record.automaticity === false)) return "Fluency";
   return "Review";
 }
 
@@ -6863,24 +6871,32 @@ function ttAssistantReadiness(group, lesson) {
 }
 
 function ttAssistantRecommendation(group, lesson, skill) {
-  const data = ttAssistantLatestRecords(group, lesson);
-  const trouble = ttAssistantTroubleItems(group, lesson, 6);
-  const reasonParts = [];
-  if (data.latest) {
-    const score = `${data.latest.correct ?? "--"}/${data.latest.total || 15}`;
-    if (Number(data.latest.correct || 0) < 12) reasonParts.push(`last chart was ${score}, below mastery`);
-    else if (!data.latest.automaticity) reasonParts.push(`last chart was accurate but automaticity is still building`);
-    else reasonParts.push(`recent charting shows ${score} with automaticity`);
+  const focus = ttInstructionalLessonType(group, lesson);
+  const review = ttPlannerReviewRecommendation(group, skill);
+  return { title: `${focus} focus`, review };
+}
+
+function ttPlannerReviewRecommendation(group, skill) {
+  const currentIndex = scopeMap.findIndex((item) => item.id === skill?.id);
+  const bySubstep = new Map();
+  ttGroupChartRecords(group).forEach((record) => {
+    if (record.schoolYearId && group.schoolYearId && record.schoolYearId !== group.schoolYearId) return;
+    const substep = String(record.substep || "");
+    const index = scopeMap.findIndex((item) => item.id === substep);
+    if (!substep || index < 0 || (currentIndex >= 0 && index >= currentIndex)) return;
+    if (!bySubstep.has(substep)) bySubstep.set(substep, []);
+    bySubstep.get(substep).push(record);
+  });
+  const ranked = [...bySubstep].map(([substep, records]) => {
+    const recent = records.slice().sort((a, b) => ttRecordTime(b) - ttRecordTime(a)).slice(0, 3);
+    const average = recent.reduce((sum, record) => sum + Number(record.correct || 0), 0) / Math.max(1, recent.length);
+    return { substep, average, last: Math.max(...recent.map(ttRecordTime), 0) };
+  }).sort((a, b) => (a.average < 14) !== (b.average < 14) ? (a.average < 14 ? -1 : 1) : a.average - b.average || a.last - b.last);
+  if (ranked.length) {
+    const choice = ranked[0];
+    return { substep: choice.substep, detail: choice.average < 14 ? `${choice.average.toFixed(1)}/15 recent average` : "longest since review" };
   }
-  if (trouble.length) reasonParts.push(`${trouble.length} trouble spot${trouble.length === 1 ? "" : "s"} are being reviewed`);
-  if (!reasonParts.length) reasonParts.push(`smart defaults use ${skill.id} and the group’s current lesson data`);
-  const reviewSource = priorSubstep(skill.id);
-  const title = `${ttPlannerFormatLabel()} ${ttInstructionalLessonType(group, lesson)} lesson for ${skill.id}`;
-  return {
-    title,
-    reason: `Recommended because ${reasonParts.join(" and ")}.`,
-    support: `Current work comes from ${skill.id}; maintenance review pulls from ${reviewSource} and older mastered substeps when data is available.`
-  };
+  return { substep: priorSubstep(skill.id), detail: "previous taught substep" };
 }
 
 function ttAssistantContentList(values = [], fallback = "Selected in lesson") {
@@ -7051,19 +7067,18 @@ function ttRenderLessonAssistant(group, skill, fallbackLesson) {
   const summary = ttById("ttAssistantSummary");
   if (summary) {
     summary.innerHTML = [
-      ["Step/Substep", `${String(activeSkill.id).split(".")[0] || "--"} / ${activeSkill.id}`],
-      ["Instruction", ttInstructionalLessonType(group, lesson)],
-      ["Length", `${ttPlannerRecommendedMinutes()} min`],
-      ["Readiness", readiness.status]
-    ].map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
+      ["Substep", activeSkill.id, "substep"],
+      ["Teaching focus", ttInstructionalLessonType(group, lesson), "focus"],
+      ["Length", `${ttPlannerRecommendedMinutes()} min`, "length"]
+    ].map(([label, value, kind]) => `<article class="${kind}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
   }
   const rec = ttById("ttAssistantRecommendation");
   if (rec) {
-    rec.innerHTML = `<span>Today's Recommended Lesson</span>
-      <strong>${escapeHtml(recommendation.title)}</strong>
-      <p>${escapeHtml(recommendation.reason)}</p>
-      <em>${escapeHtml(recommendation.support)}</em>
-      ${ttAssistantNotice ? `<small>${escapeHtml(ttAssistantNotice)}</small>` : ""}`;
+    const latestPlan = (group.history || []).slice().reverse().find((plan) => plan.lessons?.[0] && ["Complete", "Taught"].includes(plan.status));
+    const latestEvidence = ttPlannerEvidenceForPlan(group, latestPlan);
+    const rows = ttPlannerEvidenceRows(latestEvidence.charts);
+    const topEncoding = ttPlannerEncodingItemsHtml(latestEvidence.sections, latestPlan?.lessons?.[0]?.substep || activeSkill.id, 8);
+    rec.innerHTML = `<span>Planning brief</span><strong>${escapeHtml(recommendation.title)} · Review <mark>${escapeHtml(recommendation.review.substep)}</mark></strong><p class="assistant-review-reason">${escapeHtml(recommendation.review.detail)}</p>${rows ? `<ul class="planner-snapshot-chart-list compact">${rows}</ul>` : `<p class="planner-snapshot-empty">No charting saved in the last completed lesson.</p>`}${topEncoding ? `<div class="planner-encoding-brief"><b>Most recent Sections 6–8 misses</b>${topEncoding}</div>` : ""}${ttAssistantNotice ? `<small class="assistant-editing-notice">${escapeHtml(ttAssistantNotice)}</small>` : ""}`;
   }
   const ready = ttById("ttAssistantReadiness");
   if (ready) {
@@ -7109,8 +7124,35 @@ function ttPlannerEvidenceRows(charts = []) {
   charts.slice().sort((a, b) => ttRecordTime(a) - ttRecordTime(b)).forEach((record) => latestByStudent.set(record.student || "Student", record));
   return [...latestByStudent.values()].sort((a, b) => Number(b.correct || 0) - Number(a.correct || 0) || Number(a.seconds || 9999) - Number(b.seconds || 9999)).map((record) => {
     const misses = ttMissWordsFromChartRecord(record).slice(0, 5);
-    return `<li><strong>${escapeHtml(record.student || "Student")}</strong><span class="planner-snapshot-score ${ttPlannerScoreClass(record.correct)}">${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</span><span class="planner-snapshot-time ${ttPlannerTimeClass(record.seconds)}">${escapeHtml(record.seconds || "—")}s</span><span class="planner-snapshot-misses">${misses.length ? `Missed: ${escapeHtml(misses.join(", "))}` : "No misses"}</span></li>`;
+    return `<li><strong>${escapeHtml(record.student || "Student")}</strong><span class="planner-snapshot-misses">${misses.length ? `Missed: <b>${escapeHtml(misses.join(", "))}</b>` : "No misses"}</span><span class="planner-snapshot-score ${ttPlannerScoreClass(record.correct)}">${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</span><span class="planner-snapshot-time ${ttPlannerTimeClass(record.seconds)}">${escapeHtml(record.seconds || "—")}s</span></li>`;
   }).join("");
+}
+
+function ttPlannerEncodingClass(record, fallbackSubstep = "") {
+  const raw = String(record?.item || record?.word || "").trim();
+  const clean = raw.toLowerCase().replace(/^[-–—]+|[-–—]+$/g, "");
+  const substep = record?.substep || fallbackSubstep;
+  const detail = `${record?.category || ""} ${record?.section || ""}`.toLowerCase();
+  const vowels = new Set(["a", "e", "i", "o", "u", "ă", "ĕ", "ĭ", "ŏ", "ŭ", "ā", "ē", "ī", "ō", "ū"]);
+  const consonants = new Set(["b", "c", "ch", "ck", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "qu", "r", "s", "sh", "t", "th", "v", "w", "wh", "x", "y", "z"]);
+  if (vowels.has(clean)) return "vowel";
+  if (ttKnownWeldedValues(substep).map((item) => String(item).toLowerCase()).includes(clean)) return "welded";
+  if (consonants.has(clean)) return "consonant";
+  if (knownLatinBaseValues(substep).map((item) => String(item).toLowerCase()).includes(clean)) return "latin";
+  if (knownPrefixValues(substep).concat(knownSuffixValues(substep)).map((item) => String(item).toLowerCase()).includes(clean) || /prefix|suffix|affix|element/.test(detail)) return "affix";
+  return "word";
+}
+
+function ttPlannerEncodingItemsHtml(records = [], fallbackSubstep = "", limit = 8) {
+  const counts = new Map();
+  records.filter((record) => record.item || record.word).forEach((record) => {
+    const item = String(record.item || record.word).trim();
+    const key = item.toLowerCase();
+    const current = counts.get(key) || { item, count: 0, record };
+    current.count += 1;
+    counts.set(key, current);
+  });
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.item.localeCompare(b.item)).slice(0, limit).map((entry) => `<span class="planner-encoding-item ${ttPlannerEncodingClass(entry.record, fallbackSubstep)}">${escapeHtml(entry.item)}${entry.count > 1 ? ` <b>×${entry.count}</b>` : ""}</span>`).join("");
 }
 
 function ttPlannerPlanSnapshotCard(group, plan, label) {
@@ -7120,8 +7162,8 @@ function ttPlannerPlanSnapshotCard(group, plan, label) {
   const evidence = ttPlannerEvidenceForPlan(group, plan);
   const taught = plan.sessions?.[ttPlanSessionDay(plan, lesson)]?.date || lesson.scheduledDate || plan.scheduledDate || plan.dailyKey || plan.savedAt || plan.created;
   const sectionItems = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((section) => `<span class="${progress.done.includes(section) ? "done" : progress.skipped.includes(section) ? "skipped" : ""}">${section}</span>`).join("");
-  const sectionMisses = uniqueWords(evidence.sections.filter((record) => record.item || record.word).map((record) => record.item || record.word)).slice(0, 8);
-  return `<article class="planner-snapshot-card"><header><div><span>${escapeHtml(label)}</span><strong>Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(lesson.substep || "—")} · Reader ${escapeHtml(lesson.reader || "—")}, p. ${escapeHtml(lesson.wordlistPageNumber || lesson.wordlistPage || "—")}</strong></div><em>${escapeHtml(ttLongLessonDate(taught))}</em></header><div class="planner-section-progress" aria-label="Lesson section progress">${sectionItems}</div>${evidence.charts.length ? `<ul class="planner-snapshot-chart-list">${ttPlannerEvidenceRows(evidence.charts)}</ul>` : `<p class="planner-snapshot-empty">No charting was saved for this lesson.</p>`}${sectionMisses.length ? `<p class="planner-snapshot-encoding"><strong>Sections 6–8 misses:</strong> ${escapeHtml(sectionMisses.join(" · "))}</p>` : ""}</article>`;
+  const encodingItems = ttPlannerEncodingItemsHtml(evidence.sections, lesson.substep, 8);
+  return `<article class="planner-snapshot-card"><header><div><span>${escapeHtml(label)}</span><strong><mark>Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))}</mark> · <b class="snapshot-substep">${escapeHtml(lesson.substep || "—")}</b> · Reader <b class="snapshot-page">${escapeHtml(lesson.reader || "—")}, p. ${escapeHtml(lesson.wordlistPageNumber || lesson.wordlistPage || "—")}</b></strong></div><em>${escapeHtml(ttLongLessonDate(taught))}</em></header><div class="planner-section-progress" aria-label="Lesson section progress">${sectionItems}</div>${evidence.charts.length ? `<ul class="planner-snapshot-chart-list">${ttPlannerEvidenceRows(evidence.charts)}</ul>` : `<p class="planner-snapshot-empty">No charting was saved for this lesson.</p>`}${encodingItems ? `<div class="planner-snapshot-encoding"><strong>Sections 6–8:</strong>${encodingItems}</div>` : ""}</article>`;
 }
 
 function ttPlannerChartImageSrc(reader, page) {
@@ -7542,6 +7584,14 @@ function ttPlannerLastLessonText(group) {
   const lesson = lastPlan.lessons[0];
   const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
   return `Last taught: ${lesson.substep}, Reader ${lesson.reader}, wordlist p. ${lesson.wordlistPageNumber || "--"}${lastPlan.combinedParticipation ? ` · combined with ${lastPlan.hostGroupNameAtTime || "another group"}` : ""}${saved ? ` · ${saved}` : ""}`;
+}
+
+function ttPlannerLastLessonHtml(group) {
+  const lastPlan = (group.history || []).slice().reverse().find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0]);
+  if (!lastPlan?.lessons?.[0]) return "No saved lesson yet. Smart defaults use this group’s current substep.";
+  const lesson = lastPlan.lessons[0];
+  const saved = lastPlan.savedAt ? formatDateTime(new Date(lastPlan.savedAt)) : lastPlan.created || "";
+  return `Last taught: <strong class="planner-last-substep">${escapeHtml(lesson.substep || "—")}</strong> · Reader <strong class="planner-last-page">${escapeHtml(lesson.reader || "—")}, p. ${escapeHtml(lesson.wordlistPageNumber || "—")}</strong>${lastPlan.combinedParticipation ? ` · combined with ${escapeHtml(lastPlan.hostGroupNameAtTime || "another group")}` : ""}${saved ? ` · <strong class="planner-last-date">${escapeHtml(saved)}</strong>` : ""}`;
 }
 
 function ttFillPlannerCoreSelects(group, skill, level) {

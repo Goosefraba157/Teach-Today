@@ -30,6 +30,7 @@ test("Home planning snapshot is read-only and uses rendered charting pages", () 
   assert.match(html, /id="ttPlannerLessonSnapshot"/);
   assert.match(html, /id="ttPlannerChartPreview"/);
   assert.doesNotMatch(html, /id="ttPlannerDuplicatePrevious"/);
+  assert.doesNotMatch(html, /id="ttAssistantReadiness"/);
   const preview = functionBody("ttRenderPlannerChartPreview", "ttRenderPlannerLessonSnapshot");
   assert.match(source, /function ttPlannerChartImageSrc[\s\S]*rendered-pages\/reader/);
   assert.match(preview, /Viewing only/);
@@ -39,6 +40,8 @@ test("Home planning snapshot is read-only and uses rendered charting pages", () 
   assert.match(snapshot, /Open lesson · work completed so far/);
   assert.match(snapshot, /Last completed lesson/);
   assert.doesNotMatch(snapshot, /saveState|appState\s*=|\.history\s*=|ttBuildPlannerLesson/);
+  assert.match(source, /function ttPlannerReviewRecommendation/);
+  assert.match(source, /function ttPlannerEncodingItemsHtml/);
 });
 
 test("Home copies the lesson data actions without duplicating their records", () => {
