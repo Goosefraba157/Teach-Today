@@ -8,6 +8,8 @@
 ## Last Updated
 2026-09-04
 
+- Complete locally on 2026-09-04: the circled Home lesson-planning summary is now a read-only planning snapshot. It shows up to two completed lessons plus an open lesson's current Section 1–10 progress, linked charting scores/times/misses using the established green/yellow/red thresholds, and recent Sections 6–8 misses. A right-side image preview uses the existing pre-rendered official charting pages with previous/next viewing controls that do not change Customize selections or save data. The obsolete `Redo Charting Page` control was removed from this area. Group cards, continuity controls, Customize, and all student/lesson data paths are unchanged. Exact next step: publish, fully close/reopen the iPad shell after deployment, and visually confirm the snapshot and chart-page arrows for one completed lesson and one partially completed lesson.
+
 ## Shared Memory Rules
 - This is the canonical current-state file for every Codex/ChatGPT account and computer working on the repository.
 - `AGENTS.md` requires future coding chats to read this file first and update it after material work.

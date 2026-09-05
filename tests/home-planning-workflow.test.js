@@ -26,6 +26,21 @@ test("Home exposes one primary planning surface", () => {
   assert.doesNotMatch(source, /Continue where I left off/);
 });
 
+test("Home planning snapshot is read-only and uses rendered charting pages", () => {
+  assert.match(html, /id="ttPlannerLessonSnapshot"/);
+  assert.match(html, /id="ttPlannerChartPreview"/);
+  assert.doesNotMatch(html, /id="ttPlannerDuplicatePrevious"/);
+  const preview = functionBody("ttRenderPlannerChartPreview", "ttRenderPlannerLessonSnapshot");
+  assert.match(source, /function ttPlannerChartImageSrc[\s\S]*rendered-pages\/reader/);
+  assert.match(preview, /Viewing only/);
+  assert.match(preview, /ttPlannerChartPreview = \{ key, page: pages\[nextIndex\] \}/);
+  assert.doesNotMatch(preview, /saveState|ttPlannerDraft\.wordlist\s*=|ttBuildPlannerLesson/);
+  const snapshot = functionBody("ttRenderPlannerLessonSnapshot", "ttBindLessonAssistantActions");
+  assert.match(snapshot, /Open lesson · work completed so far/);
+  assert.match(snapshot, /Last completed lesson/);
+  assert.doesNotMatch(snapshot, /saveState|appState\s*=|\.history\s*=|ttBuildPlannerLesson/);
+});
+
 test("Home copies the lesson data actions without duplicating their records", () => {
   ["ttHomeSavedToggle", "ttHomeDataToggle", "ttHomeProfile"].forEach((id) => {
     assert.match(html, new RegExp(`id="${id}"`));

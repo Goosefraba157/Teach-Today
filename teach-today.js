@@ -54,6 +54,7 @@ let ttSection1LastTap = { time: 0, x: 0, y: 0 };
 let ttSection1Pan = null;
 let ttPlannerGroupId = "";
 let ttPlannerDraft = {};
+let ttPlannerChartPreview = { key: "", page: 0 };
 let ttPlannerEditingPlanId = "";
 let ttSectionReviewSubsteps = {};
 let ttPickerSelections = {};      // { pickerId: string[] }  — ordered selected words
@@ -6782,12 +6783,6 @@ function ttRenderPlannerPanel() {
   ttRenderPlannerCustomizeState();
   const resetButton = ttById("ttPlannerUseDefaults");
   if (resetButton) resetButton.textContent = editingOpenPlan ? "Reset to Saved Plan" : "Reset to Best Plan";
-  const reteachButton = ttById("ttPlannerDuplicatePrevious");
-  if (reteachButton) {
-    const unavailable = !ttPreviousTeachPlan(group);
-    reteachButton.hidden = unavailable;
-    reteachButton.closest(".assistant-reteach-action").hidden = unavailable;
-  }
   ttUpdateHomeReferenceLinks();
 }
 
@@ -7075,6 +7070,7 @@ function ttRenderLessonAssistant(group, skill, fallbackLesson) {
     ready.className = `assistant-readiness ${readiness.status.toLowerCase().replace(/\s+/g, "-")}`;
     ready.innerHTML = `<span>${escapeHtml(readiness.status)}</span><p>${escapeHtml(readiness.details)}</p>`;
   }
+  ttRenderPlannerLessonSnapshot(group, lesson, activeSkill);
   const filters = ttById("ttPlannerFilters");
   if (filters && !filters.innerHTML) filters.innerHTML = ttPlannerFiltersHtml();
   ttBindPlannerFilters();
@@ -7090,6 +7086,81 @@ function ttRenderLessonAssistant(group, skill, fallbackLesson) {
   const panel = ttById("ttAssistantTeacherPanel");
   if (panel) panel.innerHTML = ttAssistantStudentPanelHtml(group, lesson);
   ttBindLessonAssistantActions();
+}
+
+function ttPlannerEvidenceForPlan(group, plan) {
+  if (!plan?.lessons?.[0]) return { charts: [], sections: [] };
+  const lesson = plan.lessons[0];
+  const day = plan.sessions?.[ttPlanSessionDay(plan, lesson)]?.date || lesson.scheduledDate || plan.scheduledDate || plan.dailyKey || dateKey(plan.savedAt || plan.created);
+  return typeof ttAttendanceCentralEvidence === "function" ? ttAttendanceCentralEvidence(group, plan, day) : { charts: [], sections: [] };
+}
+
+function ttPlannerScoreClass(correct) {
+  return Number(correct || 0) >= 14 ? "good" : Number(correct || 0) >= 12 ? "watch" : "needs";
+}
+
+function ttPlannerTimeClass(seconds) {
+  const value = Number(seconds || 0);
+  return value <= 0 ? "unknown" : value <= 35 ? "auto" : value <= 60 ? "developing" : "urgent";
+}
+
+function ttPlannerEvidenceRows(charts = []) {
+  const latestByStudent = new Map();
+  charts.slice().sort((a, b) => ttRecordTime(a) - ttRecordTime(b)).forEach((record) => latestByStudent.set(record.student || "Student", record));
+  return [...latestByStudent.values()].sort((a, b) => Number(b.correct || 0) - Number(a.correct || 0) || Number(a.seconds || 9999) - Number(b.seconds || 9999)).map((record) => {
+    const misses = ttMissWordsFromChartRecord(record).slice(0, 5);
+    return `<li><strong>${escapeHtml(record.student || "Student")}</strong><span class="planner-snapshot-score ${ttPlannerScoreClass(record.correct)}">${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</span><span class="planner-snapshot-time ${ttPlannerTimeClass(record.seconds)}">${escapeHtml(record.seconds || "—")}s</span><span class="planner-snapshot-misses">${misses.length ? `Missed: ${escapeHtml(misses.join(", "))}` : "No misses"}</span></li>`;
+  }).join("");
+}
+
+function ttPlannerPlanSnapshotCard(group, plan, label) {
+  if (!plan?.lessons?.[0]) return "";
+  const lesson = plan.lessons[0];
+  const progress = ttCompletedSectionSummary(lesson);
+  const evidence = ttPlannerEvidenceForPlan(group, plan);
+  const taught = plan.sessions?.[ttPlanSessionDay(plan, lesson)]?.date || lesson.scheduledDate || plan.scheduledDate || plan.dailyKey || plan.savedAt || plan.created;
+  const sectionItems = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((section) => `<span class="${progress.done.includes(section) ? "done" : progress.skipped.includes(section) ? "skipped" : ""}">${section}</span>`).join("");
+  const sectionMisses = uniqueWords(evidence.sections.filter((record) => record.item || record.word).map((record) => record.item || record.word)).slice(0, 8);
+  return `<article class="planner-snapshot-card"><header><div><span>${escapeHtml(label)}</span><strong>Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(lesson.substep || "—")} · Reader ${escapeHtml(lesson.reader || "—")}, p. ${escapeHtml(lesson.wordlistPageNumber || lesson.wordlistPage || "—")}</strong></div><em>${escapeHtml(ttLongLessonDate(taught))}</em></header><div class="planner-section-progress" aria-label="Lesson section progress">${sectionItems}</div>${evidence.charts.length ? `<ul class="planner-snapshot-chart-list">${ttPlannerEvidenceRows(evidence.charts)}</ul>` : `<p class="planner-snapshot-empty">No charting was saved for this lesson.</p>`}${sectionMisses.length ? `<p class="planner-snapshot-encoding"><strong>Sections 6–8 misses:</strong> ${escapeHtml(sectionMisses.join(" · "))}</p>` : ""}</article>`;
+}
+
+function ttPlannerChartImageSrc(reader, page) {
+  return `Reader%20Pages%20for%20Charting%20Section%204/rendered-pages/reader${encodeURIComponent(reader)}-page-${String(page).padStart(3, "0")}.webp`;
+}
+
+function ttRenderPlannerChartPreview(group, lesson, skill) {
+  const host = ttById("ttPlannerChartPreview");
+  if (!host) return;
+  const reader = Number(lesson?.reader || skill?.reader || String(skill?.id || "").split(".")[0]);
+  const level = lesson?.readerLevel || ttPlannerDraft.level || group?.readerLevel || "AB";
+  const pages = pageList(skill, "wordlist", level);
+  const selected = Number(lesson?.wordlistPageNumber || lesson?.wordlistPage || ttPlannerDraft.wordlist || pages[0]);
+  const key = `${group?.id || ""}|${skill?.id || ""}|${level}|${selected}`;
+  if (ttPlannerChartPreview.key !== key) ttPlannerChartPreview = { key, page: pages.includes(selected) ? selected : (pages[0] || selected) };
+  const page = pages.includes(Number(ttPlannerChartPreview.page)) ? Number(ttPlannerChartPreview.page) : (pages[0] || selected);
+  const index = pages.indexOf(page);
+  if (!reader || !page) {
+    host.innerHTML = `<p class="planner-snapshot-empty">No charting page is available for this plan.</p>`;
+    return;
+  }
+  host.innerHTML = `<header><div><span>Charting page preview</span><strong>Reader ${escapeHtml(reader)}, p. ${escapeHtml(page)}</strong></div><span>${escapeHtml(skill?.title || lesson?.substep || "")}</span></header><img src="${ttPlannerChartImageSrc(reader, page)}" alt="Reader ${escapeHtml(reader)} charting page ${escapeHtml(page)}" loading="eager"><div class="planner-chart-preview-controls"><button type="button" data-chart-preview="previous" ${index <= 0 ? "disabled" : ""} aria-label="Previous charting page">‹</button><span>Page ${index + 1} of ${pages.length}<br>Viewing only</span><button type="button" data-chart-preview="next" ${index < 0 || index >= pages.length - 1 ? "disabled" : ""} aria-label="Next charting page">›</button></div><small class="planner-chart-preview-note">Arrows preview nearby pages without changing today’s plan.</small>`;
+  host.querySelectorAll("[data-chart-preview]").forEach((button) => button.addEventListener("click", () => {
+    const nextIndex = index + (button.dataset.chartPreview === "next" ? 1 : -1);
+    if (pages[nextIndex]) ttPlannerChartPreview = { key, page: pages[nextIndex] };
+    ttRenderPlannerChartPreview(group, lesson, skill);
+  }));
+}
+
+function ttRenderPlannerLessonSnapshot(group, lesson, skill) {
+  const host = ttById("ttPlannerLessonSnapshot");
+  if (!host) return;
+  const openPlan = ttActiveOpenPlan(group);
+  const completed = (group.history || []).slice().reverse().filter((plan) => plan.lessons?.[0] && ["Complete", "Taught"].includes(plan.status) && plan.id !== openPlan?.id).slice(0, 2);
+  const cards = [];
+  if (openPlan) cards.push(ttPlannerPlanSnapshotCard(group, openPlan, "Open lesson · work completed so far"));
+  completed.forEach((plan, index) => cards.push(ttPlannerPlanSnapshotCard(group, plan, index ? "Previous completed lesson" : "Last completed lesson")));
+  host.innerHTML = cards.join("") || `<article class="planner-snapshot-card"><header><div><span>Recent lesson evidence</span><strong>No completed lesson yet</strong></div></header><p class="planner-snapshot-empty">This area will fill automatically after teaching.</p></article>`;
+  ttRenderPlannerChartPreview(group, lesson, skill);
 }
 
 function ttBindLessonAssistantActions() {
@@ -18782,7 +18853,6 @@ function ttBind() {
   ttById("ttHomeFirebaseSignIn")?.addEventListener("click", () => ttFirebaseSignIn());
   ttById("ttHomeFirebaseSignOut")?.addEventListener("click", () => ttFirebaseSignOut());
   ttById("ttPlannerUseDefaults")?.addEventListener("click", () => ttUsePlannerDefaults());
-  ttById("ttPlannerDuplicatePrevious")?.addEventListener("click", () => ttDuplicatePreviousLesson());
   ["ttPlannerSubstep", "ttPlannerLevel", "ttPlannerWordlist", "ttPlannerSentence", "ttPlannerPassage", "ttPlannerPassageApproach"].forEach((id) => {
     ttById(id)?.addEventListener("change", () => {
       const group = ttPlannerGroup();
