@@ -164,3 +164,10 @@ This file records decisions future chats should not accidentally reverse. Curren
 - Section 3 Review and Current word-card recommendations use Reader charting-page sources, not Dictation Book pools. Review initially shares Section 2's earlier substep but independently selects its concept and words; Current is anchored to the selected charting page.
 - The Lesson Deck retains its established order: cumulative school-year Fat Stack, Review, Current, HFW, then word-element cards. Fat Stack retention and counts are unchanged.
 - When available in the taught scope, the deck includes at least two welded/glued cards and two Latin-base cards, prioritizing elements found on the exact current charting page and filling from earlier instruction. It also includes two earlier prefixes when available, plus up to two current-substep prefixes only when the exact charting page contains them.
+
+## Substep 4.1 closed-syllable discovery (2026-09-08)
+
+- Section 2 exposes a dedicated 4.1 discovery before regular v-e practice. It begins with the closed-syllable pattern students already know, including the scoop, C label, and breve, before contrasting that pattern with v-e.
+- The discrimination check uses monosyllabic closed, v-e, open, and double-vowel examples in a newly shuffled order each time the discovery opens. Students must explain the visual evidence instead of identifying the word only by sound.
+- Wilson card conventions remain authoritative: vowels are pink, consonants are yellow, and `qu` is one consonant sound card. The discovery uses presentation ink for student marking but does not save or infer student performance.
+- After the complete closed-syllable sequence, a separate v-e extension repeats the same discover, name, mark, discriminate, and board-practice structure. V-e marking begins by slashing silent final e, adds a macron over the first vowel, scoops the syllable, and labels it `V-e`; the earlier closed-syllable slides remain unchanged.

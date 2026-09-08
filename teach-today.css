@@ -1468,6 +1468,10 @@ body.intro-lesson-open .intro-lesson-footer {
   z-index: 95;
 }
 
+body.intro-lesson-open .attendance-reminder {
+  display: none;
+}
+
 body.presentation-mode.laser-mode,
 body.presentation-mode.laser-mode *,
 body.intro-lesson-open.laser-mode,
@@ -4102,6 +4106,267 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   font-size: 15px;
   font-weight: 850;
   text-align: center;
+}
+
+.intro-41-word-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  width: min(1080px, 100%);
+}
+
+.intro-41-word-list .intro-41-letter {
+  width: clamp(30px, 2.7vw, 44px);
+  height: clamp(40px, 3.6vw, 58px);
+  border-width: 2px;
+  font-size: clamp(26px, 2.5vw, 39px);
+}
+
+.intro-41-word {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.intro-41-word-list .intro-41-word {
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 8px;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.intro-41-letter-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.intro-41-letter {
+  position: relative;
+  display: grid;
+  width: clamp(42px, 5.5vw, 72px);
+  height: clamp(54px, 7vw, 90px);
+  place-items: center;
+  border: 3px solid #d3aa27;
+  border-radius: 8px;
+  background: #fde68a;
+  color: #1f2937;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(34px, 4.8vw, 64px);
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 7px 14px rgba(15, 23, 42, 0.1);
+}
+
+.intro-41-letter.vowel {
+  border-color: #c84b60;
+  background: #f7a6b5;
+  color: #641526;
+}
+
+.intro-41-letter.qu {
+  width: clamp(58px, 7vw, 92px);
+}
+
+.intro-41-word-list .intro-41-letter.qu {
+  width: clamp(44px, 4vw, 62px);
+}
+
+.intro-41-letter.long-vowel {
+  box-shadow: inset 0 -8px 0 #be123c, 0 7px 14px rgba(15, 23, 42, 0.1);
+}
+
+.intro-41-letter.silent-e {
+  border-style: dashed;
+  background: #ffe4e9;
+  color: #9f1239;
+}
+
+.intro-41-letter.breve::before {
+  content: "˘";
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  color: #be123c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 0.65;
+  transform: translateX(-50%);
+}
+
+.intro-41-letter.macron::before {
+  content: "¯";
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  color: #be123c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 0.65;
+  transform: translateX(-50%);
+}
+
+.intro-41-letter.silent-slash::after {
+  content: "";
+  position: absolute;
+  top: 7%;
+  bottom: 7%;
+  left: 50%;
+  width: 5px;
+  border-radius: 999px;
+  background: #be123c;
+  transform: rotate(38deg);
+}
+
+.intro-41-focus .intro-41-letter,
+.intro-41-answer .intro-41-letter,
+.intro-41-finish .intro-41-letter {
+  width: clamp(72px, 8.5vw, 112px);
+  height: clamp(92px, 11vw, 142px);
+  font-size: clamp(58px, 7vw, 92px);
+}
+
+.intro-41-scoop {
+  position: relative;
+  width: calc(100% - 12px);
+  height: 58px;
+  margin-top: -10px;
+  border-bottom: 6px solid #334155;
+  border-radius: 0 0 50% 50%;
+}
+
+.intro-41-scoop::before,
+.intro-41-scoop::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  width: 18px;
+  height: 24px;
+  border-bottom: 6px solid #334155;
+}
+
+.intro-41-scoop::before { left: -7px; transform: rotate(30deg); }
+.intro-41-scoop::after { right: -7px; transform: rotate(-30deg); }
+
+.intro-41-scoop span {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  color: #0f172a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  font-weight: 900;
+  transform: translateX(-50%);
+}
+
+.intro-41-answer {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.intro-41-answer > strong {
+  border-radius: 999px;
+  padding: 11px 24px;
+  color: #fff;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.intro-41-answer.closed > strong { background: #15803d; }
+.intro-41-answer.not-closed > strong { background: #b45309; }
+.intro-41-answer > span { color: #475569; font-size: 20px; font-weight: 900; text-transform: uppercase; }
+
+.intro-41-pairs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  width: min(1040px, 100%);
+}
+
+.intro-41-pairs article {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 13px;
+  border-radius: 14px;
+  padding: 17px;
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.intro-41-pairs article > span {
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.intro-41-pairs .intro-41-letter {
+  width: clamp(34px, 3.6vw, 51px);
+  height: clamp(46px, 4.8vw, 68px);
+  font-size: clamp(29px, 3vw, 43px);
+}
+
+.intro-41-v-e-grid,
+.intro-41-board,
+.intro-41-finish {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  width: min(1100px, 100%);
+}
+
+.intro-41-v-e-list .intro-41-word {
+  padding-block: 18px;
+}
+
+.intro-41-v-e-grid .intro-41-word,
+.intro-41-board .intro-41-word,
+.intro-41-finish .intro-41-word {
+  border-radius: 14px;
+  padding: 22px 18px;
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.intro-41-v-e-grid .intro-41-letter,
+.intro-41-board .intro-41-letter {
+  width: clamp(44px, 4.8vw, 65px);
+  height: clamp(58px, 6vw, 82px);
+  font-size: clamp(37px, 4vw, 53px);
+}
+
+.intro-41-directions {
+  display: grid;
+  gap: 18px;
+  width: min(760px, 100%);
+}
+
+.intro-41-directions article {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: center;
+  gap: 18px;
+  border-left: 8px solid #0f766e;
+  border-radius: 12px;
+  padding: 16px 22px;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+}
+
+.intro-41-directions strong { color: #0f766e; font-size: 38px; }
+.intro-41-directions span { color: #1f2937; font-size: 23px; font-weight: 900; }
+
+@media (max-width: 900px) {
+  .intro-41-word-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .intro-41-word-list .intro-41-letter { width: 30px; height: 40px; font-size: 25px; border-width: 2px; }
+  .intro-41-pairs { gap: 12px; }
+  .intro-41-pairs article { padding: 11px; }
 }
 
 .intro-mark-grid {

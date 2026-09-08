@@ -26,6 +26,22 @@ test("Home exposes one primary planning surface", () => {
   assert.doesNotMatch(source, /Continue where I left off/);
 });
 
+test("substep 4.1 exposes the closed-syllable discovery lesson", () => {
+  assert.match(html, /id="ttOpenIntro41Discovery"[^>]*>Closed Syllable Discovery 4\.1</);
+  assert.match(source, /intro41DiscoveryButton\.hidden = skill\.id !== "4\.1"/);
+  assert.match(source, /function ttBuildIntro41Scenes\(\)/);
+  assert.match(source, /TT_INTRO_41_CLOSED_WORDS = \["fix", "quack", "sent", "fast", "test", "cloth", "step", "list", "script", "fresh", "shrimp"\]/);
+  assert.match(source, /kind: "double vowel"/);
+  assert.match(source, /ttIntro21Variant = "discovery41"/);
+  assert.match(source, /letter\.toLowerCase\(\) === "qu"/);
+  assert.match(source, /layout: "syllable-board"/);
+  assert.match(source, /TT_INTRO_41_VE_WORDS = \["late", "cake", "wide", "vote", "nine", "time", "rose", "like", "hole", "gave"\]/);
+  assert.match(source, /function ttBuildIntro41VeExtensionScenes\(\)/);
+  assert.match(source, /classes\.push\("macron"\)/);
+  assert.match(source, /classes\.push\("silent-slash"\)/);
+  assert.match(source, /options\.veMarked \? "V-e" : "C"/);
+});
+
 test("Home planning snapshot is read-only and uses rendered charting pages", () => {
   assert.match(html, /id="ttPlannerLessonSnapshot"/);
   assert.match(html, /id="ttPlannerChartPreview"/);

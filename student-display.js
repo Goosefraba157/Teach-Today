@@ -149,6 +149,7 @@ function renderCards(payload) {
   if ((card.kind === "intro-21" || card.kind === "intro-35") && card.teacherMirror) {
     return renderIntroTeacherMirror(card);
   }
+  if (card.kind === "intro-41") return renderIntro41Cards(card);
   if (card.kind === "intro-21") return renderIntro21Cards(payload, card);
   if (card.kind === "intro-35") return renderIntro35Cards(payload, card);
   const items = (card.items || []).filter((item) => item?.text);
@@ -167,6 +168,19 @@ function renderCards(payload) {
       </div>
     </article>
   `, card.sectionLabel || "Lesson");
+}
+
+function renderIntro41Cards(card) {
+  const view = card.teacherView || {};
+  return `<article class="stage-intro-lesson stage-intro-layout-${modeClass(card.layout)}">
+    <div class="stage-intro-heading">
+      <span>${escapeHtml(card.sectionLabel || "Section 2 - Discovery 4.1")}</span>
+      <h2>${escapeHtml(card.headline || "")}</h2>
+      <p>${escapeHtml(card.subhead || "")}</p>
+    </div>
+    <div class="stage-intro-visual">${view.visualHtml || ""}</div>
+    <span class="stage-intro-position">${escapeHtml(card.position || "")}</span>
+  </article>`;
 }
 
 function renderIntroTeacherMirror(card) {

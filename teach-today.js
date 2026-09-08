@@ -15,6 +15,7 @@ let ttWhiteboardWord = "";
 let ttIntro21Open = false;
 let ttIntro21Index = 0;
 let ttIntro21Variant = "guided";
+let ttIntro41Scenes = [];
 let ttIntroTeacherMirror = false;
 let ttIntroSourceSection = "section2";
 let ttIntroLaunchButtonId = "ttOpenIntro21";
@@ -2861,6 +2862,8 @@ function ttRender() {
   if (intro21DiscoveryButton) intro21DiscoveryButton.hidden = skill.id !== "2.1";
   const intro35DiscoveryButton = ttById("ttOpenIntro35Discovery");
   if (intro35DiscoveryButton) intro35DiscoveryButton.hidden = skill.id !== "3.5";
+  const intro41DiscoveryButton = ttById("ttOpenIntro41Discovery");
+  if (intro41DiscoveryButton) intro41DiscoveryButton.hidden = skill.id !== "4.1";
   const intro21B2Button = ttById("ttOpenIntro21B2");
   if (intro21B2Button) intro21B2Button.hidden = skill.id !== "2.1";
   const intro21DiscoveryB2Button = ttById("ttOpenIntro21DiscoveryB2");
@@ -2869,7 +2872,7 @@ function ttRender() {
   if (intro35DiscoveryB2Button) intro35DiscoveryB2Button.hidden = skill.id !== "3.5";
   const intro35SpellingButton = ttById("ttOpenIntro35Spelling");
   if (intro35SpellingButton) intro35SpellingButton.hidden = skill.id !== "3.5";
-  const activeIntroSubstep = ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
+  const activeIntroSubstep = ttIntro21Variant === "discovery41" ? "4.1" : ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
   if (ttIntro21Open && skill.id !== activeIntroSubstep) ttCloseIntro21();
   ttFillGroups(group.id);
   ttFillLessonControls(group);
@@ -11520,6 +11523,264 @@ const TT_INTRO_21_DISCOVERY_SCENES = [
   }
 ];
 
+const TT_INTRO_41_CLOSED_WORDS = ["fix", "quack", "sent", "fast", "test", "cloth", "step", "list", "script", "fresh", "shrimp"];
+const TT_INTRO_41_PRACTICE_WORDS = [
+  { text: "quack", kind: "closed", reason: "One vowel is closed by a consonant, so a is short." },
+  { text: "fresh", kind: "closed", reason: "One vowel is closed by a consonant, so e is short." },
+  { text: "shrimp", kind: "closed", reason: "One vowel is closed by consonants, so i is short." },
+  { text: "cape", kind: "v-e", reason: "It has two vowel letters. Final e is silent and a says its long sound." },
+  { text: "kite", kind: "v-e", reason: "It has two vowel letters. Final e is silent and i says its long sound." },
+  { text: "hope", kind: "v-e", reason: "It has two vowel letters. Final e is silent and o says its long sound." },
+  { text: "he", kind: "open", reason: "The vowel is open at the end, so it is not closed by a consonant." },
+  { text: "go", kind: "open", reason: "The vowel is open at the end, so it is not closed by a consonant." },
+  { text: "hi", kind: "open", reason: "The vowel is open at the end, so it is not closed by a consonant." },
+  { text: "rain", kind: "double vowel", reason: "It has two vowels working together, so it is not a one-vowel closed syllable." },
+  { text: "seed", kind: "double vowel", reason: "It has two vowels working together, so it is not a one-vowel closed syllable." },
+  { text: "boat", kind: "double vowel", reason: "It has two vowels working together, so it is not a one-vowel closed syllable." }
+];
+const TT_INTRO_41_VE_WORDS = ["late", "cake", "wide", "vote", "nine", "time", "rose", "like", "hole", "gave"];
+const TT_INTRO_41_VE_CHECK_WORDS = [
+  { text: "late", kind: "v-e", reason: "Final e is silent, and a says its long sound." },
+  { text: "wide", kind: "v-e", reason: "Final e is silent, and i says its long sound." },
+  { text: "vote", kind: "v-e", reason: "Final e is silent, and o says its long sound." },
+  { text: "cake", kind: "v-e", reason: "Final e is silent, and a says its long sound." },
+  { text: "time", kind: "v-e", reason: "Final e is silent, and i says its long sound." },
+  { text: "rose", kind: "v-e", reason: "Final e is silent, and o says its long sound." },
+  { text: "fast", kind: "closed", reason: "It has one short vowel closed by consonants. There is no silent final e." },
+  { text: "fresh", kind: "closed", reason: "It has one short vowel closed by consonants. There is no silent final e." },
+  { text: "go", kind: "open", reason: "The vowel is open at the end. There is no vowel-consonant-e pattern." },
+  { text: "he", kind: "open", reason: "The vowel is open at the end. There is no vowel-consonant-e pattern." },
+  { text: "rain", kind: "double vowel", reason: "The two vowels work together. There is no final silent e." },
+  { text: "seed", kind: "double vowel", reason: "The two vowels work together. There is no final silent e." }
+];
+
+function ttShuffleIntro41Words() {
+  const words = TT_INTRO_41_PRACTICE_WORDS.map((item) => ({ ...item }));
+  for (let index = words.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [words[index], words[swapIndex]] = [words[swapIndex], words[index]];
+  }
+  return words;
+}
+
+function ttShuffleIntro41VeWords() {
+  const words = TT_INTRO_41_VE_CHECK_WORDS.map((item) => ({ ...item }));
+  for (let index = words.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [words[index], words[swapIndex]] = [words[swapIndex], words[index]];
+  }
+  return words;
+}
+
+function ttBuildIntro41VeExtensionScenes() {
+  const practice = ttShuffleIntro41VeWords().flatMap((item, index) => [
+    {
+      id: `v-e-check-${index}-question`,
+      layout: "v-e-single",
+      kicker: "V-e or not V-e?",
+      headline: "Look for the final e first.",
+      subhead: "Is this a vowel-consonant-e syllable? Explain how you know.",
+      items: [item],
+      cue: "Pause for evidence. Students should look for final e, identify the consonant before it, and check whether the first vowel has its long sound."
+    },
+    {
+      id: `v-e-check-${index}-answer`,
+      layout: "v-e-answer",
+      kicker: "Check the evidence",
+      headline: item.kind === "v-e" ? "Vowel-consonant-e" : "Not vowel-consonant-e",
+      subhead: item.reason,
+      items: [item],
+      cue: item.kind === "v-e"
+        ? "Have a student name the long vowel sound, slash silent e, add the macron, scoop the syllable, and label it V-e."
+        : `Students name the actual pattern: ${item.kind}. Do not mark it V-e.`
+    }
+  ]);
+  return [
+    {
+      id: "v-e-notice-list",
+      layout: "v-e-list",
+      kicker: "Visual discovery",
+      headline: "What pattern do you see now?",
+      subhead: "Look at the first vowel, the consonant, and the final letter in every word.",
+      items: TT_INTRO_41_VE_WORDS.map((text) => ({ text, kind: "v-e" })),
+      cue: "Keep the words unmarked at first. Guide students toward: Every word ends with vowel-consonant-e, final e is silent, and the first vowel says its long sound."
+    },
+    {
+      id: "v-e-rule",
+      layout: "v-e-rule",
+      kicker: "Name the pattern",
+      headline: "Vowel, consonant, silent e",
+      subhead: "Final e stays silent and the first vowel says its long sound.",
+      items: [{ text: "late", kind: "v-e" }],
+      cue: "Point from a to t to final e. Students say the long-a sound and explain that final e has no sound of its own."
+    },
+    {
+      id: "v-e-marking",
+      layout: "v-e-marked",
+      kicker: "Mark the syllable",
+      headline: "Find silent e first.",
+      subhead: "Slash e, mark the long vowel with a macron, scoop it, and write V-e below.",
+      items: [{ text: "late", kind: "v-e" }],
+      cue: "Model the routine in this order: find and slash silent e, place a macron over a, scoop the whole syllable, write V-e, then read late."
+    },
+    {
+      id: "v-e-more-marking",
+      layout: "v-e-board",
+      kicker: "Same pattern, new vowels",
+      headline: "Mark each vowel-consonant-e syllable.",
+      subhead: "The first vowel changes. The marking routine stays the same.",
+      items: ["wide", "vote", "cube"].map((text) => ({ text, kind: "v-e" })),
+      cue: "Invite students to mark the words at the board. For each word: slash silent e, macron the first vowel, scoop, label V-e, and read."
+    },
+    {
+      id: "v-e-check-directions",
+      layout: "syllable-directions",
+      kicker: "Fast pattern check",
+      headline: "V-e or not V-e?",
+      subhead: "One word appears at a time. Decide, then prove it.",
+      items: [
+        { text: "Look for final e" },
+        { text: "Find the consonant before e" },
+        { text: "Check the first vowel sound" }
+      ],
+      cue: "The practice deck reshuffles each time the discovery opens. Require a structural explanation before revealing the answer."
+    },
+    ...practice,
+    {
+      id: "v-e-final-board",
+      layout: "v-e-board",
+      kicker: "Your turn at the board",
+      headline: "Prove that each one is V-e.",
+      subhead: "Silent slash, macron, scoop, and V-e label.",
+      items: ["nine", "like", "hole", "gave"].map((text) => ({ text, kind: "v-e" })),
+      cue: "Use the presentation pen. Invite one student at a time to complete the full marking routine and name the long vowel sound."
+    },
+    {
+      id: "v-e-extension-finish",
+      layout: "v-e-finish",
+      kicker: "Say what you discovered",
+      headline: "How do you prove a syllable is V-e?",
+      subhead: "Final e is silent. The first vowel says its long sound.",
+      items: [{ text: "cake", kind: "v-e" }, { text: "time", kind: "v-e" }, { text: "rose", kind: "v-e" }],
+      cue: "Students state the rule and mark one final word independently. Then continue with the regular 4.1 lesson words."
+    }
+  ];
+}
+
+function ttBuildIntro41Scenes() {
+  const practice = ttShuffleIntro41Words().flatMap((item, index) => [
+    {
+      id: `classify-${index}-question`,
+      layout: "syllable-single",
+      kicker: "Closed or not closed?",
+      headline: "Look first. Then prove it.",
+      subhead: "Is this a closed syllable? Explain how you know.",
+      items: [item],
+      cue: "Pause for a complete explanation. Students should count vowel letters, check what follows the vowel, and listen for the vowel sound before the next click reveals the answer."
+    },
+    {
+      id: `classify-${index}-answer`,
+      layout: "syllable-answer",
+      kicker: "Check the evidence",
+      headline: item.kind === "closed" ? "Closed syllable" : "Not a closed syllable",
+      subhead: item.reason,
+      items: [item],
+      cue: item.kind === "closed"
+        ? "Have a student name the short vowel sound. The word can be scooped, labeled C, and marked with a breve."
+        : `Name this pattern only after students explain why it is not closed: ${item.kind}.`
+    }
+  ]);
+  return [
+    {
+      id: "closed-notice",
+      layout: "syllable-list",
+      kicker: "Visual discovery",
+      headline: "What pattern do you see?",
+      subhead: "These are patterns you already know. Look at the vowels and what comes after them.",
+      items: TT_INTRO_41_CLOSED_WORDS.map((text) => ({ text })),
+      cue: "Let students study the full list before reading it. Guide them toward: Every word has one vowel, and a consonant closes in that vowel."
+    },
+    {
+      id: "closed-rule",
+      layout: "syllable-rule",
+      kicker: "Name the pattern",
+      headline: "One vowel, closed by a consonant",
+      subhead: "The consonant closes the syllable and the vowel usually makes its short sound.",
+      items: [{ text: "step", kind: "closed" }],
+      cue: "Connect this directly to prior substeps: Until now, most of our syllables have followed this closed-syllable pattern."
+    },
+    {
+      id: "closed-marking",
+      layout: "syllable-marked",
+      kicker: "Mark the syllable",
+      headline: "Scoop it. Label it C. Mark the short vowel.",
+      subhead: "The breve tells us that the vowel says its short sound.",
+      items: [{ text: "step", kind: "closed", marked: true }],
+      cue: "Model the complete routine: scoop step, write C under the scoop, and place a breve over e. Then tap and read the word."
+    },
+    {
+      id: "closed-complex",
+      layout: "syllable-marked",
+      kicker: "More consonants, same rule",
+      headline: "Does script still have one syllable?",
+      subhead: "A blend can close the vowel. The word still has one vowel with a short sound.",
+      items: [{ text: "script", kind: "closed", marked: true }],
+      cue: "Students mark script at the board. Emphasize that several consonants can surround the vowel without changing the one-vowel closed-syllable rule."
+    },
+    {
+      id: "sound-contrast",
+      layout: "syllable-contrast",
+      kicker: "Auditory discovery",
+      headline: "What changed in the vowel sound?",
+      subhead: "Listen first: cap, cape · kit, kite · hop, hope · cub, cube",
+      pairs: [["cap", "cape"], ["kit", "kite"], ["hop", "hope"], ["cub", "cube"]],
+      cue: "Say each pair without showing the print first. Students should hear the vowel change from short to long. Then reveal the cards and ask what changed in the spelling."
+    },
+    {
+      id: "ve-discovery",
+      layout: "syllable-v-e",
+      kicker: "Visual discovery",
+      headline: "What job is final e doing?",
+      subhead: "Final e stays silent. The first vowel says its long sound.",
+      items: ["cape", "Pete", "kite", "hope", "cube"].map((text) => ({ text, kind: "v-e" })),
+      cue: "Students count two vowel letters, identify silent e, and say each long vowel sound. Explain that these words cannot receive a closed-syllable C."
+    },
+    {
+      id: "classification-directions",
+      layout: "syllable-directions",
+      kicker: "Fast pattern check",
+      headline: "Closed or not closed?",
+      subhead: "One word will appear at a time. Decide, then explain why.",
+      items: [
+        { text: "Count the vowel letters" },
+        { text: "Check what follows the vowel" },
+        { text: "Listen for short or long" }
+      ],
+      cue: "Use the shuffled deck as an oral check. Require evidence, not a guess. The next click after each word reveals the answer."
+    },
+    ...practice,
+    {
+      id: "board-practice",
+      layout: "syllable-board",
+      kicker: "Your turn at the board",
+      headline: "Prove that each one is closed.",
+      subhead: "Scoop the syllable, write C, and place a breve over the vowel.",
+      items: ["fast", "quack", "fresh", "shrimp"].map((text) => ({ text, kind: "closed" })),
+      cue: "Use the presentation pen. Invite one student at a time to mark a word and state: one vowel, closed by a consonant, so the vowel is short."
+    },
+    {
+      id: "discovery-finish-41",
+      layout: "syllable-finish",
+      kicker: "Say what you discovered",
+      headline: "How can one silent e change a vowel?",
+      subhead: "Closed syllables use short vowels. In v-e syllables, final e is silent and the first vowel is long.",
+      items: [{ text: "cap", kind: "closed", marked: true }, { text: "cape", kind: "v-e" }],
+      cue: "Have students explain both patterns in their own words. Then close the discovery and continue with the regular 4.1 lesson words."
+    },
+    ...ttBuildIntro41VeExtensionScenes()
+  ];
+}
+
 const TT_INTRO_35_DISCOVERY_SCENES = [
   {
     id: "suffix-memory-question",
@@ -11888,6 +12149,7 @@ function ttIntro21Scene() {
 }
 
 function ttIntro21Scenes() {
+  if (ttIntro21Variant === "discovery41") return ttIntro41Scenes;
   if (ttIntro21Variant === "discovery35") return TT_INTRO_35_DISCOVERY_SCENES;
   return ttIntro21Variant === "discovery" ? TT_INTRO_21_DISCOVERY_SCENES : TT_INTRO_21_SCENES;
 }
@@ -11961,6 +12223,98 @@ function ttIntro35SegmentedWordHtml(item, className = "") {
   if (index < 0) return `<span class="${escapeHtml(className)}">${escapeHtml(word)}</span>`;
   const base = word.slice(0, index);
   return `<span class="${escapeHtml(className)}"><u>${escapeHtml(base)}</u><b>${escapeHtml(suffix)}</b></span>`;
+}
+
+function ttIntro41WordHtml(item, options = {}) {
+  const word = String(item?.text || "");
+  const vowels = new Set(["a", "e", "i", "o", "u", "y"]);
+  const letters = [];
+  for (let index = 0; index < word.length; index += 1) {
+    if (word.slice(index, index + 2).toLowerCase() === "qu") {
+      letters.push("qu");
+      index += 1;
+    } else {
+      letters.push(word[index]);
+    }
+  }
+  const firstVowelIndex = letters.findIndex((letter) => letter.length === 1 && vowels.has(letter.toLowerCase()));
+  const letterCards = letters.map((letter, index) => {
+    const isVowel = letter.length === 1 && vowels.has(letter.toLowerCase());
+    const classes = ["intro-41-letter", isVowel ? "vowel" : "consonant"];
+    if (letter.toLowerCase() === "qu") classes.push("qu");
+    if (options.marked && index === firstVowelIndex) classes.push("breve");
+    if (options.veMarked && index === firstVowelIndex) classes.push("macron");
+    if (item?.kind === "v-e" && isVowel) classes.push(index === letters.length - 1 ? "silent-e" : "long-vowel");
+    if (options.veMarked && index === letters.length - 1) classes.push("silent-slash");
+    return `<span class="${classes.join(" ")}">${escapeHtml(letter)}</span>`;
+  }).join("");
+  return `<div class="intro-41-word ${options.marked ? "marked" : ""}" aria-label="${escapeHtml(word)}">
+    <div class="intro-41-letter-row">${letterCards}</div>
+    ${options.marked || options.veMarked ? `<div class="intro-41-scoop"><span>${options.veMarked ? "V-e" : "C"}</span></div>` : ""}
+  </div>`;
+}
+
+function ttIntro41VisualHtml(scene) {
+  const items = scene.items || [];
+  if (scene.layout === "syllable-list") {
+    return `<div class="intro-41-word-list">${items.map((item) => ttIntro41WordHtml(item)).join("")}</div>`;
+  }
+  if (["syllable-rule", "syllable-marked", "syllable-single"].includes(scene.layout)) {
+    return `<div class="intro-41-focus">${ttIntro41WordHtml(items[0], { marked: scene.layout === "syllable-marked" })}</div>`;
+  }
+  if (scene.layout === "syllable-answer") {
+    const item = items[0] || {};
+    const isClosed = item.kind === "closed";
+    return `<div class="intro-41-answer ${isClosed ? "closed" : "not-closed"}">
+      ${ttIntro41WordHtml(item, { marked: isClosed })}
+      <strong>${isClosed ? "YES: CLOSED" : "NO: NOT CLOSED"}</strong>
+      <span>${escapeHtml(item.kind || "")}</span>
+    </div>`;
+  }
+  if (scene.layout === "syllable-contrast") {
+    return `<div class="intro-41-pairs">${(scene.pairs || []).map((pair) => `<article>
+      ${ttIntro41WordHtml({ text: pair[0], kind: "closed" })}
+      <span>compare</span>
+      ${ttIntro41WordHtml({ text: pair[1], kind: "v-e" })}
+    </article>`).join("")}</div>`;
+  }
+  if (scene.layout === "syllable-v-e") {
+    return `<div class="intro-41-v-e-grid">${items.map((item) => ttIntro41WordHtml(item)).join("")}</div>`;
+  }
+  if (scene.layout === "syllable-directions") {
+    return `<div class="intro-41-directions">${items.map((item, index) => `<article><strong>${index + 1}</strong><span>${escapeHtml(item.text)}</span></article>`).join("")}</div>`;
+  }
+  if (scene.layout === "syllable-board") {
+    return `<div class="intro-41-board">${items.map((item) => ttIntro41WordHtml(item)).join("")}</div>`;
+  }
+  if (scene.layout === "syllable-finish") {
+    return `<div class="intro-41-finish">${items.map((item) => ttIntro41WordHtml(item, { marked: Boolean(item.marked) })).join("")}</div>`;
+  }
+  if (scene.layout === "v-e-list") {
+    return `<div class="intro-41-word-list intro-41-v-e-list">${items.map((item) => ttIntro41WordHtml(item)).join("")}</div>`;
+  }
+  if (["v-e-rule", "v-e-single"].includes(scene.layout)) {
+    return `<div class="intro-41-focus">${ttIntro41WordHtml(items[0])}</div>`;
+  }
+  if (scene.layout === "v-e-marked") {
+    return `<div class="intro-41-focus">${ttIntro41WordHtml(items[0], { veMarked: true })}</div>`;
+  }
+  if (scene.layout === "v-e-answer") {
+    const item = items[0] || {};
+    const isVe = item.kind === "v-e";
+    return `<div class="intro-41-answer ${isVe ? "closed" : "not-closed"}">
+      ${ttIntro41WordHtml(item, { veMarked: isVe })}
+      <strong>${isVe ? "YES: V-e" : "NO: NOT V-e"}</strong>
+      <span>${escapeHtml(item.kind || "")}</span>
+    </div>`;
+  }
+  if (scene.layout === "v-e-board") {
+    return `<div class="intro-41-board">${items.map((item) => ttIntro41WordHtml(item)).join("")}</div>`;
+  }
+  if (scene.layout === "v-e-finish") {
+    return `<div class="intro-41-finish">${items.map((item) => ttIntro41WordHtml(item, { veMarked: true })).join("")}</div>`;
+  }
+  return "";
 }
 
 function ttIntro35VisualHtml(scene) {
@@ -12046,6 +12400,7 @@ function ttIntro35VisualHtml(scene) {
 }
 
 function ttIntro21VisualHtml(scene) {
+  if (ttIntro21Variant === "discovery41") return ttIntro41VisualHtml(scene);
   if (ttIntro21Variant === "discovery35") return ttIntro35VisualHtml(scene);
   if (scene.layout === "welcome") {
     return `<div class="intro-welcome">
@@ -12112,16 +12467,19 @@ function ttIntro21VisualHtml(scene) {
 function ttIntro21CardDisplayPayload() {
   const scene = ttIntro21Scene();
   const scenes = ttIntro21Scenes();
+  const isIntro41 = ttIntro21Variant === "discovery41";
   const isIntro35 = ttIntro21Variant === "discovery35";
   const intro35SpellingStart = scenes.findIndex((item) => item.id === "spell-bridge");
   const isIntro35Spelling = isIntro35 && intro35SpellingStart >= 0 && ttIntro21Index >= intro35SpellingStart;
   const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
   return {
-    kind: isIntro35 ? "intro-35" : "intro-21",
+    kind: isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21",
     variant: ttIntro21Variant,
     layout: scene.layout,
-    key: `${isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
-    sectionLabel: isIntro35
+    key: `${isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
+    sectionLabel: isIntro41
+      ? "Section 2 - Discovery 4.1"
+      : isIntro35
       ? `${isIntro35Spelling || ttIntroSourceSection === "section7"
         ? "Section 7"
         : ttIntroSourceSection === "section2b" ? "Section 2B" : "Section 2"} - Intro 3.5`
@@ -12130,12 +12488,14 @@ function ttIntro21CardDisplayPayload() {
     subhead: scene.subhead || "",
     word: scene.word || "",
     wordNote: scene.wordNote || "",
-    label: isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
+    label: isIntro41 ? "Closed syllable discovery" : isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
     position: `${ttIntro21Index + 1} of ${scenes.length}`,
     teacherMirror: ttIntroTeacherMirror,
     teacherView: {
-      substepLabel: isIntro35 ? "Substep 3.5" : "Substep 2.1",
-      title: isIntro35
+      substepLabel: isIntro41 ? "Substep 4.1" : isIntro35 ? "Substep 3.5" : "Substep 2.1",
+      title: isIntro41
+        ? "Closed Syllable Discovery"
+        : isIntro35
         ? "Suffixes -ed and -ing Visual Discovery"
         : ttIntro21Variant === "discovery"
           ? "Welded Sounds Visual Discovery"
@@ -12169,7 +12529,7 @@ function ttRenderIntro21() {
   const scenes = ttIntro21Scenes();
   const substepLabel = ttById("ttIntro21SubstepLabel");
   if (substepLabel) {
-    substepLabel.textContent = ttIntro21Variant === "discovery35" ? "Substep 3.5" : "Substep 2.1";
+    substepLabel.textContent = ttIntro21Variant === "discovery41" ? "Substep 4.1" : ttIntro21Variant === "discovery35" ? "Substep 3.5" : "Substep 2.1";
   }
   target.classList.remove("intro-scene-enter");
   target.innerHTML = `<div class="intro-scene-inner">
@@ -12182,7 +12542,9 @@ function ttRenderIntro21() {
   </div>`;
   requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
   ttById("ttIntro21Cue").textContent = scene.cue || "";
-  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery35"
+  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery41"
+    ? "Closed Syllable Discovery"
+    : ttIntro21Variant === "discovery35"
     ? "Suffixes -ed and -ing Visual Discovery"
     : ttIntro21Variant === "discovery"
       ? "Welded Sounds Visual Discovery"
@@ -12270,6 +12632,29 @@ function ttOpenIntro35(startSceneId = "suffix-memory-question", sourceSection = 
   ttIntroTeacherMirror = false;
   overlay.hidden = false;
   overlay.setAttribute("aria-label", "Substep 3.5 visual discovery lesson");
+  ttSetIntro21BackgroundInert(true);
+  document.body.classList.add("intro-lesson-open");
+  ttSetNativeProjectionMode("stage");
+  ttStudentDisplayMode = "follow";
+  localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttToggleGlobalInkPalette(true);
+  ttSetGlobalInkActive(false);
+  ttRenderIntro21();
+  ttById("ttIntro21Next")?.focus();
+}
+
+function ttOpenIntro41() {
+  const overlay = ttById("ttIntro21");
+  if (!overlay) return;
+  ttIntro41Scenes = ttBuildIntro41Scenes();
+  ttIntro21Variant = "discovery41";
+  ttIntro21Index = 0;
+  ttIntroSourceSection = "section2";
+  ttIntroLaunchButtonId = "ttOpenIntro41Discovery";
+  ttIntro21Open = true;
+  ttIntroTeacherMirror = false;
+  overlay.hidden = false;
+  overlay.setAttribute("aria-label", "Substep 4.1 closed syllable discovery lesson");
   ttSetIntro21BackgroundInert(true);
   document.body.classList.add("intro-lesson-open");
   ttSetNativeProjectionMode("stage");
@@ -19233,6 +19618,7 @@ function ttBind() {
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
+  ttById("ttOpenIntro41Discovery")?.addEventListener("click", () => ttOpenIntro41());
   ttById("ttOpenIntro21B2")?.addEventListener("click", () => ttOpenIntro21("guided", "section2b", "ttOpenIntro21B2"));
   ttById("ttOpenIntro21DiscoveryB2")?.addEventListener("click", () => ttOpenIntro21("discovery", "section2b", "ttOpenIntro21DiscoveryB2"));
   ttById("ttOpenIntro35DiscoveryB2")?.addEventListener("click", () => ttOpenIntro35("suffix-memory-question", "section2b", "ttOpenIntro35DiscoveryB2"));
