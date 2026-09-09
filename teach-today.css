@@ -4169,7 +4169,12 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   width: clamp(58px, 7vw, 92px);
 }
 
-.intro-41-word-list .intro-41-letter.qu {
+.intro-41-letter.digraph {
+  width: clamp(62px, 7.4vw, 98px);
+}
+
+.intro-41-word-list .intro-41-letter.qu,
+.intro-41-word-list .intro-41-letter.digraph {
   width: clamp(44px, 4vw, 62px);
 }
 
@@ -4186,11 +4191,11 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-41-letter.breve::before {
   content: "˘";
   position: absolute;
-  bottom: calc(100% + 1px);
+  bottom: calc(100% + 5px);
   left: 50%;
   color: #be123c;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 42px;
+  font-size: clamp(56px, 6vw, 76px);
   font-weight: 900;
   line-height: 0.65;
   transform: translateX(-50%);
@@ -4199,11 +4204,11 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-41-letter.macron::before {
   content: "¯";
   position: absolute;
-  bottom: calc(100% + 1px);
+  bottom: calc(100% + 5px);
   left: 50%;
   color: #be123c;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 42px;
+  font-size: clamp(56px, 6vw, 76px);
   font-weight: 900;
   line-height: 0.65;
   transform: translateX(-50%);
@@ -4232,9 +4237,9 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 .intro-41-scoop {
   position: relative;
   width: calc(100% - 12px);
-  height: 58px;
-  margin-top: -10px;
-  border-bottom: 6px solid #334155;
+  height: 62px;
+  margin-top: -8px;
+  border-bottom: 8px solid #be123c;
   border-radius: 0 0 50% 50%;
 }
 
@@ -4245,7 +4250,7 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
   bottom: -3px;
   width: 18px;
   height: 24px;
-  border-bottom: 6px solid #334155;
+  border-bottom: 8px solid #be123c;
 }
 
 .intro-41-scoop::before { left: -7px; transform: rotate(30deg); }
@@ -4253,19 +4258,23 @@ body.intro-lesson-open :is(.tt-app-home, .tt-app-back, .tt-dev-home) {
 
 .intro-41-scoop span {
   position: absolute;
-  top: calc(100% + 7px);
+  top: calc(100% + 9px);
   left: 50%;
-  color: #0f172a;
+  color: #be123c;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 34px;
+  font-size: clamp(42px, 4.5vw, 58px);
   font-weight: 900;
   transform: translateX(-50%);
+}
+
+.intro-41-word.marked {
+  padding-bottom: 54px;
 }
 
 .intro-41-answer {
   display: grid;
   justify-items: center;
-  gap: 18px;
+  gap: 14px;
 }
 
 .intro-41-answer > strong {

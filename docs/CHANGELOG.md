@@ -5,6 +5,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-09-08
 
 - Added a Section 2 **Closed Syllable Discovery 4.1** launch for substep 4.1. The color-coded, presentation-ready sequence reviews the closed-syllable rule and marking routine, uses auditory and visual v-e contrasts, introduces silent final e, and shuffles a monosyllabic closed/not-closed classification check using closed, v-e, open, and double-vowel patterns. Appended a separate v-e discovery and assessment sequence using familiar 4.1 words, explicit silent-e slash/macron/scoop/`V-e` marking, a shuffled **V-e or not V-e?** deck, and student board marking. It reuses the existing intro controls, teacher cues, Stage following, and presentation ink without changing lesson or student records.
+- Refined the 4.1 discovery cards so consonant digraphs such as `sh`, `th`, `ch`, `wh`, `ph`, and `ck` stay together on one card. Enlarged the breve and macron, made the scoop and syllable label red and more prominent, and reserved space below marked words so answer labels cannot overlap the scoop.
 
 ## 2026-09-05
 

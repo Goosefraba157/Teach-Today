@@ -39,6 +39,8 @@ test("substep 4.1 exposes the closed-syllable discovery lesson", () => {
   assert.match(source, /function ttBuildIntro41VeExtensionScenes\(\)/);
   assert.match(source, /classes\.push\("macron"\)/);
   assert.match(source, /classes\.push\("silent-slash"\)/);
+  assert.match(source, /consonantDigraphs = new Set\(\["ch", "ck", "ph", "sh", "th", "wh"\]\)/);
+  assert.match(source, /classes\.push\("digraph"\)/);
   assert.match(source, /options\.veMarked \? "V-e" : "C"/);
 });
 

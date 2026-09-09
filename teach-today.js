@@ -12228,10 +12228,12 @@ function ttIntro35SegmentedWordHtml(item, className = "") {
 function ttIntro41WordHtml(item, options = {}) {
   const word = String(item?.text || "");
   const vowels = new Set(["a", "e", "i", "o", "u", "y"]);
+  const consonantDigraphs = new Set(["ch", "ck", "ph", "sh", "th", "wh"]);
   const letters = [];
   for (let index = 0; index < word.length; index += 1) {
-    if (word.slice(index, index + 2).toLowerCase() === "qu") {
-      letters.push("qu");
+    const pair = word.slice(index, index + 2).toLowerCase();
+    if (pair === "qu" || consonantDigraphs.has(pair)) {
+      letters.push(word.slice(index, index + 2));
       index += 1;
     } else {
       letters.push(word[index]);
@@ -12242,13 +12244,14 @@ function ttIntro41WordHtml(item, options = {}) {
     const isVowel = letter.length === 1 && vowels.has(letter.toLowerCase());
     const classes = ["intro-41-letter", isVowel ? "vowel" : "consonant"];
     if (letter.toLowerCase() === "qu") classes.push("qu");
+    if (consonantDigraphs.has(letter.toLowerCase())) classes.push("digraph");
     if (options.marked && index === firstVowelIndex) classes.push("breve");
     if (options.veMarked && index === firstVowelIndex) classes.push("macron");
     if (item?.kind === "v-e" && isVowel) classes.push(index === letters.length - 1 ? "silent-e" : "long-vowel");
     if (options.veMarked && index === letters.length - 1) classes.push("silent-slash");
     return `<span class="${classes.join(" ")}">${escapeHtml(letter)}</span>`;
   }).join("");
-  return `<div class="intro-41-word ${options.marked ? "marked" : ""}" aria-label="${escapeHtml(word)}">
+  return `<div class="intro-41-word ${options.marked || options.veMarked ? "marked" : ""}" aria-label="${escapeHtml(word)}">
     <div class="intro-41-letter-row">${letterCards}</div>
     ${options.marked || options.veMarked ? `<div class="intro-41-scoop"><span>${options.veMarked ? "V-e" : "C"}</span></div>` : ""}
   </div>`;
