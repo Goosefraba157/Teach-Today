@@ -2080,6 +2080,9 @@ function resetLiveCharting(card) {
   card.dataset.startedAt = "";
   card.dataset.startElapsed = "0";
   card.dataset.lastSavedSignature = "";
+  card.dataset.activeChartRecordId = "";
+  card.dataset.chartAttemptNumber = "1";
+  card.dataset.rechartOfRecordId = "";
   card.querySelector(".live-timer").textContent = "0 sec";
   speechPositions.set(card.dataset.lessonId, 0);
   highlightCurrentWord(card);
@@ -2100,6 +2103,8 @@ function resetLiveCharting(card) {
     }
   });
   card.querySelector(".live-notes").value = "";
+  const noteStatus = card.querySelector(".section4-note-status");
+  if (noteStatus) noteStatus.textContent = "Not saved";
   setRecordingStatus(card, "Ready");
   updateLiveScore(card);
 }
@@ -2610,10 +2615,18 @@ function saveLiveRecord(card, options = {}) {
     ? (appState.groups || []).find((item) => (item.students || []).some((name) => item.studentIds?.[name] === studentId))
     : null;
 
-  const record = {
-    id: `record-${Date.now()}`,
-    date: new Date().toISOString(),
-    displayDate: new Date().toLocaleDateString(),
+  const activeRecordId = card.dataset.activeChartRecordId || "";
+  const existingIndex = activeRecordId
+    ? (appState.masterRecords || []).findIndex((item) => item.id === activeRecordId)
+    : -1;
+  const existingRecord = existingIndex >= 0 ? appState.masterRecords[existingIndex] : null;
+  const now = new Date();
+  let record = {
+    ...(existingRecord || {}),
+    id: existingRecord?.id || `record-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    date: existingRecord?.date || now.toISOString(),
+    displayDate: existingRecord?.displayDate || now.toLocaleDateString(),
+    updatedAt: now.toISOString(),
     group: group.name,
     groupId: group.id,
     student,
@@ -2637,6 +2650,8 @@ function saveLiveRecord(card, options = {}) {
     wordRecords,
     notes,
     recommendation,
+    attemptNumber: Number(card.dataset.chartAttemptNumber || existingRecord?.attemptNumber || 1),
+    rechartOfRecordId: card.dataset.rechartOfRecordId || existingRecord?.rechartOfRecordId || "",
     ...lessonMeta
   };
   let pendingAudioUpload = null;
@@ -2660,8 +2675,13 @@ function saveLiveRecord(card, options = {}) {
   }
 
   appState.masterRecords ||= [];
-  appState.masterRecords.push(record);
-  group.chartResults.push({
+  if (existingIndex >= 0) appState.masterRecords[existingIndex] = record;
+  else appState.masterRecords.push(record);
+  group.chartResults ||= [];
+  const chartSummary = {
+    recordId: record.id,
+    studentId: record.studentId || "",
+    planId: record.planId || "",
     date: record.displayDate,
     substep: record.substep,
     level: record.level,
@@ -2676,7 +2696,10 @@ function saveLiveRecord(card, options = {}) {
     automaticity,
     labels: [accuracy && "accuracy", fluency && "fluency", automaticity && "automaticity"].filter(Boolean),
     decision: recommendation
-  });
+  };
+  const summaryIndex = group.chartResults.findIndex((item) => item.recordId === record.id);
+  if (summaryIndex >= 0) group.chartResults[summaryIndex] = chartSummary;
+  else group.chartResults.push(chartSummary);
   saveState();
   // Upload after saveState so the returned cloud URL can be attached to this record.
   if (pendingAudioUpload && typeof window.ttUploadAudioToStorage === "function") {
@@ -2689,10 +2712,14 @@ function saveLiveRecord(card, options = {}) {
     window.ttSaveAudioToSyncFolder(pendingAudioUpload.id, pendingAudioUpload.blob, record.audioFileName).catch(() => {});
   }
   card.dataset.lastSavedSignature = liveDataSignature(card);
+  card.dataset.activeChartRecordId = record.id;
+  const noteStatus = card.querySelector(".section4-note-status");
+  if (noteStatus) noteStatus.textContent = notes ? "Notes saved" : "Chart saved";
   syncActiveStudentUi(group);
   if (typeof window.ttRefreshSection4StudentPills === "function") {
     window.ttRefreshSection4StudentPills();
   }
+  window.ttResetSection4ExitReminder?.();
   setRecordingStatus(card, "Saved");
   card.querySelector(".live-score").textContent = `${options.automatic ? "Auto-saved" : "Saved"}: ${student} - ${titleCase(chartHalf)} half - ${correct}/${total} correct, ${wrongCount} wrong - ${recommendation}`;
 }

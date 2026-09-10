@@ -9106,6 +9106,52 @@ body.section4-stage-preview-open .teach-flow {
   font-weight: 900;
 }
 
+.section4-note-help,
+.section4-note-status {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.section4-note-status {
+  color: var(--teal);
+  text-align: right;
+}
+
+.section4-safety-card {
+  max-width: 520px;
+}
+
+.section4-safety-card .gdp-reminder {
+  text-align: left;
+  line-height: 1.5;
+}
+
+.section4-safety-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.section4-safety-actions button {
+  min-height: 48px;
+  flex: 1;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.section4-safety-actions .primary {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
 .save-row {
   display: grid;
   gap: 10px;

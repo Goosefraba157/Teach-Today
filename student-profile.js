@@ -593,7 +593,8 @@ function renderCharting() {
       <td class="${chartingMetricClass("seconds", record.seconds)}">${escapeHtml(record.seconds ?? "—")}</td>
       <td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>
       <td>${escapeHtml((record.wrongWords || []).join(", ") || "None saved")}</td>
-    </tr>`).join("") : '<tr><td colspan="8" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
+      <td>${escapeHtml(record.notes || "—")}</td>
+    </tr>`).join("") : '<tr><td colspan="9" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
 }
 
 function renderChartingSheet(charts) {
@@ -607,7 +608,8 @@ function renderChartingSheet(charts) {
     ["Substep", (record) => record.substep || "—"],
     ["Concept", (record) => record.concept || record.skill || record.lessonConcept || "—"],
     ["Page", (record) => `Reader ${record.reader || "—"}, p. ${record.wordlistPage || "—"}`],
-    ["R or N", (record) => record.chartHalf || record.wordType || "—"]
+    ["R or N", (record) => record.chartHalf || record.wordType || "—"],
+    ["Notes", (record) => record.notes || "—"]
   ];
   const missedRows = Array.from({ length: 15 }, (_, index) => 15 - index);
   const html = `<table class="charting-sheet-table"><tbody>

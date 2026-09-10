@@ -18503,6 +18503,11 @@ function ttSetupChart(lesson) {
   card.dataset.startedAt = "";
   card.dataset.startElapsed = "0";
   card.dataset.chartHalf = "bottom";
+  card.dataset.lastSavedSignature = "";
+  card.dataset.activeChartRecordId = "";
+  card.dataset.chartAttemptNumber = "1";
+  card.dataset.rechartOfRecordId = "";
+  card.dataset.rechartApproved = "false";
   card._lesson = lesson;
   fillChartBoard(card.querySelector(".chart-top"), lesson.realWords || [], "top");
   fillChartBoard(card.querySelector(".chart-bottom"), lesson.nonsenseWords || [], "bottom");
@@ -18511,6 +18516,8 @@ function ttSetupChart(lesson) {
   if (!ttById("ttSection4History")?.hidden) ttRenderSection4History();
   syncChartHalfUi(card);
   updateLiveScore(card);
+  const noteStatus = card.querySelector(".section4-note-status");
+  if (noteStatus) noteStatus.textContent = "Not saved";
   ttRenderSection4StagePreview(ttSection4StagePayload());
 }
 
@@ -18627,17 +18634,66 @@ function ttFillStudentPills(group) {
     button.dataset.student = student;
     const savedCount = ttCurrentLessonChartRecords(student, group).length;
     const saved = savedCount > 0;
+    const explicitAttemptCount = ttCurrentLessonChartRecords(student, group)
+      .reduce((highest, record) => Math.max(highest, Number(record.attemptNumber || 1)), 0);
+    const statusLabel = explicitAttemptCount > 1 ? `Recharted ×${explicitAttemptCount}` : saved ? "Saved" : "Not charted";
     button.title = saved
       ? `${student} has ${savedCount} charting record${savedCount === 1 ? "" : "s"} saved for this lesson.`
       : `${student} has not been charted for this lesson yet.`;
-    button.setAttribute("aria-label", `${student}. ${saved ? "Charting saved for this lesson" : "Not charted for this lesson"}.`);
+    button.setAttribute("aria-label", `${student}. ${statusLabel} for this lesson.`);
     button.innerHTML = `
       <span class="lesson-chart-status${saved ? " saved" : ""}" aria-hidden="true">${saved ? "&#10003;" : ""}</span>
       <span>${escapeHtml(student)}</span>
-      ${saved ? '<span class="lesson-chart-saved-label">Saved</span>' : ""}
+      ${saved ? `<span class="lesson-chart-saved-label">${escapeHtml(statusLabel)}</span>` : ""}
     `;
     button.addEventListener("click", () => ttSelectStudent(student));
     container.appendChild(button);
+  });
+}
+
+function ttSection4SafetyDialog({ title, message, primaryLabel, secondaryLabel }) {
+  document.getElementById("ttSection4SafetyDialog")?.remove();
+  return new Promise((resolve) => {
+    const priorFocus = document.activeElement;
+    const modal = document.createElement("div");
+    modal.id = "ttSection4SafetyDialog";
+    modal.className = "gdp-backdrop";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "ttSection4SafetyTitle");
+    modal.innerHTML = `<div class="gdp-card section4-safety-card">
+      <h2 id="ttSection4SafetyTitle" class="gdp-title">${escapeHtml(title)}</h2>
+      <p class="gdp-reminder">${escapeHtml(message)}</p>
+      <div class="section4-safety-actions">
+        <button type="button" data-section4-secondary>${escapeHtml(secondaryLabel)}</button>
+        <button type="button" class="primary" data-section4-primary>${escapeHtml(primaryLabel)}</button>
+      </div>
+    </div>`;
+    const finish = (result) => {
+      modal.remove();
+      priorFocus?.focus?.();
+      resolve(result);
+    };
+    modal.querySelector("[data-section4-primary]").addEventListener("click", () => finish(true));
+    modal.querySelector("[data-section4-secondary]").addEventListener("click", () => finish(false));
+    modal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const buttons = [...modal.querySelectorAll("button")];
+      if (!buttons.length) return;
+      const current = buttons.indexOf(document.activeElement);
+      const next = event.shiftKey
+        ? (current <= 0 ? buttons.length - 1 : current - 1)
+        : (current >= buttons.length - 1 ? 0 : current + 1);
+      event.preventDefault();
+      buttons[next].focus();
+    });
+    document.body.appendChild(modal);
+    modal.querySelector("[data-section4-secondary]")?.focus();
   });
 }
 
@@ -18645,6 +18701,7 @@ function ttCurrentLessonChartRecords(student, group = ttActiveGroup()) {
   const meta = ttCurrentLessonRecordMeta(ttLesson);
   const studentId = ttStudentIdForName(student, group);
   return (appState.masterRecords || []).filter((record) => {
+    if (record.type === "soundsDrill" || (record.correct === undefined && !record.wordlistPage && !record.chartHalf)) return false;
     if (studentId ? record.studentId !== studentId && record.student !== student : record.student !== student) return false;
     if (record.groupId && record.groupId !== group.id) return false;
     if (!record.groupId && record.group !== group.name) return false;
@@ -18658,14 +18715,88 @@ window.ttRefreshSection4StudentPills = () => {
 };
 
 async function ttSelectStudent(student) {
-  if (student !== ttActiveGroup().activeStudent) {
+  const group = ttActiveGroup();
+  const changingStudent = student !== group.activeStudent;
+  if (changingStudent) {
     await ttFinalizeSection4Record({ automatic: true });
   }
+  const savedRecords = ttCurrentLessonChartRecords(student, group);
+  if (savedRecords.length) {
+    const startAnother = await ttSection4SafetyDialog({
+      title: "Chart this student again?",
+      message: `${student} already has ${savedRecords.length === 1 ? "a completed chart" : `${savedRecords.length} saved charts`} for this lesson. A second chart is unusual, but you can start one deliberately.`,
+      primaryLabel: "Start another chart",
+      secondaryLabel: "Keep existing chart"
+    });
+    if (!startAnother) return false;
+  }
+  if (!changingStudent && ttChartCard) resetLiveCharting(ttChartCard);
   selectActiveStudent(student, { sourceCard: ttChartCard, resetSource: true });
+  if (ttChartCard) {
+    ttChartCard.dataset.chartAttemptNumber = String(savedRecords.length ? Math.max(...savedRecords.map((record) => Number(record.attemptNumber || 1))) + 1 : 1);
+    ttChartCard.dataset.rechartOfRecordId = savedRecords.at(-1)?.id || "";
+    ttChartCard.dataset.activeChartRecordId = "";
+    ttChartCard.dataset.rechartApproved = savedRecords.length ? "true" : "false";
+  }
   ttById("ttStudent").value = student;
   ttById("ttTitle").textContent = `${ttActiveGroup().name} - ${ttLesson?.substep || ttActiveGroup().substep}`;
   ttFillFrontStudents(ttActiveGroup());
   ttFillStudentPills(ttActiveGroup());
+  return true;
+}
+
+async function ttEnsureSection4AttemptReady() {
+  const group = ttActiveGroup();
+  const student = group.activeStudent || ttTeachingStudents(group)[0] || "";
+  if (!student || !ttChartCard) return false;
+  const activeRecordId = ttChartCard.dataset.activeChartRecordId || "";
+  const savedRecords = ttCurrentLessonChartRecords(student, group);
+  if (activeRecordId || !savedRecords.length || ttChartCard.dataset.rechartApproved === "true") return true;
+  const startAnother = await ttSection4SafetyDialog({
+    title: "Chart this student again?",
+    message: `${student} already has ${savedRecords.length === 1 ? "a completed chart" : `${savedRecords.length} saved charts`} for this lesson. A second chart is unusual, but you can start one deliberately.`,
+    primaryLabel: "Start another chart",
+    secondaryLabel: "Keep existing chart"
+  });
+  if (!startAnother) return false;
+  ttChartCard.dataset.chartAttemptNumber = String(Math.max(...savedRecords.map((record) => Number(record.attemptNumber || 1))) + 1);
+  ttChartCard.dataset.rechartOfRecordId = savedRecords.at(-1)?.id || "";
+  ttChartCard.dataset.rechartApproved = "true";
+  return true;
+}
+
+function ttSection4ExpectedStudents() {
+  const group = ttActiveGroup();
+  const dayKey = dateKey(ttLesson?.scheduledDate || ttTeachingDate(group));
+  const students = ttTeachingStudents(group, dayKey);
+  const session = ttAttendanceSession(group, dayKey);
+  if (session?.status !== "confirmed") return students;
+  const attendance = ttTodaysAttendance(group, dayKey);
+  return students.filter((student) => attendance[student] !== false);
+}
+
+function ttSection4UnchartedStudents() {
+  return ttSection4ExpectedStudents().filter((student) => !ttCurrentLessonChartRecords(student).length);
+}
+
+let ttSection4ExitOverride = false;
+let ttSection4CompletenessPromptOpen = false;
+window.ttResetSection4ExitReminder = () => {
+  ttSection4ExitOverride = false;
+};
+
+async function ttConfirmSection4Complete() {
+  if (ttSection4ExitOverride) return true;
+  const missing = ttSection4UnchartedStudents();
+  if (!missing.length) return true;
+  const continueAnyway = await ttSection4SafetyDialog({
+    title: "Don’t forget Section 4 charting",
+    message: `${missing.join(", ")} ${missing.length === 1 ? "has" : "have"} not been charted for this lesson.`,
+    primaryLabel: "Continue anyway",
+    secondaryLabel: "Return to Section 4"
+  });
+  if (continueAnyway) ttSection4ExitOverride = true;
+  return continueAnyway;
 }
 
 function ttSchedulePresentationMenuClose(delay = 6500) {
@@ -18740,7 +18871,7 @@ function ttCurrentPaceSectionId() {
   return current || priorSection || sectionIds[0] || "section1";
 }
 
-function ttGoToTeachingSection(direction) {
+async function ttGoToTeachingSection(direction) {
   const sectionIds = ttPaceGuideSectionIds();
   if (!sectionIds.length) return;
   const currentId = ttCurrentPaceSectionId();
@@ -18749,7 +18880,11 @@ function ttGoToTeachingSection(direction) {
   const targetId = sectionIds[targetIndex];
   ttRecordSectionInteraction(currentId, "section-navigation");
   if (currentId === "section4" && targetId !== "section4") {
-    ttFinalizeSection4Record({ automatic: true });
+    await ttFinalizeSection4Record({ automatic: true });
+    if (!(await ttConfirmSection4Complete())) {
+      ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
   }
   ttById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
   ttPaceGuideState.activeSectionId = targetId;
@@ -20226,17 +20361,32 @@ function ttBind() {
       ttSyncStudentDisplay();
     });
   });
-  ttById("section4").querySelector(".start-timer").addEventListener("click", () => startLiveTimer(ttChartCard, false));
+  ttById("section4").querySelector(".start-timer").addEventListener("click", async () => {
+    if (await ttEnsureSection4AttemptReady()) startLiveTimer(ttChartCard, false);
+  });
   ttById("section4").querySelector(".pause-timer").addEventListener("click", () => pauseLiveTimer(ttChartCard));
-  ttById("section4").querySelector(".stop-timer").addEventListener("click", () => {
-    ttFinalizeSection4Record({ automatic: true, force: true });
+  ttById("section4").querySelector(".stop-timer").addEventListener("click", async () => {
+    if (await ttEnsureSection4AttemptReady()) ttFinalizeSection4Record({ automatic: true, force: true });
   });
   ttById("section4").querySelector(".mute-toggle")?.addEventListener("click", () => {
     if (isSpeechMuted) unmuteSpeech(ttChartCard);
     else muteSpeech(ttChartCard, 8);
   });
-  ttById("section4").querySelector(".save-live-record").addEventListener("click", () => {
-    ttFinalizeSection4Record({ automatic: false, force: true });
+  ttById("section4").querySelector(".save-live-record").addEventListener("click", async () => {
+    if (await ttEnsureSection4AttemptReady()) ttFinalizeSection4Record({ automatic: false, force: true });
+  });
+  ttById("section4").querySelector(".live-notes")?.addEventListener("input", () => {
+    const status = ttById("section4").querySelector(".section4-note-status");
+    if (status) status.textContent = "Unsaved changes";
+  });
+  ttById("section4").querySelector(".next-link")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    await ttFinalizeSection4Record({ automatic: true });
+    if (!(await ttConfirmSection4Complete())) {
+      ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    ttById("section5")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
@@ -20281,6 +20431,14 @@ function ttMonitorSection4AutoSave() {
   const visible = rect.bottom > 120 && rect.top < window.innerHeight - 120;
   if (ttSection4WasVisible && !visible) {
     ttFinalizeSection4Record({ automatic: true });
+    if (!ttSection4CompletenessPromptOpen && !ttSection4ExitOverride && ttSection4UnchartedStudents().length) {
+      ttSection4CompletenessPromptOpen = true;
+      Promise.resolve(ttFinalizeSection4Record({ automatic: true })).then(() => ttConfirmSection4Complete()).then((canLeave) => {
+        if (!canLeave) ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }).finally(() => {
+        ttSection4CompletenessPromptOpen = false;
+      });
+    }
   }
   ttSection4WasVisible = visible;
 }
