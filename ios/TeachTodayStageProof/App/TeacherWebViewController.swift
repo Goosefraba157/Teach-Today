@@ -19,6 +19,7 @@ final class TeacherWebViewController: UIViewController {
     private let projectionMessageName = "teachTodayProjectionMode"
     private let backupMessageName = "teachTodayBackup"
     private let documentMessageName = "teachTodayDocument"
+    private let driveMessageName = "teachTodayDriveAuth"
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
     private let errorView = UIView()
@@ -38,7 +39,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1'; document.documentElement.dataset.teachTodayNativeDocuments = '1';",
+            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1'; document.documentElement.dataset.teachTodayNativeDocuments = '1'; document.documentElement.dataset.teachTodayNativeDrive = '1';",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -48,6 +49,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: projectionMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: backupMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: documentMessageName)
+        configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: driveMessageName)
     }
 
     @available(*, unavailable)
@@ -61,6 +63,7 @@ final class TeacherWebViewController: UIViewController {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: projectionMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: backupMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: documentMessageName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: driveMessageName)
     }
 
     override func viewDidLoad() {
@@ -280,6 +283,29 @@ final class TeacherWebViewController: UIViewController {
         }
     }
 
+    private func authorizeDrive(_ command: [String: Any]) {
+        let requestId = command["requestId"] as? String ?? ""
+        let interactive = command["interactive"] as? Bool ?? false
+        guard !requestId.isEmpty else { return }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let token = try await StageDriveAuthorization.shared.accessToken(interactive: interactive, from: self)
+                self.dispatchEvent("teachTodayNativeDriveAuthResult", detail: [
+                    "requestId": requestId,
+                    "ok": true,
+                    "accessToken": token
+                ])
+            } catch {
+                self.dispatchEvent("teachTodayNativeDriveAuthResult", detail: [
+                    "requestId": requestId,
+                    "ok": false,
+                    "error": error.localizedDescription
+                ])
+            }
+        }
+    }
+
     private func performDocumentSave(_ command: [String: Any], requestId: String) {
         do {
             let groupFolder = command["groupFolder"] as? String ?? "Unsorted"
@@ -429,6 +455,12 @@ extension TeacherWebViewController: WKScriptMessageHandler {
         if message.name == documentMessageName,
            let command = message.body as? [String: Any] {
             saveDocument(command)
+            return
+        }
+
+        if message.name == driveMessageName,
+           let command = message.body as? [String: Any] {
+            authorizeDrive(command)
         }
     }
 }

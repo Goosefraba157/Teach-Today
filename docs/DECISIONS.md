@@ -136,6 +136,12 @@ This file records decisions future chats should not accidentally reverse. Curren
 - The existing Firebase Auth Google provider may broker the interactive Google consent and temporary Drive access token; that authentication event does not authorize Stage application-data synchronization with Firestore.
 - A Drive failure must never prevent or invalidate the verified native iPad Files backup. The interface must report iPad and Drive verification separately.
 
+## Durable Stage Google Drive connection and readable reports (2026-09-10)
+
+- Stage keeps Google Drive authorization in the iPad Keychain after the teacher grants it once. The hosted page receives only a short-lived access token; the refresh token never enters JavaScript, Firebase, app records, Git, or Drive files.
+- This Drive-only OAuth connection is separate from and must not re-enable Stage Firestore synchronization.
+- Each successful Drive backup refreshes complete Daily and Weekly JSON recovery files plus `Reports/student-progress.csv`, `Reports/attendance.csv`, and `Reports/lesson-plans.csv`. CSV reports are for readable review in Google Sheets; complete JSON is the recovery authority.
+
 ## Lesson-plan record archive (2026-09-01)
 
 - Each newly taught lesson has two stable fillable-PDF records: Planned at Start Teaching and Completed at Finish Lesson. Repeated lifecycle taps update the matching record rather than creating duplicate files.

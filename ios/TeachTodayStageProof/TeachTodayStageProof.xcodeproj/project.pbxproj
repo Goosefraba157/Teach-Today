@@ -16,6 +16,7 @@
 		AA0000010000000000000009 /* TeacherWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000009 /* TeacherWebViewController.swift */; };
 		AA0000010000000000000010 /* StudentStageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000010 /* StudentStageViewController.swift */; };
 		AA0000010000000000000011 /* PopupWebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000011 /* PopupWebViewController.swift */; };
+		AA0000010000000000000012 /* StageDriveAuthorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000012 /* StageDriveAuthorization.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		AA0000020000000000000009 /* TeacherWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeacherWebViewController.swift; sourceTree = "<group>"; };
 		AA0000020000000000000010 /* StudentStageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentStageViewController.swift; sourceTree = "<group>"; };
 		AA0000020000000000000011 /* PopupWebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupWebViewController.swift; sourceTree = "<group>"; };
+		AA0000020000000000000012 /* StageDriveAuthorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageDriveAuthorization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				AA0000020000000000000009 /* TeacherWebViewController.swift */,
 				AA0000020000000000000010 /* StudentStageViewController.swift */,
 				AA0000020000000000000011 /* PopupWebViewController.swift */,
+				AA0000020000000000000012 /* StageDriveAuthorization.swift */,
 				AA0000020000000000000005 /* Info.plist */,
 			);
 			path = App;
@@ -153,6 +156,7 @@
 				AA0000010000000000000009 /* TeacherWebViewController.swift in Sources */,
 				AA0000010000000000000010 /* StudentStageViewController.swift in Sources */,
 				AA0000010000000000000011 /* PopupWebViewController.swift in Sources */,
+				AA0000010000000000000012 /* StageDriveAuthorization.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

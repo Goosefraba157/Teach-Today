@@ -3700,7 +3700,8 @@ function ttStageLocalOnlyStatus() {
 function ttBackupCurrentStageState(options = {}) {
   if (!ttStageLocalOnlyMode()) return Promise.resolve();
   const payload = ttFirebasePayload();
-  const driveReady = localStorage.getItem(ttIndependentBackupEnabledKey) === "true" && Boolean(ttDriveAccessToken);
+  const driveReady = localStorage.getItem(ttIndependentBackupEnabledKey) === "true"
+    && (Boolean(ttDriveAccessToken) || ttNativeDriveAvailable());
   return ttEnsureIndependentBackups({
     payload,
     revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
@@ -14188,7 +14189,7 @@ function ttSaveNativeLessonPlanPdf(bytes, digest, fileName, stage, groupFolder) 
 }
 
 async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
-  if (!ttDriveAccessToken) throw new Error("Google Drive is not connected in this app session.");
+  if (!(await ttEnsureDrivePermission())) throw new Error("Google Drive needs permission. Open Records and tap Connect Google Drive backup.");
   const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
   const lessonPlans = await ttDriveNamedFolder("Lesson Plans", root);
   const groupFolderId = await ttDriveNamedFolder(groupFolder, lessonPlans);
@@ -14218,15 +14219,11 @@ async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
     failures.push(`iPad Files: ${error.message}`);
   }
   if (localStorage.getItem(ttIndependentBackupEnabledKey) === "true") {
-    if (!ttDriveAccessToken) {
-      failures.push("Google Drive: reconnect Drive backup in Records for this app session.");
-    } else {
-      try {
-        await ttSaveDriveLessonPlanPdf(bytes, archiveFileName, stage, groupFolder);
-        saved.push("Google Drive");
-      } catch (error) {
-        failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
-      }
+    try {
+      await ttSaveDriveLessonPlanPdf(bytes, archiveFileName, stage, groupFolder);
+      saved.push("Google Drive");
+    } catch (error) {
+      failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
     }
   }
   if (saved.length) ttShowBackupToast(`Downloaded fillable lesson plan saved to ${saved.join(" and ")}.`, failures.length ? "warning" : "success");
@@ -14255,16 +14252,12 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
     failures.push(`iPad Files: ${error.message}`);
   }
   if (localStorage.getItem(ttIndependentBackupEnabledKey) === "true") {
-    if (!ttDriveAccessToken) {
-      failures.push("Google Drive: reconnect Drive backup in Records for this app session; the iPad copy is safe.");
-    } else {
-      try {
-        const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage, groupFolder);
-        results.driveFileId = drive.id || "";
-        results.driveWebViewLink = drive.webViewLink || "";
-      } catch (error) {
-        failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
-      }
+    try {
+      const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage, groupFolder);
+      results.driveFileId = drive.id || "";
+      results.driveWebViewLink = drive.webViewLink || "";
+    } catch (error) {
+      failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
     }
   }
 
@@ -15470,8 +15463,55 @@ function ttFriendlyDriveError(err) {
   return message.length > 180 ? `${message.slice(0, 180)}...` : message;
 }
 
-async function ttEnsureDrivePermission() {
+function ttNativeDriveAvailable() {
+  return document.documentElement.dataset.teachTodayNativeDrive === "1"
+    && Boolean(window.webkit?.messageHandlers?.teachTodayDriveAuth);
+}
+
+function ttNativeDriveAccessToken(options = {}) {
+  return new Promise((resolve, reject) => {
+    if (!ttNativeDriveAvailable()) {
+      reject(new Error("This Stage build needs the secure Google Drive connection update."));
+      return;
+    }
+    const requestId = crypto.randomUUID?.() || `drive-${Date.now()}`;
+    const timeout = setTimeout(() => {
+      window.removeEventListener("teachTodayNativeDriveAuthResult", onResult);
+      reject(new Error("Google Drive did not respond. Try Connect Google Drive backup again."));
+    }, 60000);
+    function onResult(event) {
+      if (event.detail?.requestId !== requestId) return;
+      clearTimeout(timeout);
+      window.removeEventListener("teachTodayNativeDriveAuthResult", onResult);
+      if (!event.detail.ok || !event.detail.accessToken) {
+        reject(new Error(event.detail?.error || "Google Drive authorization did not finish."));
+        return;
+      }
+      resolve(event.detail.accessToken);
+    }
+    window.addEventListener("teachTodayNativeDriveAuthResult", onResult);
+    window.webkit.messageHandlers.teachTodayDriveAuth.postMessage({
+      requestId,
+      interactive: Boolean(options.interactive)
+    });
+  });
+}
+
+async function ttEnsureDrivePermission(options = {}) {
   if (ttDriveAccessToken) return true;
+  if (ttNativeDriveAvailable()) {
+    try {
+      ttDriveAccessToken = await ttNativeDriveAccessToken({ interactive: Boolean(options.interactive) });
+      localStorage.setItem("teachToday.driveStatus", "Google Drive is securely connected for automatic backups on this iPad.");
+      ttRenderDataCenter();
+      return true;
+    } catch (error) {
+      if (options.interactive) localStorage.setItem("teachToday.driveStatus", `Google Drive backup needs attention: ${ttFriendlyDriveError(error)}`);
+      ttRenderDataCenter();
+      return false;
+    }
+  }
+  if (!options.interactive) return false;
   const { firebaseAuth, GoogleAuthProvider, signInWithPopup } = await ttFirebaseSdk();
   const provider = new GoogleAuthProvider();
   provider.addScope(ttDriveScope);
@@ -15486,7 +15526,7 @@ async function ttEnsureDrivePermission() {
 }
 
 async function ttDriveRequest(path, options = {}) {
-  if (!(await ttEnsureDrivePermission())) throw new Error("Google Drive permission was not granted.");
+  if (!(await ttEnsureDrivePermission({ interactive: Boolean(options.interactive) }))) throw new Error("Google Drive permission was not granted.");
   const response = await fetch(`https://www.googleapis.com/drive/v3/${path}`, {
     ...options,
     headers: { ...ttDriveHeaders(options.contentType), ...(options.headers || {}) }
@@ -15562,6 +15602,48 @@ async function ttDriveUpsertBackup(folderId, name, blob, mimeType = "application
   return file;
 }
 
+function ttDriveCsv(rows) {
+  return rows.map((row) => row.map((value) => {
+    const text = Array.isArray(value) || (value && typeof value === "object") ? JSON.stringify(value) : String(value ?? "");
+    return `"${text.replace(/"/g, '""')}"`;
+  }).join(",")).join("\r\n");
+}
+
+function ttDriveReadableReports(state, exportedAt) {
+  const groups = state?.groups || [];
+  const groupName = new Map(groups.map((group) => [group.id, group.name || group.id]));
+  const studentProgress = [["Date", "Group", "Student", "Substep", "Section", "Type", "Correct", "Total", "Seconds", "WCPM", "Missed items", "Notes", "Recommendation"]];
+  (state?.masterRecords || []).forEach((record) => studentProgress.push([
+    record.displayDate || record.date || record.savedAt || "", groupName.get(record.groupId || record.groupIdAtTime) || record.group || "", record.student || "", record.substep || "", record.section || "", record.type || "",
+    record.correct ?? "", record.total ?? "", record.seconds ?? "", record.wcpm ?? "", record.wrongWords || record.misses || [], record.notes || "", record.recommendation || ""
+  ]));
+  const attendance = [["Date", "Group", "Status", "Student", "Attendance", "Lesson numbers", "Lesson parts", "Group-day note", "Confirmed at"]];
+  Object.entries(state?.attendanceSessions || {}).forEach(([groupId, sessions]) => Object.entries(sessions || {}).forEach(([date, session]) => {
+    const names = new Set(Object.keys(session.attendance || {}));
+    if (!names.size) attendance.push([date, groupName.get(groupId) || groupId, session.status || "", "", "", session.lessonNumbers || [], session.lessonParts || [], session.note || "", session.confirmedAt || ""]);
+    names.forEach((name) => attendance.push([date, groupName.get(groupId) || groupId, session.status || "", name, session.attendance?.[name] === true ? "Present" : session.attendance?.[name] === false ? "Absent" : "", session.lessonNumbers || [], session.lessonParts || [], session.note || "", session.confirmedAt || ""]));
+  }));
+  const lessonPlans = [["Group", "Lesson number", "Status", "Substep", "Start date", "Saved at", "Teacher notes", "Next step"]];
+  groups.forEach((group) => (group.history || []).forEach((plan) => {
+    const lesson = plan.lessons?.[0] || {};
+    lessonPlans.push([group.name || group.id, plan.lessonNumber || lesson.lessonSequence || "", plan.status || "", lesson.substep || plan.substep || "", lesson.scheduledDate || plan.scheduledDate || "", plan.savedAt || "", plan.wrapUp?.note || "", plan.wrapUp?.recommendation || ""]);
+  }));
+  return [
+    { name: "student-progress.csv", content: ttDriveCsv(studentProgress) },
+    { name: "attendance.csv", content: ttDriveCsv(attendance) },
+    { name: "lesson-plans.csv", content: ttDriveCsv(lessonPlans) },
+    { name: "README.txt", content: `Teach Today readable reports\nUpdated: ${exportedAt}\n\nstudent-progress.csv: saved student evidence, charting, notes, and recommendations.\nattendance.csv: one row per student attendance entry.\nlesson-plans.csv: planned and completed lessons with teacher notes.\n\nThe Daily and Weekly JSON files remain the complete recovery backups for all app data.\n` }
+  ];
+}
+
+async function ttSaveIndependentDriveReports(root, state, exportedAt) {
+  const reports = await ttDriveNamedFolder("Reports", root);
+  for (const report of ttDriveReadableReports(state, exportedAt)) {
+    const mimeType = report.name.endsWith(".csv") ? "text/csv" : "text/plain";
+    await ttDriveUpsertBackup(reports, report.name, new Blob([report.content], { type: mimeType }), mimeType);
+  }
+}
+
 async function ttSaveIndependentDriveBackup(content, names, revisionId) {
   const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
   const daily = await ttDriveNamedFolder("Daily", root);
@@ -15569,6 +15651,8 @@ async function ttSaveIndependentDriveBackup(content, names, revisionId) {
   const blob = new Blob([content], { type: "application/json" });
   await ttDriveUpsertBackup(daily, names.daily, blob);
   await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  const artifact = JSON.parse(content);
+  await ttSaveIndependentDriveReports(root, artifact.appState, artifact.exportedAt);
   localStorage.setItem("teachToday.lastIndependentDriveRevision", revisionId);
   localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
   localStorage.setItem("teachToday.lastIndependentDriveDate", names.daily.slice("teach-today-daily-".length, -".json".length));
@@ -15644,16 +15728,12 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
     const jobs = [];
     if (needsNative) jobs.push(ttSaveIndependentNativeBackup(content, digest, names, revisionId).catch((error) => failures.push(`iPad Files: ${error.message}`)));
     if (needsDrive) {
-      if (!ttDriveAccessToken && !options.requestDrivePermission) {
-        failures.push("Google Drive needs permission. Open Records and tap Connect Drive backups.");
-      } else {
-        try {
-          if (options.requestDrivePermission) await ttEnsureDrivePermission();
-          if (!ttDriveAccessToken) throw new Error("Google Drive permission was not granted.");
-          jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
-        } catch (error) {
-          failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
-        }
+      try {
+        const authorized = await ttEnsureDrivePermission({ interactive: Boolean(options.requestDrivePermission) });
+        if (!authorized) throw new Error("Google Drive needs permission. Open Records and tap Connect Google Drive backup.");
+        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+      } catch (error) {
+        failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
       }
     }
     await Promise.all(jobs);
@@ -15776,7 +15856,7 @@ async function ttUploadPendingAudioToDrive() {
     ttRenderDataCenter();
     return;
   }
-  if (!(await ttEnsureDrivePermission())) return;
+  if (!(await ttEnsureDrivePermission({ interactive: true }))) return;
   localStorage.setItem("teachToday.driveStatus", `Uploading ${pending.length} recording(s) to Google Drive...`);
   ttRenderDataCenter();
   for (const record of pending) {
