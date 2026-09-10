@@ -4547,7 +4547,7 @@ function ttBackfillLessonLinks() {
   appState.lessonLinkBackfillVersion = 1;
   if (changed) {
     appState.lastSavedAt = new Date().toISOString();
-    localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(appState));
+    writeTeachTodayState(appState);
     if (typeof window.teachTodayQueueCloudSync === "function") window.teachTodayQueueCloudSync();
   }
 }
@@ -4942,7 +4942,7 @@ function ttFillGroups(activeId) {
 
 function appGroups() {
   const group = activeGroup();
-  const stored = JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}");
+  const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
   return stored.groups?.length ? stored.groups : [group];
 }
 
@@ -15813,7 +15813,7 @@ async function ttInstallFirebaseEnvelope(envelope, options = {}) {
   const safety = ttFirebaseSafety();
   const restoredState = safety.applySharedState(appState, payload.appState);
   restoredState.lastSavedAt = payload.exportedAt || new Date().toISOString();
-  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
+  writeTeachTodayState(restoredState);
   localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides || {}));
   localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
   localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", restoredState.lastSavedAt);
@@ -16866,7 +16866,7 @@ function ttRestoreDataFromFile(file) {
         alert("That backup file does not look like Teach Today data.");
         return;
       }
-      localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(restoredState));
+      writeTeachTodayState(restoredState);
       if (payload.section2CardOverrides) {
         localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
       }
@@ -20089,10 +20089,10 @@ function ttMonitorSection4AutoSave() {
 }
 
 function appStateSwitchGroup(groupId) {
-  const stored = JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}");
+  const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
   if (!stored.groups?.some((group) => group.id === groupId)) return false;
   stored.selectedGroupId = groupId;
-  localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(stored));
+  writeTeachTodayState(stored);
   const url = new URL(location.href);
   url.searchParams.set("group", groupId);
   url.searchParams.delete("plan");
@@ -20105,10 +20105,10 @@ function ttLoadPlanFromUrl() {
   const groupId = params.get("group");
   const planId = params.get("plan");
   if (groupId && groupId !== ttActiveGroup().id) {
-    const stored = JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}");
+    const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
     if (stored.groups?.some((group) => group.id === groupId)) {
       stored.selectedGroupId = groupId;
-      localStorage.setItem("dyslexiaInstructionEngine.v2", JSON.stringify(stored));
+      writeTeachTodayState(stored);
       location.href = `${location.pathname}?group=${encodeURIComponent(groupId)}&plan=${encodeURIComponent(planId || "")}`;
     }
     return null;

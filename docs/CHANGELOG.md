@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-10
+
+- Diagnosed Stage lesson-start/save failure as localStorage quota exhaustion on the physical iPad. Added lossless script-line pooling for Stage disk storage, exact expansion on load, visible save-failure feedback, and fail-closed preservation of unreadable saved state. Native backups keep full original content; no records or ink are removed and no Firebase sync is enabled. Preserved private device checkpoints and verified exact round trips plus all 35 tests. Publication/device verification pending.
+
 ## 2026-09-08
 
 - Added a Section 2 **Closed Syllable Discovery 4.1** launch for substep 4.1. The color-coded, presentation-ready sequence reviews the closed-syllable rule and marking routine, uses auditory and visual v-e contrasts, introduces silent final e, and shuffles a monosyllabic closed/not-closed classification check using closed, v-e, open, and double-vowel patterns. Appended a separate v-e discovery and assessment sequence using familiar 4.1 words, explicit silent-e slash/macron/scoop/`V-e` marking, a shuffled **V-e or not V-e?** deck, and student board marking. It reuses the existing intro controls, teacher cues, Stage following, and presentation ink without changing lesson or student records.

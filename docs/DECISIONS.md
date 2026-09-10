@@ -172,3 +172,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 - Wilson card conventions remain authoritative: vowels are pink, consonants are yellow, and `qu` is one consonant sound card. The discovery uses presentation ink for student marking but does not save or infer student performance.
 - Consonant digraphs (`sh`, `th`, `ch`, `wh`, `ph`, and `ck`) remain together on one yellow card. Syllable scoops and their `C` or `V-e` labels use prominent red marking, with enough reserved space to keep assessment answers separate.
 - After the complete closed-syllable sequence, a separate v-e extension repeats the same discover, name, mark, discriminate, and board-practice structure. V-e marking begins by slashing silent final e, adds a macron over the first vowel, scoops the syllable, and labels it `V-e`; the earlier closed-syllable slides remain unchanged.
+
+## Stage quota relief (2026-09-10)
+
+- Stage may store repeated `scriptText` lines once in an internal `_scriptTextPoolV1` dictionary, with `_scriptTextLinesV1` references, solely in its localStorage representation. Loading expands every script exactly before schema upgrades. The encoding must be lossless, validated, and smaller than the original; student evidence and ink are never pruned to fit a quota. Normal in-memory/native backup payloads remain expanded; any raw encoded snapshot is self-contained and supported by the loader.
+- Every main-state writer uses the shared storage helper. Failed writes preserve the prior atomic localStorage value, keep pending work in memory, show a persistent warning, and emit no successful-save event. Parse/upgrade errors must never delete the saved database or replace it with defaults.
+- This is emergency headroom, not a replacement for the planned backup-first IndexedDB migration. Stage remains local-only, with no automatic Firebase transfer.

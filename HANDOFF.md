@@ -6,7 +6,9 @@
 ---
 
 ## Last Updated
-2026-09-09
+2026-09-10
+
+- Prepared on 2026-09-10: confirmed physical Stage `QuotaExceededError` on a direct save. Preserved the existing daily checkpoint, current WebKit SQLite database/journal, and a fresh verified native checkpoint of in-memory work under Git-ignored `private-input/stage-repair-20260910/`. Stage now losslessly pools repeated lesson-script lines only in its localStorage representation; loading restores exact script strings, and normal in-memory/native backups stay expanded. All lesson, charting, observation, attendance, and ink content is retained. The actual protected checkpoints round-trip exactly and reclaim about 0.60 MB of UTF-16 storage. Failed saves display a persistent warning, never emit save success, and do not advance `lastSavedAt`; a load/upgrade failure no longer deletes the saved copy. Browser storage format and Stage local-only authority remain unchanged. All 35 tests pass. Exact next step: publish, inject the verified storage helpers into the connected Stage page to save its current in-memory work before reloading, verify readback and restart persistence, then test Start Planned Lesson. This is bounded quota relief; a backup-first IndexedDB migration is still needed for continued record growth.
 
 - Complete locally on 2026-09-09: the 4.1 discovery now keeps consonant digraphs (`sh`, `th`, `ch`, `wh`, `ph`, and `ck`) together on single yellow cards. Closed and v-e markings use a larger breve/macron plus a thicker red scoop and larger red `C`/`V-e` label. Marked words reserve vertical space below the scoop so classification answers no longer overlap it. All 31 tests, syntax checks, and diff checks pass; local browser review confirmed the corrected digraph cards and representative closed and v-e answer layouts. Exact next step: publish and verify on iPad Stage.
 

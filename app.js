@@ -380,7 +380,7 @@ function compactLessonRevisionStorage(state) {
 }
 
 function upgradeTeachTodayState(data) {
-  const upgraded = data && typeof data === "object" ? data : {};
+  const upgraded = restorePackedLessonScripts(data && typeof data === "object" ? data : {});
   upgraded.masterRecords ||= [];
   upgraded.rosterStudents = mergeRosterStudents([], upgraded.rosterStudents || []);
   const defaults = defaultTeachingGroups();
@@ -472,13 +472,86 @@ function expandPageList(value) {
   });
 }
 
+// Stage's localStorage quota counts UTF-16 bytes. Store repeated script lines
+// once on disk, while keeping the exact original strings in memory/exports.
+// No lesson, evidence, ink, or script content is discarded by this encoding.
+function restorePackedLessonScripts(state) {
+  if (!Object.prototype.hasOwnProperty.call(state, "_scriptTextPoolV1")) return state;
+  const pool = state._scriptTextPoolV1;
+  if (!Array.isArray(pool) || pool.some((line) => typeof line !== "string")) throw new Error("Invalid lesson script dictionary");
+  function visit(value) {
+    if (!value || typeof value !== "object") return;
+    if (Object.prototype.hasOwnProperty.call(value, "_scriptTextLinesV1")) {
+      const lines = value._scriptTextLinesV1;
+      if (!Array.isArray(lines) || lines.some((index) => !Number.isInteger(index) || index < 0 || index >= pool.length)) throw new Error("Invalid lesson script reference");
+      if (Object.prototype.hasOwnProperty.call(value, "scriptText")) throw new Error("Conflicting lesson script representations");
+      value.scriptText = lines.map((index) => pool[index]).join("\n");
+      delete value._scriptTextLinesV1;
+    }
+    Object.values(value).forEach(visit);
+  }
+  visit(state);
+  delete state._scriptTextPoolV1;
+  return state;
+}
+
+function serializeTeachTodayState(state) {
+  const original = JSON.stringify(state);
+  const isStage = document.documentElement.dataset.teachTodayNative === "ipad"
+    && Boolean(window.webkit?.messageHandlers?.teachTodayProjectionMode);
+  if (!isStage) return original;
+  const copy = restorePackedLessonScripts(JSON.parse(original));
+  const pool = [];
+  const indexes = new Map();
+  function visit(value) {
+    if (!value || typeof value !== "object") return;
+    if (typeof value.scriptText === "string") {
+      if (Object.prototype.hasOwnProperty.call(value, "_scriptTextLinesV1")) throw new Error("Conflicting lesson script representations");
+      value._scriptTextLinesV1 = value.scriptText.split("\n").map((line) => {
+        if (!indexes.has(line)) { indexes.set(line, pool.length); pool.push(line); }
+        return indexes.get(line);
+      });
+      delete value.scriptText;
+    }
+    Object.values(value).forEach(visit);
+  }
+  visit(copy);
+  copy._scriptTextPoolV1 = pool;
+  const packed = JSON.stringify(copy);
+  return packed.length < original.length ? packed : original;
+}
+
+function showTeachTodayStorageFailure() {
+  let notice = document.getElementById("teachTodayStorageFailure");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.id = "teachTodayStorageFailure";
+    notice.setAttribute("role", "alert");
+    notice.style.cssText = "position:fixed;top:8px;left:8px;right:8px;z-index:2147483647;padding:16px;background:#fff1f2;color:#881337;border:2px solid #be123c;border-radius:12px;font:600 16px/1.4 system-ui;";
+    (document.body || document.documentElement).appendChild(notice);
+  }
+  notice.textContent = "Changes are NOT saved. Device storage could not save this work. Stop editing and keep this screen open. Do not clear app data or reinstall Stage. Your previous saved copy remains on this device.";
+}
+
+function writeTeachTodayState(state) {
+  try {
+    localStorage.setItem(storageKey, serializeTeachTodayState(state));
+  } catch (error) {
+    showTeachTodayStorageFailure();
+    throw error;
+  }
+  document.getElementById("teachTodayStorageFailure")?.remove();
+}
+
 function loadState() {
   const saved = localStorage.getItem(storageKey);
   if (saved) {
     try {
       return upgradeTeachTodayState(JSON.parse(saved));
-    } catch {
-      localStorage.removeItem(storageKey);
+    } catch (error) {
+      // Never erase a saved classroom copy because parsing or upgrading failed.
+      showTeachTodayStorageFailure();
+      throw error;
     }
   }
 
@@ -488,8 +561,15 @@ function loadState() {
 function saveState() {
   applyStudentPrivacySchema(appState);
   compactLessonRevisionStorage(appState);
+  const previousSavedAt = appState.lastSavedAt;
   appState.lastSavedAt = new Date().toISOString();
-  localStorage.setItem(storageKey, JSON.stringify(appState));
+  try {
+    writeTeachTodayState(appState);
+  } catch (error) {
+    if (previousSavedAt === undefined) delete appState.lastSavedAt;
+    else appState.lastSavedAt = previousSavedAt;
+    throw error;
+  }
   teachTodayStateChannel?.postMessage({
     type: "state-saved",
     savedAt: appState.lastSavedAt,
@@ -503,7 +583,12 @@ function saveState() {
   }
 }
 
-localStorage.setItem(storageKey, JSON.stringify(appState));
+try {
+  writeTeachTodayState(appState);
+} catch {
+  // Keep the protected state readable and backup controls available. The
+  // persistent failure notice stays visible; ordinary saves still throw.
+}
 
 function activeGroup() {
   const group = appState.groups.find((item) => item.id === appState.selectedGroupId) || appState.groups[0];
