@@ -66,3 +66,15 @@ test("native Stage verifies Files backups away from the WebKit UI thread", () =>
   assert.match(swift, /private func performBackup/);
   assert.match(swift, /DispatchQueue\.main\.async \{ \[weak self\] in/);
 });
+
+test("lesson routes preserve the native iPad marker across Home and Continue", () => {
+  const homeUrl = functionBody("ttHomeUrl", "ttPlanUrl");
+  const planUrl = functionBody("ttPlanUrl", "ttUpdateSaveStatus");
+  const openPlan = functionBody("ttOpenPlanInApp", "section2CardsForWord");
+
+  assert.match(homeUrl, /ttStageLocalOnlyMode\(\)/);
+  assert.match(homeUrl, /\?native=ipad/);
+  assert.match(planUrl, /params\.set\("native", "ipad"\)/);
+  assert.match(openPlan, /history\.replaceState\(null, "", ttPlanUrl\(found\.plan\.id\)\)/);
+  assert.doesNotMatch(source, /history\.replaceState\(null, "", location\.pathname\)/);
+});

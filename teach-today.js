@@ -9794,7 +9794,7 @@ function ttSetWordlistPageIndex(pageIndex) {
   ttLesson = ttBuildLesson();
   ttRerollEncodingSectionsForSelectedPage(skill);
   ttSaveDraftLesson({ status: false });
-  history.replaceState(null, "", location.pathname);
+  history.replaceState(null, "", ttHomeUrl());
   ttSection2Word = "";
   ttRender();
 }
@@ -13928,13 +13928,24 @@ function ttNewLesson() {
   ttSection8SoundElementsManual = false;
   const draft = ttEnsurePlannerDraft(group);
   draft.scheduledDate = ttTodayKey();
-  history.replaceState(null, "", location.pathname);
+  history.replaceState(null, "", ttHomeUrl());
   saveState();
   ttShowHomeScreen(group.id);
 }
 
+function ttHomeUrl() {
+  const query = ttStageLocalOnlyMode() || new URLSearchParams(location.search).get("native") === "ipad"
+    ? "?native=ipad"
+    : "";
+  return `${location.pathname}${query}`;
+}
+
 function ttPlanUrl(planId) {
-  return `${location.pathname}?group=${encodeURIComponent(ttActiveGroup().id)}&plan=${encodeURIComponent(planId)}`;
+  const params = new URLSearchParams();
+  params.set("group", ttActiveGroup().id);
+  params.set("plan", planId);
+  if (ttStageLocalOnlyMode() || new URLSearchParams(location.search).get("native") === "ipad") params.set("native", "ipad");
+  return `${location.pathname}?${params.toString()}`;
 }
 
 function ttUpdateSaveStatus(plan) {
@@ -19870,7 +19881,7 @@ function ttBind() {
     saveState();
     ttLesson = ttBuildLesson();
     ttSaveDraftLesson({ status: false });
-    history.replaceState(null, "", location.pathname);
+    history.replaceState(null, "", ttHomeUrl());
     ttSection2Word = "";
     ttRender();
   });
@@ -19881,7 +19892,7 @@ function ttBind() {
     saveState();
     ttLesson = ttBuildLesson();
     ttSaveDraftLesson({ status: false });
-    history.replaceState(null, "", location.pathname);
+    history.replaceState(null, "", ttHomeUrl());
     ttSection2Word = "";
     ttRender();
   });
