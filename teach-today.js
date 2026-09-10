@@ -3707,7 +3707,8 @@ function ttBackupCurrentStageState(options = {}) {
   }, {
     force: Boolean(options.force),
     manual: Boolean(options.manual),
-    nativeOnly: !driveReady
+    nativeOnly: Boolean(options.nativeOnly) || !driveReady,
+    requireNative: Boolean(options.requireNative)
   });
 }
 
@@ -4150,6 +4151,10 @@ function ttRenderDataCenter() {
   const secureLegacyButton = ttById("ttSecureLegacyStudentData");
   const recoveryButton = ttById("ttDownloadRecovery");
   const recoveryBundleButton = ttById("ttDownloadRecoveryBundle");
+  const stageStorageState = ttById("ttStageStorageState");
+  const stageStorageStatus = ttById("ttStageStorageStatus");
+  const stageStorageCheck = ttById("ttStageStorageCheck");
+  const stageStorageUpgrade = ttById("ttStageStorageUpgrade");
   const stageParkedDataActions = [
     "ttBackupData",
     "ttDownloadRecovery",
@@ -4196,7 +4201,101 @@ function ttRenderDataCenter() {
   if (secureLegacyButton) secureLegacyButton.hidden = !ttFirebaseUser || Boolean(localStorage.getItem("teachToday.privacyMigrationReceipt"));
   if (recoveryButton) recoveryButton.hidden = !ttRecoveryIndex().length;
   if (recoveryBundleButton) recoveryBundleButton.hidden = !ttRecoveryIndex().length;
+  [stageStorageCheck, stageStorageUpgrade, stageStorageStatus, stageStorageState?.closest("article")].forEach((node) => {
+    if (node) node.hidden = !ttStageLocalOnlyMode();
+  });
+  if (stageStorageState && ttStageLocalOnlyMode()) {
+    const active = localStorage.getItem("teachToday.stageIndexedDbActive.v1") === "true";
+    const percent = Number(localStorage.getItem("teachToday.stageStoragePercent.v1"));
+    stageStorageState.textContent = active ? (Number.isFinite(percent) && percent >= 70 ? `${percent}% · Check` : "Upgraded") : "Upgrade ready";
+    if (stageStorageUpgrade) stageStorageUpgrade.textContent = active ? "Verify Stage Storage" : "Upgrade Stage Storage";
+  }
 }
+
+function ttStageStorageFormatBytes(value) {
+  if (!Number.isFinite(value)) return "unknown";
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
+async function ttCheckStageStorage(options = {}) {
+  const status = ttById("ttStageStorageStatus");
+  const state = ttById("ttStageStorageState");
+  if (!ttStageLocalOnlyMode() || !window.TeachTodayStageStorage) return null;
+  if (status) status.textContent = "Checking the Stage database and available device storage…";
+  const health = await window.TeachTodayStageStorage.health();
+  const percent = health.quota && Number.isFinite(health.usage) ? Math.round((health.usage / health.quota) * 100) : null;
+  if (state) state.textContent = health.active && health.verified ? "Verified" : health.active ? "Needs attention" : "Upgrade ready";
+  if (status) {
+    if (health.error) status.textContent = `Stage database needs attention: ${health.error}. The protected pre-upgrade copy and iPad Files backups remain available.`;
+    else if (!health.active) status.textContent = "The larger Stage database is ready to install. Upgrade creates and verifies an iPad Files backup first.";
+    else status.textContent = `Stage database verified${health.savedAt ? ` ${formatDateTime(new Date(health.savedAt))}` : ""}. Device web storage: ${ttStageStorageFormatBytes(health.usage)} used${percent === null ? "" : ` (${percent}% of its available allowance)`}.`;
+  }
+  if (options.notify) ttShowBackupToast(health.active && health.verified ? "Stage storage verified and ready." : "Stage storage needs attention. Open Records for details.", health.active && health.verified ? "success" : "warning");
+  return health;
+}
+
+let ttStageStorageUpgradePromise = null;
+function ttUpgradeStageStorage(options = {}) {
+  if (!ttStageLocalOnlyMode() || !window.TeachTodayStageStorage) return Promise.resolve(null);
+  if (ttStageStorageUpgradePromise) return ttStageStorageUpgradePromise;
+  const button = ttById("ttStageStorageUpgrade");
+  const status = ttById("ttStageStorageStatus");
+  ttStageStorageUpgradePromise = (async () => {
+    if (button) button.disabled = true;
+    if (status) status.textContent = "Creating and verifying a complete iPad Files checkpoint before upgrading…";
+    await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    if (status) status.textContent = "Copying the complete Stage database and verifying its contents…";
+    const result = await window.TeachTodayStageStorage.migrate(appState, localStorage.getItem("dyslexiaInstructionEngine.v2"));
+    await saveState();
+    await window.TeachTodayStageStorage.flush();
+    const health = await ttCheckStageStorage();
+    if (!health?.active || !health.verified) throw new Error("The upgraded database did not pass verification");
+    ttShowBackupToast("Stage storage upgraded and verified. Lessons can start safely.", "success");
+    return result;
+  })().catch((error) => {
+    if (status) status.textContent = `Stage storage was not changed because verification did not finish: ${error.message || error}. The original copy and iPad Files checkpoint remain preserved.`;
+    ttShowBackupToast("Stage storage upgrade needs attention. The original copy was preserved.", "warning");
+    throw error;
+  }).finally(() => {
+    ttStageStorageUpgradePromise = null;
+    if (button) button.disabled = false;
+    ttRenderDataCenter();
+  });
+  ttStageStorageUpgradePromise.catch(() => {});
+  return ttStageStorageUpgradePromise;
+}
+
+async function ttEnsureStageStorageReady() {
+  if (!ttStageLocalOnlyMode() || !window.TeachTodayStageStorage) return true;
+  let health = await window.TeachTodayStageStorage.health();
+  if (!health.active) {
+    await ttUpgradeStageStorage({ automatic: true });
+    health = await window.TeachTodayStageStorage.health();
+  }
+  if (!health.verified) {
+    ttShowBackupToast("Stage storage must be verified before this lesson can start. Open Records for details.", "warning");
+    ttToggleSharedDataPanel("data", "ttHomeDataPanels");
+    return false;
+  }
+  if (health.quota && Number.isFinite(health.usage) && health.usage / health.quota >= 0.7) {
+    await ttBackupCurrentStageState({ force: true, nativeOnly: true });
+    ttShowBackupToast("Stage storage is getting full. A complete iPad backup was verified; open Records to check storage.", "warning");
+  }
+  return true;
+}
+
+window.addEventListener("teachTodayStageStorageHealth", (event) => {
+  const percent = Number(event.detail?.percent);
+  if (!Number.isFinite(percent) || percent < 70) return;
+  const band = percent >= 85 ? "urgent" : "warning";
+  const priorBand = localStorage.getItem("teachToday.stageStorageWarningBand.v1");
+  localStorage.setItem("teachToday.stageStorageWarningBand.v1", band);
+  if (priorBand === band) return;
+  ttQueueStageNativeBackup({ immediate: true, force: true }).catch(() => {});
+  ttShowBackupToast(`Stage storage is ${percent}% full. A complete iPad backup is being verified; open Records to check storage.`, "warning");
+  ttRenderDataCenter();
+});
 
 function ttShowConnectionNotice(message, title = "Cloud connection issue", options = {}) {
   if (ttWorkOffline) return;
@@ -4765,7 +4864,8 @@ function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
   return true;
 }
 
-function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
+async function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
+  if (!(await ttEnsureStageStorageReady())) return false;
   const current = ttContinuityPlan(groupId, planId);
   if (!current) return false;
   const { group, plan, lesson } = current;
@@ -4787,6 +4887,7 @@ function ttResumeOpenPlanFromHome(groupId, planId, sessionDate) {
   lesson.activeGroupDay = day;
   const opened = ttOpenPlanInApp(plan.id, group.id);
   if (!opened || !ttLesson?.savedPlanId) return false;
+  await window.TeachTodayStageStorage?.flush?.();
   // ttOpenPlanInApp has already persisted the selected plan and loaded its
   // lesson. Do not run a second save here: on iPad Stage that extra lookup can
   // race the freshly loaded state and incorrectly turn a successful reopen
@@ -4942,8 +5043,7 @@ function ttFillGroups(activeId) {
 
 function appGroups() {
   const group = activeGroup();
-  const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
-  return stored.groups?.length ? stored.groups : [group];
+  return appState.groups?.length ? appState.groups : [group];
 }
 
 function ttFillLessonControls(group) {
@@ -6326,10 +6426,10 @@ function ttRenderHomeContinuity(enabled = true) {
     saveState();
   };
   ["input", "change"].forEach((eventName) => plannedDay2Input?.addEventListener(eventName, savePlannedDay2Date));
-  container.querySelector('[data-continuity="resume"]')?.addEventListener("click", () => {
+  container.querySelector('[data-continuity="resume"]')?.addEventListener("click", async () => {
     showActionStatus("Opening the saved lesson…");
     try {
-      const resumed = ttResumeOpenPlanFromHome(group.id, openPlan.id, container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
+      const resumed = await ttResumeOpenPlanFromHome(group.id, openPlan.id, container.querySelector("[data-continuity-session-date]")?.value || sessionDate);
       if (!resumed) showActionStatus("This lesson could not be reopened. Its saved work remains preserved.", true);
     } catch (error) {
       console.error("Teach Today could not resume the selected lesson:", error);
@@ -13771,7 +13871,8 @@ function ttSaveCurrentLesson(options = {}) {
   ttRenderSavedLessons(group);
 }
 
-function ttStartCurrentLesson() {
+async function ttStartCurrentLesson() {
+  if (!(await ttEnsureStageStorageReady())) return;
   if (!ttLesson) ttBuildLesson();
   const group = ttActiveGroup();
   const openPlan = ttActiveOpenPlan(group);
@@ -13782,6 +13883,7 @@ function ttStartCurrentLesson() {
   }
   ttLesson.scheduledDate ||= ttTodayKey();
   ttSaveCurrentLesson({ render: false, starting: true, reason: "Started teaching" });
+  await window.TeachTodayStageStorage?.flush?.();
   ttArchiveCurrentLessonPlanPdf("Planned").catch((error) => {
     console.warn("Teach Today could not archive the planned lesson PDF:", error);
     ttShowBackupToast(`Planned lesson PDF needs attention. ${error.message || error}`, "warning");
@@ -13842,7 +13944,17 @@ function ttUpdateSaveStatus(plan) {
   const savedDate = plan.savedAt ? new Date(plan.savedAt) : new Date();
   const date = savedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   const time = savedDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  status.textContent = `Saved: ${date} at ${time}${page ? ` - ${page}` : ""}`;
+  const savedText = `Saved: ${date} at ${time}${page ? ` - ${page}` : ""}`;
+  if (ttStageLocalOnlyMode() && localStorage.getItem("teachToday.stageIndexedDbActive.v1") === "true") {
+    status.textContent = "Saving securely on this iPad…";
+    window.TeachTodayStageStorage?.flush?.().then(() => {
+      if (status.isConnected) status.textContent = savedText;
+    }).catch(() => {
+      if (status.isConnected) status.textContent = "NOT SAVED — open Records for storage recovery";
+    });
+    return;
+  }
+  status.textContent = savedText;
   const group = ttActiveGroup();
   const file = ttById("ttLessonFile");
   if (file && plan.lessons?.[0]) file.textContent = plan.title || ttLessonFileName(group, plan.lessons[0], savedDate);
@@ -15551,6 +15663,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
         ? `iPad backup verified (${names.daily}). `
         : "";
       ttSetIndependentBackupStatus(`${safeLocalPrefix}Backup needs attention. ${failures.join(" ")}`, { notify: true });
+      if (options.requireNative && nativeFailed) throw new Error(failures.find((failure) => failure.startsWith("iPad Files:")));
     } else {
       const destinations = [needsNative ? "iPad Files" : "", needsDrive ? "Google Drive" : ""].filter(Boolean).join(" and ");
       const verifiedAt = new Date();
@@ -15813,7 +15926,7 @@ async function ttInstallFirebaseEnvelope(envelope, options = {}) {
   const safety = ttFirebaseSafety();
   const restoredState = safety.applySharedState(appState, payload.appState);
   restoredState.lastSavedAt = payload.exportedAt || new Date().toISOString();
-  writeTeachTodayState(restoredState);
+  await writeTeachTodayState(restoredState);
   localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides || {}));
   localStorage.setItem("teachToday.lastFirebaseSyncAt", payload.exportedAt || new Date().toISOString());
   localStorage.setItem("teachToday.lastFirebaseSyncedLocalSaveAt", restoredState.lastSavedAt);
@@ -16858,7 +16971,7 @@ window.teachTodayQueueCloudSync = ttQueueCloudSync;
 function ttRestoreDataFromFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const payload = JSON.parse(String(reader.result || "{}"));
       const restoredState = payload.appState || payload;
@@ -16866,7 +16979,7 @@ function ttRestoreDataFromFile(file) {
         alert("That backup file does not look like Teach Today data.");
         return;
       }
-      writeTeachTodayState(restoredState);
+      await writeTeachTodayState(restoredState);
       if (payload.section2CardOverrides) {
         localStorage.setItem("teachToday.section2CardOverrides.v1", JSON.stringify(payload.section2CardOverrides));
       }
@@ -19481,9 +19594,9 @@ function ttBind() {
       button.setAttribute("aria-hidden", "true");
     });
   }
-  ttById("ttGroup").addEventListener("change", (event) => {
+  ttById("ttGroup").addEventListener("change", async (event) => {
     ttRememberScroll();
-    if (appStateSwitchGroup(event.target.value)) return;
+    if (await appStateSwitchGroup(event.target.value)) return;
   });
 
   ttById("ttHome")?.addEventListener("click", () => {
@@ -19875,6 +19988,10 @@ function ttBind() {
   ttById("ttIndependentBackupNow")?.addEventListener("click", () => ttRunNativeBackupNow().catch((error) => {
     ttSetIndependentBackupStatus(`Backup needs attention. ${ttFriendlyDriveError(error)}`, { notify: true });
   }));
+  ttById("ttStageStorageCheck")?.addEventListener("click", () => ttCheckStageStorage({ notify: true }).catch((error) => {
+    ttShowBackupToast(`Stage storage check needs attention: ${error.message || error}`, "warning");
+  }));
+  ttById("ttStageStorageUpgrade")?.addEventListener("click", () => ttUpgradeStageStorage({ manual: true }));
   ttById("ttFirebaseLoadProtected")?.addEventListener("click", () => ttLoadProtectedFirebaseCopy());
   ttById("ttFirebaseSyncNow").addEventListener("click", () => ttSyncFirebaseAndLocalNow());
   ttById("ttSecureLegacyStudentData")?.addEventListener("click", () => ttSecureLegacyStudentData());
@@ -20088,11 +20205,10 @@ function ttMonitorSection4AutoSave() {
   ttSection4WasVisible = visible;
 }
 
-function appStateSwitchGroup(groupId) {
-  const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
-  if (!stored.groups?.some((group) => group.id === groupId)) return false;
-  stored.selectedGroupId = groupId;
-  writeTeachTodayState(stored);
+async function appStateSwitchGroup(groupId) {
+  if (!appState.groups?.some((group) => group.id === groupId)) return false;
+  appState.selectedGroupId = groupId;
+  await saveState();
   const url = new URL(location.href);
   url.searchParams.set("group", groupId);
   url.searchParams.delete("plan");
@@ -20105,13 +20221,10 @@ function ttLoadPlanFromUrl() {
   const groupId = params.get("group");
   const planId = params.get("plan");
   if (groupId && groupId !== ttActiveGroup().id) {
-    const stored = restorePackedLessonScripts(JSON.parse(localStorage.getItem("dyslexiaInstructionEngine.v2") || "{}"));
-    if (stored.groups?.some((group) => group.id === groupId)) {
-      stored.selectedGroupId = groupId;
-      writeTeachTodayState(stored);
-      location.href = `${location.pathname}?group=${encodeURIComponent(groupId)}&plan=${encodeURIComponent(planId || "")}`;
+    if (appState.groups?.some((group) => group.id === groupId)) {
+      appState.selectedGroupId = groupId;
+      saveState();
     }
-    return null;
   }
   if (!planId) return null;
   const group = ttActiveGroup();
@@ -20123,13 +20236,15 @@ function ttLoadPlanFromUrl() {
   return plan;
 }
 
-function ttOpenStudentProfile() {
-  if (ttChartCard) saveLiveRecordIfNeeded(ttChartCard);
+async function ttOpenStudentProfile() {
+  if (ttChartCard) await Promise.resolve(saveLiveRecordIfNeeded(ttChartCard));
+  await window.TeachTodayStageStorage?.flush?.();
   const group = ttActiveGroup();
   const student = group.activeStudent || ttTeachingStudents(group)[0] || "";
   if (!student) return;
   const studentId = ttStudentIdForName(student, group);
-  const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&studentId=${encodeURIComponent(studentId)}`;
+  const native = ttStageLocalOnlyMode() ? "&native=ipad" : "";
+  const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&studentId=${encodeURIComponent(studentId)}${native}`;
   location.href = url;
 }
 
@@ -20202,6 +20317,7 @@ ttRender();
 if (!ttLoadedPlan) ttShowHomeScreen();
 if (ttStageLocalOnlyMode()) {
   setTimeout(() => ttQueueStageNativeBackup({ immediate: true }).catch(() => {}), 5000);
+  setTimeout(() => ttEnsureStageStorageReady().catch(() => {}), 7000);
 }
 const ttAttendanceEditDate = new URLSearchParams(location.search).get("editAttendance");
 if (ttAttendanceEditDate) requestAnimationFrame(() => ttOpenAttendanceSessionModal(ttAttendanceEditDate, { history: true }));

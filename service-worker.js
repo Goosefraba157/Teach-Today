@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-10-stage-storage-1";
+const CACHE_NAME = "teach-today-offline-v2026-09-10-indexeddb-1";
 
 const APP_SHELL = [
   "./",
@@ -29,6 +29,8 @@ const APP_SHELL = [
   "./student-lesson.css",
   "./styles.css",
   "./app.js",
+  "./stage-storage.js",
+  "./stage-app-bootstrap.js",
   "./sync-safety.js",
   "./developer-access.js",
   "./developer-menu-config.js",

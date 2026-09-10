@@ -230,6 +230,7 @@
           <article><strong id="ttLastCloudSync">Not connected</strong><span>Last cloud sync</span></article>
           <article><strong id="ttLastFirebaseSync">Not connected</strong><span>Firebase sync</span></article>
           <article><strong id="ttDataCounts">--</strong><span>Records / lessons</span></article>
+          <article><strong id="ttStageStorageState">Checking</strong><span>Stage database</span></article>
         </div>
         <div class="data-actions">
           <button id="ttBackupData" type="button">Save backup file</button>
@@ -238,6 +239,8 @@
           <button id="ttConnectCloudSync" type="button">Choose local folder</button>
           <button id="ttSyncCloudNow" type="button">Save local file now</button>
           <button id="ttIndependentBackupNow" type="button">Back up today</button>
+          <button id="ttStageStorageCheck" type="button">Check Stage Storage</button>
+          <button id="ttStageStorageUpgrade" type="button">Upgrade Stage Storage</button>
           <button id="ttDriveBackupConnect" type="button">Connect Google Drive backup</button>
           <button id="ttDriveConnect" type="button">Google Drive audio</button>
           <button id="ttFirebaseLoadProtected" type="button">Load protected Firebase copy</button>
@@ -251,6 +254,7 @@
         <p id="ttCloudSyncStatus" class="data-note">Local browser storage is always saved. Choose a Mac folder, iCloud Drive, Google Drive, or Dropbox folder to keep a backup file on this computer.</p>
         <p id="ttDriveSyncStatus" class="data-note">Google Drive audio is ready for setup.</p>
         <p id="ttIndependentBackupStatus" class="data-note">Independent daily backups are ready for setup.</p>
+        <p id="ttStageStorageStatus" class="data-note">Stage storage will be checked automatically.</p>
         <p id="ttFirebaseSyncStatus" class="data-note">Firebase internet sync is ready for setup.</p>
         <section class="firebase-backup-timeline" aria-labelledby="ttFirebaseTimelineTitle">
           <div class="firebase-backup-timeline-head">
@@ -1163,13 +1167,7 @@
     <script src="wilson-lp-template.js"></script>
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
-    <script src="app.js?v=20260910-stage-storage-1"></script>
-    <script src="sync-safety.js?v=20260828-roster-membership-2"></script>
-    <script src="section9-passage-companions.js?v=section9-companion-7"></script>
-    <script src="developer-access.js"></script>
-    <script src="teach-today.js?v=20260910-stage-storage-1"></script>
-    <script src="pwa-register.js"></script>
-    <script src="onboarding.js?v=lesson-assistant-3"></script>
-    <script src="add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-storage.js?v=20260910-indexeddb-1"></script>
+    <script src="stage-app-bootstrap.js?v=20260910-indexeddb-1" data-scripts="app.js?v=20260910-indexeddb-1|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|teach-today.js?v=20260910-indexeddb-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

@@ -16,7 +16,8 @@ function byId(id) {
 
 function readState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const saved = window.TeachTodayStageStorage?.bootStateText?.() || localStorage.getItem(storageKey) || "{}";
+    const parsed = JSON.parse(saved);
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch (_) {
     return {};

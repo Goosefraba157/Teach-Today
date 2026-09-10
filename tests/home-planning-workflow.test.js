@@ -153,7 +153,7 @@ test("Home discards cached continuity messages when returning from Profile", () 
   assert.match(source, /window\.addEventListener\("pageshow", ttRefreshHomeAfterPageRestore\)/);
 });
 
-test("closing and resuming mutate only the selected fresh lesson record", () => {
+test("closing and resuming mutate only the selected fresh lesson record", async () => {
   const helperStart = source.indexOf("function ttContinuityRecord");
   const helperEnd = source.indexOf("function ttRecordPlanRevision", helperStart);
   assert.ok(helperStart >= 0 && helperEnd > helperStart);
@@ -179,13 +179,15 @@ test("closing and resuming mutate only the selected fresh lesson record", () => 
     ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; return true; },
     ttSaveCurrentLesson: () => { calls.lessonSave += 1; },
     ttOpenTeachFlow: () => { calls.teach += 1; },
+    ttEnsureStageStorageReady: async () => true,
+    window: { TeachTodayStageStorage: { flush: async () => {} } },
     console,
     Date
   };
   vm.createContext(context);
   vm.runInContext(`var ttPlannerGroupId = ""; var ttPlannerDraft = {}; var ttLesson = null;\n${source.slice(helperStart, helperEnd)}`, context);
 
-  assert.equal(context.ttResumeOpenPlanFromHome(group.id, plan.id, "2026-08-31"), true);
+  assert.equal(await context.ttResumeOpenPlanFromHome(group.id, plan.id, "2026-08-31"), true);
   assert.equal(plan.status, "In progress");
   assert.equal(plan.sessions["1"].date, "2026-08-31");
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);

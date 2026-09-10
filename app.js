@@ -534,6 +534,17 @@ function showTeachTodayStorageFailure() {
 }
 
 function writeTeachTodayState(state) {
+  const indexedDbStorage = window.TeachTodayStageStorage;
+  if (indexedDbStorage?.isStage?.() && localStorage.getItem("teachToday.stageIndexedDbActive.v1") === "true") {
+    const persistence = indexedDbStorage.save(state).then(() => {
+      document.getElementById("teachTodayStorageFailure")?.remove();
+    }).catch((error) => {
+      showTeachTodayStorageFailure();
+      throw error;
+    });
+    persistence.catch(() => {});
+    return persistence;
+  }
   try {
     localStorage.setItem(storageKey, serializeTeachTodayState(state));
   } catch (error) {
@@ -541,10 +552,12 @@ function writeTeachTodayState(state) {
     throw error;
   }
   document.getElementById("teachTodayStorageFailure")?.remove();
+  return Promise.resolve();
 }
 
 function loadState() {
-  const saved = localStorage.getItem(storageKey);
+  const indexedDbStorage = window.TeachTodayStageStorage;
+  const saved = indexedDbStorage?.bootStateText?.() || localStorage.getItem(storageKey);
   if (saved) {
     try {
       return upgradeTeachTodayState(JSON.parse(saved));
@@ -563,24 +576,31 @@ function saveState() {
   compactLessonRevisionStorage(appState);
   const previousSavedAt = appState.lastSavedAt;
   appState.lastSavedAt = new Date().toISOString();
+  let persistence;
   try {
-    writeTeachTodayState(appState);
+    persistence = writeTeachTodayState(appState);
   } catch (error) {
     if (previousSavedAt === undefined) delete appState.lastSavedAt;
     else appState.lastSavedAt = previousSavedAt;
     throw error;
   }
-  teachTodayStateChannel?.postMessage({
-    type: "state-saved",
-    savedAt: appState.lastSavedAt,
-    source: location.pathname
+  const complete = Promise.resolve(persistence).then(() => {
+    teachTodayStateChannel?.postMessage({
+      type: "state-saved",
+      savedAt: appState.lastSavedAt,
+      source: location.pathname
+    });
+    window.dispatchEvent(new CustomEvent("teachTodayStateSaved", {
+      detail: { savedAt: appState.lastSavedAt, source: location.pathname }
+    }));
+    if (typeof window.teachTodayQueueCloudSync === "function") window.teachTodayQueueCloudSync();
+  }).catch((error) => {
+    if (previousSavedAt === undefined) delete appState.lastSavedAt;
+    else appState.lastSavedAt = previousSavedAt;
+    throw error;
   });
-  window.dispatchEvent(new CustomEvent("teachTodayStateSaved", {
-    detail: { savedAt: appState.lastSavedAt, source: location.pathname }
-  }));
-  if (typeof window.teachTodayQueueCloudSync === "function") {
-    window.teachTodayQueueCloudSync();
-  }
+  complete.catch(() => {});
+  return complete;
 }
 
 try {
