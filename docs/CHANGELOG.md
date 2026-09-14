@@ -4,6 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-14
 
+- Corrected the supplied private attendance workbook's visible period titles and daily date headers for the 2026–27 school-year cycle, preserving its sheet structure, roster fields, absence-code key, and non-working-day shading. The calendar now begins Monday, August 10, 2026 and follows the template's existing instructional/break pattern through May 28, 2027. No student attendance values were entered or altered.
 - Created a private Google Sheets charting pilot in the teacher's Drive from the supplied blank WRS wordlist reference. The pilot uses one current-school-year student tab with a chart-attempt summary plus Wilson-style per-word blocks, typed time-in-seconds, notes, and preserved rechart attempts. Historical template tabs were not copied, no student information was added to Git, and the pilot remains a read-only reporting copy rather than a new app authority. Drive API readback verified the native Sheet title/tab, saved values, date/time formats, borders, frozen summary area, and hidden gridlines; the local browser account did not have visual access to the teacher's Drive file.
 
 ## 2026-09-10
