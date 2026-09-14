@@ -6,7 +6,9 @@
 ---
 
 ## Last Updated
-2026-09-10
+2026-09-14
+
+- Created a private, native Google Sheets pilot named `Dyslexia Services 26-27 Charting` in the teacher's Drive. It uses the supplied blank WRS wordlist layout and contains one current-year student tab populated from four saved Section 4 chart attempts, including dated Step/substep, score, typed seconds, missed-word/transcription detail, notes, and per-word results. The source template and existing historical tabs remain untouched. This is a supervisor-facing reporting pilot only: it does not become a second source of truth or enable Stage/Firebase sync. The connected browser account cannot visually open the teacher's Drive file, so the completed native Sheet was verified through Drive readback (title/tab, exact values, date/time formats, borders, frozen header, and hidden gridlines). Exact next step: teacher reviews the pilot in Drive; after approval, implement an app-owned, stable-record-ID upsert path that adds/updates all current-year student tabs without copying old-year data, then create the separate attendance sheet.
 
 - Fixed and published the Stage second-Continue failure. Opening a saved lesson replaced the current URL without preserving the native `native=ipad` marker. The first lesson opened, but subsequent Home -> Continue attempts made the storage layer misidentify the installed Stage shell as an ordinary browser and fail its required database readiness check. Home and lesson routes now preserve the native marker, including after substep/page changes and new-lesson transitions. No lesson, student, attendance, or evidence data is rewritten. All 43 tests pass, including a route regression check. Exact next step: fully force-close Stage, reopen it with internet once, open a lesson, return Home, and press Continue Lesson again.
 

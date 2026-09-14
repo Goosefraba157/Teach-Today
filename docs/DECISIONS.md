@@ -145,6 +145,12 @@ This file records decisions future chats should not accidentally reverse. Curren
 - This Drive-only OAuth connection is separate from and must not re-enable Stage Firestore synchronization.
 - Each successful Drive backup refreshes complete Daily and Weekly JSON recovery files plus `Reports/student-progress.csv`, `Reports/attendance.csv`, and `Reports/lesson-plans.csv`. CSV reports are for readable review in Google Sheets; complete JSON is the recovery authority.
 
+## Supervisor-facing Google Sheets reporting (2026-09-14)
+
+- Supervisor-facing charting and attendance spreadsheets are reporting copies of the saved Teach Today evidence, not an application-data authority, recovery source, or replacement for the verified JSON backups.
+- A charting workbook uses the teacher-approved WRS wordlist visual convention, one tab per current-school-year student, and preserves separate rechart attempts. Each populated attempt includes its saved date, Step/substep, score, typed seconds, teacher note, missed-word/transcription detail, and per-word result. Permanent private student IDs never appear in the supervisor-facing sheet.
+- Initial Drive work is a private one-student pilot. Do not bulk-copy historical student tabs or old-school-year data into a new workbook. Before automated writes, use stable record IDs and a verified upsert design so repeated exports update the matching attempt/tab instead of duplicating or deleting records.
+
 ## Lesson-plan record archive (2026-09-01)
 
 - Each newly taught lesson has two stable fillable-PDF records: Planned at Start Teaching and Completed at Finish Lesson. Repeated lifecycle taps update the matching record rather than creating duplicate files.

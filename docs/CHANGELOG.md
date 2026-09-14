@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-14
+
+- Created a private Google Sheets charting pilot in the teacher's Drive from the supplied blank WRS wordlist reference. The pilot uses one current-school-year student tab with a chart-attempt summary plus Wilson-style per-word blocks, typed time-in-seconds, notes, and preserved rechart attempts. Historical template tabs were not copied, no student information was added to Git, and the pilot remains a read-only reporting copy rather than a new app authority. Drive API readback verified the native Sheet title/tab, saved values, date/time formats, borders, frozen summary area, and hidden gridlines; the local browser account did not have visual access to the teacher's Drive file.
+
 ## 2026-09-10
 
 - Fixed installed Stage failing to reopen the same lesson a second time after returning Home. Lesson and Home address updates now retain the native iPad marker used by the verified IndexedDB storage layer, preventing the app from mistakenly treating itself as a browser after the first Continue action. No saved classroom data is changed; all 43 tests pass.
