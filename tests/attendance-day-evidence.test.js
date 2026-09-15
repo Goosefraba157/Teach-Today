@@ -16,13 +16,13 @@ test("Attendance Central displays all evidence saved on the selected calendar da
   assert.doesNotMatch(body, /exactLesson|compatibleDayFallback/);
 });
 
-test("calendar held counts include instructional evidence without rewriting attendance", () => {
+test("calendar held remains the explicit attendance-confirmation count", () => {
   const start = source.indexOf("function ttAttendanceCentralDayButton");
   const end = source.indexOf("function ttAttendanceCentralMonthHtml", start);
   assert.ok(start >= 0 && end > start);
   const body = source.slice(start, end);
 
-  assert.match(body, /ttAttendanceCentralHasEvidence\(group, key\)/);
+  assert.match(body, /statuses\.filter\(\(status\) => status === "confirmed"\)\.length/);
   assert.match(body, /\$\{held\} held/);
-  assert.match(body, /\$\{confirmed\} attendance confirmed/);
+  assert.doesNotMatch(body, /attendance confirmed/);
 });
