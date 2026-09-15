@@ -4850,6 +4850,18 @@ function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   plan.sessions ||= {};
   const planDate = plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
   if (plan.status !== "Complete") {
+    const evidence = ttTodaysLessonData(group, lesson);
+    const attendanceSession = ttAttendanceSession(group, planDate);
+    plan.wrapUp ||= {
+      completedAt: now,
+      note: plan.wrapUp?.note || "",
+      attendance: ttClone(attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {}),
+      attendanceStatus: attendanceSession?.status || "unconfirmed",
+      chartRecordCount: evidence.chart.length,
+      dictationMissCount: evidence.dictation.length,
+      encodingMarkCount: evidence.encoding.length,
+      recommendation: ""
+    };
     plan.status = "Complete";
     plan.completionKind ||= "as-is";
     plan.completedAt ||= now;
@@ -9665,8 +9677,12 @@ function ttCompleteLessonWrapUp(options = {}) {
   group.activeLessonPlanId = "";
   plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
   plan.lastStudentDataAt = new Date().toISOString();
-  ttSyncCombinedLessonLinks(plan, group);
-  saveState();
+    ttSyncCombinedLessonLinks(plan, group);
+    saveState();
+    ttArchiveLessonPlanPdf("Completed", { group, lesson, plan }).catch((error) => {
+      console.warn("Teach Today could not archive the completed lesson PDF:", error);
+      ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
+    });
   ttArchiveCurrentLessonPlanPdf("Completed").catch((error) => {
     console.warn("Teach Today could not archive the completed lesson PDF:", error);
     ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
@@ -14241,16 +14257,18 @@ async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
   if (!saved.length) throw new Error(failures.join(" ") || "No lesson-plan destination was available.");
 }
 
-async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
-  if (!ttIsNativeIpadShell() || !ttLesson) return;
-  const group = ttActiveGroup();
-  const plan = ttCurrentPlan();
+async function ttArchiveLessonPlanPdf(stage = "Planned", context = {}) {
+  if (!ttIsNativeIpadShell()) return;
+  const lesson = context.lesson || ttLesson;
+  if (!lesson) return;
+  const group = context.group || ttActiveGroup();
+  const plan = context.plan || ttCurrentPlan();
   if (!group || !plan) return;
-  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
+  const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const savedDate = plan.savedAt ? new Date(plan.savedAt) : new Date();
-  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate, { fillable: true });
+  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate, { fillable: true });
   const digest = await ttDocumentSha256Hex(pdfBytes);
-  const fileName = ttLessonPlanArchiveFileName(group, ttLesson, plan, stage);
+  const fileName = ttLessonPlanArchiveFileName(group, lesson, plan, stage);
   const groupFolder = ttLessonPlanGroupFolderName(group);
   const results = { savedAt: new Date().toISOString(), fileName, localPath: "", driveFileId: "" };
   const failures = [];
@@ -14280,6 +14298,10 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
     ttShowBackupToast(`${stage} lesson plan needs attention. ${failures.join(" ")}`, "warning");
     console.warn("Teach Today lesson-plan archive:", failures.join(" "));
   }
+}
+
+function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
+  return ttArchiveLessonPlanPdf(stage);
 }
 
 function ttWilsonCompletedLessonSummary(group, lesson, plan) {
