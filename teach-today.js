@@ -4841,7 +4841,7 @@ function ttContinuityPlan(groupId, planId) {
   return current;
 }
 
-function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
+function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   const current = ttContinuityRecord(groupId, planId);
   if (!current || current.plan.excludedFromLessonSequence || current.plan.status === "Test") return false;
   const { group, plan, lesson } = current;
@@ -4849,15 +4849,15 @@ function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
   const day = ttPlanSessionDay(plan, lesson);
   plan.sessions ||= {};
   const planDate = plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
-  if (!["Complete", "Incomplete"].includes(plan.status)) {
-    plan.status = "Incomplete";
-    plan.closedAt = now;
-    plan.closedReason = "Teacher chose to start a new lesson";
+  if (plan.status !== "Complete") {
+    plan.status = "Complete";
+    plan.completionKind ||= "as-is";
+    plan.completedAt ||= now;
     plan.sessions[day] = {
       ...plan.sessions[day],
       date: planDate,
-      status: "Incomplete",
-      closedAt: now
+      status: "Complete",
+      completedAt: now
     };
     ttSyncCombinedLessonLinks(plan, group);
   }
@@ -6382,12 +6382,12 @@ function ttRenderHomeContinuity(enabled = true) {
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
       <button class="continuity-primary" type="button" data-continuity="resume">Continue Lesson</button>
       <button class="continuity-edit" type="button" data-continuity="edit">Edit Lesson Plan</button>
-      <button type="button" data-continuity="new">Close as incomplete &amp; plan new</button>
+      <button type="button" data-continuity="new">Complete lesson &amp; plan new</button>
       ${canContinueDay2 ? `<details class="continuity-more"><summary>Day 1 options</summary><div><label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Start Day 2</button><button type="button" data-continuity="complete-day1">Finish Lesson As Is</button></div></details>` : ""}
       <div class="continuity-inline-confirm" data-continuity-confirm hidden>
-        <div><strong>Close Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} as incomplete?</strong><span>Its saved work stays preserved. The planner will prepare Lesson ${escapeHtml(nextPlanNumber)} for ${escapeHtml(ttLongLessonDate(nextPlanDate))}.</span></div>
+        <div><strong>Complete Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} and plan new?</strong><span>Its saved work stays preserved. The planner will prepare Lesson ${escapeHtml(nextPlanNumber)} for ${escapeHtml(ttLongLessonDate(nextPlanDate))}.</span></div>
         <button type="button" data-continuity-cancel-close>Keep lesson open</button>
-        <button type="button" class="continuity-confirm-close" data-continuity-confirm-close>Close lesson &amp; show planner</button>
+        <button type="button" class="continuity-confirm-close" data-continuity-confirm-close>Complete lesson &amp; show planner</button>
       </div>
       <p class="continuity-action-status" data-continuity-status aria-live="polite"></p>
     </div>`;
@@ -6481,17 +6481,17 @@ function ttRenderHomeContinuity(enabled = true) {
     showActionStatus("");
   });
   container.querySelector("[data-continuity-confirm-close]")?.addEventListener("click", () => {
-    showActionStatus("Closing only this lesson and preserving its saved work…");
+    showActionStatus("Completing this lesson and preserving its saved work…");
     try {
-      const closed = ttCloseOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
-      if (!closed) {
-        showActionStatus("This lesson was already closed or could not be found. Its saved work remains preserved.", true);
+      const completed = ttCompleteOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
+      if (!completed) {
+        showActionStatus("This lesson was already completed or could not be found. Its saved work remains preserved.", true);
         return;
       }
       ttRenderHomeScreen();
     } catch (error) {
-      console.error("Teach Today could not close the selected lesson:", error);
-      showActionStatus("This lesson could not be closed. Its saved work remains preserved.", true);
+      console.error("Teach Today could not complete the selected lesson:", error);
+      showActionStatus("This lesson could not be completed. Its saved work remains preserved.", true);
     }
   });
 }
