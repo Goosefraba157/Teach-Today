@@ -17119,6 +17119,74 @@ function ttRestoreDataFromFile(file) {
   reader.readAsText(file);
 }
 
+// A recovery file is useful only if it can add back the exact missing item
+// without turning the older file into the current classroom state. This path
+// intentionally recovers confirmed attendance for one explicitly chosen day
+// and never changes a session that is already present on this iPad.
+function ttMissingAttendanceRecoveryPreview(payload, dayKey) {
+  const sourceState = payload?.appState || payload;
+  if (!sourceState?.groups || !Array.isArray(sourceState.groups) || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey || "")) return null;
+  const sourceSessions = sourceState.attendanceSessions || {};
+  const currentSessions = appState.attendanceSessions || {};
+  return (appState.groups || []).map((group) => {
+    const incoming = sourceSessions[group.id]?.[dayKey];
+    if (!incoming || incoming.status !== "confirmed" || currentSessions[group.id]?.[dayKey]) return null;
+    return { group, session: JSON.parse(JSON.stringify(incoming)) };
+  }).filter(Boolean);
+}
+
+async function ttRecoverMissingAttendanceFromFile(file) {
+  if (!file) return;
+  const dayKey = window.prompt("Recover missing confirmed attendance for which date?\n\nUse YYYY-MM-DD (for example, 2026-09-11).", "");
+  if (dayKey === null) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey.trim())) {
+    alert("Use a date in YYYY-MM-DD format. Nothing was changed.");
+    return;
+  }
+  try {
+    const payload = JSON.parse(await file.text());
+    const additions = ttMissingAttendanceRecoveryPreview(payload, dayKey.trim());
+    if (!additions) {
+      alert("That file does not look like Teach Today data. Nothing was changed.");
+      return;
+    }
+    if (!additions.length) {
+      alert(`No missing confirmed attendance was found for ${dayKey}. Existing sessions were left untouched.`);
+      return;
+    }
+    const details = additions.map(({ group, session }) => {
+      const present = Object.values(session.attendance || {}).filter(Boolean).length;
+      const absent = Object.values(session.attendance || {}).filter((value) => value === false).length;
+      return `• ${group.name}: ${present} present, ${absent} absent`;
+    }).join("\n");
+    if (!window.confirm(`Attendance-only recovery preview for ${dayKey}\n\n${details}\n\nThis will add ${additions.length} missing confirmed session${additions.length === 1 ? "" : "s"}. It will not replace existing attendance, charting, lessons, dictation, notes, or roster data. A complete iPad backup will be verified before and after. Continue?`)) return;
+
+    // The current copy must be recoverable before an additive write. Stage
+    // requires its native Files checkpoint to succeed rather than continuing.
+    if (ttStageLocalOnlyMode()) {
+      await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    }
+    appState.attendanceSessions ||= {};
+    appState.attendanceRecords ||= {};
+    additions.forEach(({ group, session }) => {
+      appState.attendanceSessions[group.id] ||= {};
+      appState.attendanceRecords[group.id] ||= {};
+      appState.attendanceSessions[group.id][dayKey.trim()] = session;
+      appState.attendanceRecords[group.id][dayKey.trim()] = { ...(session.attendance || {}) };
+    });
+    await saveState();
+    await window.TeachTodayStageStorage?.flush?.();
+    if (ttStageLocalOnlyMode()) {
+      await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    }
+    ttRenderDataCenter();
+    if (!ttById("ttAttendanceCentral")?.hidden) ttRenderAttendanceCentral();
+    ttShowBackupToast(`Recovered ${additions.length} missing attendance session${additions.length === 1 ? "" : "s"} for ${dayKey}. Current records were preserved.`, "success");
+  } catch (error) {
+    alert(`Attendance recovery did not change this iPad. ${error?.message || "Please keep the app open and try again after checking Records."}`);
+  }
+}
+
 function ttRenderSavedLessons(group) {
   const list = ttById("ttSavedLessons");
   if (!list) return;
@@ -20282,6 +20350,11 @@ function ttBind() {
 
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
+  ttById("ttRecoverMissingAttendance")?.addEventListener("click", () => ttById("ttRecoverAttendanceFile")?.click());
+  ttById("ttRecoverAttendanceFile")?.addEventListener("change", (event) => {
+    ttRecoverMissingAttendanceFromFile(event.target.files?.[0]);
+    event.target.value = "";
+  });
   ttById("ttImportHistoricalWrs").addEventListener("click", () => ttById("ttHistoricalWrsFile").click());
   ttById("ttHistoricalWrsFile").addEventListener("change", (event) => ttImportHistoricalWrsFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
