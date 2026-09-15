@@ -4267,7 +4267,15 @@ async function ttEnsureStageStorageReady() {
   if (!ttStageLocalOnlyMode() || !window.TeachTodayStageStorage) return true;
   let health = await window.TeachTodayStageStorage.health();
   if (!health.active) {
-    await ttUpgradeStageStorage({ automatic: true });
+    try {
+      await ttUpgradeStageStorage({ automatic: true });
+    } catch (error) {
+      // A failed verification must be a clear, stable stop—not an unhandled
+      // promise that leaves Start Planned Lesson appearing intermittent.
+      ttShowBackupToast("Stage storage needs verification before a lesson can start. Your existing copy was not changed; open Records for the exact reason.", "warning");
+      ttToggleSharedDataPanel("data", "ttHomeDataPanels");
+      return false;
+    }
     health = await window.TeachTodayStageStorage.health();
   }
   if (!health.verified) {
@@ -5593,7 +5601,9 @@ function ttAttendanceCentralEvidence(group, plan, dayKey) {
   const compatibleDayFallback = (record) => onDay(record)
     && (!lesson.substep || !record.substep || record.substep === lesson.substep)
     && (!lesson.wordlistPageNumber || !record.wordlistPage || String(record.wordlistPage) === String(lesson.wordlistPageNumber));
-  const belongs = (record) => exactLesson(record) || compatibleDayFallback(record);
+  // Attendance is a day view. A lesson link is useful context, but it must
+  // never pull a chart from a different saved date into this day's evidence.
+  const belongs = (record) => onDay(record) && (exactLesson(record) || compatibleDayFallback(record));
   const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record));
   const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record));
   const dictation = (group.dictationMisses || []).filter(belongs).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));

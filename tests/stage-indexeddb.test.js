@@ -50,10 +50,13 @@ function makeIndexedDb() {
   };
 }
 
-function context() {
+function context(options = {}) {
   const idb = makeIndexedDb();
   const local = new Map();
-  const window = { webkit: { messageHandlers: { teachTodayProjectionMode: {} } } };
+  const window = {
+    webkit: { messageHandlers: { teachTodayProjectionMode: {} } },
+    document: { documentElement: { dataset: options.nativeMarker ? { teachTodayNative: "ipad" } : {} } }
+  };
   const sandbox = vm.createContext({
     window,
     indexedDB: idb.api,
@@ -61,7 +64,7 @@ function context() {
       getItem: (key) => local.get(key) ?? null,
       setItem: (key, value) => local.set(key, String(value))
     },
-    location: { search: "?native=ipad" },
+    location: { search: options.search ?? "?native=ipad" },
     navigator: { storage: { estimate: async () => ({ usage: 4_000_000, quota: 1_000_000_000 }) } },
     URLSearchParams,
     JSON,
@@ -138,4 +141,13 @@ test("an activated Stage fails closed instead of loading its stale recovery copy
   values.set("main", { schemaVersion: 1, stateText: "{}", fingerprint: "wrong", summary: {} });
   await assert.rejects(api.prepareBoot(), /verification failed/);
   assert.equal(api.bootStateText(), "");
+});
+
+test("the native document marker keeps Stage storage active if a route loses its query flag", async () => {
+  const { api, local } = context({ search: "", nativeMarker: true });
+  const state = fixture();
+  const original = JSON.stringify(state);
+  local.set("dyslexiaInstructionEngine.v2", original);
+  await api.migrate(state, original);
+  assert.equal((await api.health()).verified, true);
 });

@@ -15,7 +15,12 @@
   let lastEstimateAt = 0;
 
   function isStage() {
-    return new URLSearchParams(location.search).get("native") === "ipad"
+    // The native shell marks every document at creation time. Keep that
+    // authoritative marker in addition to the route parameter: history/back
+    // navigation must never make the application think it is Stage while this
+    // storage layer thinks it is an ordinary browser.
+    return (new URLSearchParams(location.search).get("native") === "ipad"
+      || root.document?.documentElement?.dataset?.teachTodayNative === "ipad")
       && Boolean(root.webkit?.messageHandlers?.teachTodayProjectionMode);
   }
 

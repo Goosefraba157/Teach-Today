@@ -14,6 +14,8 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Destinations:** The same immutable JSON text is written to the local iPad Files Daily/Weekly locations and, when authorized, to the Google Drive Daily/Weekly locations. Native Files verifies its received bytes against SHA-256; Google Drive must be re-downloaded and SHA-256-verified before the app reports that destination successful.
 - **Verification:** Recovery artifacts carry only a local-source/mode label and non-identifying evidence counts. The visible backup status must report those counts. A destination failure is an explicit backup warning, never a reason to read, overwrite, merge, or substitute a different data source.
 - **Boundary:** Firebase may remain an explicitly separate legacy/browser synchronization and recovery service while it is being retired or redesigned, but it is never a recovery-backup authority. Supervisor Sheets are derived reporting copies, never a recovery source.
+- **Attendance evidence:** Attendance day views are projections by the evidence record's own saved day. A plan or lesson link supplies only context and may not pull an earlier or later charting, dictation, or observation record into a different attendance date.
+- **Stage identity:** The native shell's document marker and trusted native bridge establish Stage identity for both application and storage layers; route query parameters are supplementary navigation state. Losing a route marker must not cause a storage-authority downgrade or a migration attempt.
 
 ## Presentation work
 
