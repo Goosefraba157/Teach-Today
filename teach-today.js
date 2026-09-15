@@ -5592,21 +5592,14 @@ function ttAttendanceCentralPlanForDay(group, dayKey, session = ttAttendanceSess
 }
 
 function ttAttendanceCentralEvidence(group, plan, dayKey) {
-  const planId = plan?.id || "";
-  const lesson = plan?.lessons?.[0] || {};
-  const lessonId = lesson.id || lesson.lessonId || "";
   const onDay = (record) => !dayKey || [record.date, record.displayDate, record.dailyKey, record.savedAt, record.createdAt, record.timestamp]
     .some((value) => value && dateKey(value) === dayKey);
-  const exactLesson = (record) => Boolean((planId && record.planId === planId) || (lessonId && record.lessonId === lessonId));
-  const compatibleDayFallback = (record) => onDay(record)
-    && (!lesson.substep || !record.substep || record.substep === lesson.substep)
-    && (!lesson.wordlistPageNumber || !record.wordlistPage || String(record.wordlistPage) === String(lesson.wordlistPageNumber));
-  // Attendance is a day view. A lesson link is useful context, but it must
-  // never pull a chart from a different saved date into this day's evidence.
-  const belongs = (record) => onDay(record) && (exactLesson(record) || compatibleDayFallback(record));
-  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record));
-  const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record));
-  const dictation = (group.dictationMisses || []).filter(belongs).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));
+  // Attendance Central is a calendar-day report, not a lesson-plan report.
+  // Show every charting, dictation, and Sections 6–8 record actually saved on
+  // this day, regardless of whether that work matched the scheduled plan.
+  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && onDay(record));
+  const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && onDay(record));
+  const dictation = (group.dictationMisses || []).filter(onDay).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));
   const seen = new Set();
   const sections = encoding.concat(dictation).filter((record) => {
     const key = [record.section, record.studentId || record.student, record.category, record.item || record.word, record.observationCode || record.note].join("|").toLowerCase();
@@ -5615,6 +5608,11 @@ function ttAttendanceCentralEvidence(group, plan, dayKey) {
     return true;
   });
   return { charts, sections };
+}
+
+function ttAttendanceCentralHasEvidence(group, dayKey) {
+  const evidence = ttAttendanceCentralEvidence(group, null, dayKey);
+  return Boolean(evidence.charts.length || evidence.sections.length);
 }
 
 function ttAttendanceCentralStatus(group, dayKey) {
@@ -5640,13 +5638,14 @@ function ttAttendanceCentralGroupOrder(left, right) {
 function ttAttendanceCentralDayButton(day, groups) {
   const key = dateKey(day);
   const statuses = groups.map((group) => ttAttendanceCentralStatus(group, key));
-  const held = statuses.filter((status) => status === "confirmed").length;
+  const confirmed = statuses.filter((status) => status === "confirmed").length;
+  const held = groups.filter((group, index) => statuses[index] !== "no-session" && (statuses[index] === "confirmed" || ttAttendanceCentralHasEvidence(group, key))).length;
   const missed = statuses.filter((status) => status === "no-session").length;
-  const activity = groups.some((group) => ttAttendanceCentralPlanForDay(group, key) || ttAttendanceSession(group, key));
+  const activity = Boolean(held || groups.some((group) => ttAttendanceCentralPlanForDay(group, key) || ttAttendanceSession(group, key)));
   const scheduled = day.getDay() > 0 && day.getDay() < 6
     ? groups.slice().sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))).map((group) => `${group.time || "—"} ${group.name || "Group"}`)
     : [];
-  return `<button type="button" class="ac-calendar-day${activity ? " has-activity" : ""}" data-ac-day="${key}"><b>${day.getDate()}</b>${held ? `<span>${held} held</span>` : ""}${missed ? `<small>${missed} no session</small>` : ""}${scheduled.length ? `<em>${escapeHtml(scheduled.slice(0, 3).join(" · "))}${scheduled.length > 3 ? ` · +${scheduled.length - 3}` : ""}</em>` : ""}</button>`;
+  return `<button type="button" class="ac-calendar-day${activity ? " has-activity" : ""}" data-ac-day="${key}"><b>${day.getDate()}</b>${held ? `<span>${held} held</span>` : ""}${confirmed && confirmed !== held ? `<small>${confirmed} attendance confirmed</small>` : ""}${missed ? `<small>${missed} no session</small>` : ""}${scheduled.length ? `<em>${escapeHtml(scheduled.slice(0, 3).join(" · "))}${scheduled.length > 3 ? ` · +${scheduled.length - 3}` : ""}</em>` : ""}</button>`;
 }
 
 function ttAttendanceCentralMonthHtml(monthDate, groups, compact = false) {
@@ -5733,11 +5732,12 @@ function ttAttendanceCentralDayHtml(day, groups) {
     const status = ttAttendanceCentralStatus(group, dayKey);
     const plan = ttAttendanceCentralPlanForDay(group, dayKey, session);
     const lesson = plan?.lessons?.[0] || {};
+    const evidenceRecorded = ttAttendanceCentralHasEvidence(group, dayKey);
     const attendance = session?.attendance || appState.attendanceRecords?.[group.id]?.[dayKey] || {};
     const present = Object.entries(attendance).filter(([, value]) => value === true).map(([name]) => name);
     const absent = Object.entries(attendance).filter(([, value]) => value === false).map(([name]) => name);
     const page = lesson.wordlistPageNumber || lesson.wordlistPage || "";
-    return `<article class="ac-day-card ${status}"><header><div><span>${escapeHtml(group.time || "Time not set")}</span><h3>${escapeHtml(group.name || "Group")}</h3></div><b>${status === "confirmed" ? "Attendance confirmed" : status === "no-session" ? "No session" : status === "review" ? "Needs review" : "Not recorded"}</b></header>
+    return `<article class="ac-day-card ${status}"><header><div><span>${escapeHtml(group.time || "Time not set")}</span><h3>${escapeHtml(group.name || "Group")}</h3></div><b>${status === "confirmed" ? "Attendance confirmed" : status === "no-session" ? "No session" : status === "review" ? "Needs review" : evidenceRecorded ? "Evidence recorded" : "Not recorded"}</b></header>
       <div class="ac-day-facts"><p><strong>Lesson</strong>${plan ? `Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(lesson.substep || plan.substep || "")}${page ? ` · chart p. ${escapeHtml(page)}` : ""}` : "No lesson linked"}</p><p><strong>Present</strong>${escapeHtml(present.join(", ") || "—")}</p><p><strong>Absent</strong>${escapeHtml(absent.join(", ") || "—")}</p></div>
       ${ttAttendanceCentralPerformanceHtml(group, plan, dayKey)}${session?.note ? `<p class="ac-day-note"><strong>Group-day note:</strong> ${escapeHtml(session.note)}</p>` : ""}
       <footer><button type="button" data-ac-attendance="${escapeHtml(group.id)}" data-ac-date="${dayKey}">${session ? "Edit attendance / note" : "Add attendance / note"}</button>${plan ? `<button type="button" data-ac-plan="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open lesson</button>${String(plan.status || "").toLowerCase().includes("complete") ? `<button type="button" data-ac-pdf="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open completed PDF</button>` : ""}` : ""}<button type="button" data-edit-group="${escapeHtml(group.id)}">Edit group time</button></footer></article>`;
