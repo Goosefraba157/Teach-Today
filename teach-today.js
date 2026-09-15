@@ -17143,6 +17143,9 @@ async function ttRecoverMissingAttendanceFromFile(file) {
     alert("Use a date in YYYY-MM-DD format. Nothing was changed.");
     return;
   }
+  let persisted = false;
+  let priorAttendanceSessions = null;
+  let priorAttendanceRecords = null;
   try {
     const payload = JSON.parse(await file.text());
     const additions = ttMissingAttendanceRecoveryPreview(payload, dayKey.trim());
@@ -17166,6 +17169,8 @@ async function ttRecoverMissingAttendanceFromFile(file) {
     if (ttStageLocalOnlyMode()) {
       await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
     }
+    priorAttendanceSessions = JSON.parse(JSON.stringify(appState.attendanceSessions || {}));
+    priorAttendanceRecords = JSON.parse(JSON.stringify(appState.attendanceRecords || {}));
     appState.attendanceSessions ||= {};
     appState.attendanceRecords ||= {};
     additions.forEach(({ group, session }) => {
@@ -17176,6 +17181,7 @@ async function ttRecoverMissingAttendanceFromFile(file) {
     });
     await saveState();
     await window.TeachTodayStageStorage?.flush?.();
+    persisted = true;
     if (ttStageLocalOnlyMode()) {
       await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
     }
@@ -17183,7 +17189,14 @@ async function ttRecoverMissingAttendanceFromFile(file) {
     if (!ttById("ttAttendanceCentral")?.hidden) ttRenderAttendanceCentral();
     ttShowBackupToast(`Recovered ${additions.length} missing attendance session${additions.length === 1 ? "" : "s"} for ${dayKey}. Current records were preserved.`, "success");
   } catch (error) {
-    alert(`Attendance recovery did not change this iPad. ${error?.message || "Please keep the app open and try again after checking Records."}`);
+    if (!persisted && priorAttendanceSessions && priorAttendanceRecords) {
+      appState.attendanceSessions = priorAttendanceSessions;
+      appState.attendanceRecords = priorAttendanceRecords;
+    }
+    const status = persisted
+      ? "Attendance was saved, but the follow-up backup did not finish. Keep the app open, open Records, and make a backup before teaching."
+      : "Attendance recovery did not change this iPad.";
+    alert(`${status} ${error?.message || "Please check Records before trying again."}`);
   }
 }
 

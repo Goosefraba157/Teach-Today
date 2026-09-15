@@ -39,5 +39,7 @@ assert.match(source, /await ttBackupCurrentStageState\(\{ force: true, manual: t
 assert.match(source, /It will not replace existing attendance, charting, lessons, dictation, notes, or roster data/);
 assert.match(source, /await saveState\(\);/);
 assert.match(source, /await window\.TeachTodayStageStorage\?\.flush\?\.\(\);/);
+assert.match(source, /let persisted = false/);
+assert.match(source, /Attendance was saved, but the follow-up backup did not finish/);
 
 console.log("attendance-only recovery tests passed");
