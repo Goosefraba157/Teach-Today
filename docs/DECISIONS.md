@@ -8,6 +8,13 @@ This file records decisions future chats should not accidentally reverse. Curren
 - **Reason:** V1 already has the strongest working teacher-to-lesson-to-presenter experience and has been tested with students.
 - **Boundary:** `/v2/` remains intact but paused. Its ideas may be reviewed later; it is not the active route.
 
+## Recovery backup authority
+
+- **Decision:** Daily and weekly recovery backups always originate from an immediate complete snapshot of the current local app state. Neither Firebase nor a Firebase-normalized/shared payload may be read, selected, or substituted while creating a local or Google Drive recovery backup.
+- **Destinations:** The same immutable JSON text is written to the local iPad Files Daily/Weekly locations and, when authorized, to the Google Drive Daily/Weekly locations. Native Files verifies its received bytes against SHA-256; Google Drive must be re-downloaded and SHA-256-verified before the app reports that destination successful.
+- **Verification:** Recovery artifacts carry only a local-source/mode label and non-identifying evidence counts. The visible backup status must report those counts. A destination failure is an explicit backup warning, never a reason to read, overwrite, merge, or substitute a different data source.
+- **Boundary:** Firebase may remain an explicitly separate legacy/browser synchronization and recovery service while it is being retired or redesigned, but it is never a recovery-backup authority. Supervisor Sheets are derived reporting copies, never a recovery source.
+
 ## Presentation work
 
 - **Decision:** Improve V1 slides incrementally rather than replacing the application wholesale.

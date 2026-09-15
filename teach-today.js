@@ -3699,13 +3699,9 @@ function ttStageLocalOnlyStatus() {
 
 function ttBackupCurrentStageState(options = {}) {
   if (!ttStageLocalOnlyMode()) return Promise.resolve();
-  const payload = ttFirebasePayload();
   const driveReady = localStorage.getItem(ttIndependentBackupEnabledKey) === "true"
     && (Boolean(ttDriveAccessToken) || ttNativeDriveAvailable());
-  return ttEnsureIndependentBackups({
-    payload,
-    revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
-  }, {
+  return ttEnsureIndependentBackups(null, {
     force: Boolean(options.force),
     manual: Boolean(options.manual),
     nativeOnly: Boolean(options.nativeOnly) || !driveReady,
@@ -15161,13 +15157,7 @@ function ttFirebaseDocPath() {
 }
 
 function ttBackupPayload(now = new Date()) {
-  return {
-    kind: "TeachTodayBackup",
-    version: 1,
-    exportedAt: now.toISOString(),
-    appState,
-    section2CardOverrides: section2CardOverrides()
-  };
+  return ttLocalBackupArtifact(now);
 }
 
 function ttBackupDateKey(date = new Date()) {
@@ -15208,20 +15198,49 @@ function ttSetIndependentBackupStatus(message, options = {}) {
   if (options.notify) ttShowBackupToast(message, options.success ? "success" : "warning");
 }
 
-function ttIndependentBackupArtifact(envelope) {
-  const payload = ttNormalizeFirebasePayload(envelope?.payload) || ttFirebasePayload();
+function ttBackupEvidenceSummary(state) {
+  const groups = state?.groups || [];
+  const attendanceSessions = Object.values(state?.attendanceSessions || {})
+    .reduce((total, sessions) => total + Object.keys(sessions || {}).length, 0);
+  return {
+    masterRecords: (state?.masterRecords || []).length,
+    rosterStudents: (state?.rosterStudents || []).length,
+    groups: groups.length,
+    lessons: groups.reduce((total, group) => total + (group.history || []).length, 0),
+    attendanceSessions,
+    historicalWrsReviewNotes: (state?.historicalWrsReviewNotes || []).length
+  };
+}
+
+// Backups are recovery artifacts, not synchronization artifacts. Snapshot the
+// current device state before any destination-specific work so an old Firebase
+// revision can never become the source of a local or Drive backup.
+function ttLocalBackupArtifact(now = new Date()) {
+  const localState = JSON.parse(JSON.stringify(appState));
+  const localOverrides = JSON.parse(JSON.stringify(section2CardOverrides() || {}));
   return {
     kind: "TeachTodayBackup",
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    appState: payload.appState,
-    section2CardOverrides: payload.section2CardOverrides || {},
+    version: 3,
+    exportedAt: now.toISOString(),
+    appState: localState,
+    section2CardOverrides: localOverrides,
     source: {
-      type: envelope?.revisionId ? "firebase-revision" : "local-shared-copy",
-      revisionId: envelope?.revisionId || ""
+      type: "local-device-state",
+      mode: ttStageLocalOnlyMode() ? "stage-local" : "browser-local",
+      savedAt: localState.lastSavedAt || ""
     },
+    evidenceSummary: ttBackupEvidenceSummary(localState),
     backupPolicy: { dailyKeep: 10, weeklyKeep: "school-year", cleanupEnabled: false }
   };
+}
+
+function ttLocalBackupSignature(artifact) {
+  const safety = ttFirebaseSafety();
+  return `local-${safety?.signature ? safety.signature(artifact) : JSON.stringify(artifact).length}`;
+}
+
+function ttBackupSummaryText(summary) {
+  return `${summary.masterRecords} saved records, ${summary.lessons} lessons, and ${summary.attendanceSessions} attendance sessions`;
 }
 
 function ttFirebaseSafety() {
@@ -15613,6 +15632,16 @@ async function ttDriveUpsertBackup(folderId, name, blob, mimeType = "application
   return file;
 }
 
+async function ttVerifyDriveBackup(file, expectedDigest, name) {
+  if (!file?.id) throw new Error(`Drive verification failed for ${name}: no file ID returned.`);
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+    headers: ttDriveHeaders()
+  });
+  if (!response.ok) throw new Error(`Drive verification failed for ${name}: download returned ${response.status}.`);
+  const actualDigest = await ttSha256Hex(await response.text());
+  if (actualDigest !== expectedDigest) throw new Error(`Drive verification failed for ${name}: content hash differs.`);
+}
+
 function ttDriveCsv(rows) {
   return rows.map((row) => row.map((value) => {
     const text = Array.isArray(value) || (value && typeof value === "object") ? JSON.stringify(value) : String(value ?? "");
@@ -15655,18 +15684,21 @@ async function ttSaveIndependentDriveReports(root, state, exportedAt) {
   }
 }
 
-async function ttSaveIndependentDriveBackup(content, names, revisionId) {
+async function ttSaveIndependentDriveBackup(content, names, revisionId, digest) {
   const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
   const daily = await ttDriveNamedFolder("Daily", root);
   const weekly = await ttDriveNamedFolder("Weekly", root);
   const blob = new Blob([content], { type: "application/json" });
-  await ttDriveUpsertBackup(daily, names.daily, blob);
-  await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  const dailyFile = await ttDriveUpsertBackup(daily, names.daily, blob);
+  const weeklyFile = await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  await ttVerifyDriveBackup(dailyFile, digest, names.daily);
+  await ttVerifyDriveBackup(weeklyFile, digest, names.weekly);
   const artifact = JSON.parse(content);
   await ttSaveIndependentDriveReports(root, artifact.appState, artifact.exportedAt);
   localStorage.setItem("teachToday.lastIndependentDriveRevision", revisionId);
   localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
   localStorage.setItem("teachToday.lastIndependentDriveDate", names.daily.slice("teach-today-daily-".length, -".json".length));
+  localStorage.setItem("teachToday.lastIndependentDriveSha256", digest);
 }
 
 function ttNativeBackupAvailable() {
@@ -15698,6 +15730,7 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
       localStorage.setItem("teachToday.lastIndependentNativeAt", verifiedAt);
       localStorage.setItem("teachToday.lastIndependentNativeDate", names.daily.slice("teach-today-daily-".length, -".json".length));
       localStorage.setItem("teachToday.lastIndependentNativeDailyPath", event.detail.dailyPath || `Backups/Daily/${names.daily}`);
+      localStorage.setItem("teachToday.lastIndependentNativeSha256", digest);
       resolve(event.detail);
     }
     window.addEventListener("teachTodayNativeBackupResult", onResult);
@@ -15711,9 +15744,11 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
   });
 }
 
-async function ttEnsureIndependentBackups(envelope, options = {}) {
+async function ttEnsureIndependentBackups(_unusedSource, options = {}) {
   if (ttIndependentBackupInFlight) await ttIndependentBackupInFlight;
-  const revisionId = envelope?.revisionId || ttFirebasePayloadSignature(envelope?.payload || ttFirebasePayload());
+  const artifact = ttLocalBackupArtifact();
+  const content = JSON.stringify(artifact);
+  const revisionId = ttLocalBackupSignature(artifact);
   const needsNative = ttIsNativeIpadShell() && (
     options.force
     || localStorage.getItem("teachToday.lastIndependentNativeDate") !== ttBackupDateKey()
@@ -15733,7 +15768,6 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       daily: `teach-today-daily-${ttBackupDateKey(now)}.json`,
       weekly: `teach-today-weekly-${ttBackupWeekKey(now)}.json`
     };
-    const content = JSON.stringify(ttIndependentBackupArtifact(envelope));
     const digest = await ttSha256Hex(content);
     const failures = [];
     const jobs = [];
@@ -15742,7 +15776,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       try {
         const authorized = await ttEnsureDrivePermission({ interactive: Boolean(options.requestDrivePermission) });
         if (!authorized) throw new Error("Google Drive needs permission. Open Records and tap Connect Google Drive backup.");
-        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId, digest).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
       } catch (error) {
         failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
       }
@@ -15761,7 +15795,8 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       const nativeDetail = needsNative
         ? ` Daily file verified ${formatDateTime(verifiedAt)} (${names.daily}).`
         : "";
-      ttSetIndependentBackupStatus(`Backup verified in ${destinations}.${nativeDetail}`, { success: true, notify: options.manual });
+      localStorage.setItem("teachToday.lastIndependentBackupSha256", digest);
+      ttSetIndependentBackupStatus(`Exact local snapshot verified in ${destinations}: ${ttBackupSummaryText(artifact.evidenceSummary)}.${nativeDetail}`, { success: true, notify: options.manual });
     }
   })();
   try {
@@ -15774,10 +15809,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
 
 async function ttRunIndependentBackup(options = {}) {
   if (options.connectDrive) localStorage.setItem(ttIndependentBackupEnabledKey, "true");
-  let envelope = null;
-  if (ttFirebaseUser && !ttStageLocalOnlyMode()) envelope = await ttFirebaseReadEnvelope();
-  if (!envelope) envelope = { payload: ttFirebasePayload(), revisionId: "" };
-  await ttEnsureIndependentBackups(envelope, { force: true, manual: true, requestDrivePermission: options.connectDrive });
+  await ttEnsureIndependentBackups(null, { force: true, manual: true, requestDrivePermission: options.connectDrive });
 }
 
 async function ttRunNativeBackupNow() {
@@ -16397,7 +16429,7 @@ async function ttMarkFirebaseSynced(envelope, reason) {
     timeline.dataset.loadedForUid = "";
     ttLoadFirebaseTimeline({ force: true });
   }
-  ttEnsureIndependentBackups({ ...envelope, payload }).catch((error) => {
+  ttEnsureIndependentBackups(null).catch((error) => {
     ttSetIndependentBackupStatus(`Backup needs attention. ${error.message}`, { notify: true });
   });
 }
