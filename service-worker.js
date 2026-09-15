@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-10-native-route-1";
+const CACHE_NAME = "teach-today-offline-v2026-09-14-local-backup-1";
 
 const APP_SHELL = [
   "./",
