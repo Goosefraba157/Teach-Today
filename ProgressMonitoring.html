@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Progress Monitoring · Teach Today</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
+    <link rel="icon" href="assets/morrocoy-logo.png">
+    <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
+    <link rel="stylesheet" href="progress-monitoring.css?v=20260925-progress-monitoring-1">
+    <script src="app-nav.js?v=data-diagnostic-1" defer></script>
+  </head>
+  <body>
+    <header class="pm-header tt-page-header">
+      <div class="tt-brand"><img src="assets/morrocoy-logo.png" alt="" class="tt-logo"><div class="tt-brand-text"><em>Teach Today</em><strong>Progress Monitoring</strong></div></div>
+      <div class="tt-header-sep"></div>
+      <div class="pm-title"><p>EdPlan-ready evidence</p><h1>Charting &amp; Real Words</h1><span id="pmMeta">Reading this device</span></div>
+      <div class="tt-header-spacer"></div>
+      <div class="pm-actions"><label>School year<select id="pmYear"></select></label><button id="pmSetOrder" type="button">Set EdPlan order</button><button type="button" data-tt-app-back>← Teach Today</button></div>
+    </header>
+    <main class="pm-shell">
+      <section class="pm-intro"><div><span>READ-ONLY EVIDENCE</span><strong id="pmPeriodLabel">District 9 weeks</strong><p>Every saved charting and completed Real Words dictation result is shown. Copy copies only the percentage number.</p></div><div id="pmCounts" class="pm-counts"></div></section>
+      <nav id="pmPeriods" class="pm-periods" aria-label="District reporting periods"></nav>
+      <section id="pmOrderNotice" class="pm-notice" hidden></section>
+      <section class="pm-card"><div class="pm-heading"><div><span>SECTION 4</span><h2>Decoding · Charting</h2></div><p>Each chip is one saved charting record.</p></div><div class="pm-scroll"><table class="pm-table"><thead id="pmChartHead"></thead><tbody id="pmChartRows"></tbody></table></div></section>
+      <section class="pm-card"><div class="pm-heading"><div><span>SECTION 8</span><h2>Encoding · Real Words</h2></div><p>Scores begin with completed dictation snapshots.</p></div><div class="pm-scroll"><table class="pm-table"><thead id="pmRealHead"></thead><tbody id="pmRealRows"></tbody></table></div></section>
+    </main>
+    <dialog id="pmOrderDialog" class="pm-dialog"><form method="dialog"><h2>Set EdPlan order</h2><p>Paste one student name per line from your tracker. This page first looks for an exact name, then accepts a first-name-only match only when it is unique. It stores only the matched existing student IDs on this device.</p><textarea id="pmOrderInput" rows="12" placeholder="One student name per line"></textarea><div id="pmOrderPreview" class="pm-preview"></div><div class="pm-dialog-actions"><button value="cancel">Cancel</button><button id="pmReviewOrder" value="review" type="button">Review matches</button><button id="pmSaveOrder" value="save" type="button" disabled>Save verified order</button></div></form></dialog>
+    <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
+    <script src="progress-monitoring.js?v=20260925-progress-monitoring-1"></script>
+  </body>
+</html>

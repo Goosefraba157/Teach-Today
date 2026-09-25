@@ -20436,6 +20436,9 @@ function ttBind() {
   ["ttProfile", "ttHomeProfile"].forEach((buttonId) => {
     ttById(buttonId)?.addEventListener("click", () => ttOpenStudentProfile());
   });
+  ["ttProgressMonitoring", "ttHomeProgressMonitoring"].forEach((buttonId) => {
+    ttById(buttonId)?.addEventListener("click", () => ttOpenProgressMonitoring());
+  });
   ttById("ttBackupData").addEventListener("click", () => ttBackupData());
   ttById("ttDownloadRecovery")?.addEventListener("click", () => ttDownloadLatestRecovery());
   ttById("ttDownloadRecoveryBundle")?.addEventListener("click", () => ttDownloadRecoveryBundle());
@@ -20753,6 +20756,13 @@ async function ttOpenStudentProfile() {
   const native = ttStageLocalOnlyMode() ? "&native=ipad" : "";
   const url = `StudentProfile.html?group=${encodeURIComponent(group.id)}&studentId=${encodeURIComponent(studentId)}${native}`;
   location.href = url;
+}
+
+async function ttOpenProgressMonitoring() {
+  if (ttChartCard) await Promise.resolve(saveLiveRecordIfNeeded(ttChartCard));
+  await window.TeachTodayStageStorage?.flush?.();
+  const native = ttStageLocalOnlyMode() ? "&native=ipad" : "";
+  location.href = `ProgressMonitoring.html?schoolYear=${encodeURIComponent(appState.activeSchoolYearId || "")}${native}`;
 }
 
 function ttHandleDeveloperRoute() {

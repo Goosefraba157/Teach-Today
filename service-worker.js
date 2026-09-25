@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-25-charting-lesson-numbers-1";
+const CACHE_NAME = "teach-today-offline-v2026-09-25-progress-monitoring-1";
 
 const APP_SHELL = [
   "./",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./Section9PassagePrep.html",
   "./StudentDisplay.html",
   "./StudentProfile.html",
+  "./ProgressMonitoring.html",
   "./StudentReport.html",
   "./student.html",
   "./student-lesson.html",
@@ -26,6 +27,7 @@ const APP_SHELL = [
   "./lesson-planner-v2.css",
   "./student-display.css",
   "./student-profile.css",
+  "./progress-monitoring.css",
   "./student-lesson.css",
   "./styles.css",
   "./app.js",
@@ -42,6 +44,7 @@ const APP_SHELL = [
   "./lesson-planner-v2.js",
   "./student-display.js",
   "./student-profile.js",
+  "./progress-monitoring.js",
   "./student-developer-access.js",
   "./student-lesson-data.js",
   "./student-lesson-progress.js",
