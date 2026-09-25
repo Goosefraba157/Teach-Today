@@ -714,6 +714,21 @@ function section8ScoreText(score) {
   return `${score.correct}/${score.total} · ${Math.round((score.correct / score.total) * 100)}%`;
 }
 
+function section8ScoreClass(category, score) {
+  if (!score?.total) return "metric-empty";
+  const correct = Number(score.correct), total = Number(score.total), ratio = correct / total;
+  if (category === "5 sounds" || category === "5 real words") return correct === 5 ? "metric-good" : correct >= 3 ? "metric-watch" : "metric-risk";
+  if (category === "3 nonsense words") return correct === 3 ? "metric-good" : correct === 2 ? "metric-watch" : "metric-risk";
+  // Word elements and HFW totals vary by lesson. Only mastery is green;
+  // partial accuracy remains yellow until it falls below a workable 60%.
+  return ratio === 1 ? "metric-good" : ratio >= .6 ? "metric-watch" : "metric-risk";
+}
+
+function section8ScoreCell(category, score) {
+  if (!score?.total) return "—";
+  return `<span class="section8-score ${section8ScoreClass(category, score)}">${escapeHtml(section8ScoreText(score))}</span>`;
+}
+
 function section8MissedText(detail, counted = false) {
   const labels = new Map([...section8ScoreColumns, ["3 phrases", "Phrases"], ["2 sentences", "Sentences"]]);
   const rows = [...detail.entries()].filter(([, score]) => score.missed.length);
@@ -762,12 +777,12 @@ function renderSection8ScoreHistory() {
   const range = oldest && newest && formatDate(recordDate(oldest)) !== formatDate(recordDate(newest))
     ? `${formatDate(recordDate(oldest))} – ${formatDate(recordDate(newest))}`
     : formatDate(recordDate(newest));
-  const summary = `<tr class="dictation-history-total"><td>${escapeHtml(range)}</td><td><strong>${escapeHtml(summaryLesson)}</strong></td><td>${escapeHtml(`${oldest?.substep || "—"}–${newest?.substep || "—"}`)}</td>${section8ScoreColumns.map(([category]) => `<td><strong>${escapeHtml(section8ScoreText(totals.get(category)))}</strong></td>`).join("")}<td>${escapeHtml(section8MissedText(cumulativeDetail, true))}</td></tr>`;
+  const summary = `<tr class="dictation-history-total"><td>${escapeHtml(range)}</td><td><strong>${escapeHtml(summaryLesson)}</strong></td><td>${escapeHtml(`${oldest?.substep || "—"}–${newest?.substep || "—"}`)}</td>${section8ScoreColumns.map(([category]) => `<td>${section8ScoreCell(category, totals.get(category))}</td>`).join("")}<td>${escapeHtml(section8MissedText(cumulativeDetail, true))}</td></tr>`;
   target.innerHTML = summary + rows.map(({ assessment, detail }) => `<tr>
     <td>${escapeHtml(formatDate(recordDate(assessment)))}</td>
     <td>${escapeHtml(assessment.lessonNumber ? `Lesson ${assessment.lessonNumber}` : assessment.lessonTitle || "—")}</td>
     <td>${escapeHtml(assessment.substep || "—")}</td>
-    ${section8ScoreColumns.map(([category]) => `<td>${escapeHtml(section8ScoreText(detail.get(category)))}</td>`).join("")}
+    ${section8ScoreColumns.map(([category]) => `<td>${section8ScoreCell(category, detail.get(category))}</td>`).join("")}
     <td>${escapeHtml(section8MissedText(detail))}</td>
   </tr>`).join("");
 }
