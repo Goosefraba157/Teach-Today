@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20260925-section8-assessments-1">
+    <link rel="stylesheet" href="student-profile.css?v=20260925-section8-history-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -147,6 +147,10 @@
           <div id="section8Summary" hidden aria-hidden="true"></div>
         </div>
         <article class="profile-card">
+          <div class="section-heading"><div><span class="section-kicker">Per completed lesson</span><h2>Section 8 Dictation Score History</h2><p>One row per verified Section 8 lesson. The first row is the cumulative score across the listed lessons.</p></div></div>
+          <div class="table-wrap"><table class="dictation-score-history"><thead><tr><th>Date</th><th>Lesson</th><th>Substep</th><th>Sounds</th><th>Word elements</th><th>Real words</th><th>Nonsense words</th><th>HFW from phrases</th><th>Missed items</th></tr></thead><tbody id="section8ScoreHistoryRows"></tbody></table></div>
+        </article>
+        <article class="profile-card">
           <div class="section-heading"><div><span class="section-kicker">Saved evidence</span><h2>Observation history</h2><p>Section 8 duplicates are combined into one visible record.</p></div></div>
           <div class="table-wrap"><table><thead><tr><th>Date</th><th>Section</th><th>Substep</th><th>Type</th><th>Item or detail</th><th>Lesson</th></tr></thead><tbody id="observationRows"></tbody></table></div>
         </article>
@@ -173,6 +177,6 @@
     </main>
 
     <script src="stage-storage.js?v=20260910-indexeddb-1"></script>
-    <script src="stage-app-bootstrap.js?v=20260910-indexeddb-1" data-scripts="student-profile.js?v=20260925-section8-assessments-1|pwa-register.js"></script>
+    <script src="stage-app-bootstrap.js?v=20260910-indexeddb-1" data-scripts="student-profile.js?v=20260925-section8-history-1|pwa-register.js"></script>
   </body>
 </html>

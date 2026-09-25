@@ -212,6 +212,10 @@ button { cursor: pointer; }
 .encoding-summary strong { color: var(--teal-dark); }
 .dictation-score { display: grid; gap: 5px; padding-top: 7px; border-top: 1px solid #e8e2f8; }
 .dictation-score:first-child { padding-top: 0; border-top: 0; }
+.dictation-score-history { min-width: 1180px; }
+.dictation-score-history th { white-space: nowrap; }
+.dictation-history-total td { background: #f0fdfa; font-weight: 750; vertical-align: top; }
+.dictation-history-total td:last-child { min-width: 290px; }
 .miss-chip-row { display: flex; flex-wrap: wrap; gap: 5px; color: var(--muted); font-size: 12px; }
 .miss-chip { padding: 5px 7px; border: 1px solid #d8c8fa; border-radius: 999px; background: var(--purple-soft); color: #5b21b6; font-weight: 900; }
 .miss-chip small { font-size: 9px; }

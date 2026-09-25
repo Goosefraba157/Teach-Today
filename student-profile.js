@@ -676,6 +676,91 @@ function section8AssessmentSummary(categoryNames, emptyText) {
   }).join("");
 }
 
+const section8ScoreColumns = [
+  ["5 sounds", "Sounds"],
+  ["5 word elements", "Word elements"],
+  ["5 real words", "Real words"],
+  ["3 nonsense words", "Nonsense words"],
+  ["HFW from phrase", "HFW from phrases"]
+];
+
+function section8AssessmentDetail(assessment, marks = observations()) {
+  const categories = assessment.categories || {};
+  const lessonMisses = marks.filter((record) => record.section === "section8"
+    && (record.lessonId === assessment.lessonId || record.planId === assessment.planId));
+  const byCategory = new Map();
+  Object.entries(categories).forEach(([category, items]) => {
+    const available = (items || []).map((item) => String(item));
+    const availableKeys = new Set(available.map((item) => item.toLowerCase()));
+    const missed = [...new Set(lessonMisses.filter((record) => record.category === category && availableKeys.has(String(record.item || "").toLowerCase())).map((record) => String(record.item)))];
+    byCategory.set(category, { total: available.length, correct: Math.max(0, available.length - missed.length), missed });
+  });
+  return byCategory;
+}
+
+function section8ScoreText(score) {
+  if (!score?.total) return "—";
+  return `${score.correct}/${score.total} · ${Math.round((score.correct / score.total) * 100)}%`;
+}
+
+function section8MissedText(detail, counted = false) {
+  const labels = new Map([...section8ScoreColumns, ["3 phrases", "Phrases"], ["2 sentences", "Sentences"]]);
+  const rows = [...detail.entries()].filter(([, score]) => score.missed.length);
+  if (!rows.length) return "None saved";
+  return rows.map(([category, score]) => `${labels.get(category) || category.replace(/^\d+\s*/, "")}: ${score.missed.map((item) => `${item}${counted ? ` (${score.missedCounts?.get(item) || 1})` : ""}`).join(", ")}`).join(" · ");
+}
+
+function renderSection8ScoreHistory() {
+  const target = byId("section8ScoreHistoryRows");
+  const assessments = section8Assessments();
+  if (!assessments.length) {
+    target.innerHTML = '<tr><td colspan="9" class="table-empty">Exact Section 8 score history begins with the next lesson marked done. Earlier individual misses remain in Observation History below.</td></tr>';
+    return;
+  }
+  const marks = observations();
+  const rows = assessments.map((assessment) => ({ assessment, detail: section8AssessmentDetail(assessment, marks) }));
+  const totals = new Map(section8ScoreColumns.map(([category]) => [category, { correct: 0, total: 0 }]));
+  const missCounts = new Map();
+  rows.forEach(({ detail }) => {
+    section8ScoreColumns.forEach(([category]) => {
+      const score = detail.get(category);
+      if (score) {
+        const total = totals.get(category);
+        total.correct += score.correct;
+        total.total += score.total;
+      }
+    });
+    detail.forEach((score, category) => score.missed.forEach((item) => {
+      const key = `${category}|${item}`;
+      missCounts.set(key, (missCounts.get(key) || 0) + 1);
+    }));
+  });
+  const cumulativeDetail = new Map();
+  const allCategories = new Set(rows.flatMap(({ detail }) => [...detail.keys()]));
+  allCategories.forEach((category) => {
+    const missedCounts = new Map();
+    rows.forEach(({ detail }) => (detail.get(category)?.missed || []).forEach((item) => missedCounts.set(item, (missedCounts.get(item) || 0) + 1)));
+    const score = totals.get(category) || { correct: 0, total: 0 };
+    cumulativeDetail.set(category, { ...score, missed: [...missedCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([item]) => item), missedCounts });
+  });
+  const chronological = rows.slice().reverse();
+  const oldest = chronological[0]?.assessment;
+  const newest = chronological.at(-1)?.assessment;
+  const latestLessonNumber = Math.max(...rows.map(({ assessment }) => Number(assessment.lessonNumber) || 0));
+  const summaryLesson = latestLessonNumber ? `${latestLessonNumber} lessons` : `${rows.length} scored lesson${rows.length === 1 ? "" : "s"}`;
+  const range = oldest && newest && formatDate(recordDate(oldest)) !== formatDate(recordDate(newest))
+    ? `${formatDate(recordDate(oldest))} – ${formatDate(recordDate(newest))}`
+    : formatDate(recordDate(newest));
+  const summary = `<tr class="dictation-history-total"><td>${escapeHtml(range)}</td><td><strong>${escapeHtml(summaryLesson)}</strong></td><td>${escapeHtml(`${oldest?.substep || "—"}–${newest?.substep || "—"}`)}</td>${section8ScoreColumns.map(([category]) => `<td><strong>${escapeHtml(section8ScoreText(totals.get(category)))}</strong></td>`).join("")}<td>${escapeHtml(section8MissedText(cumulativeDetail, true))}</td></tr>`;
+  target.innerHTML = summary + rows.map(({ assessment, detail }) => `<tr>
+    <td>${escapeHtml(formatDate(recordDate(assessment)))}</td>
+    <td>${escapeHtml(assessment.lessonNumber ? `Lesson ${assessment.lessonNumber}` : assessment.lessonTitle || "—")}</td>
+    <td>${escapeHtml(assessment.substep || "—")}</td>
+    ${section8ScoreColumns.map(([category]) => `<td>${escapeHtml(section8ScoreText(detail.get(category)))}</td>`).join("")}
+    <td>${escapeHtml(section8MissedText(detail))}</td>
+  </tr>`).join("");
+}
+
 function renderEncoding() {
   byId("section6Summary").innerHTML = sectionSummary("section6");
   byId("section7Summary").innerHTML = sectionSummary("section7");
@@ -683,6 +768,7 @@ function renderEncoding() {
   byId("section8SoundsElementsSummary").innerHTML = section8AssessmentSummary(["5 sounds", "5 word elements"], "No Section 8 sounds or word-element observations.");
   byId("section8WordsSummary").innerHTML = section8AssessmentSummary(["5 real words", "3 nonsense words"], "No Section 8 real-word or nonsense-word observations.");
   byId("section8WritingSummary").innerHTML = section8AssessmentSummary(["HFW from phrase", "3 phrases", "2 sentences"], "No Section 8 HFW, phrase, or sentence observations.");
+  renderSection8ScoreHistory();
   const rows = observations();
   byId("observationRows").innerHTML = rows.length ? rows.map((record) => `
     <tr>

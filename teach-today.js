@@ -3956,6 +3956,7 @@ function ttSaveSection8AssessmentInventories() {
       groupIdAtTime: group.id,
       lessonId: ttLesson.id,
       planId: ttLesson.savedPlanId || "",
+      lessonNumber: ttCurrentPlan()?.lessonNumber || 0,
       substep: ttLesson.substep || group.substep,
       categories
     };

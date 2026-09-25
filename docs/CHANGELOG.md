@@ -5,6 +5,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 ## 2026-09-25
 
 - Reorganized Section 8 Dictation into three compact per-student assessment grids: Sounds and word elements; Real words and nonsense words; and HFW from phrases, phrases, and sentences. Existing buttons, observation categories, immediate-save behavior, and historical data remain intact. Marking Section 8 done now adds a non-destructive item-list snapshot for score denominators; Student Profile separately reports correct/total/percent and missed items for each new Section 8 assessment category. No existing student record was deleted, rewritten, or migrated.
+- Added **Section 8 Dictation Score History** above the unchanged Observation History. It displays one exact-score row per completed snapshot plus a weighted cumulative row with date/substep range, current lesson-sequence count, category totals, and repeated missed items. Previous miss-only records remain visible in the original history; the app does not infer unverified historical denominators or scores.
 
 ## 2026-09-14
 
