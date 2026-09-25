@@ -24,6 +24,7 @@ assert.match(source, /data-copy-percent/);
 assert.match(source, /navigator\.clipboard\.writeText\(value\)/);
 assert.match(source, /record\.categories\?\.\["5 real words"\]/);
 assert.match(source, /pmRecordYear\(record, group\) !== pmYear/);
+assert.match(source, /if \(pmYear !== active\) pmYear = active/);
 assert.doesNotMatch(source, /localStorage\.setItem\(pmStorageKey/);
 assert.match(worker, /ProgressMonitoring\.html/);
 assert.match(worker, /progress-monitoring\.js/);
