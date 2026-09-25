@@ -117,17 +117,17 @@ test("Home continuity uses direct fresh-ID actions without the iPad system confi
   assert.match(source, /function ttContinuityPlan\(groupId, planId\)/);
   assert.match(source, /function ttContinuityRecord\(groupId, planId\)/);
   assert.match(source, /function ttResumeOpenPlanFromHome\(groupId, planId, sessionDate\)/);
-  assert.match(source, /function ttCloseOpenPlanFromHome\(groupId, planId, nextDate\)/);
+  assert.match(source, /function ttCompleteOpenPlanFromHome\(groupId, planId, nextDate\)/);
   assert.match(continuity, /data-continuity-confirm-close/);
   assert.match(continuity, /ttResumeOpenPlanFromHome\(group\.id, openPlan\.id/);
-  assert.match(continuity, /ttCloseOpenPlanFromHome\(group\.id, openPlan\.id, nextPlanDate\)/);
+  assert.match(continuity, /ttCompleteOpenPlanFromHome\(group\.id, openPlan\.id, nextPlanDate\)/);
   assert.doesNotMatch(continuity, /if \(!confirm\(`Keep Lesson/);
-  const closeAction = functionBody("ttCloseOpenPlanFromHome", "ttResumeOpenPlanFromHome");
-  assert.match(closeAction, /plan\.status = "Incomplete"/);
-  assert.match(closeAction, /plan\.sessions\[day\]/);
-  assert.match(closeAction, /status: "Incomplete"/);
-  assert.match(closeAction, /if \(group\.activeLessonPlanId === plan\.id\) group\.activeLessonPlanId = ""/);
-  assert.match(closeAction, /saveState\(\)/);
+  const completeAction = functionBody("ttCompleteOpenPlanFromHome", "ttResumeOpenPlanFromHome");
+  assert.match(completeAction, /plan\.status = "Complete"/);
+  assert.match(completeAction, /plan\.sessions\[day\]/);
+  assert.match(completeAction, /status: "Complete"/);
+  assert.match(completeAction, /if \(group\.activeLessonPlanId === plan\.id\) group\.activeLessonPlanId = ""/);
+  assert.match(completeAction, /saveState\(\)/);
   const resumeAction = functionBody("ttResumeOpenPlanFromHome", "ttRecordPlanRevision");
   assert.match(resumeAction, /ttOpenPlanInApp\(plan\.id, group\.id\)/);
   assert.match(resumeAction, /!opened \|\| !ttLesson\?\.savedPlanId/);
@@ -153,7 +153,7 @@ test("Home discards cached continuity messages when returning from Profile", () 
   assert.match(source, /window\.addEventListener\("pageshow", ttRefreshHomeAfterPageRestore\)/);
 });
 
-test("closing and resuming mutate only the selected fresh lesson record", async () => {
+test("completing and resuming mutate only the selected fresh lesson record", async () => {
   const helperStart = source.indexOf("function ttContinuityRecord");
   const helperEnd = source.indexOf("function ttRecordPlanRevision", helperStart);
   assert.ok(helperStart >= 0 && helperEnd > helperStart);
@@ -175,6 +175,10 @@ test("closing and resuming mutate only the selected fresh lesson record", async 
     ttNextPlanningDateKey: () => "2026-08-31",
     ttEnsurePlannerDraft: () => (context.draft = { groupId: group.id }),
     ttSyncCombinedLessonLinks: () => { calls.sync += 1; },
+    ttTodaysLessonData: () => ({ chart: [], dictation: [], encoding: [] }),
+    ttAttendanceSession: () => null,
+    ttClone: (value) => JSON.parse(JSON.stringify(value)),
+    ttArchiveLessonPlanPdf: () => Promise.resolve(),
     saveState: () => { calls.save += 1; },
     ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; return true; },
     ttSaveCurrentLesson: () => { calls.lessonSave += 1; },
@@ -193,19 +197,19 @@ test("closing and resuming mutate only the selected fresh lesson record", async 
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
   assert.deepEqual({ open: calls.open, lessonSave: calls.lessonSave, teach: calls.teach }, { open: 1, lessonSave: 0, teach: 1 });
 
-  assert.equal(context.ttCloseOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
-  assert.equal(plan.status, "Incomplete");
-  assert.equal(plan.sessions["1"].status, "Incomplete");
+  assert.equal(context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
+  assert.equal(plan.status, "Complete");
+  assert.equal(plan.sessions["1"].status, "Complete");
   assert.equal(group.activeLessonPlanId, "");
   assert.equal(context.draft.scheduledDate, "2026-09-01");
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
   assert.equal(older.status, "Complete");
   assert.deepEqual({ save: calls.save, sync: calls.sync }, { save: 1, sync: 1 });
 
-  const firstClosedAt = plan.closedAt;
-  assert.equal(context.ttCloseOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
-  assert.equal(plan.status, "Incomplete");
-  assert.equal(plan.closedAt, firstClosedAt);
+  const firstCompletedAt = plan.completedAt;
+  assert.equal(context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
+  assert.equal(plan.status, "Complete");
+  assert.equal(plan.completedAt, firstCompletedAt);
   assert.equal(group.activeLessonPlanId, "");
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
   assert.deepEqual({ save: calls.save, sync: calls.sync }, { save: 2, sync: 1 });

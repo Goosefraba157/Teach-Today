@@ -3699,13 +3699,9 @@ function ttStageLocalOnlyStatus() {
 
 function ttBackupCurrentStageState(options = {}) {
   if (!ttStageLocalOnlyMode()) return Promise.resolve();
-  const payload = ttFirebasePayload();
   const driveReady = localStorage.getItem(ttIndependentBackupEnabledKey) === "true"
     && (Boolean(ttDriveAccessToken) || ttNativeDriveAvailable());
-  return ttEnsureIndependentBackups({
-    payload,
-    revisionId: `stage-local-${ttFirebasePayloadSignature(payload)}`
-  }, {
+  return ttEnsureIndependentBackups(null, {
     force: Boolean(options.force),
     manual: Boolean(options.manual),
     nativeOnly: Boolean(options.nativeOnly) || !driveReady,
@@ -4303,7 +4299,15 @@ async function ttEnsureStageStorageReady() {
   if (!ttStageLocalOnlyMode() || !window.TeachTodayStageStorage) return true;
   let health = await window.TeachTodayStageStorage.health();
   if (!health.active) {
-    await ttUpgradeStageStorage({ automatic: true });
+    try {
+      await ttUpgradeStageStorage({ automatic: true });
+    } catch (error) {
+      // A failed verification must be a clear, stable stop—not an unhandled
+      // promise that leaves Start Planned Lesson appearing intermittent.
+      ttShowBackupToast("Stage storage needs verification before a lesson can start. Your existing copy was not changed; open Records for the exact reason.", "warning");
+      ttToggleSharedDataPanel("data", "ttHomeDataPanels");
+      return false;
+    }
     health = await window.TeachTodayStageStorage.health();
   }
   if (!health.verified) {
@@ -4869,7 +4873,7 @@ function ttContinuityPlan(groupId, planId) {
   return current;
 }
 
-function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
+function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   const current = ttContinuityRecord(groupId, planId);
   if (!current || current.plan.excludedFromLessonSequence || current.plan.status === "Test") return false;
   const { group, plan, lesson } = current;
@@ -4877,15 +4881,27 @@ function ttCloseOpenPlanFromHome(groupId, planId, nextDate) {
   const day = ttPlanSessionDay(plan, lesson);
   plan.sessions ||= {};
   const planDate = plan.sessions[day]?.date || lesson.scheduledDate || plan.scheduledDate || ttTodayKey();
-  if (!["Complete", "Incomplete"].includes(plan.status)) {
-    plan.status = "Incomplete";
-    plan.closedAt = now;
-    plan.closedReason = "Teacher chose to start a new lesson";
+  if (plan.status !== "Complete") {
+    const evidence = ttTodaysLessonData(group, lesson);
+    const attendanceSession = ttAttendanceSession(group, planDate);
+    plan.wrapUp ||= {
+      completedAt: now,
+      note: plan.wrapUp?.note || "",
+      attendance: ttClone(attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {}),
+      attendanceStatus: attendanceSession?.status || "unconfirmed",
+      chartRecordCount: evidence.chart.length,
+      dictationMissCount: evidence.dictation.length,
+      encodingMarkCount: evidence.encoding.length,
+      recommendation: ""
+    };
+    plan.status = "Complete";
+    plan.completionKind ||= "as-is";
+    plan.completedAt ||= now;
     plan.sessions[day] = {
       ...plan.sessions[day],
       date: planDate,
-      status: "Incomplete",
-      closedAt: now
+      status: "Complete",
+      completedAt: now
     };
     ttSyncCombinedLessonLinks(plan, group);
   }
@@ -5620,19 +5636,14 @@ function ttAttendanceCentralPlanForDay(group, dayKey, session = ttAttendanceSess
 }
 
 function ttAttendanceCentralEvidence(group, plan, dayKey) {
-  const planId = plan?.id || "";
-  const lesson = plan?.lessons?.[0] || {};
-  const lessonId = lesson.id || lesson.lessonId || "";
   const onDay = (record) => !dayKey || [record.date, record.displayDate, record.dailyKey, record.savedAt, record.createdAt, record.timestamp]
     .some((value) => value && dateKey(value) === dayKey);
-  const exactLesson = (record) => Boolean((planId && record.planId === planId) || (lessonId && record.lessonId === lessonId));
-  const compatibleDayFallback = (record) => onDay(record)
-    && (!lesson.substep || !record.substep || record.substep === lesson.substep)
-    && (!lesson.wordlistPageNumber || !record.wordlistPage || String(record.wordlistPage) === String(lesson.wordlistPageNumber));
-  const belongs = (record) => exactLesson(record) || compatibleDayFallback(record);
-  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && belongs(record));
-  const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && belongs(record));
-  const dictation = (group.dictationMisses || []).filter(belongs).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));
+  // Attendance Central is a calendar-day report, not a lesson-plan report.
+  // Show every charting, dictation, and Sections 6–8 record actually saved on
+  // this day, regardless of whether that work matched the scheduled plan.
+  const charts = (appState.masterRecords || []).filter((record) => (record.groupId === group.id || record.group === group.name) && onDay(record));
+  const encoding = (group.encodingObservations || []).filter((record) => ["section6", "section7", "section8"].includes(record.section) && onDay(record));
+  const dictation = (group.dictationMisses || []).filter(onDay).map((record) => ({ ...record, section: "section8", note: "encoding miss", observationCode: "Miss", observationKind: "missed-item" }));
   const seen = new Set();
   const sections = encoding.concat(dictation).filter((record) => {
     const key = [record.section, record.studentId || record.student, record.category, record.item || record.word, record.observationCode || record.note].join("|").toLowerCase();
@@ -6415,12 +6426,12 @@ function ttRenderHomeContinuity(enabled = true) {
       <label>Day ${escapeHtml(day)} date<input type="date" value="${escapeHtml(sessionDate || ttTodayKey())}" data-continuity-session-date></label>
       <button class="continuity-primary" type="button" data-continuity="resume">Continue Lesson</button>
       <button class="continuity-edit" type="button" data-continuity="edit">Edit Lesson Plan</button>
-      <button type="button" data-continuity="new">Close as incomplete &amp; plan new</button>
+      <button type="button" data-continuity="new">Complete lesson &amp; plan new</button>
       ${canContinueDay2 ? `<details class="continuity-more"><summary>Day 1 options</summary><div><label>Day 2 date<input type="date" value="${escapeHtml(plannedDay2Date)}" data-continuity-date></label><button type="button" data-continuity="day2">Start Day 2</button><button type="button" data-continuity="complete-day1">Finish Lesson As Is</button></div></details>` : ""}
       <div class="continuity-inline-confirm" data-continuity-confirm hidden>
-        <div><strong>Close Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} as incomplete?</strong><span>Its saved work stays preserved. The planner will prepare Lesson ${escapeHtml(nextPlanNumber)} for ${escapeHtml(ttLongLessonDate(nextPlanDate))}.</span></div>
+        <div><strong>Complete Lesson ${escapeHtml(ttPlanLessonNumber(openPlan, lesson, group))} and plan new?</strong><span>Its saved work stays preserved. The planner will prepare Lesson ${escapeHtml(nextPlanNumber)} for ${escapeHtml(ttLongLessonDate(nextPlanDate))}.</span></div>
         <button type="button" data-continuity-cancel-close>Keep lesson open</button>
-        <button type="button" class="continuity-confirm-close" data-continuity-confirm-close>Close lesson &amp; show planner</button>
+        <button type="button" class="continuity-confirm-close" data-continuity-confirm-close>Complete lesson &amp; show planner</button>
       </div>
       <p class="continuity-action-status" data-continuity-status aria-live="polite"></p>
     </div>`;
@@ -6514,17 +6525,17 @@ function ttRenderHomeContinuity(enabled = true) {
     showActionStatus("");
   });
   container.querySelector("[data-continuity-confirm-close]")?.addEventListener("click", () => {
-    showActionStatus("Closing only this lesson and preserving its saved work…");
+    showActionStatus("Completing this lesson and preserving its saved work…");
     try {
-      const closed = ttCloseOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
-      if (!closed) {
-        showActionStatus("This lesson was already closed or could not be found. Its saved work remains preserved.", true);
+      const completed = ttCompleteOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
+      if (!completed) {
+        showActionStatus("This lesson was already completed or could not be found. Its saved work remains preserved.", true);
         return;
       }
       ttRenderHomeScreen();
     } catch (error) {
-      console.error("Teach Today could not close the selected lesson:", error);
-      showActionStatus("This lesson could not be closed. Its saved work remains preserved.", true);
+      console.error("Teach Today could not complete the selected lesson:", error);
+      showActionStatus("This lesson could not be completed. Its saved work remains preserved.", true);
     }
   });
 }
@@ -9698,8 +9709,12 @@ function ttCompleteLessonWrapUp(options = {}) {
   group.activeLessonPlanId = "";
   plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
   plan.lastStudentDataAt = new Date().toISOString();
-  ttSyncCombinedLessonLinks(plan, group);
-  saveState();
+    ttSyncCombinedLessonLinks(plan, group);
+    saveState();
+    ttArchiveLessonPlanPdf("Completed", { group, lesson, plan }).catch((error) => {
+      console.warn("Teach Today could not archive the completed lesson PDF:", error);
+      ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
+    });
   ttArchiveCurrentLessonPlanPdf("Completed").catch((error) => {
     console.warn("Teach Today could not archive the completed lesson PDF:", error);
     ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
@@ -14274,16 +14289,18 @@ async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
   if (!saved.length) throw new Error(failures.join(" ") || "No lesson-plan destination was available.");
 }
 
-async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
-  if (!ttIsNativeIpadShell() || !ttLesson) return;
-  const group = ttActiveGroup();
-  const plan = ttCurrentPlan();
+async function ttArchiveLessonPlanPdf(stage = "Planned", context = {}) {
+  if (!ttIsNativeIpadShell()) return;
+  const lesson = context.lesson || ttLesson;
+  if (!lesson) return;
+  const group = context.group || ttActiveGroup();
+  const plan = context.plan || ttCurrentPlan();
   if (!group || !plan) return;
-  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
+  const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const savedDate = plan.savedAt ? new Date(plan.savedAt) : new Date();
-  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, ttLesson, plan, savedDate, { fillable: true });
+  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate, { fillable: true });
   const digest = await ttDocumentSha256Hex(pdfBytes);
-  const fileName = ttLessonPlanArchiveFileName(group, ttLesson, plan, stage);
+  const fileName = ttLessonPlanArchiveFileName(group, lesson, plan, stage);
   const groupFolder = ttLessonPlanGroupFolderName(group);
   const results = { savedAt: new Date().toISOString(), fileName, localPath: "", driveFileId: "" };
   const failures = [];
@@ -14313,6 +14330,10 @@ async function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
     ttShowBackupToast(`${stage} lesson plan needs attention. ${failures.join(" ")}`, "warning");
     console.warn("Teach Today lesson-plan archive:", failures.join(" "));
   }
+}
+
+function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
+  return ttArchiveLessonPlanPdf(stage);
 }
 
 function ttWilsonCompletedLessonSummary(group, lesson, plan) {
@@ -15193,13 +15214,7 @@ function ttFirebaseDocPath() {
 }
 
 function ttBackupPayload(now = new Date()) {
-  return {
-    kind: "TeachTodayBackup",
-    version: 1,
-    exportedAt: now.toISOString(),
-    appState,
-    section2CardOverrides: section2CardOverrides()
-  };
+  return ttLocalBackupArtifact(now);
 }
 
 function ttBackupDateKey(date = new Date()) {
@@ -15240,20 +15255,49 @@ function ttSetIndependentBackupStatus(message, options = {}) {
   if (options.notify) ttShowBackupToast(message, options.success ? "success" : "warning");
 }
 
-function ttIndependentBackupArtifact(envelope) {
-  const payload = ttNormalizeFirebasePayload(envelope?.payload) || ttFirebasePayload();
+function ttBackupEvidenceSummary(state) {
+  const groups = state?.groups || [];
+  const attendanceSessions = Object.values(state?.attendanceSessions || {})
+    .reduce((total, sessions) => total + Object.keys(sessions || {}).length, 0);
+  return {
+    masterRecords: (state?.masterRecords || []).length,
+    rosterStudents: (state?.rosterStudents || []).length,
+    groups: groups.length,
+    lessons: groups.reduce((total, group) => total + (group.history || []).length, 0),
+    attendanceSessions,
+    historicalWrsReviewNotes: (state?.historicalWrsReviewNotes || []).length
+  };
+}
+
+// Backups are recovery artifacts, not synchronization artifacts. Snapshot the
+// current device state before any destination-specific work so an old Firebase
+// revision can never become the source of a local or Drive backup.
+function ttLocalBackupArtifact(now = new Date()) {
+  const localState = JSON.parse(JSON.stringify(appState));
+  const localOverrides = JSON.parse(JSON.stringify(section2CardOverrides() || {}));
   return {
     kind: "TeachTodayBackup",
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    appState: payload.appState,
-    section2CardOverrides: payload.section2CardOverrides || {},
+    version: 3,
+    exportedAt: now.toISOString(),
+    appState: localState,
+    section2CardOverrides: localOverrides,
     source: {
-      type: envelope?.revisionId ? "firebase-revision" : "local-shared-copy",
-      revisionId: envelope?.revisionId || ""
+      type: "local-device-state",
+      mode: ttStageLocalOnlyMode() ? "stage-local" : "browser-local",
+      savedAt: localState.lastSavedAt || ""
     },
+    evidenceSummary: ttBackupEvidenceSummary(localState),
     backupPolicy: { dailyKeep: 10, weeklyKeep: "school-year", cleanupEnabled: false }
   };
+}
+
+function ttLocalBackupSignature(artifact) {
+  const safety = ttFirebaseSafety();
+  return `local-${safety?.signature ? safety.signature(artifact) : JSON.stringify(artifact).length}`;
+}
+
+function ttBackupSummaryText(summary) {
+  return `${summary.masterRecords} saved records, ${summary.lessons} lessons, and ${summary.attendanceSessions} attendance sessions`;
 }
 
 function ttFirebaseSafety() {
@@ -15645,6 +15689,16 @@ async function ttDriveUpsertBackup(folderId, name, blob, mimeType = "application
   return file;
 }
 
+async function ttVerifyDriveBackup(file, expectedDigest, name) {
+  if (!file?.id) throw new Error(`Drive verification failed for ${name}: no file ID returned.`);
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+    headers: ttDriveHeaders()
+  });
+  if (!response.ok) throw new Error(`Drive verification failed for ${name}: download returned ${response.status}.`);
+  const actualDigest = await ttSha256Hex(await response.text());
+  if (actualDigest !== expectedDigest) throw new Error(`Drive verification failed for ${name}: content hash differs.`);
+}
+
 function ttDriveCsv(rows) {
   return rows.map((row) => row.map((value) => {
     const text = Array.isArray(value) || (value && typeof value === "object") ? JSON.stringify(value) : String(value ?? "");
@@ -15687,18 +15741,21 @@ async function ttSaveIndependentDriveReports(root, state, exportedAt) {
   }
 }
 
-async function ttSaveIndependentDriveBackup(content, names, revisionId) {
+async function ttSaveIndependentDriveBackup(content, names, revisionId, digest) {
   const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
   const daily = await ttDriveNamedFolder("Daily", root);
   const weekly = await ttDriveNamedFolder("Weekly", root);
   const blob = new Blob([content], { type: "application/json" });
-  await ttDriveUpsertBackup(daily, names.daily, blob);
-  await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  const dailyFile = await ttDriveUpsertBackup(daily, names.daily, blob);
+  const weeklyFile = await ttDriveUpsertBackup(weekly, names.weekly, blob);
+  await ttVerifyDriveBackup(dailyFile, digest, names.daily);
+  await ttVerifyDriveBackup(weeklyFile, digest, names.weekly);
   const artifact = JSON.parse(content);
   await ttSaveIndependentDriveReports(root, artifact.appState, artifact.exportedAt);
   localStorage.setItem("teachToday.lastIndependentDriveRevision", revisionId);
   localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
   localStorage.setItem("teachToday.lastIndependentDriveDate", names.daily.slice("teach-today-daily-".length, -".json".length));
+  localStorage.setItem("teachToday.lastIndependentDriveSha256", digest);
 }
 
 function ttNativeBackupAvailable() {
@@ -15730,6 +15787,7 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
       localStorage.setItem("teachToday.lastIndependentNativeAt", verifiedAt);
       localStorage.setItem("teachToday.lastIndependentNativeDate", names.daily.slice("teach-today-daily-".length, -".json".length));
       localStorage.setItem("teachToday.lastIndependentNativeDailyPath", event.detail.dailyPath || `Backups/Daily/${names.daily}`);
+      localStorage.setItem("teachToday.lastIndependentNativeSha256", digest);
       resolve(event.detail);
     }
     window.addEventListener("teachTodayNativeBackupResult", onResult);
@@ -15743,9 +15801,11 @@ function ttSaveIndependentNativeBackup(content, digest, names, revisionId) {
   });
 }
 
-async function ttEnsureIndependentBackups(envelope, options = {}) {
+async function ttEnsureIndependentBackups(_unusedSource, options = {}) {
   if (ttIndependentBackupInFlight) await ttIndependentBackupInFlight;
-  const revisionId = envelope?.revisionId || ttFirebasePayloadSignature(envelope?.payload || ttFirebasePayload());
+  const artifact = ttLocalBackupArtifact();
+  const content = JSON.stringify(artifact);
+  const revisionId = ttLocalBackupSignature(artifact);
   const needsNative = ttIsNativeIpadShell() && (
     options.force
     || localStorage.getItem("teachToday.lastIndependentNativeDate") !== ttBackupDateKey()
@@ -15765,7 +15825,6 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       daily: `teach-today-daily-${ttBackupDateKey(now)}.json`,
       weekly: `teach-today-weekly-${ttBackupWeekKey(now)}.json`
     };
-    const content = JSON.stringify(ttIndependentBackupArtifact(envelope));
     const digest = await ttSha256Hex(content);
     const failures = [];
     const jobs = [];
@@ -15774,7 +15833,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       try {
         const authorized = await ttEnsureDrivePermission({ interactive: Boolean(options.requestDrivePermission) });
         if (!authorized) throw new Error("Google Drive needs permission. Open Records and tap Connect Google Drive backup.");
-        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
+        jobs.push(ttSaveIndependentDriveBackup(content, names, revisionId, digest).catch((error) => failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`)));
       } catch (error) {
         failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
       }
@@ -15793,7 +15852,8 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
       const nativeDetail = needsNative
         ? ` Daily file verified ${formatDateTime(verifiedAt)} (${names.daily}).`
         : "";
-      ttSetIndependentBackupStatus(`Backup verified in ${destinations}.${nativeDetail}`, { success: true, notify: options.manual });
+      localStorage.setItem("teachToday.lastIndependentBackupSha256", digest);
+      ttSetIndependentBackupStatus(`Exact local snapshot verified in ${destinations}: ${ttBackupSummaryText(artifact.evidenceSummary)}.${nativeDetail}`, { success: true, notify: options.manual });
     }
   })();
   try {
@@ -15806,10 +15866,7 @@ async function ttEnsureIndependentBackups(envelope, options = {}) {
 
 async function ttRunIndependentBackup(options = {}) {
   if (options.connectDrive) localStorage.setItem(ttIndependentBackupEnabledKey, "true");
-  let envelope = null;
-  if (ttFirebaseUser && !ttStageLocalOnlyMode()) envelope = await ttFirebaseReadEnvelope();
-  if (!envelope) envelope = { payload: ttFirebasePayload(), revisionId: "" };
-  await ttEnsureIndependentBackups(envelope, { force: true, manual: true, requestDrivePermission: options.connectDrive });
+  await ttEnsureIndependentBackups(null, { force: true, manual: true, requestDrivePermission: options.connectDrive });
 }
 
 async function ttRunNativeBackupNow() {
@@ -16429,7 +16486,7 @@ async function ttMarkFirebaseSynced(envelope, reason) {
     timeline.dataset.loadedForUid = "";
     ttLoadFirebaseTimeline({ force: true });
   }
-  ttEnsureIndependentBackups({ ...envelope, payload }).catch((error) => {
+  ttEnsureIndependentBackups(null).catch((error) => {
     ttSetIndependentBackupStatus(`Backup needs attention. ${error.message}`, { notify: true });
   });
 }
@@ -17114,6 +17171,87 @@ function ttRestoreDataFromFile(file) {
     }
   };
   reader.readAsText(file);
+}
+
+// A recovery file is useful only if it can add back the exact missing item
+// without turning the older file into the current classroom state. This path
+// intentionally recovers confirmed attendance for one explicitly chosen day
+// and never changes a session that is already present on this iPad.
+function ttMissingAttendanceRecoveryPreview(payload, dayKey) {
+  const sourceState = payload?.appState || payload;
+  if (!sourceState?.groups || !Array.isArray(sourceState.groups) || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey || "")) return null;
+  const sourceSessions = sourceState.attendanceSessions || {};
+  const currentSessions = appState.attendanceSessions || {};
+  return (appState.groups || []).map((group) => {
+    const incoming = sourceSessions[group.id]?.[dayKey];
+    if (!incoming || incoming.status !== "confirmed" || currentSessions[group.id]?.[dayKey]) return null;
+    return { group, session: JSON.parse(JSON.stringify(incoming)) };
+  }).filter(Boolean);
+}
+
+async function ttRecoverMissingAttendanceFromFile(file) {
+  if (!file) return;
+  const dayKey = window.prompt("Recover missing confirmed attendance for which date?\n\nUse YYYY-MM-DD (for example, 2026-09-11).", "");
+  if (dayKey === null) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey.trim())) {
+    alert("Use a date in YYYY-MM-DD format. Nothing was changed.");
+    return;
+  }
+  let persisted = false;
+  let priorAttendanceSessions = null;
+  let priorAttendanceRecords = null;
+  try {
+    const payload = JSON.parse(await file.text());
+    const additions = ttMissingAttendanceRecoveryPreview(payload, dayKey.trim());
+    if (!additions) {
+      alert("That file does not look like Teach Today data. Nothing was changed.");
+      return;
+    }
+    if (!additions.length) {
+      alert(`No missing confirmed attendance was found for ${dayKey}. Existing sessions were left untouched.`);
+      return;
+    }
+    const details = additions.map(({ group, session }) => {
+      const present = Object.values(session.attendance || {}).filter(Boolean).length;
+      const absent = Object.values(session.attendance || {}).filter((value) => value === false).length;
+      return `• ${group.name}: ${present} present, ${absent} absent`;
+    }).join("\n");
+    if (!window.confirm(`Attendance-only recovery preview for ${dayKey}\n\n${details}\n\nThis will add ${additions.length} missing confirmed session${additions.length === 1 ? "" : "s"}. It will not replace existing attendance, charting, lessons, dictation, notes, or roster data. A complete iPad backup will be verified before and after. Continue?`)) return;
+
+    // The current copy must be recoverable before an additive write. Stage
+    // requires its native Files checkpoint to succeed rather than continuing.
+    if (ttStageLocalOnlyMode()) {
+      await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    }
+    priorAttendanceSessions = JSON.parse(JSON.stringify(appState.attendanceSessions || {}));
+    priorAttendanceRecords = JSON.parse(JSON.stringify(appState.attendanceRecords || {}));
+    appState.attendanceSessions ||= {};
+    appState.attendanceRecords ||= {};
+    additions.forEach(({ group, session }) => {
+      appState.attendanceSessions[group.id] ||= {};
+      appState.attendanceRecords[group.id] ||= {};
+      appState.attendanceSessions[group.id][dayKey.trim()] = session;
+      appState.attendanceRecords[group.id][dayKey.trim()] = { ...(session.attendance || {}) };
+    });
+    await saveState();
+    await window.TeachTodayStageStorage?.flush?.();
+    persisted = true;
+    if (ttStageLocalOnlyMode()) {
+      await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    }
+    ttRenderDataCenter();
+    if (!ttById("ttAttendanceCentral")?.hidden) ttRenderAttendanceCentral();
+    ttShowBackupToast(`Recovered ${additions.length} missing attendance session${additions.length === 1 ? "" : "s"} for ${dayKey}. Current records were preserved.`, "success");
+  } catch (error) {
+    if (!persisted && priorAttendanceSessions && priorAttendanceRecords) {
+      appState.attendanceSessions = priorAttendanceSessions;
+      appState.attendanceRecords = priorAttendanceRecords;
+    }
+    const status = persisted
+      ? "Attendance was saved, but the follow-up backup did not finish. Keep the app open, open Records, and make a backup before teaching."
+      : "Attendance recovery did not change this iPad.";
+    alert(`${status} ${error?.message || "Please check Records before trying again."}`);
+  }
 }
 
 function ttRenderSavedLessons(group) {
@@ -20287,6 +20425,11 @@ function ttBind() {
 
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
+  ttById("ttRecoverMissingAttendance")?.addEventListener("click", () => ttById("ttRecoverAttendanceFile")?.click());
+  ttById("ttRecoverAttendanceFile")?.addEventListener("change", (event) => {
+    ttRecoverMissingAttendanceFromFile(event.target.files?.[0]);
+    event.target.value = "";
+  });
   ttById("ttImportHistoricalWrs").addEventListener("click", () => ttById("ttHistoricalWrsFile").click());
   ttById("ttHistoricalWrsFile").addEventListener("change", (event) => ttImportHistoricalWrsFile(event.target.files?.[0]));
   ttById("ttExportCsv").addEventListener("click", () => exportMasterRecords());
