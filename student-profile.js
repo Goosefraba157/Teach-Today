@@ -648,7 +648,15 @@ function sectionSummary(section) {
 function section8Assessments(student = selectedStudent()) {
   return groupsForYear(selectedYearId).flatMap((group) => (group.dictationAssessments || [])
     .filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
-    .map((record) => ({ ...record, _group: group })))
+    .map((record) => {
+      const plan = (group.history || []).find((item) => item.id === record.planId);
+      return {
+        ...record,
+        lessonNumber: record.lessonNumber || plan?.lessonNumber || 0,
+        lessonTitle: record.lessonTitle || plan?.title || "",
+        _group: group
+      };
+    }))
     .sort((a, b) => recordTime(b) - recordTime(a));
 }
 
