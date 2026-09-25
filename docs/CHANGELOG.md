@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-09-25
+
+- Reorganized Section 8 Dictation into three compact per-student assessment grids: Sounds and word elements; Real words and nonsense words; and HFW from phrases, phrases, and sentences. Existing buttons, observation categories, immediate-save behavior, and historical data remain intact. Marking Section 8 done now adds a non-destructive item-list snapshot for score denominators; Student Profile separately reports correct/total/percent and missed items for each new Section 8 assessment category. No existing student record was deleted, rewritten, or migrated.
+
 ## 2026-09-14
 
 - Corrected the supplied private attendance workbook's visible period titles and daily date headers for the 2026–27 school-year cycle, preserving its sheet structure, roster fields, absence-code key, and non-working-day shading. The calendar now begins Monday, August 10, 2026 and follows the template's existing instructional/break pattern through May 28, 2027. No student attendance values were entered or altered.

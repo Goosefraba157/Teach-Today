@@ -645,10 +645,44 @@ function sectionSummary(section) {
     ${tags.length ? `<p><strong>Trouble spots:</strong> ${tags.map(escapeHtml).join(", ")}</p>` : ""}`;
 }
 
+function section8Assessments(student = selectedStudent()) {
+  return groupsForYear(selectedYearId).flatMap((group) => (group.dictationAssessments || [])
+    .filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
+    .map((record) => ({ ...record, _group: group })))
+    .sort((a, b) => recordTime(b) - recordTime(a));
+}
+
+function section8AssessmentSummary(categoryNames, emptyText) {
+  const assessment = section8Assessments()[0];
+  const marks = observations();
+  if (!assessment) {
+    const legacyMisses = marks.filter((record) => record.section === "section8" && categoryNames.includes(record.category));
+    return legacyMisses.length
+      ? `<p><strong>Earlier saved misses</strong></p><div class="miss-chip-row">${legacyMisses.slice(0, 8).map((record) => `<span class="miss-chip">${escapeHtml(record.item)}</span>`).join("")}</div><p>Scores begin when a Section 8 lesson is marked done, which safely saves that lesson's item list.</p>`
+      : emptyText;
+  }
+  const categories = assessment.categories || {};
+  const plans = categoryNames.map((name) => ({ name, items: categories[name] || [] })).filter((entry) => entry.items.length);
+  if (!plans.length) return emptyText;
+  const lessonMisses = marks.filter((record) => record.section === "section8"
+    && (record.lessonId === assessment.lessonId || record.planId === assessment.planId)
+    && categoryNames.includes(record.category));
+  return plans.map(({ name, items }) => {
+    const itemKeys = new Set(items.map((item) => String(item).toLowerCase()));
+    const missed = [...new Set(lessonMisses.filter((record) => record.category === name && itemKeys.has(String(record.item || "").toLowerCase())).map((record) => record.item))];
+    const correct = Math.max(0, items.length - missed.length);
+    const percent = Math.round((correct / items.length) * 100);
+    return `<section class="dictation-score"><strong>${escapeHtml(name.replace(/^\d+\s*/, ""))}: ${correct}/${items.length} · ${percent}%</strong>${missed.length ? `<div class="miss-chip-row">${missed.map((item) => `<span class="miss-chip">${escapeHtml(item)}</span>`).join("")}</div>` : "<p>No missed items saved.</p>"}</section>`;
+  }).join("");
+}
+
 function renderEncoding() {
   byId("section6Summary").innerHTML = sectionSummary("section6");
   byId("section7Summary").innerHTML = sectionSummary("section7");
   byId("section8Summary").innerHTML = sectionSummary("section8");
+  byId("section8SoundsElementsSummary").innerHTML = section8AssessmentSummary(["5 sounds", "5 word elements"], "No Section 8 sounds or word-element observations.");
+  byId("section8WordsSummary").innerHTML = section8AssessmentSummary(["5 real words", "3 nonsense words"], "No Section 8 real-word or nonsense-word observations.");
+  byId("section8WritingSummary").innerHTML = section8AssessmentSummary(["HFW from phrase", "3 phrases", "2 sentences"], "No Section 8 HFW, phrase, or sentence observations.");
   const rows = observations();
   byId("observationRows").innerHTML = rows.length ? rows.map((record) => `
     <tr>

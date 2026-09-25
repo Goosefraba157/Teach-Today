@@ -6,7 +6,9 @@
 ---
 
 ## Last Updated
-2026-09-14
+2026-09-25
+
+- Completed locally: Section 8 Dictation now displays three compact, parallel per-student assessment grids—Sounds and word elements; Real words and nonsense words; HFW from phrases, phrases, and sentences. The established miss/status buttons, categories, immediate saves, and existing observations are unchanged. When Section 8 is marked done, an additive per-student item-list snapshot is saved solely to provide score denominators; Student Profile now separates these three Section 8 areas and reports correct/total/percent plus the missed items. Earlier records remain visible as misses and are never migrated, deleted, or overwritten. All 50 tests, JavaScript syntax checks, and diff checks pass. Exact next step: review the lesson and Student Profile layouts on the physical iPad after the offline cache refreshes; do not use Sync, restore, upload/merge, or overwrite actions during this visual check.
 
 - Corrected the existing private supervisor attendance workbook's visible period titles and daily header cells for the 2026–27 cycle without recreating sheets or changing student rows, IDs, program columns, absence-code key, or existing non-working-day shading. The first instructional block now begins Monday, August 10, 2026; later two-week blocks preserve the template's original break pattern through Friday, May 28, 2027. The reusable blank `TEMPLATE` tab intentionally remains blank. Exact next step: decide whether to build the opt-in native Google Sheets reporting sync; it must keep the app's local attendance ledger authoritative, use stable attendance record IDs, and write only confirmed values/codes into this reporting copy.
 

@@ -3928,12 +3928,44 @@ function ttToggleSectionDone(sectionId) {
   const next = current === null ? "done" : current === "done" ? "skipped" : null;
   if (next === null) delete ttLesson.completedSections[sectionId];
   else ttLesson.completedSections[sectionId] = next;
+  if (sectionId === "section8" && next === "done") ttSaveSection8AssessmentInventories();
   ttTrackConfirmedAttendanceActivity({ sectionId, state: next || "unmarked" });
   if (sectionId === "section9" && next === "done") ttClearPassageInk({ save: false, allStories: true });
   if (ttLesson.savedPlanId) ttSaveCurrentLesson({ render: false, reason: `Updated ${sectionId.replace("section", "Section ")} progress` });
   else ttSaveDraftLesson({ status: false });
   ttInitSectionCompletion();
   ttRenderLessonIdentity();
+}
+
+// A completion snapshot supplies the denominator for Section 8 scores. It is
+// additive: the original individual miss observations remain the authority for
+// which items were missed, and no existing record is changed or removed.
+function ttSaveSection8AssessmentInventories() {
+  if (!ttLesson) return;
+  const group = ttActiveGroup();
+  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
+  const plan = ttActiveDictationPlan(ttLesson, skill);
+  const categories = Object.fromEntries(plan.map((item) => [item.label, (item.values || []).slice()]));
+  categories["HFW from phrase"] = ttHighFrequencyItemsFromPhrases(plan).map((item) => item.value);
+  group.dictationAssessments ||= [];
+  ttTeachingStudents(group).forEach((student) => {
+    const studentId = ttStudentIdForName(student, group);
+    const existing = group.dictationAssessments.find((record) => record.lessonId === ttLesson.id && record.studentId === studentId);
+    const record = {
+      id: existing?.id || `dictation-assessment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      date: existing?.date || new Date().toISOString(),
+      student,
+      studentId,
+      schoolYearId: group.schoolYearId || appState.activeSchoolYearId || "",
+      groupIdAtTime: group.id,
+      lessonId: ttLesson.id,
+      planId: ttLesson.savedPlanId || "",
+      substep: ttLesson.substep || group.substep,
+      categories
+    };
+    if (existing) Object.assign(existing, record);
+    else group.dictationAssessments.push(record);
+  });
 }
 
 function ttUpdateStudentDisplayStatus(mode = ttStudentDisplayMode, payload = null) {
@@ -17795,16 +17827,24 @@ function ttCloseSentenceDisplay() {
 function ttFillDictation(items) {
   const container = ttById("ttDictation");
   container.innerHTML = "";
-  const encodingBar = document.createElement("div");
-  encodingBar.className = "encoding-bar";
-  container.appendChild(encodingBar);
   const hfwItems = ttHighFrequencyItemsFromPhrases(items);
   const dictationItems = items.flatMap((item) => (item.values || []).map((value) => ({
     value,
     category: item.label,
     group: item.label.replace(/^\d+\s*/, "")
   })));
-  ttFillEncodingStudentGrid(encodingBar, "section8", "Dictation", hfwItems.concat(dictationItems));
+  // Preserve the existing buttons and saved categories, while splitting the long
+  // per-student card into the three assessment groupings used in Student Profile.
+  [
+    ["Sounds and word elements", dictationItems.filter((item) => /sounds|word elements/i.test(item.category))],
+    ["Real words and nonsense words", dictationItems.filter((item) => /real words|nonsense words/i.test(item.category))],
+    ["HFW from phrases, phrases, and sentences", hfwItems.concat(dictationItems.filter((item) => /phrases|sentences/i.test(item.category)))]
+  ].forEach(([title, groupItems]) => {
+    const encodingBar = document.createElement("div");
+    encodingBar.className = "encoding-bar dictation-assessment-group";
+    container.appendChild(encodingBar);
+    ttFillEncodingStudentGrid(encodingBar, "section8", title, groupItems);
+  });
 
   const sharedList = document.createElement("details");
   sharedList.className = "dictation-shared-list";
