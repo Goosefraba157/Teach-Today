@@ -8,7 +8,7 @@ const profile = fs.readFileSync(path.join(root, "student-profile.js"), "utf8");
 const profileCss = fs.readFileSync(path.join(root, "student-profile.css"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 
-assert.match(html, /20260925-section8-history-1/);
+assert.match(html, /20260925-section8-history-import-1/);
 assert.match(html, /Group profile/);
 assert.match(html, /id="profileSchoolYear"/);
 assert.match(html, /id="profileRosterPicker"/);

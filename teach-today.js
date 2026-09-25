@@ -17174,6 +17174,75 @@ function ttRestoreDataFromFile(file) {
   reader.readAsText(file);
 }
 
+function ttHistoricalSection8Hfw(lesson, plan) {
+  const phrases = (lesson.dictationPlanOverride || []).find((block) => block.label === "3 phrases")?.values || [];
+  const known = new Set([...(lesson.highFrequencyWords || []), "a", "the", "to", "of", "is", "was", "were", "you", "your", "our", "would", "could", "should", "their", "there"].map((item) => String(item).toLowerCase()));
+  return [...new Set(phrases.flatMap((phrase) => String(phrase).toLowerCase().match(/[a-z]+(?:-[a-z]+)?/g) || []).filter((word) => known.has(word)))];
+}
+
+function ttSection8HistoryImportPreview(payload) {
+  const source = payload?.appState || payload;
+  if (!Array.isArray(source?.groups)) return null;
+  const additions = [];
+  let skipped = 0;
+  source.groups.forEach((sourceGroup) => {
+    const currentGroup = (appState.groups || []).find((group) => group.id === sourceGroup.id);
+    if (!currentGroup) { skipped += 1; return; }
+    (sourceGroup.history || []).forEach((sourcePlan) => (sourcePlan.lessons || []).forEach((sourceLesson) => {
+      const blocks = sourceLesson.dictationPlanOverride || [];
+      const required = ["5 sounds", "5 word elements", "5 real words", "3 nonsense words", "3 phrases", "2 sentences"];
+      if (!required.every((label) => blocks.some((block) => block.label === label))) return;
+      const currentPlan = (currentGroup.history || []).find((plan) => plan.id === sourcePlan.id);
+      const currentLesson = currentPlan?.lessons?.find((lesson) => lesson.id === sourceLesson.id);
+      if (!currentLesson) { skipped += 1; return; }
+      const categories = Object.fromEntries(blocks.map((block) => [block.label, (block.values || []).slice()]));
+      categories["HFW from phrase"] = ttHistoricalSection8Hfw(sourceLesson, sourcePlan);
+      const records = (sourceGroup.encodingObservations || []).filter((record) => record.section === "section8" && record.lessonId === sourceLesson.id && record.item);
+      const byStudent = new Map();
+      records.forEach((record) => {
+        const key = record.studentId || record.student;
+        if (!key) return;
+        if (!byStudent.has(key)) byStudent.set(key, { student: record.student, studentId: record.studentId || ttStudentIdForName(record.student, currentGroup), records: [] });
+        byStudent.get(key).records.push(record);
+      });
+      byStudent.forEach(({ student, studentId, records: studentRecords }) => {
+        if (!studentId || !ttTeachingStudents(currentGroup).some((name) => ttStudentIdForName(name, currentGroup) === studentId)) { skipped += 1; return; }
+        if ((currentGroup.dictationAssessments || []).some((record) => record.lessonId === sourceLesson.id && record.studentId === studentId)) return;
+        const missesByCategory = Object.fromEntries(Object.keys(categories).map((category) => [category, [...new Set(studentRecords.filter((record) => record.category === category).map((record) => record.item))]]));
+        additions.push({
+          id: `dictation-assessment-history-${sourceLesson.id}-${studentId}`,
+          date: sourcePlan.dailyKey || sourcePlan.savedAt || sourcePlan.created || new Date().toISOString(),
+          student, studentId, schoolYearId: currentGroup.schoolYearId || "", groupIdAtTime: currentGroup.id,
+          lessonId: sourceLesson.id, planId: sourcePlan.id, lessonNumber: sourcePlan.lessonNumber || sourceLesson.lessonSequence || 0,
+          lessonTitle: sourcePlan.title || sourceLesson.title || "", substep: sourceLesson.substep || sourcePlan.substep || "",
+          categories, missesByCategory, source: "verified-historical-section8-checkpoint-v1", importedAt: new Date().toISOString(), _group: currentGroup
+        });
+      });
+    }));
+  });
+  return { additions, skipped };
+}
+
+async function ttImportSection8HistoryFromFile(file) {
+  if (!file) return;
+  try {
+    const preview = ttSection8HistoryImportPreview(JSON.parse(await file.text()));
+    if (!preview) { alert("That file does not look like Teach Today data. Nothing was changed."); return; }
+    if (!preview.additions.length) { alert("No new verified Section 8 history rows were found. Existing data was left untouched."); return; }
+    const sessions = new Set(preview.additions.map((record) => record.lessonId)).size;
+    if (!window.confirm(`Verified Section 8 history preview\n\nAdd ${preview.additions.length} student score row${preview.additions.length === 1 ? "" : "s"} from ${sessions} lesson session${sessions === 1 ? "" : "s"}. ${preview.skipped ? `${preview.skipped} unmatched item${preview.skipped === 1 ? " was" : "s were"} skipped. ` : ""}This is additive only: current lessons, observations, rosters, and existing snapshots will not be replaced. A complete iPad backup will be verified before and after. Continue?`)) return;
+    if (ttStageLocalOnlyMode()) await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    preview.additions.forEach((record) => { record._group.dictationAssessments ||= []; record._group.dictationAssessments.push(Object.fromEntries(Object.entries(record).filter(([key]) => key !== "_group"))); });
+    await saveState();
+    await window.TeachTodayStageStorage?.flush?.();
+    if (ttStageLocalOnlyMode()) await ttBackupCurrentStageState({ force: true, manual: true, nativeOnly: true, requireNative: true });
+    ttRenderDataCenter();
+    ttShowBackupToast(`Added ${preview.additions.length} verified Section 8 history row${preview.additions.length === 1 ? "" : "s"}. Current records were preserved.`, "success");
+  } catch (error) {
+    alert(`Section 8 history was not imported. ${error?.message || "Current records were left untouched."}`);
+  }
+}
+
 // A recovery file is useful only if it can add back the exact missing item
 // without turning the older file into the current classroom state. This path
 // intentionally recovers confirmed attendance for one explicitly chosen day
@@ -20426,6 +20495,11 @@ function ttBind() {
 
   ttById("ttRestoreData").addEventListener("click", () => ttById("ttRestoreFile").click());
   ttById("ttRestoreFile").addEventListener("change", (event) => ttRestoreDataFromFile(event.target.files?.[0]));
+  ttById("ttImportSection8History")?.addEventListener("click", () => ttById("ttSection8HistoryFile")?.click());
+  ttById("ttSection8HistoryFile")?.addEventListener("change", (event) => {
+    ttImportSection8HistoryFromFile(event.target.files?.[0]);
+    event.target.value = "";
+  });
   ttById("ttRecoverMissingAttendance")?.addEventListener("click", () => ttById("ttRecoverAttendanceFile")?.click());
   ttById("ttRecoverAttendanceFile")?.addEventListener("change", (event) => {
     ttRecoverMissingAttendanceFromFile(event.target.files?.[0]);

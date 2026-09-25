@@ -700,7 +700,10 @@ function section8AssessmentDetail(assessment, marks = observations()) {
   Object.entries(categories).forEach(([category, items]) => {
     const available = (items || []).map((item) => String(item));
     const availableKeys = new Set(available.map((item) => item.toLowerCase()));
-    const missed = [...new Set(lessonMisses.filter((record) => record.category === category && availableKeys.has(String(record.item || "").toLowerCase())).map((record) => String(record.item)))];
+    const importedMisses = assessment.missesByCategory?.[category];
+    const missed = Array.isArray(importedMisses)
+      ? importedMisses.filter((item) => availableKeys.has(String(item).toLowerCase()))
+      : [...new Set(lessonMisses.filter((record) => record.category === category && availableKeys.has(String(record.item || "").toLowerCase())).map((record) => String(record.item)))];
     byCategory.set(category, { total: available.length, correct: Math.max(0, available.length - missed.length), missed });
   });
   return byCategory;
