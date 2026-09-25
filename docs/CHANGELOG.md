@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-09-25
 
+- Updated Progress Monitoring to organize current-year evidence by lesson number rather than lesson date or 9-week period. Multiple saved entries for the same lesson receive separate repeated-lesson columns. No instructional data changed.
+
 - Added a read-only Progress Monitoring view for EdPlan entry. It displays every current-school-year Section 4 charting score and completed Section 8 Real Words score by Dallas ISD 9-week period and instructional week, preserves same-week records, uses existing score colors and alternating student bands, and provides percentage-only copy controls. EdPlan ordering is a private, reviewed on-device preference using existing student IDs; it does not alter instructional records.
 
 - Added a checkpoint-based, additive Section 8 history importer. It matches saved checkpoint lessons to the current local state by stable IDs, adds only missing per-student score snapshots with retained category/miss data, skips unmatched or duplicate rows, and verifies native iPad backups before and after its single write. It does not restore a backup, alter existing lessons or observations, or place private checkpoint data in Git.
