@@ -172,6 +172,15 @@ function chartingRecords(student = selectedStudent()) {
     .sort((a, b) => recordTime(b) - recordTime(a));
 }
 
+function chartingLessonNumber(record) {
+  if (!record) return "—";
+  const plan = groupsForYear(selectedYearId).flatMap((group) => group.history || [])
+    .find((item) => item.id === record.planId);
+  const lesson = plan?.lessons?.find((item) => item.id === record.lessonId);
+  const number = Number(plan?.lessonNumber || lesson?.lessonSequence);
+  return Number.isFinite(number) && number > 0 ? `Lesson ${number}` : "—";
+}
+
 function lessonPlans(student = selectedStudent()) {
   const seen = new Set();
   return groupsForYear(selectedYearId).flatMap((group) => (group.history || []).flatMap((plan) => {
@@ -586,6 +595,7 @@ function renderCharting() {
   byId("chartingRows").innerHTML = charts.length ? charts.map((record) => `
     <tr>
       <td>${escapeHtml(formatDate(recordDate(record)))}</td>
+      <td>${escapeHtml(chartingLessonNumber(record))}</td>
       <td><strong>${escapeHtml(record.substep || "—")}</strong></td>
       <td>Reader ${escapeHtml(record.reader || "—")}, p. ${escapeHtml(record.wordlistPage || "—")}</td>
       <td>${escapeHtml(record.chartHalf || record.wordType || "—")}</td>
@@ -594,7 +604,7 @@ function renderCharting() {
       <td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>
       <td>${escapeHtml((record.wrongWords || []).join(", ") || "None saved")}</td>
       <td>${escapeHtml(record.notes || "—")}</td>
-    </tr>`).join("") : '<tr><td colspan="9" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="10" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
 }
 
 function renderChartingSheet(charts) {
@@ -605,6 +615,7 @@ function renderChartingSheet(charts) {
   const columns = charts.slice(0, 12);
   const metadata = [
     ["Date", (record) => formatDate(recordDate(record))],
+    ["Lesson", (record) => chartingLessonNumber(record)],
     ["Substep", (record) => record.substep || "—"],
     ["Concept", (record) => record.concept || record.skill || record.lessonConcept || "—"],
     ["Page", (record) => `Reader ${record.reader || "—"}, p. ${record.wordlistPage || "—"}`],
