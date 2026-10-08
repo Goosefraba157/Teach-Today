@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-07
+
+- Added a read-only EdPlan CSV export to Attendance Central matching the supplied All Dates layout: dates down the left, student columns, and linked substeps with concise curriculum descriptions. Date/year filtering, stable student identity, existing private EdPlan order, explicit absence labels, missing-link/conflict flags, CSV escaping, device share/download, and hash-verified Drive report saving preserve the local attendance authority. Refreshed runtime/offline versions; synthetic reliability tests and local browser controls pass. Physical iPad export remains to be checked.
+
 ## 2026-09-25
 
 - Updated Progress Monitoring to organize current-year evidence by lesson number rather than lesson date or 9-week period. Multiple saved entries for the same lesson receive separate repeated-lesson columns. No instructional data changed.

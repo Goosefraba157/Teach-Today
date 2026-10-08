@@ -6,7 +6,9 @@
 ---
 
 ## Last Updated
-2026-09-25
+2026-10-07
+
+- Added V1 Attendance Central **Export EdPlan CSV** and **Save EdPlan CSV to Drive**, with an optional date range and the selected school year. The CSV follows the teacher's All Dates reference: date rows, student columns, and linked substep plus a short curriculum description. It reads only confirmed attendance, marks explicit absences, leaves missing/no-session cells blank, preserves multiple linked substeps, and flags missing links/conflicting attendance rather than inferring dates or instruction. Student IDs stay internal; the private Progress EdPlan order is reused. Drive saves go to Teach Today Backups/Reports and are downloaded/hash-verified before success. No source Sheet, student state, Firebase rules, or native binary changed. All test files and syntax checks pass; local browser controls/empty-state handling verified. Deployment: ready for publication with this commit; physical iPad share/Drive export remains unverified. Exact next step: after Pages updates, reopen Stage online, open Attendance, choose a known confirmed range, save CSV to Drive, and spot-check its dates/substeps against the attendance ledger before EdPlan entry. Older lesson dates remain a separate issue; this export uses attendance dates and saved plan IDs only.
 
 - Published follow-up: Progress Monitoring no longer groups evidence by lesson date or Dallas 9-week period because lesson dates can be inaccurate. It now mirrors the current-year Student Profile histories by verified lesson number only, with a separate repeated-lesson column for each extra saved entry. This is display-only; the date/planning issue remains separate and no source record was changed. Exact next step: force-close/reopen Stage online once, then verify one current charting result appears under its lesson number; if Real Words remains empty, use the existing verified Section 8 history import rather than recreating data.
 

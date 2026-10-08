@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-09-25-progress-monitoring-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-07-edplan-attendance-1";
 
 const APP_SHELL = [
   "./",
@@ -40,6 +40,7 @@ const APP_SHELL = [
   "./developer-data-diagnostic.js",
   "./onboarding.js",
   "./teach-today.js",
+  "./attendance-export.js",
   "./lesson-planner-v2-presenter.js",
   "./lesson-planner-v2.js",
   "./student-display.js",

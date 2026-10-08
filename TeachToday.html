@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20260910-section4-record-safety-1">
+    <link rel="stylesheet" href="teach-today.css?v=20261007-edplan-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -584,6 +584,13 @@
         <div class="attendance-central-tabs"><button type="button" data-ac-view="year">Year</button><button type="button" data-ac-view="month">Month</button><button type="button" data-ac-view="day">Day</button></div>
         <div class="attendance-central-nav"><button type="button" data-ac-move="-1" aria-label="Previous">‹</button><button type="button" data-ac-today>Today</button><strong id="ttAttendanceCentralPeriod"></strong><button type="button" data-ac-move="1" aria-label="Next">›</button></div>
       </nav>
+      <div class="attendance-central-toolbar attendance-export-toolbar" aria-label="Attendance export">
+        <label>From <input id="ttAttendanceExportStart" type="date"></label>
+        <label>Through <input id="ttAttendanceExportEnd" type="date"></label>
+        <button id="ttAttendanceExportCsv" type="button">Export EdPlan CSV</button>
+        <button id="ttAttendanceExportDrive" type="button">Save EdPlan CSV to Drive</button>
+      </div>
+      <p id="ttAttendanceExportStatus" role="status">Dates down the left, students across the top. Confirmed present: substep and description. Absent: labeled. Unrecorded or no-session: blank. Leave the date fields empty for the selected school year. Set column order in Progress → Set EdPlan order.</p>
       <main id="ttAttendanceCentralContent" class="attendance-central-content"></main>
     </section>
 
@@ -1176,6 +1183,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20260915-complete-plan-2" data-scripts="app.js?v=20260910-section4-record-safety-1|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|teach-today.js?v=20260925-section8-history-import-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20260915-complete-plan-2" data-scripts="app.js?v=20260910-section4-record-safety-1|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-export.js?v=20261007-edplan-1|teach-today.js?v=20261007-edplan-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

@@ -11801,6 +11801,11 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .attendance-central-tabs, .attendance-central-nav { display: flex; align-items: center; gap: 7px; }
 .attendance-central-tabs button, .attendance-central-nav button, .ac-day-card footer button { min-height: 39px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 7px 12px; background: white; color: #334155; font-weight: 900; cursor: pointer; }
 .attendance-central-tabs button.active { border-color: #0f766e; background: #0f766e; color: white; }
+.attendance-export-toolbar { position: static; flex-wrap: wrap; }
+.attendance-export-toolbar label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.attendance-export-toolbar input, .attendance-export-toolbar button { min-height: 44px; font: inherit; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: white; color: #334155; }
+.attendance-export-toolbar button { color: #0f766e; font-weight: 900; cursor: pointer; }
+.attendance-export-toolbar button:disabled { opacity: .6; cursor: wait; }
 .attendance-central-nav strong { min-width: 180px; text-align: center; }
 .ac-year-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 15px; }
 .ac-month { padding: 18px; border: 1px solid #dbe3ee; border-radius: 18px; background: white; box-shadow: 0 6px 18px rgba(15,23,42,.06); }

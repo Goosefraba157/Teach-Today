@@ -5808,6 +5808,53 @@ function ttShowAttendanceCentral() {
   window.scrollTo(0, 0);
 }
 
+async function ttExportEdPlanAttendance(toDrive = false) {
+  const status = ttById("ttAttendanceExportStatus");
+  const button = ttById(toDrive ? "ttAttendanceExportDrive" : "ttAttendanceExportCsv");
+  let url = "";
+  if (button) button.disabled = true;
+  try {
+    let order = [];
+    try { const saved = JSON.parse(localStorage.getItem("teachToday.progressMonitoringOrder.v1") || "[]"); if (Array.isArray(saved)) order = saved; } catch (_) {}
+    const report = window.TeachTodayAttendanceExport.build(appState, scopeMap, {
+      year: ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId,
+      start: ttById("ttAttendanceExportStart")?.value,
+      end: ttById("ttAttendanceExportEnd")?.value,
+      order
+    });
+    if (!report.dates) throw new Error("No confirmed attendance records were found in this date range.");
+    const filename = `teach-today-edplan-attendance-${report.start}-to-${report.end}.csv`;
+    const blob = new Blob(["\uFEFF", report.csv], { type: "text/csv;charset=utf-8" });
+    if (toDrive) {
+      if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted.");
+      const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
+      const folder = await ttDriveNamedFolder("Reports", root);
+      const file = await ttDriveUpsertBackup(folder, filename, blob, "text/csv");
+      // Blob.text() strips the optional UTF-8 BOM, as does response.text().
+      await ttVerifyDriveBackup(file, await ttSha256Hex(await blob.text()), filename);
+    } else {
+      const file = typeof File === "function" ? new File([blob], filename, { type: "text/csv" }) : null;
+      if (file && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "EdPlan attendance" });
+      } else {
+        url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = filename;
+        document.body.appendChild(link); link.click(); link.remove();
+        const downloadUrl = url;
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+        url = "";
+      }
+    }
+    if (status) status.textContent = `${toDrive ? "Saved and verified in Google Drive → Teach Today Backups → Reports." : "CSV sent to your device’s share/download controls."} ${report.students} students, ${report.dates} dates. ${report.missingLinks ? `${report.missingLinks} present entries need a lesson/substep link. ` : ""}${report.unconfirmed ? `${report.unconfirmed} unconfirmed group-days excluded. ` : ""}Review the CSV before entering it in EdPlan; blank cells do not mean absent.`;
+  } catch (error) {
+    if (status) status.textContent = error.name === "AbortError" ? "Export canceled. Your attendance records are unchanged." : `Export needs attention: ${error.message || error}`;
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+    if (button) button.disabled = false;
+  }
+}
+
 function ttCloseAttendanceCentral() {
   const central = ttById("ttAttendanceCentral");
   if (central) central.hidden = true;
@@ -5842,6 +5889,8 @@ function ttBindAttendanceCentral() {
   ttById("ttHomeAttendanceCentral")?.addEventListener("click", ttShowAttendanceCentral);
   ttById("ttAttendanceCentralBack")?.addEventListener("click", ttCloseAttendanceCentral);
   ttById("ttAttendanceCentralYear")?.addEventListener("change", ttRenderAttendanceCentral);
+  ttById("ttAttendanceExportCsv")?.addEventListener("click", () => ttExportEdPlanAttendance());
+  ttById("ttAttendanceExportDrive")?.addEventListener("click", () => ttExportEdPlanAttendance(true));
   const central = ttById("ttAttendanceCentral");
   central?.addEventListener("click", (event) => {
     const view = event.target.closest("[data-ac-view]");
