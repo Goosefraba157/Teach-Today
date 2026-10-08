@@ -5194,7 +5194,8 @@ function ttUpdateAttendanceReminder() {
     && ttById("ttHomeSchoolYear").value !== appState.activeSchoolYearId;
   const { group, lessonNumber } = ttAttendanceContext();
   const session = group ? ttAttendanceSession(group) : null;
-  const resolved = session && ["confirmed", "no-session"].includes(session.status);
+  const resolved = (session && ["confirmed", "no-session"].includes(session.status))
+    || Boolean(group?.attendanceDayReasons?.[ttAttendanceKey()]?.reason);
   button.hidden = !group || viewingArchive || resolved;
   if (!button.hidden) {
     button.innerHTML = `<span aria-hidden="true">✓</span><strong>Attendance</strong><small>${escapeHtml(group.name)} · Lesson ${escapeHtml(lessonNumber)}</small>`;
@@ -5611,9 +5612,11 @@ function ttRenderAttendancePanel(group) {
 }
 
 // Attendance Central is a calendar projection over the existing attendance,
-// lesson, and evidence stores. Its only writes go through the audited
-// attendance-session editor above, so complete app backups include them.
+// lesson, and evidence stores. Day explanations and immutable report copies
+// are additive private state; the established attendance ledger is unchanged.
 let ttAttendanceCentralView = "month";
+let ttAttendanceReviewEnabled = false;
+let ttAttendanceReportSelection = null;
 let ttAttendanceCentralDate = new Date();
 
 function ttAttendanceCentralGroups(yearId) {
@@ -5680,11 +5683,15 @@ function ttAttendanceCentralDayButton(day, groups) {
   const statuses = groups.map((group) => ttAttendanceCentralStatus(group, key));
   const held = statuses.filter((status) => status === "confirmed").length;
   const missed = statuses.filter((status) => status === "no-session").length;
+  const year = ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId;
+  const event = window.TeachTodayAttendanceCalendar.district(key, year);
+  const review = window.TeachTodayAttendanceCalendar.review(appState, year, key, ttAttendanceKey());
+  const reasons = [...new Set(groups.map((g) => g.attendanceDayReasons?.[key]?.reason).filter(Boolean))];
   const activity = groups.some((group) => ttAttendanceCentralPlanForDay(group, key) || ttAttendanceSession(group, key));
   const scheduled = day.getDay() > 0 && day.getDay() < 6
     ? groups.slice().sort((a, b) => String(a.time || "").localeCompare(String(b.time || ""))).map((group) => `${group.time || "—"} ${group.name || "Group"}`)
     : [];
-  return `<button type="button" class="ac-calendar-day${activity ? " has-activity" : ""}" data-ac-day="${key}"><b>${day.getDate()}</b>${held ? `<span>${held} held</span>` : ""}${missed ? `<small>${missed} no session</small>` : ""}${scheduled.length ? `<em>${escapeHtml(scheduled.slice(0, 3).join(" · "))}${scheduled.length > 3 ? ` · +${scheduled.length - 3}` : ""}</em>` : ""}</button>`;
+  return `<button type="button" class="ac-calendar-day${activity ? " has-activity" : ""}${event ? " ac-district-day" : ""}${ttAttendanceReviewEnabled && review.missing.length ? " ac-review-day" : ""}" title="${escapeHtml([event?.label, ...reasons].filter(Boolean).join(" · "))}" data-ac-day="${key}"><b>${day.getDate()}</b>${event ? `<span class="ac-district-label">${escapeHtml(event.label)}</span>` : ""}${reasons.length ? `<small>${escapeHtml(reasons.join(" · "))}</small>` : ""}${ttAttendanceReviewEnabled && review.missing.length ? `<span class="ac-review-label">${review.resolved}/${review.expected} recorded · ${review.missing.length} to review</span>` : ""}${held ? `<span>${held} held</span>` : ""}${missed ? `<small>${missed} no session</small>` : ""}${scheduled.length ? `<em>${escapeHtml(scheduled.slice(0, 3).join(" · "))}${scheduled.length > 3 ? ` · +${scheduled.length - 3}` : ""}</em>` : ""}</button>`;
 }
 
 function ttAttendanceCentralMonthHtml(monthDate, groups, compact = false) {
@@ -5766,6 +5773,9 @@ function ttAttendanceCentralPerformanceHtml(group, plan, dayKey) {
 
 function ttAttendanceCentralDayHtml(day, groups) {
   const dayKey = dateKey(day);
+  const year = ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId;
+  const district = window.TeachTodayAttendanceCalendar.district(dayKey, year);
+  const review = window.TeachTodayAttendanceCalendar.review(appState, year, dayKey, ttAttendanceKey());
   const cards = groups.slice().sort(ttAttendanceCentralGroupOrder).map((group) => {
     const session = ttAttendanceSession(group, dayKey);
     const status = ttAttendanceCentralStatus(group, dayKey);
@@ -5775,12 +5785,15 @@ function ttAttendanceCentralDayHtml(day, groups) {
     const present = Object.entries(attendance).filter(([, value]) => value === true).map(([name]) => name);
     const absent = Object.entries(attendance).filter(([, value]) => value === false).map(([name]) => name);
     const page = lesson.wordlistPageNumber || lesson.wordlistPage || "";
-    return `<article class="ac-day-card ${status}"><header><div><span>${escapeHtml(group.time || "Time not set")}</span><h3>${escapeHtml(group.name || "Group")}</h3></div><b>${status === "confirmed" ? "Attendance confirmed" : status === "no-session" ? "No session" : status === "review" ? "Needs review" : "Not recorded"}</b></header>
+    const dayReason = group.attendanceDayReasons?.[dayKey];
+    const reasonLabel = status === "confirmed" ? "" : dayReason?.reason || (status === "no-session" ? session?.note : district?.blackout ? district.label : "");
+    const reviewClass = ttAttendanceReviewEnabled && review.missing.some((g) => g.id === group.id) ? " ac-review-day" : "";
+    return `<article class="ac-day-card ${status}${reviewClass}"><header><div><span>${escapeHtml(group.time || "Time not set")}</span><h3>${escapeHtml(group.name || "Group")}</h3></div><b>${status === "confirmed" ? "Attendance confirmed" : reasonLabel || (status === "no-session" ? "No session" : status === "review" ? "Needs review" : "Not recorded")}</b></header>
       <div class="ac-day-facts"><p><strong>Lesson</strong>${plan ? `Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))} · ${escapeHtml(lesson.substep || plan.substep || "")}${page ? ` · chart p. ${escapeHtml(page)}` : ""}` : "No lesson linked"}</p><p><strong>Present</strong>${escapeHtml(present.join(", ") || "—")}</p><p><strong>Absent</strong>${escapeHtml(absent.join(", ") || "—")}</p></div>
-      ${ttAttendanceCentralPerformanceHtml(group, plan, dayKey)}${session?.note ? `<p class="ac-day-note"><strong>Group-day note:</strong> ${escapeHtml(session.note)}</p>` : ""}
+      ${dayReason?.note && status !== "confirmed" ? `<p class="ac-day-note">${escapeHtml(dayReason.note)}</p>` : ""}${dayReason?.audit?.length ? `<details><summary>Reason history</summary>${dayReason.audit.map((entry) => `<p>${escapeHtml(formatDateTime(new Date(entry.at)))} · ${escapeHtml(entry.reason || "Cleared")}${entry.note ? ` · ${escapeHtml(entry.note)}` : ""}</p>`).join("")}</details>` : ""}${ttAttendanceCentralPerformanceHtml(group, plan, dayKey)}${session?.note ? `<p class="ac-day-note"><strong>Group-day note:</strong> ${escapeHtml(session.note)}</p>` : ""}
       <footer><button type="button" data-ac-attendance="${escapeHtml(group.id)}" data-ac-date="${dayKey}">${session ? "Edit attendance / note" : "Add attendance / note"}</button>${plan ? `<button type="button" data-ac-plan="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open lesson</button>${String(plan.status || "").toLowerCase().includes("complete") ? `<button type="button" data-ac-pdf="${escapeHtml(plan.id)}" data-ac-group="${escapeHtml(group.id)}">Open completed PDF</button>` : ""}` : ""}<button type="button" data-edit-group="${escapeHtml(group.id)}">Edit group time</button></footer></article>`;
   }).join("");
-  return `<div class="ac-day-heading"><h2>${escapeHtml(ttLongLessonDate(dayKey))}</h2><p>Lesson and student evidence below is view-only.</p></div><div class="ac-day-list">${cards || "<p>No groups are assigned to this school year.</p>"}</div>`;
+  return `<div class="ac-day-heading"><h2>${escapeHtml(ttLongLessonDate(dayKey))}</h2>${district ? `<p class="ac-district-banner">${escapeHtml(district.label)}${district.blackout ? "" : " · Verify district instruction status"}</p>` : ""}${ttAttendanceReviewEnabled && review.missing.length ? `<p class="ac-review-label">${review.resolved} of ${review.expected} groups recorded · ${review.missing.length} to review</p>` : ""}<button type="button" class="ac-reason-button" data-ac-reason-date="${dayKey}">Record / correct day reason</button><p>Lesson and student evidence below is view-only.</p></div><div class="ac-day-list">${cards || "<p>No groups are assigned to this school year.</p>"}</div>`;
 }
 
 async function ttAttendanceCentralOpenPdf(groupId, planId) {
@@ -5804,8 +5817,96 @@ function ttShowAttendanceCentral() {
   if (central) central.hidden = false;
   document.body.classList.add("home-mode", "attendance-central-mode");
   ttAttendanceCentralDate = new Date();
+  ttAttendanceReviewEnabled = false;
+  ttById("ttAttendanceReviewToggle")?.setAttribute("aria-pressed", "false");
   ttRenderAttendanceCentral();
   window.scrollTo(0, 0);
+}
+
+function ttRenderAttendanceReportOptions(year) {
+  const host = ttById("ttAttendanceExportGroups");
+  if (!host) return;
+  host.innerHTML = window.TeachTodayAttendanceCalendar.groups(appState, year).map((g) => `<label><input type="checkbox" value="${escapeHtml(g.id)}" ${!ttAttendanceReportSelection || ttAttendanceReportSelection.includes(g.id) ? "checked" : ""}>${escapeHtml(g.name)}</label>`).join("");
+}
+
+function ttRenderAttendanceReportHistory() {
+  const host = ttById("ttAttendanceReportHistory");
+  if (!host) return;
+  const reports = Object.values(appState.attendanceReportHistory || {}).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+  host.innerHTML = reports.map((r) => `<article class="ac-report-entry"><strong>${escapeHtml(r.start)} – ${escapeHtml(r.end)}</strong><span>${escapeHtml(formatDateTime(new Date(r.createdAt)))} · ${escapeHtml(r.year)} · ${r.students} students · ${r.dates} dates</span><span>${escapeHtml((r.groups || []).map((g) => g.name).join(", "))}</span><button type="button" data-ac-report="${escapeHtml(r.id)}">Download saved CSV</button></article>`).join("") || "<p>No reports have been generated on this saved app copy.</p>";
+}
+
+async function ttDownloadAttendanceReport(id) {
+  const report = appState.attendanceReportHistory?.[id];
+  if (!report) return;
+  try {
+    const blob = new Blob(["\uFEFF", report.csv], { type: "text/csv;charset=utf-8" });
+    const file = typeof File === "function" ? new File([blob], report.filename, { type: "text/csv" }) : null;
+    if (ttIsNativeIpadShell() && file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: "Saved attendance report" });
+    else {
+      const url = URL.createObjectURL(blob), link = document.createElement("a");
+      link.href = url; link.download = report.filename;
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+  } catch (error) { if (error.name !== "AbortError") ttById("ttAttendanceExportStatus").textContent = `Download needs attention: ${error.message}`; }
+}
+
+function ttOpenAttendanceDayReason(date) {
+  const year = ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId;
+  const groups = window.TeachTodayAttendanceCalendar.groups(appState, year);
+  const overlay = ttAttendanceModalElement(), body = ttById("ttAttendanceSessionBody");
+  body.innerHTML = `<header><span>DAY REASON</span><h2 id="ttAttendanceSessionTitle">${escapeHtml(ttLongLessonDate(date))}</h2><p>Confirmed attendance and existing no-session entries are protected. Correct those using their existing attendance editor.</p></header>
+    <label class="attendance-note-field">Reason<select id="ttDayReason"><option value="">Clear quick reason</option>${window.TeachTodayAttendanceCalendar.reasons.map((r) => `<option>${escapeHtml(r)}</option>`).join("")}<option value="custom">Other</option></select></label>
+    <label class="attendance-note-field">Custom reason<input id="ttDayCustomReason" maxlength="120" placeholder="Short professional description"></label>
+    <label class="attendance-note-field">Attendance note<textarea id="ttDayReasonNote" rows="2" placeholder="Optional note; blank preserves an existing note"></textarea></label>
+    <fieldset class="ac-group-options"><legend>Apply to groups</legend>${groups.map((g) => {
+      const protectedEntry = ["confirmed", "no-session"].includes(appState.attendanceSessions?.[g.id]?.[date]?.status);
+      return `<label><input type="checkbox" data-day-reason-group value="${escapeHtml(g.id)}" ${protectedEntry ? "disabled" : "checked"}>${escapeHtml(g.name)}${protectedEntry ? " · recorded (protected)" : g.attendanceDayReasons?.[date]?.reason ? ` · ${escapeHtml(g.attendanceDayReasons[date].reason)}` : ""}</label>`;
+    }).join("")}</fieldset><p id="ttDayReasonPreview" role="status"></p><div class="attendance-session-actions"><button type="button" id="ttSaveDayReason">Save day reason</button><button type="button" data-attendance-close>Cancel</button></div>`;
+  ttById("ttDayReason").value = "DI unavailable";
+  const editable = groups.filter((g) => !["confirmed", "no-session"].includes(appState.attendanceSessions?.[g.id]?.[date]?.status));
+  const savedReasons = [...new Set(editable.map((g) => g.attendanceDayReasons?.[date]?.reason || ""))];
+  if (savedReasons.length === 1 && savedReasons[0]) {
+    if (window.TeachTodayAttendanceCalendar.reasons.includes(savedReasons[0])) ttById("ttDayReason").value = savedReasons[0];
+    else { ttById("ttDayReason").value = "custom"; ttById("ttDayCustomReason").value = savedReasons[0]; }
+  }
+  const savedNotes = [...new Set(editable.map((g) => g.attendanceDayReasons?.[date]?.note || ""))];
+  if (savedNotes.length === 1) ttById("ttDayReasonNote").value = savedNotes[0];
+  const preview = () => {
+    const selected = body.querySelectorAll("[data-day-reason-group]:checked:not(:disabled)").length;
+    ttById("ttDayReasonPreview").textContent = `${selected} groups selected. Saves a separate explanation; student attendance and lesson records remain unchanged.`;
+  };
+  body.querySelectorAll("[data-day-reason-group]").forEach((input) => input.addEventListener("change", preview));
+  preview(); overlay.hidden = false; ttLockAttendanceModalScroll();
+  ttById("ttSaveDayReason").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const reason = ttById("ttDayReason").value === "custom" ? ttById("ttDayCustomReason").value.trim() : ttById("ttDayReason").value;
+    if (ttById("ttDayReason").value === "custom" && !reason) { ttById("ttDayReasonPreview").textContent = "Enter a short reason."; return; }
+    const ids = [...body.querySelectorAll("[data-day-reason-group]:checked:not(:disabled)")].map((input) => input.value);
+    if (!ids.length) { ttById("ttDayReasonPreview").textContent = "Select at least one unprotected group."; return; }
+    const changes = [];
+    let persisted = false;
+    button.disabled = true;
+    try {
+      const at = new Date().toISOString(), note = ttById("ttDayReasonNote").value.trim();
+      ids.forEach((id) => {
+        const g = (appState.groups || []).find((group) => group.id === id);
+        const roster = g.membershipHistory?.length ? g.membershipHistory.filter((m) => (!m.startedOn || m.startedOn <= date) && (!m.endedOn || m.endedOn >= date)).map((m) => ({ studentId: m.studentId, name: ttStudentDisplayName(m.studentId, m.displayNameAtStart) })) : (g.students || []).map((name) => ({ name, studentId: ttStudentIdForName(name,g) }));
+        const change = window.TeachTodayAttendanceCalendar.reasonChange(g, appState.attendanceSessions?.[id]?.[date], date, reason, note || g.attendanceDayReasons?.[date]?.note || "", roster, at);
+        if (!change) return;
+        changes.push({ g, previous: g.attendanceDayReasons?.[date], change });
+        g.attendanceDayReasons ||= {}; g.attendanceDayReasons[date] = change;
+      });
+      await saveState();
+      persisted = true;
+      ttCloseAttendanceSessionModal(); ttUpdateAttendanceReminder(); ttRenderAttendanceCentral();
+    } catch (error) {
+      if (!persisted) changes.forEach(({g,previous,change}) => { if (g.attendanceDayReasons?.[date] === change) { if (previous) g.attendanceDayReasons[date] = previous; else delete g.attendanceDayReasons[date]; } });
+      const notice = ttById("ttDayReasonPreview") || ttById("ttAttendanceExportStatus");
+      if (notice) notice.textContent = `${persisted ? "Reason saved; display needs refresh" : "Reason was not saved"}: ${error.message}`;
+    } finally { button.disabled = false; }
+  });
 }
 
 async function ttExportEdPlanAttendance(toDrive = false) {
@@ -5820,11 +5921,22 @@ async function ttExportEdPlanAttendance(toDrive = false) {
       year: ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId,
       start: ttById("ttAttendanceExportStart")?.value,
       end: ttById("ttAttendanceExportEnd")?.value,
-      order
+      order, groupIds: ttAttendanceReportSelection
     });
-    if (!report.dates) throw new Error("No confirmed attendance records were found in this date range.");
-    const filename = `teach-today-edplan-attendance-${report.start}-to-${report.end}.csv`;
+    if (!report.dates) throw new Error("No attendance or recorded calendar reasons were found in this date range.");
+    const reportId = crypto.randomUUID();
+    const filename = `teach-today-edplan-attendance-${report.start}-to-${report.end}-${reportId}.csv`;
+    const entry = { id: reportId, createdAt: new Date().toISOString(), year: ttById("ttAttendanceCentralYear")?.value || appState.activeSchoolYearId, start: report.start, end: report.end, groups: report.groups, students: report.students, dates: report.dates, filename, csv: report.csv };
+    appState.attendanceReportHistory ||= {};
+    appState.attendanceReportHistory[reportId] = entry;
     const blob = new Blob(["\uFEFF", report.csv], { type: "text/csv;charset=utf-8" });
+    const shareFile = typeof File === "function" ? new File([blob], filename, { type: "text/csv" }) : null;
+    // Invoke native sharing while the tap still has user activation.
+    const sharePromise = !toDrive && ttIsNativeIpadShell() && shareFile && navigator.canShare?.({ files: [shareFile] })
+      ? navigator.share({ files: [shareFile], title: "EdPlan attendance" }) : null;
+    sharePromise?.catch(() => {});
+    try { await saveState(); } catch (error) { if (appState.attendanceReportHistory[reportId] === entry) delete appState.attendanceReportHistory[reportId]; throw error; }
+    ttRenderAttendanceReportHistory();
     if (toDrive) {
       if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted.");
       const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
@@ -5833,9 +5945,8 @@ async function ttExportEdPlanAttendance(toDrive = false) {
       // Blob.text() strips the optional UTF-8 BOM, as does response.text().
       await ttVerifyDriveBackup(file, await ttSha256Hex(await blob.text()), filename);
     } else {
-      const file = typeof File === "function" ? new File([blob], filename, { type: "text/csv" }) : null;
-      if (file && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "EdPlan attendance" });
+      if (sharePromise) {
+        await sharePromise;
       } else {
         url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -5870,6 +5981,8 @@ function ttRenderAttendanceCentral() {
   yearSelect.innerHTML = years.map((year) => `<option value="${escapeHtml(year.id)}">${escapeHtml(year.label || year.id)}${year.id === appState.activeSchoolYearId ? " (Current)" : ""}</option>`).join("");
   yearSelect.value = selected;
   const groups = ttAttendanceCentralGroups(selected);
+  ttRenderAttendanceReportOptions(selected);
+  ttRenderAttendanceReportHistory();
   central.querySelectorAll("[data-ac-view]").forEach((button) => button.classList.toggle("active", button.dataset.acView === ttAttendanceCentralView));
   const period = ttById("ttAttendanceCentralPeriod");
   if (ttAttendanceCentralView === "year") {
@@ -5888,11 +6001,23 @@ function ttRenderAttendanceCentral() {
 function ttBindAttendanceCentral() {
   ttById("ttHomeAttendanceCentral")?.addEventListener("click", ttShowAttendanceCentral);
   ttById("ttAttendanceCentralBack")?.addEventListener("click", ttCloseAttendanceCentral);
-  ttById("ttAttendanceCentralYear")?.addEventListener("change", ttRenderAttendanceCentral);
+  ttById("ttAttendanceCentralYear")?.addEventListener("change", () => { ttAttendanceReportSelection = null; ttRenderAttendanceCentral(); });
+  ttById("ttAttendanceReviewToggle")?.addEventListener("click", (event) => {
+    ttAttendanceReviewEnabled = !ttAttendanceReviewEnabled;
+    event.currentTarget.setAttribute("aria-pressed", String(ttAttendanceReviewEnabled));
+    ttRenderAttendanceCentral();
+  });
+  ttById("ttAttendanceExportGroups")?.addEventListener("change", () => {
+    ttAttendanceReportSelection = [...ttById("ttAttendanceExportGroups").querySelectorAll("input:checked")].map((input) => input.value);
+  });
   ttById("ttAttendanceExportCsv")?.addEventListener("click", () => ttExportEdPlanAttendance());
   ttById("ttAttendanceExportDrive")?.addEventListener("click", () => ttExportEdPlanAttendance(true));
   const central = ttById("ttAttendanceCentral");
   central?.addEventListener("click", (event) => {
+    const reason = event.target.closest("[data-ac-reason-date]");
+    if (reason) { ttOpenAttendanceDayReason(reason.dataset.acReasonDate); return; }
+    const report = event.target.closest("[data-ac-report]");
+    if (report) { ttDownloadAttendanceReport(report.dataset.acReport); return; }
     const view = event.target.closest("[data-ac-view]");
     if (view) { ttAttendanceCentralView = view.dataset.acView; ttRenderAttendanceCentral(); return; }
     const day = event.target.closest("[data-ac-day]");

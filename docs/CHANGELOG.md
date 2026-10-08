@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-07
 
+- Extended Attendance Central with sourced Dallas ISD 2026–27 holiday/development labels, an off-by-default lavender gap-review toggle for past Monday–Thursday instructional dates, and per-group quick reasons with private correction history and notes. Confirmed/no-session attendance entries are protected and no ledger migration occurs. CSVs now include current scheduled times and a second matching Attendance Notes table after three blank rows. Group selection and immutable private report snapshots preserve chosen dates/content for later download; Drive report files use unique names. Existing and new tests pass, including synthetic browser checks of the original attendance confirmation, protected reasons, persistence, calendar views, and saved-report metadata. Tablet sharing/Drive delivery remains a hardware check.
+
 - Added a read-only EdPlan CSV export to Attendance Central matching the supplied All Dates layout: dates down the left, student columns, and linked substeps with concise curriculum descriptions. Date/year filtering, stable student identity, existing private EdPlan order, explicit absence labels, missing-link/conflict flags, CSV escaping, device share/download, and hash-verified Drive report saving preserve the local attendance authority. Refreshed runtime/offline versions; synthetic reliability tests and local browser controls pass. Physical iPad export remains to be checked.
 
 ## 2026-09-25

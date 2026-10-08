@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
-const { build } = require("../attendance-export.js");
+const { build: rawBuild } = require("../attendance-export.js");
+const build = (state, skills, options = {}) => rawBuild(state, skills, { start: "2026-09-02", end: "2026-09-08", ...options });
 const skills = [{ id: "2.1", title: "Welded sounds", target: 'ang, ing, "ong"' }, { id: "3.5", title: "Closed plus suffixes", target: "ed and ing" }];
 const confirmed = (attendance, planIds = ["plan-a"], extra = {}) => ({ status: "confirmed", attendance, planIds, ...extra });
 const state = {
@@ -35,12 +36,12 @@ const before = JSON.stringify(state);
 const report = build(state, skills, { order: ["private-b", "private-a"] });
 assert.deepEqual(report.rows[0], ["Date", "Student B", "Student A", "Historical student"]);
 assert.equal(report.dates, 5);
-assert.equal(report.rows[1][0], "09/02/2026");
-assert.equal(report.rows[1][1], "Absent");
-assert.equal(report.rows[1][2], '2.1 - Welded sounds: ang, ing, "ong"');
-assert.equal(report.rows[2][2], "Present — substep not linked");
-assert.match(report.rows[3][2], /2\.1.*; 3\.5/);
-assert.match(report.rows[5][2], /^Review attendance:/);
+assert.equal(report.rows[2][0], "09/02/2026");
+assert.equal(report.rows[2][1], "Absent");
+assert.equal(report.rows[2][2], '2.1 - Welded sounds: ang, ing, "ong"');
+assert.equal(report.rows[3][2], "Present — substep not linked");
+assert.match(report.rows[4][2], /2\.1.*; 3\.5/);
+assert.match(report.rows[6][2], /^Review attendance:/);
 assert.equal(report.missingLinks, 1);
 assert.equal(report.unconfirmed, 1);
 assert.ok(!report.csv.includes("private-a"));

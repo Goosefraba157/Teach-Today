@@ -11806,6 +11806,19 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .attendance-export-toolbar input, .attendance-export-toolbar button { min-height: 44px; font: inherit; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: white; color: #334155; }
 .attendance-export-toolbar button { color: #0f766e; font-weight: 900; cursor: pointer; }
 .attendance-export-toolbar button:disabled { opacity: .6; cursor: wait; }
+.attendance-export-toolbar button[aria-pressed="true"] { background: #ede9f8; border-color: #c4b5e1; color: #514568; }
+.ac-calendar-day.ac-district-day, .ac-district-banner { background: #e8eef3; border-color: #ccd7e0; color: #40566a; }
+.ac-district-label { font-size: 11px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.ac-month.compact .ac-calendar-day .ac-district-label { display: block; font-size: 8px; }
+.ac-calendar-day.ac-review-day, .ac-day-card.ac-review-day { background: #f2edf9; border-color: #d6c9e8; }
+.ac-review-label { color: #625174; font-size: 11px; font-weight: 700; }
+.ac-district-banner, .ac-day-reason { padding: 10px 14px; border-radius: 10px; }
+.ac-day-reason { color: #40566a; background: #edf2f6; font-weight: 700; }
+.ac-reason-button, .ac-report-entry button { min-height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 12px; background: white; color: #0f766e; font: inherit; font-weight: 800; cursor: pointer; }
+.ac-group-options { display: flex; gap: 12px; flex-wrap: wrap; padding: 12px 0; }
+.ac-group-options label { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.ac-report-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; margin: 8px 0; border: 1px solid #dbe3ee; border-radius: 12px; background: white; }
+.attendance-note-field select, .attendance-note-field input { min-height: 44px; width: 100%; font: inherit; padding: 8px; border: 1px solid #cbd5e1; border-radius: 10px; }
 .attendance-central-nav strong { min-width: 180px; text-align: center; }
 .ac-year-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 15px; }
 .ac-month { padding: 18px; border: 1px solid #dbe3ee; border-radius: 18px; background: white; box-shadow: 0 6px 18px rgba(15,23,42,.06); }

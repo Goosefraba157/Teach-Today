@@ -11,9 +11,15 @@
     };
     if (!validDate(start) || !validDate(end) || start > end) throw new Error("Choose a valid start and end date.");
     const normalize = (value) => String(value || "").trim().toLocaleLowerCase();
-    const groups = (state.groups || []).filter((group) => group.schoolYearId === year && !group.isDemo && !group.isDemoGroup && !/^(demo|sample)\b/i.test(group.name || ""));
+    const groups = (state.groups || []).filter((group) => group.schoolYearId === year && !group.isDemo && !group.isDemoGroup && !/^(demo|sample)\b/i.test(group.name || "") && (!options.groupIds || options.groupIds.includes(group.id)));
     const profiles = state.rosterStudents || [];
-    const students = new Map(), days = new Map();
+    const students = new Map(), days = new Map(), notes = new Map();
+    const calendar = root.TeachTodayAttendanceCalendar || (typeof require === "function" ? require("./attendance-calendar.js") : null);
+    const addCell = (store, date, key, value) => {
+      if (!store.has(date)) store.set(date, new Map());
+      if (!store.get(date).has(key)) store.get(date).set(key, new Set());
+      if (value) store.get(date).get(key).add(value);
+    };
     const resolve = (group, name, id = "") => {
       const matches = profiles.filter((row) => [row.name, row.fullName, row.displayName, ...(row.aliases || [])].some((alias) => alias && normalize(alias) === normalize(name)));
       id ||= group.studentIds?.[name] || (matches.length === 1 ? matches[0].studentId : "") || "";
@@ -21,6 +27,8 @@
       name = profile?.name || profile?.fullName || profile?.displayName || name || "Student";
       const key = id || `group:${group.id}:name:${normalize(name)}`;
       if (!students.has(key)) students.set(key, { key, name, group: group.name || "Group", orderKey: id || `name:${String(name).toLowerCase().replace(/[^a-z]/g, "")}` });
+      students.get(key).times ||= new Set();
+      if (group.time) students.get(key).times.add(group.time);
       return key;
     };
     let records = 0, missingLinks = 0, unconfirmed = 0;
@@ -28,7 +36,12 @@
       (group.students || []).forEach((name) => resolve(group, name));
       Object.entries(state.attendanceSessions?.[group.id] || {}).forEach(([date, session]) => {
         if (!validDate(date) || date < start || date > end) return;
-        if (session.status !== "confirmed") { if (session.status !== "no-session") unconfirmed++; return; }
+        if (session.status !== "confirmed") {
+          if (session.status === "no-session" && session.note) {
+            (group.students || []).forEach((name) => { const key = resolve(group, name); addCell(days, date, key, session.note); addCell(notes, date, key, session.note); });
+          } else if (session.status !== "no-session") unconfirmed++;
+          return;
+        }
         const planIds = [...new Set([...(session.planIds || []), ...(session.combinedPlanIds || [])])];
         const plans = planIds.map((id) => (group.history || []).find((plan) => plan.id === id));
         const substeps = [...new Set(plans.filter(Boolean).map((plan) => plan.lessons?.[0]?.substep || plan.substep).filter(Boolean))];
@@ -56,10 +69,33 @@
           const cells = days.get(date);
           if (!cells.has(key)) cells.set(key, new Set());
           cells.get(key).add(present ? descriptions.join("; ") : "Absent");
+          addCell(notes, date, key, session.note || "");
           records++;
           if (present && incomplete) missingLinks++;
         });
       });
+      Object.entries(group.attendanceDayReasons || {}).forEach(([date, entry]) => {
+        if (!validDate(date) || date < start || date > end || !entry.reason || ["confirmed", "no-session"].includes(state.attendanceSessions?.[group.id]?.[date]?.status)) return;
+        (entry.students || []).forEach((student) => {
+          const key = resolve(group, student.name, student.studentId);
+          addCell(days, date, key, entry.reason);
+          addCell(notes, date, key, entry.note || "");
+        });
+      });
+      if (calendar) {
+        const now = new Date();
+        const today = options.today || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+        const cursor = new Date(`${start}T12:00:00Z`);
+        for (let date = start; date <= end && date <= today; cursor.setUTCDate(cursor.getUTCDate() + 1), date = cursor.toISOString().slice(0,10)) {
+          const event = calendar.district(date, year);
+          if (!event?.blackout || date < "2026-08-11" || date > "2027-05-26" || [0,6].includes(cursor.getUTCDay())) continue;
+          const session = state.attendanceSessions?.[group.id]?.[date];
+          if (["confirmed", "no-session"].includes(session?.status) || group.attendanceDayReasons?.[date]?.reason) continue;
+          const memberships = group.membershipHistory || [];
+          const roster = memberships.length ? memberships.filter((m) => (!m.startedOn || m.startedOn <= date) && (!m.endedOn || m.endedOn >= date)).map((m) => ({ name: m.displayNameAtStart, id: m.studentId })) : (group.students || []).map((name) => ({ name }));
+          roster.forEach((student) => addCell(days, date, resolve(group, student.name, student.id), event.label));
+        }
+      }
     });
     const ordered = [...students.values()];
     const order = options.order || [];
@@ -76,18 +112,23 @@
       usedHeaders.set(label, count);
       return count > 1 ? `${label} #${count}` : label;
     })]];
+    const timeRow = ["Scheduled time (current)", ...ordered.map((student) => [...(student.times || [])].join(" / "))];
+    rows.push(timeRow);
+    const noteRows = [rows[0].slice(), timeRow.slice()];
     [...days.keys()].sort().forEach((date) => {
+      noteRows.push([`${date.slice(5, 7)}/${date.slice(8, 10)}/${date.slice(0, 4)}`, ...ordered.map((student) => [...(notes.get(date)?.get(student.key) || [])].join("; "))]);
       rows.push([`${date.slice(5, 7)}/${date.slice(8, 10)}/${date.slice(0, 4)}`, ...ordered.map((student) => {
         const values = [...(days.get(date).get(student.key) || [])];
         if (values.length > 1 && values.includes("Absent")) return `Review attendance: ${values.join(" | ")}`;
         return values.join("; ");
       })]);
     });
-    const csv = rows.map((row) => row.map((value) => {
+    const allRows = rows.concat([[], [], [], ["Attendance Notes"]], noteRows);
+    const csv = allRows.map((row) => row.map((value) => {
       const text = /^[=+@\-\t\r]/.test(value) ? `'${value}` : value;
       return `"${text.replace(/"/g, '""')}"`;
     }).join(",")).join("\r\n");
-    return { csv, rows, students: ordered.length, dates: days.size, records, missingLinks, unconfirmed, start, end };
+    return { csv, rows, noteRows, allRows, groups: groups.map((g) => ({ id: g.id, name: g.name })), students: ordered.length, dates: days.size, records, missingLinks, unconfirmed, start, end };
   }
   root.TeachTodayAttendanceExport = { build };
   if (typeof module !== "undefined") module.exports = { build };
