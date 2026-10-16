@@ -17777,6 +17777,9 @@ async function ttConnectLessonBundleDrive() {
   if (!archive || button?.disabled) return;
   if (button) button.disabled = true;
   try {
+    // An explicit reconnect must obtain a fresh short-lived token rather than
+    // reusing the expired token that may have caused the PDF upload to fail.
+    ttDriveAccessToken = "";
     if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive connection did not finish. Your iPad Files copy is kept.");
     localStorage.setItem(ttIndependentBackupEnabledKey, "true");
     ttRenderDataCenter();

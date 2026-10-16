@@ -119,8 +119,8 @@ test('concurrent PDF and JSON saves share one Drive folder lookup/create',async(
 
 test('Drive connection from preview retries that same bundle without closing it or changing classroom state',async()=>{
   const archive={files:[]};const overlay={_bundleArchive:archive};const button={disabled:false};let auth=0,saves=0,enabled=false;
-  const c=vm.createContext({ttById:id=>id==='ttExportViewer'?overlay:button,
-    ttEnsureDrivePermission:async options=>{assert.equal(options.interactive,true);auth++;return true;},
+  const c=vm.createContext({ttDriveAccessToken:'expired-token',ttById:id=>id==='ttExportViewer'?overlay:button,
+    ttEnsureDrivePermission:async options=>{assert.equal(options.interactive,true);assert.equal(c.ttDriveAccessToken,'');auth++;return true;},
     ttIndependentBackupEnabledKey:'drive',localStorage:{setItem:(k,v)=>{assert.equal(k,'drive');assert.equal(v,'true');enabled=true;}},
     ttRenderDataCenter:()=>{},ttSaveLessonBundleFromViewer:async target=>{assert.equal(target._bundleArchive,archive);saves++;},
     ttShowBackupToast:()=>{},ttFriendlyDriveError:e=>e.message
