@@ -11917,3 +11917,5 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 /* Private document dialogs cover teaching controls and reminders. */
 .export-viewer-overlay { z-index:14000; }
  .backup-status-toast { z-index:15000; }
+ .export-viewer-topbar { flex-wrap:wrap; }
+.export-viewer-actions { flex-wrap:wrap;max-width:100%; }
