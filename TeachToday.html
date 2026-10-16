@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20261016-bundle-folder-saves-3">
+    <link rel="stylesheet" href="teach-today.css?v=20261016-lesson-library-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -152,6 +152,7 @@
           <span class="ribbon-label">Data</span>
           <div class="ribbon-buttons">
             <button id="ttSavedToggle" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
+            <button id="ttLessonLibrary" type="button">Lesson library</button>
             <button id="ttDataToggle" type="button" title="Data center &amp; records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
             <button id="ttProfile" type="button" title="Student profile">Profile</button>
             <button id="ttProgressMonitoring" type="button" title="EdPlan progress-monitoring evidence">Progress</button>
@@ -218,6 +219,7 @@
           <label>Print scope <select id="ttPrintLessonScope"><option value="all">All groups in selected school year</option><option value="group">Selected group</option></select></label>
           <label>Versions <select id="ttPrintLessonVersions"><option value="latest">Latest saved lessons</option><option value="completed">Completed lessons</option><option value="both">Original planned + completed</option></select></label>
           <button id="ttPrintAllLessonPlans" type="button">Print all lesson plans so far</button>
+          <button id="ttPrintGroupLessonPlans" type="button">Print this group's lessons</button>
           <p id="ttPrintLessonStatus" role="status"></p>
         </div>
         <div id="ttSavedLessons" class="saved-lessons ribbon-dropdown-scroll"></div>
@@ -414,6 +416,7 @@
           <div class="home-data-grid">
             <button id="ttHomeAttendanceCentral" class="home-data-button home-data-attendance" type="button" title="Attendance calendar and daily summaries">Attendance</button>
             <button id="ttHomeSavedToggle" class="home-data-button" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
+            <button id="ttHomeLessonLibrary" class="home-data-button" type="button">Lesson library</button>
             <button id="ttHomeDataToggle" class="home-data-button" type="button" title="Data center and records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
             <button id="ttHomeProfile" class="home-data-button home-data-profile" type="button" title="Student profile">Profile</button>
             <button id="ttHomeProgressMonitoring" class="home-data-button" type="button" title="EdPlan progress-monitoring evidence">Progress</button>
@@ -560,7 +563,20 @@
     </section>
 
     <!-- ===== EXPORT VIEWER OVERLAY ===== -->
-    <section id="ttExportViewer" class="export-viewer-overlay" hidden aria-label="Export preview">
+    <section id="ttLessonLibraryPanel" class="lesson-library-overlay" role="dialog" aria-modal="true" aria-labelledby="ttLessonLibraryTitle" hidden>
+      <header><div><h2 id="ttLessonLibraryTitle">Lesson library</h2><p>Saved lesson plans for the selected school year.</p></div><button id="ttLessonLibraryClose" type="button">Close library</button></header>
+      <div class="lesson-library-filters">
+        <label>School year<select id="ttLibraryYear"></select></label>
+        <label>Group<select id="ttLibraryGroup"></select></label>
+        <label>Student<select id="ttLibraryStudent"></select></label>
+        <label>Lessons<select id="ttLibraryStatus"><option value="all">All saved</option><option value="completed">Completed</option><option value="open">Open / incomplete</option></select></label>
+        <button id="ttLibraryPrintGroup" type="button">Print this group's lessons</button>
+      </div>
+      <p id="ttLibrarySummary" role="status"></p>
+      <div id="ttLibraryLessons" class="lesson-library-list"></div>
+    </section>
+
+    <section id="ttExportViewer" class="export-viewer-overlay" hidden role="dialog" aria-modal="true" aria-label="Export preview">
       <header class="export-viewer-topbar">
         <div class="export-viewer-brand">
           <img src="assets/morrocoy-logo.png" alt="">
@@ -571,6 +587,8 @@
         </div>
         <div class="export-viewer-actions">
           <button id="ttExportViewerPrint" type="button" title="Print this export">Print</button>
+          <button id="ttExportViewerDevice" type="button" hidden>Open on device</button>
+          <button id="ttExportViewerShare" type="button" hidden>Open in…</button>
           <button id="ttExportViewerDownload" type="button" title="Download file">Download</button>
           <button id="ttExportViewerConnectDrive" type="button" hidden>Connect Drive &amp; retry</button>
           <button id="ttExportViewerClose" type="button" title="Close and return to lesson">✕ Close</button>
@@ -1198,6 +1216,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20261016-bundle-folder-saves-3" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|teach-today.js?v=20261016-bundle-folder-saves-3|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261016-lesson-library-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261016-lesson-library-1|teach-today.js?v=20261016-lesson-library-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

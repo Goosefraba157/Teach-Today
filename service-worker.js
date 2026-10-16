@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-16-bundle-folder-saves-3";
+const CACHE_NAME = "teach-today-offline-v2026-10-16-lesson-library-1";
 
 const APP_SHELL = [
   "./",
@@ -40,6 +40,7 @@ const APP_SHELL = [
   "./developer-data-diagnostic.js",
   "./onboarding.js",
   "./teach-today.js",
+  "./lesson-library.js",
   "./attendance-export.js",
   "./attendance-calendar.js",
   "./lesson-planner-v2-presenter.js",

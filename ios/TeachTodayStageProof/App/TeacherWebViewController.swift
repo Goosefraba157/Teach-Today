@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import CryptoKit
+import QuickLook
 
 private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
     weak var delegate: WKScriptMessageHandler?
@@ -19,6 +20,8 @@ final class TeacherWebViewController: UIViewController {
     private let projectionMessageName = "teachTodayProjectionMode"
     private let backupMessageName = "teachTodayBackup"
     private let documentMessageName = "teachTodayDocument"
+    private let pdfViewerMessageName = "teachTodayPdfViewer"
+    private var previewDocumentURLs: [URL] = []
     private let driveMessageName = "teachTodayDriveAuth"
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
@@ -39,7 +42,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1'; document.documentElement.dataset.teachTodayNativeDocuments = '1'; document.documentElement.dataset.teachTodayNativeDrive = '1';",
+            source: "document.documentElement.dataset.teachTodayNative = 'ipad'; document.documentElement.dataset.teachTodayNativeBackup = '1'; document.documentElement.dataset.teachTodayNativeDocuments = '1'; document.documentElement.dataset.teachTodayNativePdfViewer = '1'; document.documentElement.dataset.teachTodayNativeDrive = '1';",
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ))
@@ -49,6 +52,7 @@ final class TeacherWebViewController: UIViewController {
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: projectionMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: backupMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: documentMessageName)
+        configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: pdfViewerMessageName)
         configuration.userContentController.add(WeakScriptMessageHandler(delegate: self), name: driveMessageName)
     }
 
@@ -63,6 +67,7 @@ final class TeacherWebViewController: UIViewController {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: projectionMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: backupMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: documentMessageName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: pdfViewerMessageName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: driveMessageName)
     }
 
@@ -355,6 +360,75 @@ final class TeacherWebViewController: UIViewController {
         }
     }
 
+    // Accept only verified PDF files inside this app's existing lesson archive.
+    // Neither remote URLs nor arbitrary paths from JavaScript can reach Quick Look.
+    private static func lessonDocumentURL(_ path: String, documents: URL) throws -> URL {
+        let parts = path.components(separatedBy: "/")
+        guard parts.count == 4, parts[0] == "Lesson Plans",
+              isAllowedDocumentFolderName(parts[1]),
+              ["Planned", "Completed", "Downloaded"].contains(parts[2]),
+              isAllowedDocumentName(parts[3]) else { throw BackupError.invalidRequest }
+        let documentRoot = documents.resolvingSymlinksInPath().standardizedFileURL
+        let archiveRoot = documents.appendingPathComponent("Lesson Plans", isDirectory: true).resolvingSymlinksInPath().standardizedFileURL
+        let fileURL = documents.appendingPathComponent(path).resolvingSymlinksInPath().standardizedFileURL
+        guard archiveRoot.path.hasPrefix(documentRoot.path + "/"),
+              fileURL.path.hasPrefix(archiveRoot.path + "/") else { throw BackupError.invalidRequest }
+        let data = try Data(contentsOf: fileURL)
+        guard data.count <= 15_000_000, data.starts(with: Data("%PDF-".utf8)) else { throw BackupError.invalidRequest }
+        return fileURL
+    }
+
+    private func openLessonDocuments(_ command: [String: Any]) {
+        let requestId = command["requestId"] as? String ?? ""
+        guard !requestId.isEmpty else { return }
+        backupQueue.async { [weak self] in
+            guard let self else { return }
+            do {
+                guard let paths = command["paths"] as? [String], !paths.isEmpty, paths.count <= 200,
+                      let action = command["action"] as? String,
+                      ["preview", "share", "print"].contains(action) else { throw BackupError.invalidRequest }
+                let documents = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+                let urls = try paths.map { try Self.lessonDocumentURL($0, documents: documents) }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    guard self.presentedViewController == nil else {
+                        self.dispatchEvent("teachTodayNativePdfViewerResult", detail: ["requestId": requestId, "ok": false, "error": "Close the current device panel and try again."])
+                        return
+                    }
+                    self.setExternalProjectionMode(.stage, notifyWeb: true)
+                    if action == "preview" {
+                        self.previewDocumentURLs = urls
+                        let preview = QLPreviewController()
+                        preview.dataSource = self
+                        preview.delegate = self
+                        self.present(preview, animated: true)
+                    } else if action == "share" {
+                        let chooser = UIActivityViewController(activityItems: urls, applicationActivities: nil)
+                        chooser.popoverPresentationController?.sourceView = self.view
+                        chooser.popoverPresentationController?.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 1, height: 1)
+                        self.present(chooser, animated: true)
+                    } else {
+                        let printer = UIPrintInteractionController.shared
+                        let info = UIPrintInfo(dictionary: nil)
+                        info.outputType = .general
+                        info.jobName = "Teach Today lesson plans"
+                        printer.printInfo = info
+                        printer.printingItems = urls
+                        guard printer.present(from: CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 1, height: 1), in: self.view, animated: true, completionHandler: nil) else {
+                            self.dispatchEvent("teachTodayNativePdfViewerResult", detail: ["requestId": requestId, "ok": false, "error": "Print controls are unavailable. Use Open in… or save to Files."])
+                            return
+                        }
+                    }
+                    // This acknowledges the device controls opening, not printing
+                    // completion or delivery to any external application.
+                    self.dispatchEvent("teachTodayNativePdfViewerResult", detail: ["requestId": requestId, "ok": true])
+                }
+            } catch {
+                self.dispatchEvent("teachTodayNativePdfViewerResult", detail: ["requestId": requestId, "ok": false, "error": "The saved PDF could not be opened. Save it again and retry."])
+            }
+        }
+    }
+
     private static func isAllowedBackupName(_ name: String, prefix: String) -> Bool {
         guard name.hasPrefix(prefix), name.hasSuffix(".json"), name.count == prefix.count + 10 + 5 else { return false }
         let datePart = name.dropFirst(prefix.count).dropLast(5)
@@ -458,6 +532,12 @@ extension TeacherWebViewController: WKScriptMessageHandler {
             return
         }
 
+        if message.name == pdfViewerMessageName,
+           let command = message.body as? [String: Any] {
+            openLessonDocuments(command)
+            return
+        }
+
         if message.name == driveMessageName,
            let command = message.body as? [String: Any] {
             authorizeDrive(command)
@@ -513,4 +593,11 @@ extension TeacherWebViewController: WKUIDelegate {
         present(navigation, animated: true)
         return popup.webView
     }
+}
+
+extension TeacherWebViewController: QLPreviewControllerDataSource, QLPreviewControllerDelegate {
+    func numberOfPreviewItems(in controller: QLPreviewController) -> Int { previewDocumentURLs.count }
+    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem { previewDocumentURLs[index] as NSURL }
+    func previewController(_ controller: QLPreviewController, editingModeFor previewItem: QLPreviewItem) -> QLPreviewItemEditingMode { .disabled }
+    func previewControllerDidDismiss(_ controller: QLPreviewController) { previewDocumentURLs = [] }
 }

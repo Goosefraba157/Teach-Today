@@ -11898,3 +11898,22 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .export-viewer-overlay[data-bundle-archive="true"] .export-viewer-frame { height: 100%; min-height: 0; }
 
 .export-viewer-actions [hidden] { display: none; }
+
+/* Private, read-only lesson library; export preview remains above it. */
+.lesson-library-overlay { position:fixed;inset:0;z-index:13000;background:#f8fafc;padding:20px;overflow:auto;color:#142033; }
+.lesson-library-overlay[hidden] { display:none; }
+.lesson-library-overlay > header { display:flex;justify-content:space-between;gap:16px;align-items:center; }
+.lesson-library-overlay h2 { margin:0; }.lesson-library-overlay p { margin:6px 0; }
+.lesson-library-filters { display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:18px 0; }
+.lesson-library-filters label { display:grid;gap:5px;font-size:13px;font-weight:700; }
+.lesson-library-filters select { min-width:155px;max-width:250px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:white; }
+.lesson-library-overlay button { padding:10px 14px;border:1px solid #0f766e;border-radius:9px;background:#ecfdf5;color:#115e59;font-weight:750;cursor:pointer; }
+.lesson-library-overlay button:disabled { opacity:.5;cursor:default; }
+.lesson-library-list { display:grid;gap:10px; }.lesson-library-item { display:flex;justify-content:space-between;gap:16px;padding:15px;border:1px solid #cbd5e1;border-radius:12px;background:white; }
+.lesson-library-item h3 { margin:0;font-size:17px; }.lesson-library-item small { color:#475569; }
+.lesson-library-item > div:last-child { display:flex;align-items:center;flex-wrap:wrap;gap:7px; }
+@media(max-width:700px) { .lesson-library-overlay { padding:12px; }.lesson-library-item { flex-direction:column; }.lesson-library-filters select { max-width:100%; } }
+
+/* Private document dialogs cover teaching controls and reminders. */
+.export-viewer-overlay { z-index:14000; }
+ .backup-status-toast { z-index:15000; }

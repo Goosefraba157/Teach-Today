@@ -85,6 +85,19 @@ test('print collection includes every same-date lesson beyond 50, filters year, 
   assert.deepEqual(state,before);
 });
 
+test('group printing honors the selected year and does not reuse first-lesson snapshots for weekly siblings',()=>{
+  const context=runtime(functions('ttCollectLessonPrintEntries','ttPrintAllLessonPlans'),{ttLessonStartDateKey:()=> '2026-10-13'});
+  const state={activeSchoolYearId:'2026-2027',groups:[{id:'g',name:'Group',schoolYearId:'2026-2027',history:[
+    {id:'weekly',status:'Complete',lessonPlanVersions:{planned:{fields:{text:{id:'first'}}},completed:{fields:{text:{id:'first-completed'}}}},lessons:[{id:'a'},{id:'b'}]},
+    {id:'past',schoolYearId:'2025-2026',lessons:[{id:'old'}]}
+  ]}]};
+  const rows=context.ttCollectLessonPrintEntries(state,'g','both');
+  assert.deepEqual(Array.from(rows.entries,r=>r.lesson.id),['a','a','b']);
+  assert.equal(rows.entries[2].fields,null);assert.equal(rows.missingOriginals,1);
+  state.homeSchoolYearId='2025-2026';
+  assert.deepEqual(Array.from(context.ttCollectLessonPrintEntries(state,'g','latest').entries,r=>r.lesson.id),['old']);
+});
+
 test('random selection reaches the full pool without duplicates or source mutation',()=>{
   let seed=71;const math=Object.create(Math);math.random=()=>((seed=(seed*1664525+1013904223)>>>0)/2**32);
   const context=runtime(functions('ttSmartPreselect','ttCountSyllables'),{Math:math,uniqueWords:words=>[...new Set(words)]});
