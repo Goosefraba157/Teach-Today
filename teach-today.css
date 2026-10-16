@@ -11290,7 +11290,7 @@ body.home-mode .home-screen {
   inset: 0;
   z-index: 80;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr);
   background: #e2e8f0;
 }
 
@@ -11391,7 +11391,22 @@ body.home-mode .home-screen {
   background: #fee2e2;
 }
 
+.export-viewer-archive-status {
+  grid-row: 2;
+  max-height: 26vh;
+  overflow: auto;
+  padding: 10px 18px;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f0fdfa;
+  color: #134e4a;
+  font-size: 13px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.export-viewer-archive-status[data-warning="true"] { background: #fffbeb; color: #78350f; }
+.export-viewer-archive-status[hidden] { display: none; }
 .export-viewer-frame-wrap {
+  grid-row: 3;
   min-height: 0;
   padding: 10px;
 }
@@ -11879,3 +11894,5 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .attendance-reasons button { min-height: 30px; padding: 5px 8px; border: 1px solid #fed7aa; border-radius: 999px; background: #fff7ed; color: #9a3412; font-size: 10px; font-weight: 850; }
 @media (max-width: 1000px) { .ac-year-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 700px) { .attendance-central { padding: 10px; }.attendance-central-head { grid-template-columns: 1fr; }.attendance-central-toolbar { align-items: stretch; flex-direction: column; }.attendance-central-nav { justify-content: space-between; }.attendance-central-nav strong { min-width: 0; }.ac-year-grid { grid-template-columns: 1fr; }.ac-day-facts { grid-template-columns: 1fr; }.ac-performance li { grid-template-columns: 1fr auto auto; }.ac-performance li em { grid-column: 1 / -1; }.ac-section-miss-row { grid-template-columns: 1fr; gap: 3px; } }
+
+.export-viewer-overlay[data-bundle-archive="true"] .export-viewer-frame { height: 100%; min-height: 0; }

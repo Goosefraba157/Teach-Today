@@ -14293,7 +14293,7 @@ function ttEnsureCurrentLessonSavedForData() {
   return ttMarkCurrentPlanHasData(ttLesson);
 }
 
-function ttOpenExportViewer({ url, title, filename, contentType = "pdf", bytes = null, archiveDownload = false }) {
+function ttOpenExportViewer({ url, title, filename, contentType = "pdf", bytes = null, archiveDownload = false, bundleArchive = null }) {
   const overlay = ttById("ttExportViewer");
   const frame = ttById("ttExportViewerFrame");
   const titleEl = ttById("ttExportViewerTitle");
@@ -14303,6 +14303,15 @@ function ttOpenExportViewer({ url, title, filename, contentType = "pdf", bytes =
   overlay._exportContentType = contentType;
   overlay._exportBytes = bytes;
   overlay._archiveDownload = archiveDownload;
+  overlay._bundleArchive = bundleArchive;
+  overlay.dataset.bundleArchive = String(Boolean(bundleArchive));
+  const saveStatus = ttById("ttExportViewerArchiveStatus");
+  if (saveStatus) { saveStatus.hidden = !bundleArchive; saveStatus.textContent = ""; }
+  const downloadButton = ttById("ttExportViewerDownload");
+  if (downloadButton) {
+    downloadButton.disabled = false;
+    downloadButton.textContent = bundleArchive && ttIsNativeIpadShell() ? "Save to Files + Drive" : "Download";
+  }
   titleEl.textContent = title;
   frame.src = url;
   overlay.removeAttribute("hidden");
@@ -14322,6 +14331,7 @@ function ttCloseExportViewer() {
   }
   overlay._exportBytes = null;
   overlay._archiveDownload = false;
+  overlay._bundleArchive = null;
 }
 
 function ttOpenPdfLessonPlan() {
@@ -15933,7 +15943,19 @@ function ttDriveQueryValue(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-async function ttDriveNamedFolder(name, parentId = "") {
+const ttDriveNamedFolderRequests = new Map();
+
+function ttDriveNamedFolder(name, parentId = "") {
+  const key = `teachToday.driveBackupFolder.${parentId || "root"}.${name}`;
+  const cached = localStorage.getItem(key);
+  if (cached) return Promise.resolve(cached);
+  if (ttDriveNamedFolderRequests.has(key)) return ttDriveNamedFolderRequests.get(key);
+  const pending = ttFindOrCreateDriveNamedFolder(name, parentId).finally(() => ttDriveNamedFolderRequests.delete(key));
+  ttDriveNamedFolderRequests.set(key, pending);
+  return pending;
+}
+
+async function ttFindOrCreateDriveNamedFolder(name, parentId = "") {
   const key = `teachToday.driveBackupFolder.${parentId || "root"}.${name}`;
   const cached = localStorage.getItem(key);
   if (cached) return cached;
@@ -17634,6 +17656,116 @@ async function ttOpenSavedLessonPlanPdf(group, plan, stage = "latest") {
   }
 }
 
+// The installed document bridge accepts the existing Downloaded class and
+// at most 15 MB per file. Keep the same relative folders and bytes in Drive.
+async function ttPrepareLessonBundleFiles(bytes, fileName, boundaries = [], maxBytes = 14500000) {
+  if (bytes.length <= maxBytes) return [{ bytes, fileName }];
+  const { PDFDocument } = window.PDFLib;
+  const original = await PDFDocument.load(bytes);
+  const parts = [];
+  async function split(start, end) {
+    const part = await PDFDocument.create();
+    const pages = await part.copyPages(original, Array.from({ length: end - start }, (_, i) => start + i));
+    pages.forEach((page) => part.addPage(page));
+    const content = await part.save();
+    if (content.length <= maxBytes) { parts.push(content); return; }
+    if (end - start <= 1) throw new Error("One PDF page exceeds the iPad file limit. Print a smaller lesson selection.");
+    const middle = (start + end) / 2;
+    const candidates = boundaries.filter((page) => page > start && page < end);
+    const cut = candidates.length
+      ? candidates.reduce((best, page) => Math.abs(page - middle) < Math.abs(best - middle) ? page : best)
+      : Math.floor(middle);
+    await split(start, cut);
+    await split(cut, end);
+  }
+  await split(0, original.getPageCount());
+  const base = fileName.replace(/\.pdf$/i, "");
+  return parts.map((content, i) => ({ bytes: content, fileName: `${base} - part ${i + 1} of ${parts.length}.pdf` }));
+}
+
+function ttLessonBundleArchiveName(groupFolder, year, versions) {
+  const clean = (value, length) => String(value || "").replace(/[^a-z0-9 ._()-]+/gi, "-").trim().slice(0, length);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const identity = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(16).slice(2, 10);
+  return `${clean(year, 12)} - ${clean(groupFolder, 40)} - ${clean(versions, 10)} - ${stamp} - ${identity}.pdf`;
+}
+
+function ttLessonBundleSaveStatus(archive) {
+  const lines = [];
+  const folder = `Lesson Plans/${archive.groupFolder}/Downloaded`;
+  for (const [key, label, root] of [["local", "iPad Files", "On My iPad/Teach Today Stage"], ["drive", "Google Drive", "Teach Today Backups"]]) {
+    const saved = archive.files.filter((file) => file[key]?.status === "saved").length;
+    const pending = archive.files.some((file) => !file[key] || file[key].status === "saving");
+    const errors = [...new Set(archive.files.map((file) => file[key]?.error).filter(Boolean))];
+    lines.push(`${label}: ${saved}/${archive.files.length} file(s) saved${pending ? " — saving…" : ""}.`);
+    lines.push(`${root}/${folder}`);
+    if (errors.length) lines.push(errors.join(" "));
+  }
+  lines.push(`File${archive.files.length === 1 ? "" : "s"}: ${archive.files.map((file) => file.fileName).join("; ")}`);
+  return lines.join("\n");
+}
+
+function ttSaveLessonBundleArchive(archive, onUpdate = () => {}) {
+  if (archive.inFlight) return archive.inFlight;
+  archive.inFlight = (async () => {
+    const notify = () => onUpdate(ttLessonBundleSaveStatus(archive), archive.files.some((file) => file.local?.status !== "saved" || file.drive?.status !== "saved"));
+    for (const file of archive.files) file.sha256 ||= await ttDocumentSha256Hex(file.bytes);
+    const saveDestination = async (key) => {
+      for (const file of archive.files) {
+        if (file[key]?.status === "saved") continue;
+        if (key === "local" && !ttIsNativeIpadShell()) {
+          file.local = { status: "unavailable", error: "Use Stage on the iPad for this Files folder; browser Download is also available." };
+          notify(); continue;
+        }
+        if (key === "drive" && localStorage.getItem(ttIndependentBackupEnabledKey) !== "true") {
+          file.drive = { status: "disconnected", error: "NOT SAVED to Drive. Open Records → Connect Google Drive backup, then retry saving." };
+          notify(); continue;
+        }
+        file[key] = { status: "saving" }; notify();
+        try {
+          const result = key === "local"
+            ? await ttSaveNativeLessonPlanPdf(file.bytes, file.sha256, file.fileName, "Downloaded", archive.groupFolder)
+            : await ttSaveDriveLessonPlanPdf(file.bytes, file.fileName, "Downloaded", archive.groupFolder);
+          file[key] = { status: "saved", verifiedAt: new Date().toISOString(), path: result.path || "", fileId: result.id || "" };
+        } catch (error) {
+          file[key] = { status: "failed", error: `${key === "local" ? "iPad Files" : "Google Drive"} NOT SAVED: ${key === "drive" ? ttFriendlyDriveError(error) : error.message || error}` };
+        }
+        notify();
+      }
+    };
+    // A Drive outage must never hold up the independent native Files copy.
+    await Promise.all([saveDestination("local"), saveDestination("drive")]);
+    notify();
+    return archive;
+  })().finally(() => { archive.inFlight = null; });
+  return archive.inFlight;
+}
+
+async function ttSaveLessonBundleFromViewer(overlay = ttById("ttExportViewer")) {
+  const archive = overlay?._bundleArchive;
+  if (!archive) return;
+  const button = ttById("ttExportViewerDownload");
+  const update = (message, warning) => {
+    if (overlay._bundleArchive !== archive) return;
+    const status = ttById("ttExportViewerArchiveStatus");
+    if (status) { status.hidden = false; status.textContent = message; status.dataset.warning = String(warning); }
+    const summary = ttById("ttPrintLessonStatus");
+    if (summary) summary.textContent = message;
+  };
+  if (button && ttIsNativeIpadShell()) { button.disabled = true; button.textContent = "Saving to Files + Drive…"; }
+  try {
+    await ttSaveLessonBundleArchive(archive, update);
+  } catch (error) {
+    update(`PDF folder saves did not finish: ${error.message || error}. Retry saving.`, true);
+  } finally {
+    if (overlay._bundleArchive === archive && button && ttIsNativeIpadShell()) {
+      const complete = archive.files.every((file) => file.local?.status === "saved" && file.drive?.status === "saved");
+      button.disabled = false;
+      button.textContent = complete ? "Saved to Files + Drive" : "Retry saving";
+    }
+  }
+}
+
 function ttCollectLessonPrintEntries(state, groupId = "", versions = "latest") {
   const year = state.homeSchoolYearId || state.activeSchoolYearId;
   const groups = (state.groups || []).filter((group) => groupId ? group.id === groupId : group.schoolYearId === year);
@@ -17671,9 +17803,11 @@ async function ttPrintAllLessonPlans() {
   try {
     const group = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup();
     const groupId = ttById("ttPrintLessonScope")?.value === "group" ? group?.id : "";
+    if (ttById("ttPrintLessonScope")?.value === "group" && !groupId) throw new Error("Select a group first.");
+    const versions = ttById("ttPrintLessonVersions")?.value || "latest";
     const snapshot = ttClone(appState);
     snapshot.homeSchoolYearId = ttById("ttHomeSchoolYear")?.value || snapshot.activeSchoolYearId;
-    const { entries, missingOriginals } = ttCollectLessonPrintEntries(snapshot, groupId, ttById("ttPrintLessonVersions")?.value || "latest");
+    const { entries, missingOriginals } = ttCollectLessonPrintEntries(snapshot, groupId, versions);
     if (!entries.length) { status.textContent = "No saved lessons match this selection."; return; }
     // Compute every field from the same frozen state before asynchronous PDF work.
     entries.forEach((entry) => {
@@ -17694,7 +17828,9 @@ async function ttPrintAllLessonPlans() {
       const label = `${i + 1}. ${entry.group.name} | Lesson ${entry.lesson.lessonSequence || entry.plan.lessonNumber || "-"} | ${entry.date} | ${entry.stage}`;
       indexPage.drawText(ttPdfSafeText(label).slice(0, 108), { x: 36, y: 700 - row * 15, size: 9, font });
     });
+    const boundaries = [];
     for (let i = 0; i < entries.length; i++) {
+      if (i) boundaries.push(combined.getPageCount());
       status.textContent = `Preparing lesson document ${i + 1} of ${entries.length}…`;
       const entry = entries[i];
       const bytes = await ttBuildWilsonLessonPlanPdf(entry.group, entry.skill, entry.lesson, entry.plan,
@@ -17705,9 +17841,14 @@ async function ttPrintAllLessonPlans() {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
     const bytes = await combined.save();
+    const groupFolder = groupId ? ttLessonPlanGroupFolderName(group) : "All Groups";
+    const filename = ttLessonBundleArchiveName(groupFolder, snapshot.homeSchoolYearId, versions);
+    const files = await ttPrepareLessonBundleFiles(bytes, filename, boundaries);
+    const bundleArchive = { groupFolder, files };
     ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
-      title: `All lesson plans — ${entries.length} documents`, filename: `teach-today-lesson-plans-${ttTodayKey()}.pdf`, contentType: "pdf", bytes });
-    status.textContent = `${entries.length} lesson documents ready to print or download.${missingOriginals ? ` ${missingOriginals} older lessons have no original planned version; their saved content is included.` : ""}`;
+      title: `All lesson plans — ${entries.length} documents`, filename, contentType: "pdf", bytes, bundleArchive });
+    if (missingOriginals) ttShowBackupToast(`${missingOriginals} older lessons have no original planned version; their saved content is included.`, "warning");
+    await ttSaveLessonBundleFromViewer();
   } catch (error) {
     status.textContent = `Could not prepare the lesson bundle: ${error.message || error}`;
   } finally { button.disabled = false; }
@@ -20544,6 +20685,10 @@ function ttBind() {
     const overlay = ttById("ttExportViewer");
     if (!overlay?._exportBlobUrl) return;
     const button = ttById("ttExportViewerDownload");
+    if (overlay._bundleArchive && ttIsNativeIpadShell()) {
+      await ttSaveLessonBundleFromViewer(overlay);
+      return;
+    }
     if (overlay._archiveDownload && overlay._exportBytes && ttIsNativeIpadShell()) {
       const priorLabel = button?.textContent || "Download";
       let archived = false;
