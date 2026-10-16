@@ -14305,6 +14305,8 @@ function ttOpenExportViewer({ url, title, filename, contentType = "pdf", bytes =
   overlay._archiveDownload = archiveDownload;
   overlay._bundleArchive = bundleArchive;
   overlay.dataset.bundleArchive = String(Boolean(bundleArchive));
+  const connectDrive = ttById("ttExportViewerConnectDrive");
+  if (connectDrive) connectDrive.hidden = !bundleArchive;
   const saveStatus = ttById("ttExportViewerArchiveStatus");
   if (saveStatus) { saveStatus.hidden = !bundleArchive; saveStatus.textContent = ""; }
   const downloadButton = ttById("ttExportViewerDownload");
@@ -17718,7 +17720,7 @@ function ttSaveLessonBundleArchive(archive, onUpdate = () => {}) {
           notify(); continue;
         }
         if (key === "drive" && localStorage.getItem(ttIndependentBackupEnabledKey) !== "true") {
-          file.drive = { status: "disconnected", error: "NOT SAVED to Drive. Open Records → Connect Google Drive backup, then retry saving." };
+          file.drive = { status: "disconnected", error: "NOT SAVED to Drive. Tap Connect Drive & retry above, or use Records → Connect Google Drive backup." };
           notify(); continue;
         }
         file[key] = { status: "saving" }; notify();
@@ -17751,6 +17753,8 @@ async function ttSaveLessonBundleFromViewer(overlay = ttById("ttExportViewer")) 
     if (status) { status.hidden = false; status.textContent = message; status.dataset.warning = String(warning); }
     const summary = ttById("ttPrintLessonStatus");
     if (summary) summary.textContent = message;
+    const connectDrive = ttById("ttExportViewerConnectDrive");
+    if (connectDrive) connectDrive.hidden = archive.files.every((file) => file.drive?.status === "saved");
   };
   if (button && ttIsNativeIpadShell()) { button.disabled = true; button.textContent = "Saving to Files + Drive…"; }
   try {
@@ -17763,6 +17767,25 @@ async function ttSaveLessonBundleFromViewer(overlay = ttById("ttExportViewer")) 
       button.disabled = false;
       button.textContent = complete ? "Saved to Files + Drive" : "Retry saving";
     }
+  }
+}
+
+async function ttConnectLessonBundleDrive() {
+  const overlay = ttById("ttExportViewer");
+  const archive = overlay?._bundleArchive;
+  const button = ttById("ttExportViewerConnectDrive");
+  if (!archive || button?.disabled) return;
+  if (button) button.disabled = true;
+  try {
+    if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive connection did not finish. Your iPad Files copy is kept.");
+    localStorage.setItem(ttIndependentBackupEnabledKey, "true");
+    ttRenderDataCenter();
+    if (overlay._bundleArchive === archive) await ttSaveLessonBundleFromViewer(overlay);
+    else await ttSaveLessonBundleArchive(archive);
+  } catch (error) {
+    ttShowBackupToast(`Google Drive needs attention. ${ttFriendlyDriveError(error)}`, "warning");
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -20681,6 +20704,7 @@ function ttBind() {
     const frame = ttById("ttExportViewerFrame");
     try { frame?.contentWindow?.print(); } catch (_) {}
   });
+  ttById("ttExportViewerConnectDrive")?.addEventListener("click", () => ttConnectLessonBundleDrive());
   ttById("ttExportViewerDownload")?.addEventListener("click", async () => {
     const overlay = ttById("ttExportViewer");
     if (!overlay?._exportBlobUrl) return;

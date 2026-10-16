@@ -116,3 +116,17 @@ test('concurrent PDF and JSON saves share one Drive folder lookup/create',async(
   assert.equal(queries,1);assert.equal(creates,1);
   assert.equal(await c.ttDriveNamedFolder('Lesson Plans','root'),'one-folder');assert.equal(queries,1);
 });
+
+test('Drive connection from preview retries that same bundle without closing it or changing classroom state',async()=>{
+  const archive={files:[]};const overlay={_bundleArchive:archive};const button={disabled:false};let auth=0,saves=0,enabled=false;
+  const c=vm.createContext({ttById:id=>id==='ttExportViewer'?overlay:button,
+    ttEnsureDrivePermission:async options=>{assert.equal(options.interactive,true);auth++;return true;},
+    ttIndependentBackupEnabledKey:'drive',localStorage:{setItem:(k,v)=>{assert.equal(k,'drive');assert.equal(v,'true');enabled=true;}},
+    ttRenderDataCenter:()=>{},ttSaveLessonBundleFromViewer:async target=>{assert.equal(target._bundleArchive,archive);saves++;},
+    ttShowBackupToast:()=>{},ttFriendlyDriveError:e=>e.message
+  });
+  const start=source.indexOf('async function ttConnectLessonBundleDrive');const end=source.indexOf('function ttCollectLessonPrintEntries',start);
+  vm.runInContext(source.slice(start,end),c);await c.ttConnectLessonBundleDrive();
+  assert.equal(auth,1);assert.equal(saves,1);assert.equal(enabled,true);assert.equal(button.disabled,false);
+  c.ttEnsureDrivePermission=async()=>false;await c.ttConnectLessonBundleDrive();assert.equal(saves,1);assert.equal(button.disabled,false);
+});

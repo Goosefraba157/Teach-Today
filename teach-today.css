@@ -11896,3 +11896,5 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 @media (max-width: 700px) { .attendance-central { padding: 10px; }.attendance-central-head { grid-template-columns: 1fr; }.attendance-central-toolbar { align-items: stretch; flex-direction: column; }.attendance-central-nav { justify-content: space-between; }.attendance-central-nav strong { min-width: 0; }.ac-year-grid { grid-template-columns: 1fr; }.ac-day-facts { grid-template-columns: 1fr; }.ac-performance li { grid-template-columns: 1fr auto auto; }.ac-performance li em { grid-column: 1 / -1; }.ac-section-miss-row { grid-template-columns: 1fr; gap: 3px; } }
 
 .export-viewer-overlay[data-bundle-archive="true"] .export-viewer-frame { height: 100%; min-height: 0; }
+
+.export-viewer-actions [hidden] { display: none; }
