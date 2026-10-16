@@ -1212,7 +1212,6 @@ function generatePlan() {
   };
 
   group.history.push(plan);
-  group.history = group.history.slice(-10);
   saveState();
   renderPlan(plan, true);
   renderMetrics();

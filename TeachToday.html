@@ -214,6 +214,12 @@
           <p class="ribbon-dropdown-sub">Saved in this app on this device/browser</p>
           <button id="ttSavedClose" class="ribbon-dropdown-close" type="button" aria-label="Close">✕</button>
         </div>
+        <div class="data-actions">
+          <label>Print scope <select id="ttPrintLessonScope"><option value="all">All groups in selected school year</option><option value="group">Selected group</option></select></label>
+          <label>Versions <select id="ttPrintLessonVersions"><option value="latest">Latest saved lessons</option><option value="completed">Completed lessons</option><option value="both">Original planned + completed</option></select></label>
+          <button id="ttPrintAllLessonPlans" type="button">Print all lesson plans so far</button>
+          <p id="ttPrintLessonStatus" role="status"></p>
+        </div>
         <div id="ttSavedLessons" class="saved-lessons ribbon-dropdown-scroll"></div>
       </section>
 
@@ -1190,6 +1196,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20260915-complete-plan-2" data-scripts="app.js?v=20260910-section4-record-safety-1|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|teach-today.js?v=20261007-calendar-2|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261016-lesson-reliability-1" data-scripts="app.js?v=20261016-lesson-reliability-1|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|teach-today.js?v=20261016-lesson-reliability-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

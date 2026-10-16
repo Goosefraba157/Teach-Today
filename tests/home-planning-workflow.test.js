@@ -179,6 +179,8 @@ test("completing and resuming mutate only the selected fresh lesson record", asy
     ttAttendanceSession: () => null,
     ttClone: (value) => JSON.parse(JSON.stringify(value)),
     ttArchiveLessonPlanPdf: () => Promise.resolve(),
+    ttCaptureLessonPlanVersion: () => {},
+    ttFinishLessonArchives: () => {},
     saveState: () => { calls.save += 1; },
     ttOpenPlanInApp: () => { context.ttLesson = { ...plan.lessons[0], savedPlanId: plan.id }; calls.open += 1; return true; },
     ttSaveCurrentLesson: () => { calls.lessonSave += 1; },
@@ -197,7 +199,7 @@ test("completing and resuming mutate only the selected fresh lesson record", asy
   assert.deepEqual(plan.lessons[0].evidence, ["preserve-me"]);
   assert.deepEqual({ open: calls.open, lessonSave: calls.lessonSave, teach: calls.teach }, { open: 1, lessonSave: 0, teach: 1 });
 
-  assert.equal(context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
+  assert.equal(await context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
   assert.equal(plan.status, "Complete");
   assert.equal(plan.sessions["1"].status, "Complete");
   assert.equal(group.activeLessonPlanId, "");
@@ -207,7 +209,7 @@ test("completing and resuming mutate only the selected fresh lesson record", asy
   assert.deepEqual({ save: calls.save, sync: calls.sync }, { save: 1, sync: 1 });
 
   const firstCompletedAt = plan.completedAt;
-  assert.equal(context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
+  assert.equal(await context.ttCompleteOpenPlanFromHome(group.id, plan.id, "2026-09-01"), true);
   assert.equal(plan.status, "Complete");
   assert.equal(plan.completedAt, firstCompletedAt);
   assert.equal(group.activeLessonPlanId, "");

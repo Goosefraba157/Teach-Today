@@ -61,6 +61,7 @@ let ttSectionReviewSubsteps = {};
 let ttPickerSelections = {};      // { pickerId: string[] }  — ordered selected words
 let ttPickerSubstepCache = {};    // { "pickerId::substepId": string[] } — word pools per substep
 let ttReviewWordFilters = {};     // { pickerId: filterKey } — view-only in Section 2; selection-driving in Section 3
+let ttSentencePickOrder = [];
 let ttSection8RealSlots = [];     // [{ substep, word }] × 5 — Section 8 real word slots
 let ttSection8SoundElementsManual = false;
 let ttPlannerHomeScrollPositions = {};
@@ -4604,7 +4605,6 @@ function ttSyncCombinedLessonLinks(plan, hostGroup) {
     };
     if (existingIndex >= 0) group.history[existingIndex] = link;
     else group.history.push(link);
-    group.history = group.history.slice(-50);
     group.lessonSerial = Math.max(Number(group.lessonSerial || 0), Number(guestLessonNumber || 0));
   });
 }
@@ -4874,7 +4874,7 @@ function ttContinuityPlan(groupId, planId) {
   return current;
 }
 
-function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
+async function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   const current = ttContinuityRecord(groupId, planId);
   if (!current || current.plan.excludedFromLessonSequence || current.plan.status === "Test") return false;
   const { group, plan, lesson } = current;
@@ -4910,7 +4910,9 @@ function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   ttPlannerGroupId = group.id;
   ttPlannerDraft = {};
   ttEnsurePlannerDraft(group).scheduledDate = nextDate || ttNextPlanningDateKey(planDate);
-  saveState();
+  ttCaptureLessonPlanVersion("Completed", group, lesson, plan);
+  await saveState();
+  ttFinishLessonArchives(group, lesson, plan);
   return true;
 }
 
@@ -4989,7 +4991,7 @@ function ttRenderLessonIdentity(group = ttActiveGroup(), lesson = ttLesson) {
       <strong>Lesson ${escapeHtml(ttPlanLessonNumber(plan, lesson, group))}${day ? ` · Day ${escapeHtml(day)}` : ""} · ${escapeHtml(ttLongLessonDate(sessionDate))}</strong>
       ${dayOneDate ? `<em>Day 1 taught ${escapeHtml(ttLongLessonDate(dayOneDate))}</em>` : ""}</div>
     <div class="lesson-identity-status"><b>${escapeHtml(sessionStatus)}</b><small>${summary.done.length ? `Finished sections: ${escapeHtml(summary.done.join(", "))}` : "No sections marked finished yet"}</small>
-      ${revisions.length ? `<details><summary>${revisions.length} saved version${revisions.length === 1 ? "" : "s"}</summary>${revisions.slice(0, 5).map((revision) => `<span>${escapeHtml(revision.reason || "Saved changes")} · ${escapeHtml(ttLessonTime(new Date(revision.savedAt)))}</span>`).join("")}</details>` : ""}</div>`;
+      ${revisions.length ? `<details><summary>${revisions.length} recent save${revisions.length === 1 ? "" : "s"}</summary>${revisions.slice(0, 5).map((revision) => `<span>${escapeHtml(revision.reason || "Saved changes")} · ${escapeHtml(ttLessonTime(new Date(revision.savedAt)))}</span>`).join("")}</details>` : ""}</div>`;
 }
 
 function ttLessonTime(date = new Date()) {
@@ -6675,20 +6677,15 @@ function ttRenderHomeContinuity(enabled = true) {
     ttSaveCurrentLesson({ render: false, starting: true, reason: "Started Day 2" });
     ttOpenTeachFlow({ transition: false, presentation: true });
   });
-  container.querySelector('[data-continuity="complete-day1"]')?.addEventListener("click", () => {
+  container.querySelector('[data-continuity="complete-day1"]')?.addEventListener("click", async () => {
     const completedDate = container.querySelector("[data-continuity-session-date]")?.value || sessionDate;
     saveSessionDate(completedDate);
     if (!confirm(`Save Lesson ${ttPlanLessonNumber(openPlan, lesson, group)} as complete exactly as it is now? Unfinished sections are allowed. The next plan will be Lesson ${Number(ttPlanLessonNumber(openPlan, lesson, group)) + 1}.`)) return;
-    openPlan.status = "Complete";
-    openPlan.completionKind = "as-is";
-    openPlan.completedAt = new Date().toISOString();
-    openPlan.sessions["1"].status = "Complete";
-    group.activeLessonPlanId = "";
-    ttPlannerDraft = {};
-    ttEnsurePlannerDraft(group).scheduledDate = ttNextInstructionDateKey(completedDate);
-    ttSyncCombinedLessonLinks(openPlan, group);
-    saveState();
-    ttRenderHomeScreen();
+    try {
+      if (await ttCompleteOpenPlanFromHome(group.id, openPlan.id, ttNextInstructionDateKey(completedDate))) ttRenderHomeScreen();
+    } catch (error) {
+      showActionStatus(`Completion could not be saved. ${error.message || error}`, true);
+    }
   });
   container.querySelector('[data-continuity="new"]')?.addEventListener("click", () => {
     const inlineConfirm = container.querySelector("[data-continuity-confirm]");
@@ -6699,10 +6696,10 @@ function ttRenderHomeContinuity(enabled = true) {
     if (inlineConfirm) inlineConfirm.hidden = true;
     showActionStatus("");
   });
-  container.querySelector("[data-continuity-confirm-close]")?.addEventListener("click", () => {
+  container.querySelector("[data-continuity-confirm-close]")?.addEventListener("click", async () => {
     showActionStatus("Completing this lesson and preserving its saved work…");
     try {
-      const completed = ttCompleteOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
+      const completed = await ttCompleteOpenPlanFromHome(group.id, openPlan.id, nextPlanDate);
       if (!completed) {
         showActionStatus("This lesson was already completed or could not be found. Its saved work remains preserved.", true);
         return;
@@ -7077,11 +7074,12 @@ function ttBeginEditingOpenPlan(groupId, planId) {
     dictationReal: dictationValues("real words"),
     dictationNonsense: dictationValues("nonsense"),
     dictationPhrases: dictationValues("phrases"),
-    dictationSentences: dictationValues("sentences")
+    readerSentences: (planning.section8ReaderSentences || []).slice(),
+    dictationSentences: dictationValues("sentences").filter((value) => !(planning.section8ReaderSentences || []).includes(value))
   };
   ttPickerSubstepCache = {};
   ttReviewWordFilters = {};
-  ttSection8RealSlots = ttPickerSelections.dictationReal.slice(0, 5).map((word, index) => ({
+  ttSection8RealSlots = lesson.sectionEightRealSlots ? ttClone(lesson.sectionEightRealSlots) : ttPickerSelections.dictationReal.slice(0, 5).map((word, index) => ({
     substep: index < 3 ? priorSubstep(skill.id) : skill.id,
     word
   }));
@@ -8178,28 +8176,21 @@ function ttSection8RealSlotsInit(skill, lesson = null) {
 function ttSection8RealSlotsHtml(skill, lesson = null) {
   if (!ttSection8RealSlots.length) ttSection8RealSlotsInit(skill, lesson);
   const currentIdx = scopeMap.findIndex((s) => s.id === skill.id);
-  const substepOptions = scopeMap.slice(Math.max(0, currentIdx - 8), currentIdx + 1).map((s) => s.id).reverse();
+  const substepOptions = scopeMap.slice(0, currentIdx + 1).map((s) => s.id).reverse();
   const level = ttPlannerDraft?.level || "AB";
   const activeLesson = lesson || ttPlannerPreviewLesson(ttPlannerGroup());
   const reviewSubstep = priorSubstep(skill.id);
   const currentPage = activeLesson?.wordlistPageNumber;
-  const slotHints = [
-    `review · ${reviewSubstep}`,
-    `review · ${reviewSubstep}`,
-    `review · ${reviewSubstep}`,
-    currentPage ? `current · Reader p. ${currentPage}` : "current substep",
-    currentPage ? `current · Reader p. ${currentPage}` : "current substep"
-  ];
-
   const slotHtml = ttSection8RealSlots.map((slot, i) => {
     const wordPool = (slot.substep === skill.id && activeLesson
       ? ttDictationBookCurrentWordPool(activeLesson, skill)
-      : ttDictationBookWordsFor(slot.substep, level, "real")).slice(0, 80);
+      : ttDictationBookWordsFor(slot.substep, level, "real"));
     const selectedWord = slot.word || "";
+    const hint = slot.substep === skill.id ? (currentPage ? `current · Reader p. ${currentPage}` : "current substep") : `review · ${slot.substep}`;
     return `<div class="s8-real-slot" data-slot="${i}">
       <div class="s8-slot-header">
         <span class="s8-slot-num">Word #${i + 1}</span>
-        <span class="s8-slot-hint">${slotHints[i]}</span>
+        <span class="s8-slot-hint">${escapeHtml(hint)}</span>
         <span class="s8-slot-selected${selectedWord ? "" : " empty"}">${escapeHtml(selectedWord) || "—"}</span>
       </div>
       <div class="s8-slot-substeps">
@@ -8219,10 +8210,29 @@ function ttSection8RealSlotsHtml(skill, lesson = null) {
   return `<div class="s8-real-slots">
     <div class="s8-slots-header">
       5 Real Words · Dictation Book
+      <button type="button" class="picker-reshuffle-btn" onclick="ttReshuffleSection8RealSlots()" title="New real words from the selected substeps">⟳ New words</button>
       <span class="s8-slots-badge">Choose substep → choose word per slot</span>
     </div>
     ${slotHtml}
   </div>`;
+}
+
+function ttReshuffleSection8RealSlots() {
+  const group = ttPlannerGroup();
+  const skill = scopeMap.find((item) => item.id === ttPlannerDraft.substep) || activeStep(group);
+  const lesson = ttPlannerPreviewLesson(group);
+  const used = new Set();
+  ttSection8RealSlots.forEach((slot) => {
+    const pool = slot.substep === skill.id
+      ? ttDictationBookCurrentWordPool(lesson, skill)
+      : ttDictationBookWordsFor(slot.substep, ttPlannerDraft.level || "AB", "real");
+    const available = pool.filter((word) => !used.has(ttWordKey(word)));
+    const fresh = available.filter((word) => ttWordKey(word) !== ttWordKey(slot.word));
+    slot.word = ttSmartPreselect(fresh.length ? fresh : available, 1)[0] || null;
+    if (slot.word) used.add(ttWordKey(slot.word));
+  });
+  ttSyncSection8RealSelectionState();
+  ttRenderPlannerPanel();
 }
 
 function ttSetSection8SlotSubstep(btn) {
@@ -8357,22 +8367,22 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   const sec3Substeps = ttSectionReviewSubsteps.section3?.length ? ttSectionReviewSubsteps.section3 : fallbackPrior;
   const sec7Substeps = ttSectionReviewSubsteps.section7?.length ? ttSectionReviewSubsteps.section7 : fallbackPrior;
   const level = lesson.readerLevel || "AB";
-  const reviewPool = ttPlannerReviewWordPool(sec2Substeps, level).slice(0, 64);
-  const sec3ReviewPool = ttPlannerReviewWordPool(sec3Substeps, level).slice(0, 36);
-  const sec7ReviewPool = ttDictationBookReviewWordPool(sec7Substeps, level).slice(0, 80);
-  const currentPool = chartWords.slice(0, 30);
-  const sec7CurrentPool = ttDictationBookCurrentWordPool(lesson, skill).slice(0, 80);
-  const section3Review = uniqueWords([].concat(section3ReviewCards(lesson), sec3ReviewPool)).slice(0, 36);
-  const section3Current = uniqueWords([].concat(section3CurrentCards(lesson), chartWords)).slice(0, 36);
+  const reviewPool = ttPlannerReviewWordPool(sec2Substeps, level);
+  const sec3ReviewPool = ttPlannerReviewWordPool(sec3Substeps, level);
+  const sec7ReviewPool = ttDictationBookReviewWordPool(sec7Substeps, level);
+  const currentPool = chartWords;
+  const sec7CurrentPool = ttDictationBookCurrentWordPool(lesson, skill);
+  const section3Review = uniqueWords([].concat(section3ReviewCards(lesson), sec3ReviewPool));
+  const section3Current = uniqueWords([].concat(section3CurrentCards(lesson), chartWords));
   const vowels = vowelSoundList(skill.id);
   const consonants = consonantSoundList(skill.id);
   const welded = ttKnownWeldedValues(skill.id);
   const elements = wordElementList(skill.id);
-  const sounds = uniqueWords([].concat(vowels, consonants, welded)).slice(0, 80);
-  const nonsense = ttDictationBookNonsensePool(skill.id).slice(0, 80);
+  const sounds = uniqueWords([].concat(vowels, consonants, welded));
+  const nonsense = ttDictationBookNonsensePool(skill.id);
   const phraseRows = currentDictationPhraseRows(skill.id);
-  const section7Hfw = uniqueWords([].concat(lesson.highFrequencyWords || [], hfwWordsForSubstep(skill.id, lesson))).slice(0, 32);
-  const dictationSentences = uniqueWords(currentDictationSentencesForLesson(lesson, skill, group)).slice(0, 30);
+  const section7Hfw = uniqueWords([].concat(lesson.highFrequencyWords || [], hfwWordsForSubstep(skill.id, lesson)));
+  const dictationSentences = uniqueWords(currentDictationSentencesForLesson(lesson, skill, group));
   const readerSentences = uniqueWords(currentReaderSentencesForDictation(lesson, skill)).slice(0, 24);
   const lessonType = ttPlannerDraft.lessonType || "full";
   const plannerRow = (num, color, label, subtitle, pickers, extraAction = "", timeMins = null) =>
@@ -8538,15 +8548,23 @@ function ttPlannerReviewWordPool(substeps, level) {
   return nsWord ? uniqueWords([...real, nsWord]) : real;
 }
 
+function ttIsReaderPlanningWord(word) {
+  // Reader 7.5 includes contractions and possessives; retain their apostrophes.
+  const text = String(word || "");
+  return /^[a-z]+(?:['’-][a-z]+)*['’]?$/i.test(text) && isUsableReaderWord(text.replace(/['’]/g, ""));
+}
+
 function ttSection2ReaderNonsenseWords(substep) {
   const enhanced = ttEnhancedPlanning()?.nonsensePageGroup?.(substep)?.words || [];
-  return uniqueWords(enhanced.concat(readerNonsenseWordsFromSubstep(substep))).filter(isValidDictationWord);
+  return uniqueWords(enhanced.length ? enhanced : readerNonsenseWordsFromSubstep(substep)).filter(ttIsReaderPlanningWord);
 }
 
 function ttSection2ReaderRealWords(substep, level) {
   const nonsense = new Set(ttSection2ReaderNonsenseWords(substep).map(ttWordKey));
-  return uniqueWords(readerWordsFromSubstep(substep, level))
-    .filter(isValidDictationWord)
+  const indexedGroups = ttEnhancedPlanning()?.pageConceptGroups?.(substep, level) || [];
+  const source = indexedGroups.length ? indexedGroups.flatMap((group) => group.words) : readerWordsFromSubstep(substep, level);
+  return uniqueWords(source)
+    .filter(ttIsReaderPlanningWord)
     .filter((word) => !nonsense.has(ttWordKey(word)));
 }
 
@@ -8590,7 +8608,7 @@ function ttPlannerReviewSourceHtml(skill, selectedSubsteps) {
 function ttReviewNonsensePool(skillId) {
   const idx = scopeMap.findIndex((s) => s.id === skillId);
   const subs = scopeMap.slice(Math.max(0, idx - 6), idx + 1).map((s) => s.id);
-  return uniqueWords(subs.flatMap((sub) => readerNonsenseWordsFromSubstep(sub)));
+  return uniqueWords(subs.flatMap(ttSection2ReaderNonsenseWords));
 }
 
 // Build initial preselection across 2-3 different substeps with 1-2 guaranteed nonsense words.
@@ -8640,7 +8658,7 @@ function ttBuildReviewPreselect(pickerId, skill, numTarget, level) {
   }
   // Add 1-2 nonsense words
   const nsPool = (ttPickerSubstepCache[`${pickerId}::N`] || []).filter((w) => !used.has(w));
-  nsPool.sort(() => Math.random() - 0.5).slice(0, nsCount).forEach((w) => result.push(w));
+  ttSmartPreselect(nsPool, nsCount).forEach((w) => result.push(w));
 
   return result;
 }
@@ -8789,7 +8807,8 @@ function ttReviewWordFilterModel(pickerId, substep, level, pool, options = {}) {
     });
   }
   const nonsenseGroup = ttEnhancedPlanning()?.nonsensePageGroup?.(substep);
-  const nonsenseWords = uniqueWords(nonsenseGroup?.words || []).filter(isValidDictationWord);
+  const nonsenseWords = uniqueWords(nonsenseGroup?.words || []).filter(ttIsReaderPlanningWord)
+    .filter((word) => pickerId !== "section3Current" || poolByKey.has(wordKey(word)));
   if (nonsenseWords.length) {
     filters.push({
       key: "nonsense",
@@ -8885,7 +8904,7 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     : isNView
     ? ttReviewNonsensePool(skill.id)
     : options.sourceWords
-    ? uniqueWords(options.sourceWords).filter(isValidDictationWord)
+    ? uniqueWords(options.sourceWords).filter(ttIsReaderPlanningWord)
     : options.readerOnly
     ? ttSection2ReaderRealWords(currentSubstep, level)
     : uniqueWords(
@@ -8943,7 +8962,7 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
     ${options.showSubsteps === false ? "" : ttSubstepBubblesHtml(sectionKey, skill)}
     ${ttReviewWordFiltersHtml(filterModel)}
     <div class="planner-chip-row">
-      ${filterModel.words.map((item) => {
+      ${uniqueWords(filterModel.words.concat(currentSels)).map((item) => {
         const isNs = isNView || nsWords.has(item);
         return `<button type="button" class="${selectedSet.has(item) ? "selected" : ""}${isNs ? " chip-nonsense" : ""}" data-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
       }).join("")}
@@ -8952,20 +8971,14 @@ function ttPlannerReviewPickerHtml(id, title, items, selected, targetCount, sect
   </article>`;
 }
 
-// Spread-sample: divide pool into targetCount equal segments, pick one at random from each.
-// Gives a representative spread rather than always taking the first N items.
+// Fisher-Yates samples every indexed item with equal opportunity, without duplicates.
 function ttSmartPreselect(pool, targetCount) {
-  const n = Math.min(Number(targetCount) || 0, pool.length);
-  if (n <= 0 || !pool.length) return [];
-  const segSize = pool.length / n;
-  const result = [];
-  for (let i = 0; i < n; i++) {
-    const start = Math.floor(i * segSize);
-    const end = Math.floor((i + 1) * segSize);
-    const seg = pool.slice(start, end);
-    if (seg.length) result.push(seg[Math.floor(Math.random() * seg.length)]);
+  const values = uniqueWords(pool || []);
+  for (let i = values.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [values[i], values[j]] = [values[j], values[i]];
   }
-  return result;
+  return values.slice(0, Math.max(0, Math.floor(Number(targetCount) || 0)));
 }
 
 // Count syllables heuristic (vowel groups).
@@ -9000,22 +9013,21 @@ function ttAddCustomWord(inputEl) {
   const chipRow = picker.querySelector(".planner-chip-row");
   if (!chipRow) return;
   // Don't add duplicates
-  if ([...chipRow.querySelectorAll("button")].some((b) => b.dataset.value === word)) {
+  const existing = [...chipRow.querySelectorAll("button")].find((b) => b.dataset.value.toLowerCase() === word.toLowerCase());
+  if (existing) {
+    if (!existing.classList.contains("selected")) ttTogglePlannerChip(existing);
     inputEl.value = "";
     return;
   }
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "selected picker-custom-chip";
+  btn.className = "picker-custom-chip";
   btn.dataset.value = word;
   btn.textContent = word;
   btn.addEventListener("click", () => ttTogglePlannerChip(btn));
   chipRow.prepend(btn);
-  if (!ttPickerSelections[pickerId]) ttPickerSelections[pickerId] = [];
-  if (!ttPickerSelections[pickerId].includes(word)) ttPickerSelections[pickerId].push(word);
   inputEl.value = "";
-  ttPickerUpdateStatus(picker);
-  ttRefreshPreview();
+  ttTogglePlannerChip(btn);
 }
 
 // Randomly re-pick words for a single picker without touching any other area.
@@ -9099,7 +9111,7 @@ function ttRemoveLastPick(btn) {
 }
 
 function ttPlannerPickerHtml(id, title, items, selected, targetCount) {
-  const cleanItems = uniqueWords(items || []).filter(Boolean).slice(0, 48);
+  const cleanItems = uniqueWords([].concat(items || [], ttPickerSelections[id] || [], selected || [])).filter(Boolean);
   const numTarget = Number(targetCount) || 0;
   // Initialise state; if no saved selections yet, use smart preselect
   if (!ttPickerSelections[id]) {
@@ -9207,27 +9219,30 @@ function ttTogglePlannerChip(button) {
   if (willSelect && pickerId === "dictationPhrases") {
     const phraseChips = [...picker.querySelectorAll(".planner-chip-row button.selected")];
     if (phraseChips.length >= 3) {
-      const oldest = phraseChips[0];
-      oldest.classList.remove("selected");
-      ttPickerSelections[pickerId] = (ttPickerSelections[pickerId] || []).filter((w) => w !== oldest.dataset.value);
+      const oldest = ttPickerSelections[pickerId]?.[0];
+      phraseChips.forEach((chip) => { if (chip.dataset.value === oldest) chip.classList.remove("selected"); });
+      ttPickerSelections[pickerId] = (ttPickerSelections[pickerId] || []).filter((w) => w !== oldest);
     }
   }
-  // Sentences: combined FIFO max 3 across both sentence pickers
-  if (willSelect && (pickerId === "dictationSentences" || pickerId === "readerSentences")) {
-    const totalCount = ttPlannerSelectedSentenceCount();
-    if (totalCount >= 3) {
-      // Find and deselect the oldest selected sentence across BOTH pickers
-      const allSentencePickers = ["dictationSentences", "readerSentences"];
-      for (const pid of allSentencePickers) {
-        const pEl = ttById("ttPlannerSections")?.querySelector(`[data-picker="${pid}"]`);
-        const firstSelected = pEl?.querySelector(".planner-chip-row button.selected");
-        if (firstSelected) {
-          firstSelected.classList.remove("selected");
-          ttPickerSelections[pid] = (ttPickerSelections[pid] || []).filter((w) => w !== firstSelected.dataset.value);
-          break;
-        }
+  // Maintain actual selection order across both sentence sources.
+  if (["dictationSentences", "readerSentences"].includes(pickerId)) {
+    ttSentencePickOrder = ttSentencePickOrder.filter((item) => (ttPickerSelections[item.id] || []).includes(item.value));
+    ["dictationSentences", "readerSentences"].forEach((id) => (ttPickerSelections[id] || []).forEach((value) => {
+      if (!ttSentencePickOrder.some((item) => item.id === id && item.value === value)) ttSentencePickOrder.push({ id, value });
+    }));
+    if (willSelect && ttPlannerSelectedSentenceCount() >= 3) {
+      const oldest = ttSentencePickOrder.shift();
+      if (oldest) {
+        ttPickerSelections[oldest.id] = (ttPickerSelections[oldest.id] || []).filter((value) => value !== oldest.value);
+        const oldPicker = ttById("ttPlannerSections")?.querySelector(`[data-picker="${oldest.id}"]`);
+        oldPicker?.querySelectorAll(".planner-chip-row button").forEach((chip) => {
+          if (chip.dataset.value === oldest.value) chip.classList.remove("selected");
+        });
+        ttPickerUpdateStatus(oldPicker);
       }
     }
+    ttSentencePickOrder = ttSentencePickOrder.filter((item) => item.id !== pickerId || item.value !== button.dataset.value);
+    if (willSelect) ttSentencePickOrder.push({ id: pickerId, value: button.dataset.value });
   }
   button.classList.toggle("selected");
   // Keep ttPickerSelections in sync
@@ -9239,6 +9254,12 @@ function ttTogglePlannerChip(button) {
   } else {
     ttPickerSelections[pickerId] = ttPickerSelections[pickerId].filter((w) => w !== button.dataset.value);
   }
+  // A phrase can appear under more than one HFW heading. Keep every copy of
+  // that chip consistent with the single ordered selection list.
+  const selectedValues = new Set(ttPickerSelections[pickerId]);
+  picker?.querySelectorAll(".planner-chip-row button").forEach((chip) => {
+    chip.classList.toggle("selected", selectedValues.has(chip.dataset.value));
+  });
   ttPickerUpdateStatus(picker);
   ttRefreshPreview();
 }
@@ -9324,7 +9345,7 @@ function ttUpdateSectionReviewChips(sectionKey) {
   // Update chip row — only the active substep/filter view. Selections stay intact.
   const chipRow = picker.querySelector(".planner-chip-row");
   if (!chipRow) return;
-  chipRow.innerHTML = filterModel.words.map((item) => {
+  chipRow.innerHTML = uniqueWords(filterModel.words.concat(currentSels)).map((item) => {
     const isNs = isNView || nsWordsSet.has(item);
     return `<button type="button" class="${selectedSet.has(item) ? "selected" : ""}${isNs ? " chip-nonsense" : ""}" data-value="${escapeHtml(item)}">${escapeHtml(item)}</button>`;
   }).join("");
@@ -9532,7 +9553,7 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
     sectionSevenHighFrequencyWords: ttPlannerSelected("section7Hfw")
   };
   Object.entries(selected).forEach(([key, values]) => {
-    if (values.length) ttLesson[key] = values;
+    ttLesson[key] = values;
   });
   const section3ReviewFilter = ttById("ttPlannerSections")?.querySelector('[data-picker="section3Review"] .planner-concept-btn.selected');
   const section3CurrentFilter = ttById("ttPlannerSections")?.querySelector('[data-picker="section3Current"] .planner-concept-btn.selected');
@@ -9545,8 +9566,8 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
   const selectedRealWords = ttSection8RealWords().length ? ttSection8RealWords() : ttPlannerSelected("dictationReal");
   const derivedTargets = ttDerivedDictationTargets(skill, selectedRealWords);
   ttLesson.dictationPlanOverride = [
-    { label: "5 sounds", values: ttPlannerSelected("dictationSounds").length ? ttPlannerSelected("dictationSounds") : derivedTargets.sounds },
-    { label: "5 word elements", values: ttPlannerSelected("dictationElements").length ? ttPlannerSelected("dictationElements") : derivedTargets.elements },
+    { label: "5 sounds", values: ttPickerSelections.dictationSounds !== undefined ? ttPlannerSelected("dictationSounds") : derivedTargets.sounds },
+    { label: "5 word elements", values: ttPickerSelections.dictationElements !== undefined ? ttPlannerSelected("dictationElements") : derivedTargets.elements },
     { label: "5 real words", values: selectedRealWords },
     { label: "3 nonsense words", values: ttPlannerSelected("dictationNonsense") },
     { label: "3 phrases", values: ttPlannerSelected("dictationPhrases") },
@@ -9557,7 +9578,8 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
     .concat(ttPlannerSelected("section6Consonants").map((value) => ({ value, category: "Reverse drill", group: "Consonants / digraphs" })))
     .concat(ttPlannerSelected("section6Welded").map((value) => ({ value, category: "Reverse drill", group: "Welded / glued" })))
     .concat(ttPlannerSelected("section6Elements").map((value) => ({ value, category: "Reverse drill", group: "Pfx / Sfx" })));
-  ttLesson.reverseDrillOverride = reverseSelections.length ? reverseSelections : ttBuildReverseDrillOverride(skill, ttLesson);
+  ttLesson.reverseDrillOverride = reverseSelections;
+  ttLesson.sectionEightRealSlots = ttClone(ttSection8RealSlots);
   ttLesson.planningSelections = {
     section2: {
       review: (ttLesson.sectionTwoReviewWords || []).slice(),
@@ -9578,11 +9600,13 @@ function ttApplyPlannerSelectionsToLesson(group, skill) {
     },
     section6: ttLesson.reverseDrillOverride.map((item) => ({ ...item })),
     section7: {
+      reviewSubstep: (ttSectionReviewSubsteps.section7 || [priorSubstep(skill.id)])[0],
       review: (ttLesson.sectionSevenReviewWords || []).slice(),
       current: (ttLesson.sectionSevenCurrentWords || []).slice(),
       nonsense: (ttLesson.sectionSevenNonsenseWords || []).slice(),
       highFrequency: (ttLesson.sectionSevenHighFrequencyWords || []).slice()
     },
+    section8ReaderSentences: readerDictationSentences.slice(),
     section8: ttLesson.dictationPlanOverride.map((block) => ({ label: block.label, values: block.values.slice() }))
   };
 }
@@ -9855,49 +9879,70 @@ function ttChartNextStep(correct, seconds) {
   return "Advance carefully; repeat as warm-up";
 }
 
+let ttLessonCompletionInFlight = null;
+
 function ttCompleteLessonWrapUp(options = {}) {
-  const group = ttActiveGroup();
-  if (!ttLesson) ttBuildLesson();
-  ttSaveCurrentLesson({ render: false });
-  const plan = ttCurrentPlan();
-  if (!plan) return;
-  const data = ttTodaysLessonData(group, ttLesson);
-  const note = ttById("ttWrapNote")?.value.trim() || "";
-  group.note = note;
-  const attendanceSession = ttAttendanceSession(group);
-  plan.wrapUp = {
-    completedAt: new Date().toISOString(),
-    note,
-    attendance: ttClone(attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {}),
-    attendanceStatus: attendanceSession?.status || "unconfirmed",
-    chartRecordCount: data.chart.length,
-    dictationMissCount: data.dictation.length,
-    encodingMarkCount: data.encoding.length,
-    recommendation: ttById("ttWrapRecommendation")?.textContent.trim() || ""
-  };
-  plan.status = "Complete";
-  plan.completedAt = new Date().toISOString();
-  plan.completionKind = plan.completionKind || (["group", "part1", "part2"].includes(ttLesson.lessonType) && ttPlanSessionDay(plan, ttLesson) === "1" ? "after-day-1" : "full");
-  const completedDay = ttPlanSessionDay(plan, ttLesson);
-  ttEnsureLessonWorkflow(plan, ttLesson, group);
-  plan.sessions[completedDay].status = "Complete";
-  group.activeLessonPlanId = "";
-  plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
-  plan.lastStudentDataAt = new Date().toISOString();
-    ttSyncCombinedLessonLinks(plan, group);
-    saveState();
-    ttArchiveLessonPlanPdf("Completed", { group, lesson, plan }).catch((error) => {
-      console.warn("Teach Today could not archive the completed lesson PDF:", error);
-      ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
-    });
-  ttArchiveCurrentLessonPlanPdf("Completed").catch((error) => {
-    console.warn("Teach Today could not archive the completed lesson PDF:", error);
-    ttShowBackupToast(`Completed lesson PDF needs attention. ${error.message || error}`, "warning");
+  if (ttLessonCompletionInFlight) return ttLessonCompletionInFlight;
+  ttLessonCompletionInFlight = ttCompleteLessonWrapUpSave(options).finally(() => {
+    ttLessonCompletionInFlight = null;
   });
-  ttUpdateSaveStatus(plan);
-  ttRenderSavedLessons(group);
-  ttRenderWrapUpPanel(group, ttLesson);
-  if (options.scroll !== false) ttById("ttWrapUpPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  return ttLessonCompletionInFlight;
+}
+
+async function ttCompleteLessonWrapUpSave(options = {}) {
+  const buttons = ["ttCompleteLesson", "ttWrapSavePdf", "ttWrapNextLesson"].map(ttById).filter(Boolean);
+  buttons.forEach((button) => { button.disabled = true; });
+  try {
+    if (!(await ttEnsureStageStorageReady())) return false;
+    await ttFinalizeSection4Record({ automatic: true });
+    const group = ttActiveGroup();
+    if (!ttLesson) ttBuildLesson();
+    ttSaveCurrentLesson({ render: false, persist: false });
+    const plan = ttCurrentPlan();
+    if (!plan) throw new Error("The lesson could not be linked to its saved plan.");
+    const data = ttTodaysLessonData(group, ttLesson);
+    const note = ttById("ttWrapNote")?.value.trim() || "";
+    group.note = note;
+    const attendanceSession = ttAttendanceSession(group);
+    plan.wrapUp = {
+      completedAt: plan.completedAt || new Date().toISOString(),
+      note,
+      attendance: ttClone(attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {}),
+      attendanceStatus: attendanceSession?.status || "unconfirmed",
+      chartRecordCount: data.chart.length,
+      dictationMissCount: data.dictation.length,
+      encodingMarkCount: data.encoding.length,
+      recommendation: ttById("ttWrapRecommendation")?.textContent.trim() || ""
+    };
+    plan.status = "Complete";
+    plan.completedAt ||= new Date().toISOString();
+    plan.completionKind = plan.completionKind || (["group", "part1", "part2"].includes(ttLesson.lessonType) && ttPlanSessionDay(plan, ttLesson) === "1" ? "after-day-1" : "full");
+    const completedDay = ttPlanSessionDay(plan, ttLesson);
+    ttEnsureLessonWorkflow(plan, ttLesson, group);
+    plan.sessions[completedDay].status = "Complete";
+    plan.sessions[completedDay].completedAt ||= plan.completedAt;
+    if (group.activeLessonPlanId === plan.id) group.activeLessonPlanId = "";
+    plan.hasStudentData = Boolean(plan.hasStudentData || data.chart.length || data.dictation.length || data.encoding.length);
+    plan.lastStudentDataAt = new Date().toISOString();
+    ttCaptureLessonPlanVersion("Completed", group, ttLesson, plan);
+    ttSyncCombinedLessonLinks(plan, group);
+    await saveState();
+    ttFinishLessonArchives(group, ttLesson, plan);
+    ttUpdateSaveStatus(plan);
+    ttRenderSavedLessons(group);
+    ttRenderWrapUpPanel(group, ttLesson);
+    if (options.scroll !== false) ttById("ttWrapUpPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    ttShowBackupToast("Lesson saved Complete on this device. PDF and backup results appear separately.", "success");
+    return true;
+  } catch (error) {
+    console.error("Teach Today could not save lesson completion:", error);
+    const status = ttById("ttSaveStatus");
+    if (status) status.textContent = "Completion NOT SAVED — open Records and retry after checking storage";
+    ttShowBackupToast(`Completion could not be saved. ${error.message || error}`, "warning");
+    return false;
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
 }
 
 function ttSaveWrapUpNoteDraft() {
@@ -10762,7 +10807,7 @@ function targetSoundsForLesson(lesson, skill) {
 }
 
 function targetSoundItemsForLesson(lesson, skill) {
-  if (lesson.reverseDrillOverride?.length) return lesson.reverseDrillOverride;
+  if (Array.isArray(lesson.reverseDrillOverride)) return lesson.reverseDrillOverride;
   const words = []
     .concat(lesson.sectionTwoCurrentWords || [])
     .concat(lesson.sectionTwoLastMissedWords || [])
@@ -13627,7 +13672,7 @@ function ttCurrentSectionSevenWordPool(lesson, skill) {
 }
 
 function ttSectionSevenSetsForLesson(lesson, skill) {
-  if ((lesson.sectionSevenReviewWords || []).length
+  if (lesson.planningSelections?.section7 || (lesson.sectionSevenReviewWords || []).length
     || (lesson.sectionSevenNonsenseWords || []).length
     || (lesson.sectionSevenCurrentWords || []).length) {
     return {
@@ -14014,8 +14059,8 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
     ttAddLessonTab(existing.id);
     delete appState.lessonDrafts[ttDraftKey(group)];
     ttSyncCombinedLessonLinks(existing, group);
-    saveState();
-    ttUpdateSaveStatus(existing);
+    if (options.persist !== false) saveState();
+    if (options.persist !== false) ttUpdateSaveStatus(existing);
     return existing;
   }
   group.lessonSerial = (group.lessonSerial || 0) + 1;
@@ -14042,12 +14087,11 @@ function ttSaveGeneratedLesson(lesson, group, skill, options = {}) {
   ttRecordPlanRevision(plan, lesson, options.reason || "Lesson created");
   group.history ||= [];
   group.history.push(plan);
-  group.history = group.history.slice(-50);
   ttAddLessonTab(plan.id);
   delete appState.lessonDrafts[ttDraftKey(group)];
   ttSyncCombinedLessonLinks(plan, group);
-  saveState();
-  ttUpdateSaveStatus(plan);
+  if (options.persist !== false) saveState();
+  if (options.persist !== false) ttUpdateSaveStatus(plan);
   return plan;
 }
 
@@ -14088,38 +14132,47 @@ function ttSaveCurrentLesson(options = {}) {
   ttAddLessonTab(plan.id);
   delete appState.lessonDrafts[ttDraftKey(group)];
   ttSyncCombinedLessonLinks(plan, group);
-  saveState();
-  ttUpdateSaveStatus(plan);
+  if (options.persist !== false) saveState();
+  if (options.persist !== false) ttUpdateSaveStatus(plan);
   ttRenderLessonTabs();
   ttRenderSavedLessons(group);
 }
 
 async function ttStartCurrentLesson() {
-  if (!(await ttEnsureStageStorageReady())) return;
-  if (!ttLesson) ttBuildLesson();
-  const group = ttActiveGroup();
-  const openPlan = ttActiveOpenPlan(group);
-  if (openPlan && openPlan.id !== ttLesson?.savedPlanId) {
-    alert(`Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)} is still open. Continue it or close it as incomplete before starting another lesson.`);
-    ttShowHomeScreen(group.id);
-    return;
-  }
-  ttLesson.scheduledDate ||= ttTodayKey();
-  ttSaveCurrentLesson({ render: false, starting: true, reason: "Started teaching" });
-  await window.TeachTodayStageStorage?.flush?.();
-  ttArchiveCurrentLessonPlanPdf("Planned").catch((error) => {
-    console.warn("Teach Today could not archive the planned lesson PDF:", error);
-    ttShowBackupToast(`Planned lesson PDF needs attention. ${error.message || error}`, "warning");
-  });
-  ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
-  ttOpenTeachFlow({
-    forceLaunch: true,
-    presentation: true,
-    afterOpen: () => {
-      ttStartPaceGuide();
-      ttSetAttendancePanel(true, { scroll: true, focus: true });
+  try {
+    if (!(await ttEnsureStageStorageReady())) return;
+    if (!ttLesson) ttBuildLesson();
+    const group = ttActiveGroup();
+    const openPlan = ttActiveOpenPlan(group);
+    if (openPlan && openPlan.id !== ttLesson?.savedPlanId) {
+      alert(`Lesson ${ttPlanLessonNumber(openPlan, openPlan.lessons?.[0], group)} is still open. Continue it or close it as incomplete before starting another lesson.`);
+      ttShowHomeScreen(group.id);
+      return;
     }
-  });
+    ttLesson.scheduledDate ||= ttTodayKey();
+    ttSaveCurrentLesson({ render: false, starting: true, persist: false, reason: "Started teaching" });
+    ttCaptureLessonPlanVersion("Planned", group, ttLesson, ttCurrentPlan());
+    await saveState();
+    await window.TeachTodayStageStorage?.flush?.();
+    ttQueueStageNativeBackup({ immediate: true, force: true }).catch((error) => {
+      ttShowBackupToast(`Planned lesson saved; backup needs attention. ${error.message || error}`, "warning");
+    });
+    ttArchiveCurrentLessonPlanPdf("Planned").catch((error) => {
+      console.warn("Teach Today could not archive the planned lesson PDF:", error);
+      ttShowBackupToast(`Planned lesson PDF needs attention. ${error.message || error}`, "warning");
+    });
+    ttUpdateLessonLaunch(ttActiveGroup(), ttLesson);
+    ttOpenTeachFlow({
+      forceLaunch: true,
+      presentation: true,
+      afterOpen: () => {
+        ttStartPaceGuide();
+        ttSetAttendancePanel(true, { scroll: true, focus: true });
+      }
+    });
+  } catch (error) {
+    ttShowBackupToast(`Lesson could not start: ${error.message || error}`, "warning");
+  }
 }
 
 function ttNewLesson() {
@@ -14326,7 +14379,7 @@ async function ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate,
   const pdfDoc = await PDFDocument.load(templateBytes);
   const form = pdfDoc.getForm();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const data = ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate);
+  const data = options.fields || ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate);
 
   Object.entries(data.text).forEach(([name, value]) => ttSetPdfTextField(form, name, value));
   data.checks.forEach((name) => ttCheckPdfField(form, name));
@@ -14428,7 +14481,12 @@ async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
   const groupFolderId = await ttDriveNamedFolder(groupFolder, lessonPlans);
   const stageFolder = await ttDriveNamedFolder(stage, groupFolderId);
   const blob = new Blob([bytes], { type: "application/pdf" });
-  return ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
+  const file = await ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
+  if (!response.ok || await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
+    throw new Error("Google Drive lesson PDF readback did not match the saved bytes.");
+  }
+  return file;
 }
 
 async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
@@ -14464,25 +14522,57 @@ async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
   if (!saved.length) throw new Error(failures.join(" ") || "No lesson-plan destination was available.");
 }
 
+function ttCaptureLessonPlanVersion(stage, group, lesson, plan) {
+  if (!plan || !lesson) return;
+  const key = stage.toLowerCase();
+  plan.lessonPlanVersions ||= {};
+  // Preserve the original planned content; never invent a pre-teaching version
+  // for an older lesson that was already taught before this release.
+  if (key === "planned" && (plan.lessonPlanVersions.planned || plan.status === "Complete" || plan.hasStudentData)) return;
+  const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+  const savedAt = key === "completed" ? plan.completedAt : plan.savedAt;
+  const documentPlan = key === "planned" ? { ...plan, status: "Saved", wrapUp: null } : plan;
+  plan.lessonPlanVersions[key] = {
+    savedAt: savedAt || new Date().toISOString(),
+    fields: ttClone(ttWilsonLessonPlanData(group, skill, lesson, documentPlan, new Date(savedAt || Date.now())))
+  };
+}
+
+function ttFinishLessonArchives(group, lesson, plan) {
+  const context = { group, lesson: ttClone(lesson), plan };
+  ttQueueStageNativeBackup({ immediate: true, force: true }).catch((error) => {
+    ttShowBackupToast(`Lesson saved; backup needs attention. ${error.message || error}`, "warning");
+  });
+  return ttArchiveLessonPlanPdf("Completed", context).catch((error) => {
+    ttShowBackupToast(`Lesson saved; completed PDF needs attention. ${error.message || error}`, "warning");
+  }).finally(() => {
+    ttQueueStageNativeBackup({ immediate: true, force: true }).catch(() => {});
+  });
+}
+
 async function ttArchiveLessonPlanPdf(stage = "Planned", context = {}) {
   if (!ttIsNativeIpadShell()) return;
-  const lesson = context.lesson || ttLesson;
+  const lesson = ttClone(context.lesson || ttLesson);
   if (!lesson) return;
   const group = context.group || ttActiveGroup();
   const plan = context.plan || ttCurrentPlan();
   if (!group || !plan) return;
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
   const savedDate = plan.savedAt ? new Date(plan.savedAt) : new Date();
-  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate, { fillable: true });
+  const pdfBytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, savedDate, {
+    fillable: true, fields: plan.lessonPlanVersions?.[stage.toLowerCase()]?.fields
+  });
   const digest = await ttDocumentSha256Hex(pdfBytes);
   const fileName = ttLessonPlanArchiveFileName(group, lesson, plan, stage);
   const groupFolder = ttLessonPlanGroupFolderName(group);
-  const results = { savedAt: new Date().toISOString(), fileName, localPath: "", driveFileId: "" };
+  const previous = plan.lessonPlanArchives?.[stage.toLowerCase()] || {};
+  const results = { ...previous, attemptedAt: new Date().toISOString(), fileName, sha256: digest, errors: [] };
   const failures = [];
 
   try {
     const local = await ttSaveNativeLessonPlanPdf(pdfBytes, digest, fileName, stage, groupFolder);
     results.localPath = local.path || `Lesson Plans/${groupFolder}/${stage}/${fileName}`;
+    results.localVerifiedAt = new Date().toISOString();
   } catch (error) {
     failures.push(`iPad Files: ${error.message}`);
   }
@@ -14491,20 +14581,26 @@ async function ttArchiveLessonPlanPdf(stage = "Planned", context = {}) {
       const drive = await ttSaveDriveLessonPlanPdf(pdfBytes, fileName, stage, groupFolder);
       results.driveFileId = drive.id || "";
       results.driveWebViewLink = drive.webViewLink || "";
+      results.driveVerifiedAt = new Date().toISOString();
     } catch (error) {
       failures.push(`Google Drive: ${ttFriendlyDriveError(error)}`);
     }
   }
 
   plan.lessonPlanArchives ||= {};
+  results.errors = failures;
+  if (!failures.length) results.savedAt = new Date().toISOString();
   plan.lessonPlanArchives[stage.toLowerCase()] = results;
-  saveState();
-  const destination = [results.localPath ? "iPad Files" : "", results.driveFileId ? "Google Drive" : ""].filter(Boolean).join(" and ");
+  await saveState();
+  const visibleGroup = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup();
+  if (visibleGroup?.id === group.id) ttRenderSavedLessons(group);
+  const destination = [results.localVerifiedAt !== previous.localVerifiedAt ? "iPad Files" : "", results.driveVerifiedAt !== previous.driveVerifiedAt ? "Google Drive" : ""].filter(Boolean).join(" and ");
   if (destination) ttShowBackupToast(`${stage} fillable lesson plan saved to ${destination}.`, failures.length ? "warning" : "success");
   if (failures.length) {
     ttShowBackupToast(`${stage} lesson plan needs attention. ${failures.join(" ")}`, "warning");
     console.warn("Teach Today lesson-plan archive:", failures.join(" "));
   }
+  return results;
 }
 
 function ttArchiveCurrentLessonPlanPdf(stage = "Planned") {
@@ -14607,7 +14703,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
   const sectionSeven = ttSectionSevenSetsForLesson(lesson, skill);
   const part7Review = sectionSeven.review;
   const part7Current = sectionSeven.current;
-  const part7Hfw = lesson.sectionSevenHfwWords || hfwWordsForSubstep(skill.id, lesson);
+  const part7Hfw = lesson.sectionSevenHighFrequencyWords || lesson.sectionSevenHfwWords || hfwWordsForSubstep(skill.id, lesson);
   // For group 45+45 lessons, §2B (Day 2 decoding concepts) has its own review/current words.
   // The PDF template has two dedicated boxes at the top-right of page 2:
   //   '1 Review Words'   rect=[265,739,412,774]  — §2B review words
@@ -14637,7 +14733,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "1 SQD WELDED": sounds.welded,
     "1 SQD ADD TO NOTEBOOK": ttJoinLines(notebookItems),
     "1 SQD DRILL LEADER IF GROUP": ttTeachingStudents(group, lesson?.scheduledDate).join(", "),
-    "2 REVIEW CONCEPTS": `Review ${priorSubstep(skill.id)} and trouble patterns.`,
+    "2 REVIEW CONCEPTS": `Review ${lesson.planningSelections?.section2?.reviewSubstep || priorSubstep(skill.id)} and trouble patterns.`,
     "2 REVIEW WORDS": ttJoinLines((lesson.sectionTwoReviewWords || []).concat(lesson.sectionTwoLastMissedWords || [])),
     "2 CURRENT CONCEPTS": concept,
     "CURRENT WORDS 1": ttJoinLines((lesson.sectionTwoCurrentWords || lesson.realWords || []).concat(lesson.sectionTwoPriorityMissedWords || [])),
@@ -14659,7 +14755,7 @@ function ttWilsonLessonPlanData(group, skill, lesson, plan, savedDate) {
     "6 QD WORD ELEMENTS": ttJoinWords(section6ByGroup(/pfx|sfx|element/i)),
     "1 Review Words": ttJoinLines(section2bReview),
     "Dict Current Words": ttJoinLines(section2bCurrent),
-    "7 TR REVIEW CONCEPTS": `Review spelling patterns from ${priorSubstep(skill.id)}.`,
+    "7 TR REVIEW CONCEPTS": `Review spelling patterns from ${lesson.planningSelections?.section7?.reviewSubstep || priorSubstep(skill.id)}.`,
     "7 TR Review Words": ttJoinLines(part7Review),
     "7 TR CURRENT CONCEPTS": concept,
     "7 TR CURRENT WORDS": ttJoinLines(part7Current),
@@ -15362,6 +15458,9 @@ function ttFlushStageNativeBackup(options = {}) {
   }
   if (ttStageBackupInFlight) {
     ttStageBackupPending = true;
+    if (options.force) {
+      return ttStageBackupInFlight.catch(() => {}).then(() => ttFlushStageNativeBackup(options));
+    }
     return ttStageBackupInFlight;
   }
   if (!ttStageBackupPending && !options.force) return Promise.resolve();
@@ -17498,44 +17597,145 @@ async function ttRecoverMissingAttendanceFromFile(file) {
   }
 }
 
+function ttSavedLessonArchiveText(plan) {
+  const describe = (stage) => {
+    const archive = plan.lessonPlanArchives?.[stage];
+    const version = plan.lessonPlanVersions?.[stage];
+    const label = stage === "planned" ? "Original planned" : "Completed";
+    if (archive?.errors?.length) return `${label}: PDF needs retry`;
+    const places = [archive?.localPath ? "iPad Files" : "", archive?.driveFileId ? "Drive" : ""].filter(Boolean);
+    if (places.length) return `${label}: PDF in ${places.join(" + ")}`;
+    if (version) return `${label}: print record saved here; PDF ${ttIsNativeIpadShell() ? "pending" : "available to print"}`;
+    return `${label}: ${stage === "planned" ? "original not retained for this older lesson" : plan.status === "Complete" ? "available from saved lesson" : "lesson still open"}`;
+  };
+  return [describe("planned"), describe("completed")].join(" · ");
+}
+
+async function ttOpenSavedLessonPlanPdf(group, plan, stage = "latest") {
+  try {
+    const lesson = ttClone(plan.lessons?.[0]);
+    if (!lesson) throw new Error("This saved plan has no lesson content.");
+    const fields = plan.lessonPlanVersions?.[stage === "latest" && plan.status === "Complete" ? "completed" : stage]?.fields;
+    if (stage === "planned" && !fields) throw new Error("An original planned version was not retained for this older lesson.");
+    const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
+    const bytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, new Date(plan.savedAt || Date.now()), { fields });
+    ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
+      title: `${group.name} — ${stage === "planned" ? "Original planned" : plan.status || "Saved"} lesson`,
+      filename: ttLessonPlanArchiveFileName(group, lesson, plan, stage), contentType: "pdf", bytes });
+  } catch (error) {
+    ttShowBackupToast(`Could not create the lesson PDF. ${error.message || error}`, "warning");
+  }
+}
+
+function ttCollectLessonPrintEntries(state, groupId = "", versions = "latest") {
+  const year = state.homeSchoolYearId || state.activeSchoolYearId;
+  const groups = (state.groups || []).filter((group) => groupId ? group.id === groupId : group.schoolYearId === year);
+  const availablePlanIds = new Set(groups.flatMap((group) => (group.history || []).map((plan) => plan.id)));
+  const seen = new Set();
+  const entries = [];
+  let missingOriginals = 0;
+  groups.forEach((group) => (group.history || []).forEach((plan) => {
+    if (plan.excludedFromLessonSequence || plan.status === "Test") return;
+    if (!groupId && plan.combinedParticipation && availablePlanIds.has(plan.hostPlanId)) return;
+    (plan.lessons || []).forEach((lesson, index) => {
+      const key = `${group.id}|${plan.id}|${lesson.id || index}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      if (versions === "completed" && plan.status !== "Complete") return;
+      const base = { group, plan, lesson, date: ttLessonStartDateKey(plan, lesson) };
+      if (versions === "both" && plan.lessonPlanVersions?.planned?.fields) {
+        entries.push({ ...base, stage: "Original planned", fields: plan.lessonPlanVersions.planned.fields });
+        if (plan.status !== "Complete") return;
+      } else if (versions === "both") missingOriginals += 1;
+      entries.push({ ...base, stage: plan.status === "Complete" ? "Completed" : "Latest saved",
+        fields: plan.status === "Complete" ? plan.lessonPlanVersions?.completed?.fields : null });
+    });
+  }));
+  entries.sort((a, b) => a.group.name.localeCompare(b.group.name, undefined, { numeric: true })
+    || a.date.localeCompare(b.date) || Number(a.lesson.lessonSequence || a.plan.lessonNumber || 0) - Number(b.lesson.lessonSequence || b.plan.lessonNumber || 0));
+  return { entries, missingOriginals };
+}
+
+async function ttPrintAllLessonPlans() {
+  const button = ttById("ttPrintAllLessonPlans");
+  const status = ttById("ttPrintLessonStatus");
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const group = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup();
+    const groupId = ttById("ttPrintLessonScope")?.value === "group" ? group?.id : "";
+    const snapshot = ttClone(appState);
+    snapshot.homeSchoolYearId = ttById("ttHomeSchoolYear")?.value || snapshot.activeSchoolYearId;
+    const { entries, missingOriginals } = ttCollectLessonPrintEntries(snapshot, groupId, ttById("ttPrintLessonVersions")?.value || "latest");
+    if (!entries.length) { status.textContent = "No saved lessons match this selection."; return; }
+    // Compute every field from the same frozen state before asynchronous PDF work.
+    entries.forEach((entry) => {
+      entry.skill = scopeMap.find((item) => item.id === entry.lesson.substep) || activeStep(entry.group);
+      entry.fields ||= ttWilsonLessonPlanData(entry.group, entry.skill, entry.lesson, entry.plan, new Date(entry.plan.savedAt || Date.now()));
+    });
+    const { PDFDocument, StandardFonts } = window.PDFLib;
+    const combined = await PDFDocument.create();
+    const font = await combined.embedFont(StandardFonts.Helvetica);
+    let indexPage;
+    entries.forEach((entry, i) => {
+      const row = i % 42;
+      if (!row) {
+        indexPage = combined.addPage([612, 792]);
+        indexPage.drawText("Teach Today — Saved lesson plans", { x: 36, y: 751, size: 16, font });
+        indexPage.drawText(`${entries.length} documents. ${missingOriginals} older original planned versions unavailable.`, { x: 36, y: 727, size: 10, font });
+      }
+      const label = `${i + 1}. ${entry.group.name} | Lesson ${entry.lesson.lessonSequence || entry.plan.lessonNumber || "-"} | ${entry.date} | ${entry.stage}`;
+      indexPage.drawText(ttPdfSafeText(label).slice(0, 108), { x: 36, y: 700 - row * 15, size: 9, font });
+    });
+    for (let i = 0; i < entries.length; i++) {
+      status.textContent = `Preparing lesson document ${i + 1} of ${entries.length}…`;
+      const entry = entries[i];
+      const bytes = await ttBuildWilsonLessonPlanPdf(entry.group, entry.skill, entry.lesson, entry.plan,
+        new Date(entry.plan.savedAt || Date.now()), { fields: entry.fields });
+      const documentPdf = await PDFDocument.load(bytes);
+      const pages = await combined.copyPages(documentPdf, documentPdf.getPageIndices());
+      pages.forEach((page) => combined.addPage(page));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    const bytes = await combined.save();
+    ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
+      title: `All lesson plans — ${entries.length} documents`, filename: `teach-today-lesson-plans-${ttTodayKey()}.pdf`, contentType: "pdf", bytes });
+    status.textContent = `${entries.length} lesson documents ready to print or download.${missingOriginals ? ` ${missingOriginals} older lessons have no original planned version; their saved content is included.` : ""}`;
+  } catch (error) {
+    status.textContent = `Could not prepare the lesson bundle: ${error.message || error}`;
+  } finally { button.disabled = false; }
+}
+
 function ttRenderSavedLessons(group) {
   const list = ttById("ttSavedLessons");
   if (!list) return;
-  const seenDays = new Set();
-  const plans = (group.history || []).slice().reverse().filter((plan) => {
-    const key = plan.dailyKey || dateKey(plan.savedAt || plan.created);
-    if (!key) return true;
-    if (seenDays.has(key)) return false;
-    seenDays.add(key);
-    return true;
-  });
-  if (!plans.length) {
-    list.innerHTML = "<p>No saved lessons for this group yet.</p>";
-    return;
-  }
-  list.innerHTML = `<p class="saved-lesson-note">Showing the latest official saved lesson for each day.</p>`;
+  const plans = (group.history || []).slice().reverse();
+  if (!plans.length) { list.innerHTML = "<p>No saved lessons for this group yet.</p>"; return; }
+  list.innerHTML = `<p class="saved-lesson-note">${plans.length} saved lessons for ${escapeHtml(group.name)}. Every saved plan is shown, including repeats on the same date.</p>`;
   plans.forEach((plan) => {
     const lesson = plan.lessons?.[0];
-    const saved = plan.savedAt ? new Date(plan.savedAt) : null;
-    const when = saved
-      ? `${saved.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} at ${saved.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
-      : plan.created;
-    const badge = plan.hasStudentData ? "Taught" : (plan.status || "Saved");
+    const badge = plan.status === "Complete" ? "Complete" : plan.hasStudentData ? "Taught" : (plan.status || "Saved");
     const item = document.createElement("article");
     item.className = "saved-lesson-item";
-    item.innerHTML = `
-      <div>
-        <strong>${escapeHtml(plan.title || "Saved lesson")} <span class="lesson-status-badge">${escapeHtml(badge)}</span></strong>
-        <p>${escapeHtml(when)} - ${escapeHtml(plan.substep || "")}</p>
-        <p>${escapeHtml(lesson?.wordlistMeta || "")}</p>
-      </div>
-      <button type="button">Open in app</button>
-    `;
-    item.querySelector("button").addEventListener("click", () => {
-      if (!lesson) return;
-      ttAddLessonTab(plan.id);
-      saveState();
-      ttOpenPlanInApp(plan.id);
+    item.innerHTML = `<div><strong>${escapeHtml(plan.title || "Saved lesson")} <span class="lesson-status-badge">${escapeHtml(badge)}</span></strong>
+      <p>${escapeHtml(plan.savedAt ? new Date(plan.savedAt).toLocaleString() : plan.created || "")} — ${escapeHtml(plan.substep || "")}</p>
+      <p>${escapeHtml(lesson?.wordlistMeta || "")}</p><small>${escapeHtml(ttSavedLessonArchiveText(plan))}</small></div>
+      <div><button type="button" data-saved-open>Open in app</button>
+      <button type="button" data-saved-print>Print ${plan.status === "Complete" ? "completed" : "saved"}</button>
+      ${plan.lessonPlanVersions?.planned ? '<button type="button" data-saved-planned>Print original planned</button>' : ""}
+      ${ttIsNativeIpadShell() ? '<button type="button" data-saved-retry>Retry PDF backups</button>' : ""}</div>`;
+    item.querySelector("[data-saved-open]").addEventListener("click", () => { if (lesson) ttOpenPlanInApp(plan.id, group.id); });
+    item.querySelector("[data-saved-print]").addEventListener("click", () => ttOpenSavedLessonPlanPdf(group, plan));
+    item.querySelector("[data-saved-planned]")?.addEventListener("click", () => ttOpenSavedLessonPlanPdf(group, plan, "planned"));
+    item.querySelector("[data-saved-retry]")?.addEventListener("click", async (event) => {
+      event.currentTarget.disabled = true;
+      try {
+        const context = { group, lesson, plan };
+        if (plan.lessonPlanVersions?.planned || plan.status !== "Complete") await ttArchiveLessonPlanPdf("Planned", context);
+        if (plan.status === "Complete") await ttArchiveLessonPlanPdf("Completed", context);
+        await ttQueueStageNativeBackup({ immediate: true, force: true });
+      } catch (error) { ttShowBackupToast(`PDF backup needs attention. ${error.message || error}`, "warning"); }
+      finally { ttRenderSavedLessons(group); }
     });
     list.appendChild(item);
   });
@@ -17867,7 +18067,7 @@ function ttFillPart7(lesson, skill) {
   ttFillHfwStepChoices(skill.id);
   if (ttById("ttHfwStep")) ttById("ttHfwStep").value = skill.id;
   ttFillHfwDisplayWords(
-    (lesson.sectionSevenHighFrequencyWords || []).length
+    Array.isArray(lesson.sectionSevenHighFrequencyWords)
       ? lesson.sectionSevenHighFrequencyWords
       : hfwWordsForSubstep(ttById("ttHfwStep")?.value || skill.id, lesson),
     ttById("ttHfwStep")?.value || skill.id
@@ -18263,6 +18463,7 @@ function ttFillDictation(items) {
 }
 
 function ttActiveDictationPlan(lesson, skill) {
+  if (Array.isArray(lesson.dictationPlanOverride)) return ttClone(lesson.dictationPlanOverride);
   const sectionSeven = ttSectionSevenSetsForLesson(lesson, skill);
   const avoidWordKeys = new Set([]
     .concat(sectionSeven.review || [])
@@ -20322,6 +20523,7 @@ function ttBind() {
     ttSetWordlistPageIndex(event.target.value);
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
+  ttById("ttPrintAllLessonPlans")?.addEventListener("click", () => ttPrintAllLessonPlans());
   ttById("ttSaveLesson").addEventListener("click", () => ttSaveCurrentLesson());
   ttById("ttPdfPlan").addEventListener("click", () => ttOpenPdfLessonPlan());
   ttById("ttWilsonPlan").addEventListener("click", () => ttOpenWilsonLessonPlan());
@@ -20772,14 +20974,12 @@ function ttBind() {
   ttById("ttWrapHome")?.addEventListener("click", () => ttById("ttHome")?.click());
   ttById("ttWrapRefresh")?.addEventListener("click", () => ttRenderWrapUpPanel(ttActiveGroup(), ttLesson));
   ttById("ttCompleteLesson")?.addEventListener("click", () => ttCompleteLessonWrapUp());
-  ttById("ttWrapSavePdf")?.addEventListener("click", () => {
-    ttCompleteLessonWrapUp({ scroll: false });
-    ttOpenPdfLessonPlan();
+  ttById("ttWrapSavePdf")?.addEventListener("click", async () => {
+    if (await ttCompleteLessonWrapUp({ scroll: false })) ttOpenPdfLessonPlan();
   });
   ttById("ttWrapProfile")?.addEventListener("click", () => ttOpenStudentProfile());
-  ttById("ttWrapNextLesson")?.addEventListener("click", () => {
-    ttCompleteLessonWrapUp({ scroll: false });
-    ttNewLesson();
+  ttById("ttWrapNextLesson")?.addEventListener("click", async () => {
+    if (await ttCompleteLessonWrapUp({ scroll: false })) ttNewLesson();
   });
   ttById("ttWrapNote")?.addEventListener("blur", () => ttSaveWrapUpNoteDraft());
   document.querySelectorAll(".card-mode").forEach((button) => {

@@ -2,6 +2,12 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-16
+
+- Repaired lesson completion's undefined-variable crash and duplicate PDF call. Completion awaits durable storage, prevents overlapping taps, preserves pending charting, and stops Next/print follow-ups on failure. Home completion uses the same archive path. New lesson starts/completions retain exact planned/completed print fields in private state and complete backups; Files/Drive outcomes remain separate and Drive PDF bytes are hash-verified after upload.
+- Removed destructive automatic lesson-history length limits and the Saved Lessons same-date filter. Complete labels take precedence over Taught. Added per-lesson print/PDF retry status and **Print all lesson plans so far**, with group/year scope, completed/latest/both versions, a contents page, and explicit handling of older missing originals. Printing does not write classroom records.
+- Tuned Customize: cleared and custom selections survive preview/start/render/export; saved Section 8 slots and sentence sources reopen exactly; phrase/sentence FIFO uses selection order; full option pools are reachable; random selection uses Fisher-Yates; Section 8 gains New words. Reader review now uses the reviewed planning index instead of older OCR fragments, retains apostrophes and short real words, and keeps Section 3 Current page-bound. Audited bundled coverage and fallback boundaries without regenerating curriculum data. All 69 tests plus synthetic browser persistence/control/PDF checks pass. Native iPad delivery/printing still requires hardware verification. No live student records or Firebase changes.
+
 ## 2026-10-07
 
 - Extended Attendance Central with sourced Dallas ISD 2026–27 holiday/development labels, an off-by-default lavender gap-review toggle for past Monday–Thursday instructional dates, and per-group quick reasons with private correction history and notes. Confirmed/no-session attendance entries are protected and no ledger migration occurs. CSVs now include current scheduled times and a second matching Attendance Notes table after three blank rows. Group selection and immutable private report snapshots preserve chosen dates/content for later download; Drive report files use unique names. Existing and new tests pass, including synthetic browser checks of the original attendance confirmation, protected reasons, persistence, calendar views, and saved-report metadata. Tablet sharing/Drive delivery remains a hardware check.
