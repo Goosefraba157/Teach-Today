@@ -8361,7 +8361,7 @@ function ttPlannerSectionsHtml(group, skill, lesson) {
   ttSyncSection8RealSelectionState();
   const dictationPlan = ttDictationPlan(lesson, skill, { avoidWordKeys: new Set() });
   const dictationBlock = (label) => dictationPlan.find((block) => block.label.toLowerCase().includes(label))?.values || [];
-  const chartWords = uniqueWords([].concat(lesson.realWords || [], lesson.nonsenseWords || []));
+  const chartWords = ttCurrentReaderPlanningWords(lesson, skill);
   const fallbackPrior = [priorSubstep(skill.id)];
   const sec2Substeps = ttSectionReviewSubsteps.section2?.length ? ttSectionReviewSubsteps.section2 : fallbackPrior;
   const sec3Substeps = ttSectionReviewSubsteps.section3?.length ? ttSectionReviewSubsteps.section3 : fallbackPrior;
@@ -9264,6 +9264,11 @@ function ttTogglePlannerChip(button) {
   ttRefreshPreview();
 }
 
+function ttCurrentReaderPlanningWords(lesson, skill) {
+  const page = ttEnhancedPlanning()?.findPage?.(skill.id, lesson.readerLevel || "AB", lesson.wordlistPageNumber);
+  return uniqueWords(page?.w || [].concat(lesson.realWords || [], lesson.nonsenseWords || [])).filter(ttIsReaderPlanningWord);
+}
+
 function ttUpdateSectionReviewChips(sectionKey) {
   const group = ttPlannerGroup();
   const skill = scopeMap.find((item) => item.id === (ttPlannerDraft.substep || group.substep)) || activeStep(group);
@@ -9292,6 +9297,8 @@ function ttUpdateSectionReviewChips(sectionKey) {
   // Build pool for new substep
   const newPool = sectionKey === "section7"
     ? ttDictationBookReviewWordPool([currentSubstep], level)
+    : sectionKey === "section3Current"
+    ? ttCurrentReaderPlanningWords(ttPlannerPreviewLesson(group), skill)
     : isNView
     ? ttReviewNonsensePool(skill.id)
     : picker.dataset.readerOnly === "true"

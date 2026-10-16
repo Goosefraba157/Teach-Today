@@ -163,3 +163,8 @@ test('Reader review uses the reviewed index rather than old OCR fragments, with 
     }
   }
 });
+
+test('changing Section 3 Current filters keeps the pool on the selected page',()=>{
+  const update=functions('ttUpdateSectionReviewChips','ttToggleSection6All');
+  assert.match(update,/sectionKey === "section3Current"\s*\? ttCurrentReaderPlanningWords\(ttPlannerPreviewLesson\(group\), skill\)/);
+});
