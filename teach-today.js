@@ -3883,6 +3883,7 @@ function ttSetGroupDay(day) {
   if (ttGroupDay) document.body.classList.add(`group-day-${ttGroupDay}`);
   // Update all day-toggle button states (ribbon + dock)
   ttUpdateGroupDayButtons();
+  ttInitSectionCompletion();
   if (ttLesson && ttGroupDay) {
     ttLesson.activeGroupDay = ttGroupDay;
     const plan = ttCurrentPlan();
@@ -3899,7 +3900,8 @@ function ttSetGroupDay(day) {
 
 function ttInitSectionCompletion() {
   if (document.body.classList.contains("home-mode")) return;
-  const completed = ttLesson?.completedSections || {};
+  const progress = window.TeachTodayLessonProgress?.summary(ttLesson).statuses || {};
+  const visible = ttPaceGuideSectionIds();
   document.querySelectorAll(".teach-card[id^='section']").forEach((card) => {
     const sectionId = card.id;
     let btn = card.querySelector(".section-done-btn");
@@ -3910,59 +3912,173 @@ function ttInitSectionCompletion() {
       const head = card.querySelector(".section-head");
       if (head) head.appendChild(btn);
     }
-    const state = completed[sectionId] || null;
-    btn.textContent = state === "done" ? "✓ Done" : state === "skipped" ? "Skipped" : "Mark done";
-    btn.className = `section-done-btn${state === "done" ? " done" : state === "skipped" ? " skipped" : ""}`;
+    const state = progress[sectionId] || ttLesson?.completedSections?.[sectionId] || "unmarked";
+    btn.textContent = state === "done" ? "✓ Finished" : state === "skipped" ? "Skipped" : state === "inprogress" ? "In progress" : "Not started";
+    btn.className = `section-done-btn ${state}`;
+    btn.title = state === "done" ? "Finished. Tap to mark skipped."
+      : state === "skipped" ? "Skipped. Tap to reopen this section."
+        : ttLesson?.sectionProgress?.[sectionId]?.manualOverride ? "Reopened manually. Tap to finish; automatic completion is paused for this section."
+        : "Next finishes this section automatically. Tap here to finish it manually.";
+    btn.setAttribute("aria-label", `Section ${ttSectionDisplayName(sectionId)}: ${btn.textContent}. ${btn.title}`);
+    btn.disabled = !ttSectionProgressContext();
     card.classList.toggle("section-completed", state === "done");
     card.classList.toggle("section-skipped", state === "skipped");
+    const next = card.querySelector(".next-link");
+    const index = visible.indexOf(sectionId);
+    if (next && index >= 0) {
+      const target = visible[index + 1];
+      next.href = target ? `#${target}` : "#ttWrapUpPanel";
+      next.textContent = target ? `Next: Section ${ttSectionDisplayName(target)}` : "Review & finish lesson";
+    }
   });
+  ttRenderSectionProgressSummary();
+}
+
+function ttRenderSectionProgressSummary(lesson = ttLesson) {
+  const sectionSummary = ttById("ttWrapSectionProgress");
+  if (sectionSummary && window.TeachTodayLessonProgress) {
+    const progress = window.TeachTodayLessonProgress.summary(lesson).statuses;
+    const groupLesson = ["group", "part1", "part2"].includes(lesson?.lessonType);
+    const ids = ttAllTeachingSectionIds().filter(id => groupLesson || !["section1b", "section2b"].includes(id))
+      .filter(id => lesson?.lessonType !== "flash" || (lesson.flashSections || []).includes(id.replace("section", "")));
+    const labels = { done: "Finished", skipped: "Skipped", inprogress: "In progress", unmarked: "Not recorded" };
+    sectionSummary.innerHTML = ids.map(id => `<span class="${progress[id]}">Section ${ttSectionDisplayName(id)}: ${labels[progress[id]]}</span>`).join("");
+  }
+}
+
+function ttSectionProgressContext() {
+  const group = ttActiveGroup();
+  const lesson = ttLesson;
+  const plan = ttCurrentPlan();
+  return window.TeachTodayLessonProgress?.canTrack({ group, lesson, plan,
+    activeSchoolYearId: appState.activeSchoolYearId,
+    homeMode: document.body.classList.contains("home-mode") }) ? { group, lesson, plan } : null;
+}
+
+let ttSectionProgressInFlight = null;
+
+async function ttSetSectionFinished(sectionId, options = {}) {
+  if (ttSectionProgressInFlight) return false;
+  const context = ttSectionProgressContext();
+  if (!context) return true; // Historical/read-only lessons remain browsable.
+  const { group, lesson, plan } = context;
+  ttSectionProgressInFlight = (async () => {
+    if (!(await ttEnsureStageStorageReady())) return false;
+    const current = ttSectionProgressContext();
+    if (!current || current.group !== group || current.lesson !== lesson || current.plan !== plan) return false;
+    const before = { completedSections: lesson.completedSections && ttClone(lesson.completedSections),
+      sectionProgress: lesson.sectionProgress && ttClone(lesson.sectionProgress) };
+    if (!window.TeachTodayLessonProgress.mark(lesson, sectionId, options)) return true;
+    const index = plan.lessons.findIndex(saved => saved.id === lesson.id);
+    const previousLesson = plan.lessons[index];
+    plan.lessons[index] = lesson;
+    try {
+      await saveState();
+      ttInitSectionCompletion();
+      ttRenderLessonIdentity();
+      ttUpdateSaveStatus(plan);
+      return true;
+    } catch (error) {
+      for (const key of ["completedSections", "sectionProgress"]) {
+        if (before[key] === undefined) delete lesson[key]; else lesson[key] = before[key];
+      }
+      plan.lessons[index] = previousLesson;
+      ttInitSectionCompletion();
+      const status = ttById("ttSaveStatus");
+      if (status) status.textContent = "Section progress NOT SAVED — please retry";
+      ttShowBackupToast(`Section progress could not be saved. ${error.message || error}`, "warning");
+      return false;
+    }
+  })();
+  try { return await ttSectionProgressInFlight; }
+  catch (error) {
+    ttShowBackupToast(`Section progress could not be saved. ${error.message || error}`, "warning");
+    return false;
+  }
+  finally { ttSectionProgressInFlight = null; }
 }
 
 function ttToggleSectionDone(sectionId) {
-  if (!ttLesson) return;
-  ttLesson.completedSections ||= {};
-  const current = ttLesson.completedSections[sectionId] || null;
-  const next = current === null ? "done" : current === "done" ? "skipped" : null;
-  if (next === null) delete ttLesson.completedSections[sectionId];
-  else ttLesson.completedSections[sectionId] = next;
-  if (sectionId === "section8" && next === "done") ttSaveSection8AssessmentInventories();
-  ttTrackConfirmedAttendanceActivity({ sectionId, state: next || "unmarked" });
-  if (sectionId === "section9" && next === "done") ttClearPassageInk({ save: false, allStories: true });
-  if (ttLesson.savedPlanId) ttSaveCurrentLesson({ render: false, reason: `Updated ${sectionId.replace("section", "Section ")} progress` });
-  else ttSaveDraftLesson({ status: false });
-  ttInitSectionCompletion();
-  ttRenderLessonIdentity();
+  const current = ttLesson?.completedSections?.[sectionId];
+  return ttSetSectionFinished(sectionId, { manual: true, source: "manual",
+    state: current === "done" ? "skipped" : current === "skipped" ? null : "done" });
 }
 
-// A completion snapshot supplies the denominator for Section 8 scores. It is
-// additive: the original individual miss observations remain the authority for
-// which items were missed, and no existing record is changed or removed.
-function ttSaveSection8AssessmentInventories() {
-  if (!ttLesson) return;
-  const group = ttActiveGroup();
-  const skill = scopeMap.find((item) => item.id === ttLesson.substep) || activeStep(group);
-  const plan = ttActiveDictationPlan(ttLesson, skill);
-  const categories = Object.fromEntries(plan.map((item) => [item.label, (item.values || []).slice()]));
-  categories["HFW from phrase"] = ttHighFrequencyItemsFromPhrases(plan).map((item) => item.value);
-  group.dictationAssessments ||= [];
-  ttTeachingStudents(group).forEach((student) => {
-    const studentId = ttStudentIdForName(student, group);
-    const existing = group.dictationAssessments.find((record) => record.lessonId === ttLesson.id && record.studentId === studentId);
-    const record = {
-      id: existing?.id || `dictation-assessment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      date: existing?.date || new Date().toISOString(),
-      student,
-      studentId,
-      schoolYearId: group.schoolYearId || appState.activeSchoolYearId || "",
-      groupIdAtTime: group.id,
-      lessonId: ttLesson.id,
-      planId: ttLesson.savedPlanId || "",
-      lessonNumber: ttCurrentPlan()?.lessonNumber || 0,
-      substep: ttLesson.substep || group.substep,
-      categories
+function ttTrackLessonSectionActivity(sectionId) {
+  const context = ttSectionProgressContext();
+  if (!context || !window.TeachTodayLessonProgress.activity(context.lesson, sectionId)) return;
+  const index = context.plan.lessons.findIndex(saved => saved.id === context.lesson.id);
+  context.plan.lessons[index] = context.lesson;
+  ttInitSectionCompletion();
+  ttQueueAttendanceActivitySave();
+}
+
+async function ttReviewSection8BeforeFinish(group, lesson, plan) {
+  if (plan.status === "Complete") return true;
+  if (!window.TeachTodayLessonProgress?.canTrack({ group, lesson, plan,
+    activeSchoolYearId: appState.activeSchoolYearId, homeMode: false })) return true;
+  const helper = window.TeachTodayAssessmentReview;
+  if (!helper) throw new Error("Assessment review is still loading. Reopen the lesson and retry.");
+  const day = ttPlanSessionDay(plan, lesson);
+  const date = plan.sessions?.[day]?.date || lesson.scheduledDate || ttTeachingDate(group);
+  const entries = ttTeachingStudentEntries(group, date);
+  const session = ttAttendanceSession(group, date);
+  const review = helper.model({ group, lesson, plan, entries, session });
+  if (!review.needed) return true;
+  ttSetNativeProjectionMode("stage");
+  const selectedIds = await ttSection8ReviewDialog(review);
+  if (!selectedIds) return false;
+  // State can change while the teacher reviews. Never apply choices to a
+  // replacement lesson, roster, attendance session, or database instance.
+  const currentGroup = (appState.groups || []).find(item => item.id === group.id);
+  if (currentGroup !== group || !(group.history || []).includes(plan)
+    || !(plan.lessons || []).some(item => item.id === lesson.id)) return false;
+  if (!window.TeachTodayLessonProgress.canTrack({ group, lesson, plan,
+    activeSchoolYearId: appState.activeSchoolYearId, homeMode: false })) return false;
+  if (JSON.stringify(helper.model({ group, lesson, plan,
+    entries: ttTeachingStudentEntries(group, date), session: ttAttendanceSession(group, date) })) !== JSON.stringify(review)) {
+    ttShowBackupToast("Attendance or lesson details changed. Please finish the lesson again to review the current students.", "warning");
+    return false;
+  }
+  const skill = scopeMap.find(item => item.id === lesson.substep) || activeStep(group);
+  const blocks = ttActiveDictationPlan(lesson, skill);
+  const categories = Object.fromEntries(blocks.map(item => [item.label, (item.values || []).slice()]));
+  categories["HFW from phrase"] = ttHighFrequencyItemsFromPhrases(blocks).map(item => item.value);
+  helper.apply({ group, lesson, plan, entries, session, categories, selectedIds });
+  return true;
+}
+
+function ttSection8ReviewDialog(review) {
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const dialog = document.createElement("dialog");
+    dialog.className = "section-review-dialog";
+    dialog.id = "ttSection8ReviewDialog";
+    dialog.setAttribute("aria-labelledby", "ttSection8ReviewTitle");
+    dialog.setAttribute("aria-describedby", "ttSection8ReviewDescription");
+    dialog.innerHTML = `<form method="dialog">
+      <h2 id="ttSection8ReviewTitle">Finish lesson</h2>
+      <p id="ttSection8ReviewDescription">Confirm who completed <strong>all displayed Section 8 items</strong>. Missed items are already saved. Unchecked students receive no new score.</p>
+      <div class="section-review-students">${review.rows.map(row => `<label>
+        <input type="checkbox" value="${escapeHtml(row.studentId)}" ${row.checked ? "checked" : ""} ${row.disabled ? "disabled" : ""}>
+        <span><strong>${escapeHtml(row.name)}</strong><small>${row.existing ? "Score already saved" : row.absent ? "Absent — no new score" : row.present ? "Present — uncheck if not assessed" : "Attendance unconfirmed — select only if assessed"}</small></span>
+      </label>`).join("")}</div>
+      <div class="section-review-actions"><button type="button" data-review-cancel>Keep teaching</button><button type="submit" data-review-finish>Save &amp; finish lesson</button></div>
+    </form>`;
+    const close = value => {
+      dialog.close(); dialog.remove();
+      if (previousFocus?.isConnected) previousFocus.focus();
+      resolve(value);
     };
-    if (existing) Object.assign(existing, record);
-    else group.dictationAssessments.push(record);
+    dialog.addEventListener("cancel", event => { event.preventDefault(); close(null); });
+    dialog.querySelector("[data-review-cancel]").addEventListener("click", () => close(null));
+    dialog.querySelector("form").addEventListener("submit", event => {
+      event.preventDefault();
+      close([...dialog.querySelectorAll("input:checked:not(:disabled)")].map(input => input.value));
+    });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    dialog.querySelector("[data-review-cancel]").focus();
   });
 }
 
@@ -4878,6 +4994,7 @@ async function ttCompleteOpenPlanFromHome(groupId, planId, nextDate) {
   const current = ttContinuityRecord(groupId, planId);
   if (!current || current.plan.excludedFromLessonSequence || current.plan.status === "Test") return false;
   const { group, plan, lesson } = current;
+  if (!(await ttReviewSection8BeforeFinish(group, lesson, plan))) return false;
   const now = new Date().toISOString();
   const day = ttPlanSessionDay(plan, lesson);
   plan.sessions ||= {};
@@ -5243,13 +5360,18 @@ function ttQueueAttendanceActivitySave() {
   if (ttAttendanceActivitySaveTimer) return;
   ttAttendanceActivitySaveTimer = setTimeout(() => {
     ttAttendanceActivitySaveTimer = null;
-    saveState();
+    Promise.resolve(saveState()).catch(error => {
+      const status = ttById("ttSaveStatus");
+      if (status) status.textContent = "Activity NOT SAVED — please retry after checking storage";
+      ttShowBackupToast(`Activity could not be saved. ${error.message || error}`, "warning");
+    });
   }, 400);
 }
 
 function ttRecordSectionInteraction(sectionId, source = "control") {
   const modal = ttById("ttAttendanceSessionModal");
   if (!sectionId || document.body.classList.contains("home-mode") || (modal && !modal.hidden)) return;
+  ttTrackLessonSectionActivity(sectionId);
   const group = ttActiveGroup();
   const activity = ttAttendanceActivity(group, ttAttendanceKey(), true);
   const plan = ttCurrentPlan();
@@ -9801,6 +9923,7 @@ function ttRenderWrapUpPanel(group = ttActiveGroup(), lesson = ttLesson) {
   const summary = ttById("ttWrapUpSummary");
   if (!summary) return;
   const plan = ttCurrentPlan();
+  ttRenderSectionProgressSummary(lesson);
   const data = ttTodaysLessonData(group, lesson);
   const attendanceSession = ttAttendanceSession(group);
   const attendance = attendanceSession?.status === "confirmed" ? attendanceSession.attendance || {} : {};
@@ -9901,9 +10024,15 @@ async function ttCompleteLessonWrapUpSave(options = {}) {
   buttons.forEach((button) => { button.disabled = true; });
   try {
     if (!(await ttEnsureStageStorageReady())) return false;
-    await ttFinalizeSection4Record({ automatic: true });
-    const group = ttActiveGroup();
     if (!ttLesson) ttBuildLesson();
+    const expectedLesson = ttLesson;
+    const expectedGroup = ttActiveGroup();
+    await ttFinalizeSection4Record({ automatic: true });
+    if (ttLesson !== expectedLesson || ttActiveGroup() !== expectedGroup) return false;
+    const group = ttActiveGroup();
+    const currentPlan = ttCurrentPlan();
+    if (currentPlan && !(await ttReviewSection8BeforeFinish(group, ttLesson, currentPlan))) return false;
+    if (ttLesson !== expectedLesson || ttActiveGroup() !== group || ttCurrentPlan() !== currentPlan) return false;
     ttSaveCurrentLesson({ render: false, persist: false });
     const plan = ttCurrentPlan();
     if (!plan) throw new Error("The lesson could not be linked to its saved plan.");
@@ -10768,6 +10897,7 @@ function ttSaveEncodingObservation(student, section, category, note, item = "") 
     ...lessonMeta
   };
   group.encodingObservations.push(record);
+  ttTrackLessonSectionActivity(section);
   if (item || note.includes("difficult") || note.includes("strategies")) {
     group.markedReviewWords ||= [];
     group.markedReviewWords.push({
@@ -19921,26 +20051,45 @@ function ttCurrentPaceSectionId() {
   return current || priorSection || sectionIds[0] || "section1";
 }
 
-async function ttGoToTeachingSection(direction) {
-  const sectionIds = ttPaceGuideSectionIds();
-  if (!sectionIds.length) return;
-  const currentId = ttCurrentPaceSectionId();
-  const currentIndex = Math.max(0, sectionIds.indexOf(currentId));
-  const targetIndex = Math.max(0, Math.min(sectionIds.length - 1, currentIndex + direction));
-  const targetId = sectionIds[targetIndex];
-  ttRecordSectionInteraction(currentId, "section-navigation");
-  if (currentId === "section4" && targetId !== "section4") {
-    await ttFinalizeSection4Record({ automatic: true });
-    if (!(await ttConfirmSection4Complete())) {
-      ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
+let ttSectionNavigationBusy = false;
+
+async function ttGoToTeachingSection(direction, fromSectionId = "") {
+  if (ttSectionNavigationBusy || document.body.classList.contains("home-mode")) return;
+  ttSectionNavigationBusy = true;
+  try {
+    const sectionIds = ttPaceGuideSectionIds();
+    if (!sectionIds.length) return;
+    if (fromSectionId && !sectionIds.includes(fromSectionId)) return;
+    const currentId = fromSectionId || ttCurrentPaceSectionId();
+    const expectedLesson = ttLesson;
+    const expectedGroup = ttActiveGroup();
+    const currentIndex = Math.max(0, sectionIds.indexOf(currentId));
+    const targetIndex = Math.max(0, Math.min(sectionIds.length - 1, currentIndex + direction));
+    const targetId = direction > 0 && currentIndex === sectionIds.length - 1 ? "ttWrapUpPanel" : sectionIds[targetIndex];
+    if (currentId === targetId) return;
+    ttRecordSectionInteraction(currentId, "section-navigation");
+    if (currentId === "section4" && targetId !== "section4") {
+      await ttFinalizeSection4Record({ automatic: true });
+      if (!(await ttConfirmSection4Complete())) {
+        ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
     }
+    if (ttLesson !== expectedLesson || ttActiveGroup() !== expectedGroup
+      || !ttPaceGuideSectionIds().includes(currentId)) return;
+    if (direction > 0 && !(await ttSetSectionFinished(currentId, { source: "next" }))) return;
+    if (ttLesson !== expectedLesson || ttActiveGroup() !== expectedGroup) return;
+    if (targetId === "ttWrapUpPanel") ttRenderWrapUpPanel(expectedGroup, expectedLesson);
+    ttById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    ttPaceGuideState.activeSectionId = targetId === "ttWrapUpPanel" ? currentId : targetId;
+    ttPaceGuideState.sectionStartedAt = Date.now();
+    ttUpdatePaceGuide();
+    ttQueueStudentDisplayFollowSync();
+  } catch (error) {
+    ttShowBackupToast(`Could not move to the next section. ${error.message || error}`, "warning");
+  } finally {
+    ttSectionNavigationBusy = false;
   }
-  ttById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  ttPaceGuideState.activeSectionId = targetId;
-  ttPaceGuideState.sectionStartedAt = Date.now();
-  ttUpdatePaceGuide();
-  ttQueueStudentDisplayFollowSync();
 }
 
 function ttSetPaceGuideLine(line, progressLeft) {
@@ -21054,6 +21203,12 @@ function ttBind() {
   });
   // Section done/skip tracking
   document.addEventListener("click", (e) => {
+    const next = e.target.closest(".teach-card[id^='section'] .next-link");
+    if (next) {
+      e.preventDefault();
+      ttGoToTeachingSection(1, next.closest(".teach-card").id);
+      return;
+    }
     const btn = e.target.closest("[data-section-done]");
     if (btn) ttToggleSectionDone(btn.dataset.sectionDone);
   });
@@ -21474,15 +21629,6 @@ function ttBind() {
   ttById("section4").querySelector(".live-notes")?.addEventListener("input", () => {
     const status = ttById("section4").querySelector(".section4-note-status");
     if (status) status.textContent = "Unsaved changes";
-  });
-  ttById("section4").querySelector(".next-link")?.addEventListener("click", async (event) => {
-    event.preventDefault();
-    await ttFinalizeSection4Record({ automatic: true });
-    if (!(await ttConfirmSection4Complete())) {
-      ttById("section4")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-    ttById("section5")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 

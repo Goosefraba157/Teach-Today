@@ -26,6 +26,7 @@ function completionFixture(saveState) {
   const context=runtime(`var ttLessonCompletionInFlight=null; var ttLesson=fixtureLesson;\n${functions('ttCompleteLessonWrapUp','ttSaveWrapUpNoteDraft')}`,{
     fixtureLesson:lesson, ttById:id=>nodes[id], ttEnsureStageStorageReady:async()=>true,
     ttFinalizeSection4Record:async()=>{}, ttActiveGroup:()=>group,
+    ttReviewSection8BeforeFinish:async()=>true,
     ttSaveCurrentLesson:options=>assert.equal(options.persist,false), ttCurrentPlan:()=>plan,
     ttTodaysLessonData:()=>({chart:[{id:'evidence'}],dictation:[],encoding:[]}),
     ttAttendanceSession:()=>null, ttClone:clone, ttPlanSessionDay:()=> '1', ttEnsureLessonWorkflow:()=>{},
@@ -55,6 +56,21 @@ test('failed completion reports failure and never starts archive or next-lesson 
   assert.equal(await f.context.ttCompleteLessonWrapUp({scroll:false}),false);
   assert.equal(f.archives(),0);assert.match(f.nodes.ttSaveStatus.textContent,/NOT SAVED/);
   assert.equal(f.nodes.ttCompleteLesson.disabled,false);assert.equal(f.group.chartResults[0].id,'evidence');
+});
+
+test('cancelling the assessment review leaves the lesson open and starts no archive',async()=>{
+  let saves=0;const f=completionFixture(async()=>{saves++;});
+  f.context.ttReviewSection8BeforeFinish=async()=>false;
+  assert.equal(await f.context.ttCompleteLessonWrapUp({scroll:false}),false);
+  assert.equal(saves,0);assert.equal(f.archives(),0);assert.equal(f.plan.status,'In progress');
+  assert.equal(f.nodes.ttCompleteLesson.disabled,false);
+});
+
+test('switching lessons during review cannot complete the replacement lesson',async()=>{
+  let saves=0;const f=completionFixture(async()=>{saves++;});
+  f.context.ttReviewSection8BeforeFinish=async()=>{f.context.ttLesson={id:'other',savedPlanId:'other-plan'};return true;};
+  assert.equal(await f.context.ttCompleteLessonWrapUp({scroll:false}),false);
+  assert.equal(saves,0);assert.equal(f.archives(),0);assert.equal(f.plan.status,'In progress');
 });
 
 test('planned document fields are detached, retained, and never fabricated for completed legacy lessons',()=>{

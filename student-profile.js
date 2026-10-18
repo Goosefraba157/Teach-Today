@@ -677,7 +677,7 @@ function section8AssessmentSummary(categoryNames, emptyText) {
   if (!assessment) {
     const legacyMisses = marks.filter((record) => record.section === "section8" && categoryNames.includes(record.category));
     return legacyMisses.length
-      ? `<p><strong>Earlier saved misses</strong></p><div class="miss-chip-row">${legacyMisses.slice(0, 8).map((record) => `<span class="miss-chip">${escapeHtml(record.item)}</span>`).join("")}</div><p>Scores begin when a Section 8 lesson is marked done, which safely saves that lesson's item list.</p>`
+      ? `<p><strong>Earlier saved misses</strong></p><div class="miss-chip-row">${legacyMisses.slice(0, 8).map((record) => `<span class="miss-chip">${escapeHtml(record.item)}</span>`).join("")}</div><p>Scores begin after you confirm assessed students when finishing a lesson. Missed items save as you teach.</p>`
       : emptyText;
   }
   const categories = assessment.categories || {};
@@ -751,7 +751,7 @@ function renderSection8ScoreHistory() {
   const target = byId("section8ScoreHistoryRows");
   const assessments = section8Assessments();
   if (!assessments.length) {
-    target.innerHTML = '<tr><td colspan="9" class="table-empty">Exact Section 8 score history begins with the next lesson marked done. Earlier individual misses remain in Observation History below.</td></tr>';
+    target.innerHTML = '<tr><td colspan="9" class="table-empty">Exact Section 8 scores appear after you confirm assessed students when finishing a lesson. Earlier individual misses remain in Observation History below.</td></tr>';
     return;
   }
   const marks = observations();

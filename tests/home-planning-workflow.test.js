@@ -177,6 +177,7 @@ test("completing and resuming mutate only the selected fresh lesson record", asy
     ttSyncCombinedLessonLinks: () => { calls.sync += 1; },
     ttTodaysLessonData: () => ({ chart: [], dictation: [], encoding: [] }),
     ttAttendanceSession: () => null,
+    ttReviewSection8BeforeFinish: async () => true,
     ttClone: (value) => JSON.parse(JSON.stringify(value)),
     ttArchiveLessonPlanPdf: () => Promise.resolve(),
     ttCaptureLessonPlanVersion: () => {},

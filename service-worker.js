@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-18-library-split-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-18-auto-progress-1";
 
 const APP_SHELL = [
   "./",
@@ -40,6 +40,10 @@ const APP_SHELL = [
   "./developer-data-diagnostic.js",
   "./onboarding.js",
   "./teach-today.js",
+  "./lesson-progress.js",
+  "./lesson-assessment-review.js",
+  "./lesson-progress.js?v=20261018-auto-progress-1",
+  "./lesson-assessment-review.js?v=20261018-auto-progress-1",
   "./lesson-library.js",
   "./lesson-library-preview.js",
   "./vendor/pdfjs/pdf.mjs",

@@ -19,6 +19,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 ## Presentation work
 
+- **Automatic section progress (2026-10-18):** In an active saved current-year host lesson, deliberately moving forward with the section Next link or presentation dock finishes only the departing visible section after durable storage succeeds. All sections, including Day 2 repeats, use the same visible-order path; the last section opens Wrap-Up. Meaningful controls and saved encoding work mark a section In progress. Scrolling, quick-jump browsing, Back, elapsed time, drafts, terminal lessons, and combined participant copies never infer completion. Teachers may still finish, skip, or reopen a section; explicit corrections take precedence. Section progress is lesson metadata, never attendance or student assessment evidence, and finishing a section preserves passage ink.
+- **Section 8 score review (2026-10-18):** Section completion no longer generates whole-roster score denominators. When a lesson with new Section 8 activity is deliberately completed from Wrap-Up or Home, one in-page review confirms students who completed all displayed items. Only confirmed present students are preselected; confirmed absences are disabled and unconfirmed students require an explicit choice. New assessed snapshots retain the exact item lists and each selected student's own misses. Existing snapshots and historical evidence remain intact; unchecked students receive no new score. Ordinary error marks continue saving immediately while teaching. No historical backfill or migration is inferred from this workflow.
+
 - **Decision:** Improve V1 slides incrementally rather than replacing the application wholesale.
 - **Reason:** The existing app looks and works well, so changes must preserve known-good flows.
 - **Boundary:** The `lesson-planner-v2-*` presenter prototype is a behavior reference, not the paused `/v2/` application.

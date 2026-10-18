@@ -11554,6 +11554,27 @@ body.home-mode .home-screen {
   border-color: #22c55e;
   color: #fff;
 }
+.section-done-btn.inprogress {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #075985;
+}
+.section-progress-hint { margin: 8px 0 12px; font-size: .85rem; color: #475569; }
+.wrap-section-progress { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.wrap-section-progress span { padding: 6px 10px; background: #f1f5f9; border-radius: 8px; font-size: .85rem; }
+.wrap-section-progress .done { background: #dcfce7; color: #166534; }
+.wrap-section-progress .inprogress { background: #e0f2fe; color: #075985; }
+.section-review-dialog { border: 1px solid #cbd5e1; border-radius: 18px; padding: 24px; width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: #1e293b; }
+.section-review-dialog::backdrop { background: rgba(15,23,42,.55); }
+.section-review-dialog h2 { margin: 0 0 12px; }
+.section-review-dialog p { line-height: 1.5; }
+.section-review-students { display: grid; gap: 10px; margin: 18px 0; }
+.section-review-students label { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; }
+.section-review-students input { width: 22px; height: 22px; accent-color: #0f766e; }
+.section-review-students small { display: block; margin-top: 4px; color: #475569; }
+.section-review-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.section-review-actions button { min-height: 44px; padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 10px; cursor: pointer; }
+.section-review-actions [data-review-finish] { background: #0f766e; border-color: #0f766e; color: white; font-weight: 700; }
 .section-done-btn.skipped {
   background: var(--surface-alt, #f5f5f5);
   border-color: var(--border, #ccc);
@@ -11561,7 +11582,7 @@ body.home-mode .home-screen {
   text-decoration: line-through;
 }
 .teach-card.section-completed {
-  opacity: .55;
+  opacity: 1;
   transition: opacity .2s;
 }
 .teach-card.section-skipped {

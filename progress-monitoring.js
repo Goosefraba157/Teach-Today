@@ -36,13 +36,17 @@ function pmOrderedStudents() {
 function pmLesson(record, group) { const plan = (group?.history || []).find((item) => item.id === record.planId); const lesson = plan?.lessons?.find((item) => item.id === record.lessonId); return Number(record.lessonNumber || plan?.lessonNumber || lesson?.lessonSequence) || 0; }
 function pmChartRecords(student) { return (pmData.masterRecords || []).filter((record) => record?.type !== "soundsDrill" && (record?.correct !== undefined || record?.wordlistPage || record?.chartHalf) && pmMatches(record, student) && pmRecordYear(record) === pmYear).sort((a, b) => pmLesson(a, pmGroups().find((group) => group.id === a.groupId || group.id === a.groupIdAtTime)) - pmLesson(b, pmGroups().find((group) => group.id === b.groupId || group.id === b.groupIdAtTime)) || pmTime(a) - pmTime(b)); }
 function pmRealRecords(student) { const results = []; pmGroups().forEach((group) => (group.dictationAssessments || []).forEach((record) => {
-  if (!pmMatches(record, student) || pmRecordYear(record, group) !== pmYear) return;
+  if (!pmMatches(record, student) || pmRecordYear(record, group) !== pmYear
+    || record.assessmentStatus && record.assessmentStatus !== "assessed") return;
   const category = Object.keys(record.categories || {}).find((name) => pmNormalize(name) === "5realwords") || "5 real words";
   const words = record.categories?.[category] || [];
   if (!words.length) return;
   const allowed = new Set(words.map(pmNormalize));
   const direct = record.missesByCategory?.[category];
-  const source = Array.isArray(direct) ? direct : (group.encodingObservations || []).filter((mark) => mark.section === "section8" && (mark.planId === record.planId || mark.lessonId === record.lessonId) && pmNormalize(mark.category) === pmNormalize(category) && allowed.has(pmNormalize(mark.item))).map((mark) => mark.item);
+  const source = Array.isArray(direct) ? direct : (group.encodingObservations || []).filter((mark) => mark.section === "section8"
+    && pmMatches(mark, student)
+    && (mark.lessonId && record.lessonId ? mark.lessonId === record.lessonId : Boolean(record.planId && mark.planId === record.planId))
+    && pmNormalize(mark.category) === pmNormalize(category) && allowed.has(pmNormalize(mark.item))).map((mark) => mark.item);
   const misses = [...new Set(source.map(pmNormalize))].filter((item) => allowed.has(item));
   results.push({ ...record, _group: group, correct: Math.max(0, words.length - misses.length), total: words.length });
 })); return results.sort((a, b) => pmTime(a) - pmTime(b)); }
