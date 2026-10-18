@@ -17693,6 +17693,68 @@ async function ttRecoverMissingAttendanceFromFile(file) {
 
 let ttLibraryRows = [];
 let ttLibraryReturnFocus = null;
+let ttLibrarySelectedKey = "";
+let ttLibraryPreviewRequest = 0;
+let ttLibraryPdfRenderer = null;
+
+function ttLibraryPdfViewer() {
+  if (!ttLibraryPdfRenderer) ttLibraryPdfRenderer = new window.TeachTodayLessonPdfPreview({
+    viewport:ttById("ttLibraryPdfViewport"), canvas:ttById("ttLibraryPdfCanvas"), message:ttById("ttLibraryPdfMessage"),
+    onPageChange:({page,total,busy}) => {
+      ttById("ttLibraryPdfPage").textContent = total ? `Page ${page} of ${total}` : "No PDF selected";
+      ttById("ttLibraryPdfPrevious").disabled = busy || page <= 1;
+      ttById("ttLibraryPdfNext").disabled = busy || !total || page >= total;
+    }
+  });
+  return ttLibraryPdfRenderer;
+}
+
+function ttClearLibraryPdf(message) {
+  ttLibraryPreviewRequest++;
+  ttLibrarySelectedKey = "";
+  ttLibraryPdfViewer().clear(message);
+  ttById("ttLibraryPdfTitle").textContent = "Lesson-plan PDF";
+  ttById("ttLibraryPdfVersionLabel").hidden = true;
+}
+
+async function ttSelectLibraryLesson(index, {keepVersion = false} = {}) {
+  const row = ttLibraryRows[index];
+  if (!row) return;
+  const request = ++ttLibraryPreviewRequest;
+  ttLibrarySelectedKey = row.key;
+  ttById("ttLibraryLessons").querySelectorAll("[data-library-select]").forEach(button => {
+    const selected = Number(button.dataset.librarySelect) === index;
+    button.setAttribute("aria-pressed",String(selected));
+    button.closest(".lesson-library-item").classList.toggle("is-selected",selected);
+  });
+  const source = window.TeachTodayLessonLibrary.documentFor(appState,row);
+  const version = ttById("ttLibraryPdfVersion");
+  const prior = keepVersion ? version.value : "latest";
+  const originalAvailable = !source.lessonIndex && Boolean(source.plan.lessonPlanVersions?.planned?.fields);
+  version.innerHTML = `<option value="latest">${source.plan.status === "Complete" ? "Completed / latest saved" : "Latest saved"}</option>`
+    + (originalAvailable ? '<option value="planned">Original planned</option>' : "");
+  version.value = prior === "planned" && originalAvailable ? "planned" : "latest";
+  ttById("ttLibraryPdfVersionLabel").hidden = !originalAvailable;
+  ttById("ttLibraryPdfTitle").textContent = `${row.group.name} · Lesson ${row.lesson.lessonSequence || row.plan.lessonNumber || row.lessonIndex + 1}`;
+  const viewer = ttLibraryPdfViewer();
+  viewer.clear("Preparing lesson-plan PDF…");
+  viewer.viewport.scrollTop = viewer.viewport.scrollLeft = 0;
+  try {
+    const document = await ttSavedLessonPlanPdfDocument(source.group,source.plan,version.value,source.lessonIndex);
+    if (request !== ttLibraryPreviewRequest || ttById("ttLessonLibraryPanel").hidden) return;
+    await viewer.load(document.bytes);
+  } catch (error) {
+    if (request === ttLibraryPreviewRequest) viewer.clear(`Could not prepare this PDF. ${error.message || error}. Use View PDF or Preview PDF to retry.`);
+  }
+}
+
+function ttSetLibraryPdfExpanded(expanded) {
+  ttById("ttLessonLibraryPanel").classList.toggle("library-preview-expanded",expanded);
+  const button = ttById("ttLibraryPdfExpand");
+  button.textContent = expanded ? "Show lessons" : "Expand PDF";
+  button.setAttribute("aria-expanded",String(expanded));
+}
+
 
 function ttOpenLessonLibrary() {
   const panel = ttById("ttLessonLibraryPanel");
@@ -17705,6 +17767,7 @@ function ttOpenLessonLibrary() {
   ttById("ttLibraryYear").innerHTML = years.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
   ttById("ttLibraryYear").value = year;
   panel.hidden = false;
+  ttSetLibraryPdfExpanded(false);
   document.body.style.overflow = "hidden";
   ttRenderLessonLibrary({ resetGroups: true, groupId: group?.schoolYearId === year ? group.id : "" });
   ttById("ttLibraryYear")?.focus();
@@ -17727,6 +17790,8 @@ function ttCloseLessonLibrary() {
   ttById("ttLessonLibraryPanel").hidden = true;
   document.body.style.overflow = "";
   ttLibraryRows = [];
+  ttClearLibraryPdf();
+  ttSetLibraryPdfExpanded(false);
   ttLibraryReturnFocus?.focus?.();
 }
 
@@ -17757,22 +17822,32 @@ function ttRenderLessonLibrary(options = {}) {
   print.textContent = group ? `Print all ${group.name} lesson plans` : "Choose a group to print its plans";
   ttById("ttLibrarySummary").textContent = `${ttLibraryRows.length} saved lesson(s) · ${year}. ${studentSelect.value ? "Student matches use saved participation, linked evidence, or confirmed attendance; current group membership alone is not used. PDFs are the original group lesson records." : "Choose a student to find linked lessons across their saved group history."}`;
   const list = ttById("ttLibraryLessons");
-  list.innerHTML = ttLibraryRows.map(({group,plan,lesson,lessonIndex,participation,date},index) => `<article class="lesson-library-item">
-    <div><h3>${escapeHtml(group.name)} · Lesson ${escapeHtml(lesson.lessonSequence || plan.lessonNumber || lessonIndex + 1)} <span class="lesson-status-badge">${escapeHtml(plan.status || "Saved")}</span></h3>
+  list.innerHTML = ttLibraryRows.map(({group,plan,lesson,lessonIndex,participation,date,key},index) => `<article class="lesson-library-item${key === ttLibrarySelectedKey ? " is-selected" : ""}">
+    <div><h3><button type="button" class="lesson-library-select" data-library-select="${index}" aria-pressed="${key === ttLibrarySelectedKey}">${escapeHtml(group.name)} · Lesson ${escapeHtml(lesson.lessonSequence || plan.lessonNumber || lessonIndex + 1)}</button> <span class="lesson-status-badge">${escapeHtml(plan.status || "Saved")}</span></h3>
     <p>${escapeHtml(date || "Date not recorded")} · Substep ${escapeHtml(lesson.substep || "—")} · Reader p. ${escapeHtml(lesson.wordlistPageNumber || "—")}</p>
     ${participation ? `<p>${escapeHtml(participation)}</p>` : ""}
     <small>${escapeHtml(ttSavedLessonArchiveText(plan))}</small></div>
     <div><button type="button" data-library-open="${index}">View PDF</button>
     <button type="button" data-library-device="${index}" title="Open Apple’s built-in PDF preview">Preview PDF</button>
     ${!lessonIndex && plan.lessonPlanVersions?.planned ? `<button type="button" data-library-planned="${index}">Original planned PDF</button>` : ""}</div></article>`).join("") || '<p>No linked saved lessons match these filters. Older lessons without verified student links remain available in the group view.</p>';
+  list.querySelectorAll("[data-library-select]").forEach(button => button.addEventListener("click", () => ttSelectLibraryLesson(Number(button.dataset.librarySelect))));
+  list.querySelectorAll(".lesson-library-item").forEach((item,index) => item.addEventListener("click",event => {
+    if (!event.target.closest("button,select,a")) ttSelectLibraryLesson(index);
+  }));
   list.querySelectorAll("[data-library-open], [data-library-device], [data-library-planned]").forEach(button => button.addEventListener("click", () => {
     const index = Number(button.dataset.libraryOpen ?? button.dataset.libraryDevice ?? button.dataset.libraryPlanned);
     const row = ttLibraryRows[index];
     if (row) {
       const original = api.documentFor(appState,row);
-      ttOpenSavedLessonPlanPdf(original.group,original.plan,button.hasAttribute("data-library-planned") ? "planned" : "latest", {lessonIndex:original.lessonIndex,device:button.hasAttribute("data-library-device")});
+      const stage = button.hasAttribute("data-library-planned") ? "planned" : row.key === ttLibrarySelectedKey ? ttById("ttLibraryPdfVersion").value : "latest";
+      ttOpenSavedLessonPlanPdf(original.group,original.plan,stage, {lessonIndex:original.lessonIndex,device:button.hasAttribute("data-library-device")});
     }
   }));
+  const selectedIndex = ttLibraryRows.findIndex(row => row.key === ttLibrarySelectedKey);
+  if (selectedIndex < 0) {
+    ttClearLibraryPdf(ttLibraryRows.length ? "Choose a saved lesson to view its PDF." : "No saved lessons match these filters.");
+    if (ttLibraryRows.length) ttSelectLibraryLesson(0);
+  }
 }
 
 function ttPrintGroupLessonPlans(groupId = "", year = "") {
@@ -17795,17 +17870,27 @@ function ttSavedLessonArchiveText(plan) {
   return [describe("planned"), describe("completed")].join(" · ");
 }
 
+async function ttSavedLessonPlanPdfDocument(group, plan, stage = "latest", lessonIndex = 0) {
+  // PDF preparation works on detached copies, including for older plans that
+  // need their fields rebuilt. Browsing never normalizes the live saved plan.
+  const savedGroup = ttClone(group), savedPlan = ttClone(plan);
+  const lesson = savedPlan.lessons?.[lessonIndex || 0];
+  if (!lesson) throw new Error("This saved plan has no lesson content.");
+  const fields = lessonIndex ? null : savedPlan.lessonPlanVersions?.[stage === "latest" && savedPlan.status === "Complete" ? "completed" : stage]?.fields;
+  if (stage === "planned" && !fields) throw new Error("An original planned version was not retained for this older lesson.");
+  const skill = scopeMap.find(item => item.id === lesson.substep) || activeStep(savedGroup);
+  const bytes = await ttBuildWilsonLessonPlanPdf(savedGroup,skill,lesson,savedPlan,new Date(savedPlan.savedAt || Date.now()),{fields});
+  return {bytes,
+    title:`${savedGroup.name} — ${stage === "planned" ? "Original planned" : savedPlan.status || "Saved"} lesson`,
+    filename:ttLessonPlanArchiveFileName(savedGroup,lesson,savedPlan,stage).replace(/\.pdf$/i, ` - item ${Number(lessonIndex || 0) + 1}.pdf`),
+    groupFolder:ttLessonPlanGroupFolderName(savedGroup)};
+}
+
 async function ttOpenSavedLessonPlanPdf(group, plan, stage = "latest", options = {}) {
   try {
-    const lesson = ttClone(plan.lessons?.[options.lessonIndex || 0]);
-    if (!lesson) throw new Error("This saved plan has no lesson content.");
-    const fields = options.lessonIndex ? null : plan.lessonPlanVersions?.[stage === "latest" && plan.status === "Complete" ? "completed" : stage]?.fields;
-    if (stage === "planned" && !fields) throw new Error("An original planned version was not retained for this older lesson.");
-    const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
-    const bytes = await ttBuildWilsonLessonPlanPdf(group, skill, lesson, plan, new Date(plan.savedAt || Date.now()), { fields });
-    ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
-      title: `${group.name} — ${stage === "planned" ? "Original planned" : plan.status || "Saved"} lesson`,
-      filename: ttLessonPlanArchiveFileName(group, lesson, plan, stage).replace(/\.pdf$/i, ` - item ${Number(options.lessonIndex || 0) + 1}.pdf`), contentType: "pdf", bytes, deviceGroupFolder: ttLessonPlanGroupFolderName(group) });
+    const document = await ttSavedLessonPlanPdfDocument(group,plan,stage,options.lessonIndex);
+    ttOpenExportViewer({url:URL.createObjectURL(new Blob([document.bytes],{type:"application/pdf"})),
+      title:document.title,filename:document.filename,contentType:"pdf",bytes:document.bytes,deviceGroupFolder:document.groupFolder});
     if (options.device) await ttOpenExportOnDevice("preview");
   } catch (error) {
     ttShowBackupToast(`Could not create the lesson PDF. ${error.message || error}`, "warning");
@@ -20862,6 +20947,23 @@ function ttBind() {
   ttById("ttLibraryGroup")?.addEventListener("change", () => ttRenderLessonLibrary({resetStudent:true}));
   ["ttLibraryStudent", "ttLibraryStatus"].forEach(id => ttById(id)?.addEventListener("change", () => ttRenderLessonLibrary()));
   ttById("ttPrintGroupLessonPlans")?.addEventListener("click", () => ttPrintGroupLessonPlans());
+  ttById("ttLibraryPdfVersion")?.addEventListener("change", () => {
+    const index = ttLibraryRows.findIndex(row => row.key === ttLibrarySelectedKey);
+    if (index >= 0) ttSelectLibraryLesson(index,{keepVersion:true});
+  });
+  ttById("ttLibraryPdfPrevious")?.addEventListener("click", () => ttLibraryPdfRenderer?.goTo(ttLibraryPdfRenderer.page - 1));
+  ttById("ttLibraryPdfNext")?.addEventListener("click", () => ttLibraryPdfRenderer?.goTo(ttLibraryPdfRenderer.page + 1));
+  ttById("ttLibraryPdfFit")?.addEventListener("change", event => ttLibraryPdfViewer().setView({fit:event.target.value}));
+  const zoomLibraryPdf = delta => {
+    const viewer = ttLibraryPdfViewer();
+    viewer.setView({zoom:Math.round((viewer.zoom + delta) * 10) / 10});
+    ttById("ttLibraryPdfZoom").textContent = `${Math.round(viewer.zoom * 100)}%`;
+    ttById("ttLibraryPdfZoomOut").disabled = viewer.zoom <= .5;
+    ttById("ttLibraryPdfZoomIn").disabled = viewer.zoom >= 2;
+  };
+  ttById("ttLibraryPdfZoomOut")?.addEventListener("click", () => zoomLibraryPdf(-.1));
+  ttById("ttLibraryPdfZoomIn")?.addEventListener("click", () => zoomLibraryPdf(.1));
+  ttById("ttLibraryPdfExpand")?.addEventListener("click", () => ttSetLibraryPdfExpanded(!ttById("ttLessonLibraryPanel").classList.contains("library-preview-expanded")));
   ttById("ttLibraryPrintGroup")?.addEventListener("click", () => ttPrintGroupLessonPlans(ttById("ttLibraryGroup").value,ttById("ttLibraryYear").value));
   ttById("ttExportViewerDevice")?.addEventListener("click", () => ttOpenExportOnDevice("preview"));
   ttById("ttExportViewerShare")?.addEventListener("click", () => ttOpenExportOnDevice("share"));

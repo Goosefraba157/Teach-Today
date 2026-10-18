@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-18-pdf-preview-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-18-library-split-1";
 
 const APP_SHELL = [
   "./",
@@ -41,6 +41,23 @@ const APP_SHELL = [
   "./onboarding.js",
   "./teach-today.js",
   "./lesson-library.js",
+  "./lesson-library-preview.js",
+  "./vendor/pdfjs/pdf.mjs",
+  "./vendor/pdfjs/pdf.worker.mjs",
+  "./vendor/pdfjs/standard_fonts/FoxitDingbats.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitFixed.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitFixedBold.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitFixedBoldItalic.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitFixedItalic.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitSerif.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitSerifBold.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitSerifBoldItalic.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitSerifItalic.pfb",
+  "./vendor/pdfjs/standard_fonts/FoxitSymbol.pfb",
+  "./vendor/pdfjs/standard_fonts/LiberationSans-Bold.ttf",
+  "./vendor/pdfjs/standard_fonts/LiberationSans-BoldItalic.ttf",
+  "./vendor/pdfjs/standard_fonts/LiberationSans-Italic.ttf",
+  "./vendor/pdfjs/standard_fonts/LiberationSans-Regular.ttf",
   "./attendance-export.js",
   "./attendance-calendar.js",
   "./lesson-planner-v2-presenter.js",

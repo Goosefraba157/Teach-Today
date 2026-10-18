@@ -6,8 +6,9 @@
     "sync-safety.js?v=20260828-roster-membership-2",
     "section9-passage-companions.js?v=section9-companion-7",
     "developer-access.js",
-    "lesson-library.js?v=20261018-pdf-preview-1",
-    "teach-today.js?v=20261018-pdf-preview-1",
+    "lesson-library.js?v=20261018-library-split-1",
+    "lesson-library-preview.js?v=20261018-library-split-1",
+    "teach-today.js?v=20261018-library-split-1",
     "pwa-register.js",
     "onboarding.js?v=lesson-assistant-3",
     "add-group.js?v=20260828-roster-membership-2"

@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-18
 
+- Added a large in-app lesson-plan PDF pane beside a compact Lesson library list. Selecting a lesson renders its saved PDF with page arrows, planned/completed choice, zoom, fit controls, and expansion; existing View PDF and native Preview PDF actions remain. Self-hosted PDF.js/worker/fonts are precached, and PDF generation uses detached records. Stale-load guards and worker/canvas cleanup protect rapid browsing. All 95 tracked checks and synthetic browser/visual checks pass; classroom, active lesson, and planner state remain unchanged. No tablet reinstall or student-data migration. Web publication pending.
+
 - Installed signed native Stage build 2 over the existing app after a private backup; main and retained recovery database records match exactly before/after installation and the app relaunches. Added **Preview PDF** labeling and a strict preview/share distinction: preview never falls back to an app chooser, while Open in remains an explicit share action. Corrected the native build-number substitution. All 89 tracked checks pass. Published `20261018-pdf-preview-1` in `afc5bfd`; public runtime files and the exact native entry URL match the tested bytes. The entire saved state remains equal after relaunch, and all 71 existing lesson archive files retain their paths/sizes. The teacher’s final direct-viewer interaction/physical printing check remains outstanding.
 
 ## 2026-10-16

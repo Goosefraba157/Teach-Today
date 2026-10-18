@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20261018-pdf-preview-1">
+    <link rel="stylesheet" href="teach-today.css?v=20261018-library-split-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -565,15 +565,33 @@
     <!-- ===== EXPORT VIEWER OVERLAY ===== -->
     <section id="ttLessonLibraryPanel" class="lesson-library-overlay" role="dialog" aria-modal="true" aria-labelledby="ttLessonLibraryTitle" hidden>
       <header><div><h2 id="ttLessonLibraryTitle">Lesson library</h2><p>Saved lesson plans for the selected school year.</p></div><button id="ttLessonLibraryClose" type="button">Close library</button></header>
-      <div class="lesson-library-filters">
-        <label>School year<select id="ttLibraryYear"></select></label>
-        <label>Group<select id="ttLibraryGroup"></select></label>
-        <label>Student<select id="ttLibraryStudent"></select></label>
-        <label>Lessons<select id="ttLibraryStatus"><option value="all">All saved</option><option value="completed">Completed</option><option value="open">Open / incomplete</option></select></label>
-        <button id="ttLibraryPrintGroup" type="button">Print this group's lessons</button>
+      <div class="lesson-library-workspace">
+        <div class="lesson-library-sidebar">
+          <div class="lesson-library-filters">
+            <label>School year<select id="ttLibraryYear"></select></label>
+            <label>Group<select id="ttLibraryGroup"></select></label>
+            <label>Student<select id="ttLibraryStudent"></select></label>
+            <label>Lessons<select id="ttLibraryStatus"><option value="all">All saved</option><option value="completed">Completed</option><option value="open">Open / incomplete</option></select></label>
+            <button id="ttLibraryPrintGroup" type="button">Print this group's lessons</button>
+          </div>
+          <p id="ttLibrarySummary" role="status"></p>
+          <div id="ttLibraryLessons" class="lesson-library-list" aria-label="Saved lessons"></div>
+        </div>
+        <aside id="ttLibraryPdfPanel" class="lesson-library-pdf" aria-label="Selected lesson-plan PDF">
+          <header>
+            <div><h3 id="ttLibraryPdfTitle">Lesson-plan PDF</h3><label id="ttLibraryPdfVersionLabel" hidden>Version <select id="ttLibraryPdfVersion"><option value="latest">Latest saved</option></select></label></div>
+            <button id="ttLibraryPdfExpand" type="button" aria-expanded="false">Expand PDF</button>
+          </header>
+          <div id="ttLibraryPdfViewport" class="lesson-library-pdf-viewport">
+            <p id="ttLibraryPdfMessage" role="status">Choose a saved lesson to view its PDF.</p>
+            <canvas id="ttLibraryPdfCanvas" role="img" aria-label="Lesson-plan page" hidden></canvas>
+          </div>
+          <footer>
+            <div class="lesson-library-page-controls"><button id="ttLibraryPdfPrevious" type="button" aria-label="Previous lesson-plan page" disabled>‹</button><span id="ttLibraryPdfPage" aria-live="polite">No PDF selected</span><button id="ttLibraryPdfNext" type="button" aria-label="Next lesson-plan page" disabled>›</button></div>
+            <div class="lesson-library-zoom-controls"><label for="ttLibraryPdfFit">Fit</label><select id="ttLibraryPdfFit"><option value="width">Fit width</option><option value="page">Whole page</option></select><button id="ttLibraryPdfZoomOut" type="button" aria-label="Zoom PDF out">−</button><span id="ttLibraryPdfZoom">100%</span><button id="ttLibraryPdfZoomIn" type="button" aria-label="Zoom PDF in">+</button></div>
+          </footer>
+        </aside>
       </div>
-      <p id="ttLibrarySummary" role="status"></p>
-      <div id="ttLibraryLessons" class="lesson-library-list"></div>
     </section>
 
     <section id="ttExportViewer" class="export-viewer-overlay" hidden role="dialog" aria-modal="true" aria-label="Export preview">
@@ -1216,6 +1234,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20261018-pdf-preview-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-pdf-preview-1|teach-today.js?v=20261018-pdf-preview-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261018-library-split-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|teach-today.js?v=20261018-library-split-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>
