@@ -580,6 +580,29 @@ function updateViewMode() {
   if (groupMode) showTab("overview");
 }
 
+function chartingWordDetails(record) {
+  return (record.wordRecords || []).filter((item) => item?.word
+    && (!record.chartHalf || !item.section || item.section === record.chartHalf));
+}
+
+function chartingMissDetails(record) {
+  const details = chartingWordDetails(record).filter((item) => item.correct !== true);
+  const misses = Array.isArray(record.wrongWords)
+    ? record.wrongWords
+    : details.filter((item) => item.correct === false).map((item) => item.word);
+  return misses.map((word) => {
+    const index = details.findIndex((item) => item.word === word);
+    const detail = index >= 0 ? details.splice(index, 1)[0] : null;
+    return { word, said: detail?.said || "" };
+  });
+}
+
+function chartingResponseHtml(item) {
+  return `<span class="charting-target">${escapeHtml(item.word)}</span>${item.said
+    ? `<span class="charting-response">Said: ${escapeHtml(item.said)}</span>`
+    : '<span class="charting-response charting-response-missing">Response not recorded</span>'}`;
+}
+
 function renderCharting() {
   const charts = chartingRecords();
   const recent = charts.slice(0, 5);
@@ -602,9 +625,10 @@ function renderCharting() {
       <td class="${chartingMetricClass("correct", record.correct, record.total)}">${escapeHtml(record.correct ?? "—")}/${escapeHtml(record.total || 15)}</td>
       <td class="${chartingMetricClass("seconds", record.seconds)}">${escapeHtml(record.seconds ?? "—")}</td>
       <td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>
-      <td>${escapeHtml((record.wrongWords || []).join(", ") || "None saved")}</td>
+      <td>${escapeHtml(chartingMissDetails(record).map((item) => item.word).join(", ") || "None saved")}</td>
+      <td>${chartingWordDetails(record).filter((item) => item.said).map((item) => `<div class="charting-response-entry">${chartingResponseHtml(item)}</div>`).join("") || "No responses recorded"}</td>
       <td>${escapeHtml(record.notes || "—")}</td>
-    </tr>`).join("") : '<tr><td colspan="10" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="11" class="table-empty">No Section 4 charting records in this school year.</td></tr>';
 }
 
 function renderChartingSheet(charts) {
@@ -613,6 +637,7 @@ function renderChartingSheet(charts) {
     return;
   }
   const columns = charts.slice(0, 12);
+  const misses = columns.map(chartingMissDetails);
   const metadata = [
     ["Date", (record) => formatDate(recordDate(record))],
     ["Lesson", (record) => chartingLessonNumber(record)],
@@ -625,7 +650,7 @@ function renderChartingSheet(charts) {
   const missedRows = Array.from({ length: 15 }, (_, index) => 15 - index);
   const html = `<table class="charting-sheet-table"><tbody>
     ${metadata.map(([label, getValue]) => `<tr><th>${escapeHtml(label)}</th>${columns.map((record) => `<td>${escapeHtml(getValue(record))}</td>`).join("")}</tr>`).join("")}
-    ${missedRows.map((score, index) => `<tr><th>${score}</th>${columns.map((record) => `<td class="charting-word-cell">${escapeHtml(record.wrongWords?.[index] || "")}</td>`).join("")}</tr>`).join("")}
+    ${missedRows.map((score, index) => `<tr><th>${score}</th>${misses.map((items) => `<td class="charting-word-cell">${items[index] ? chartingResponseHtml(items[index]) : ""}</td>`).join("")}</tr>`).join("")}
     <tr><th>Status</th>${columns.map((record) => { const status = chartingStatus(record); return `<td><span class="comparison-status ${status.className}">${escapeHtml(status.label)}</span></td>`; }).join("")}</tr>
     <tr><th>Seconds</th>${columns.map((record) => `<td class="${chartingMetricClass("seconds", record.seconds)}">${escapeHtml(record.seconds ?? "—")} sec</td>`).join("")}</tr>
     <tr><th>WCPM</th>${columns.map((record) => `<td class="${chartingMetricClass("wcpm", record.wcpm)}">${escapeHtml(record.wcpm ?? "—")}</td>`).join("")}</tr>

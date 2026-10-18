@@ -292,6 +292,11 @@ button { cursor: pointer; }
 .charting-sheet-table td { min-width: 130px; border-right: 1px solid #64748b; padding: 6px 7px; text-align: center; }
 .charting-word-cell { height: 29px; background: #bae6fd; font-weight: 850; }
 .charting-word-cell:not(:empty) { background: #fff; }
+.charting-target { display: block; color: var(--teal-dark); font-weight: 850; overflow-wrap: anywhere; }
+.charting-response { display: block; margin-top: 3px; color: #9f1239; font-weight: 750; white-space: pre-wrap; overflow-wrap: anywhere; }
+.charting-response-missing { color: var(--muted); font-weight: 500; }
+.charting-response-entry { min-width: 130px; margin-bottom: 8px; }
+.charting-response-entry:last-child { margin-bottom: 0; }
 
 .inline-stats { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .inline-stats span { padding: 6px 9px; border-radius: 9px; background: var(--blue-soft); color: #1d4ed8; font-size: 11px; font-weight: 900; }
