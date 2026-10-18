@@ -14488,8 +14488,12 @@ async function ttOpenExportOnDevice(action = "preview") {
   if (!bytes) return;
   try {
     if (!ttNativePdfViewerAvailable()) {
-      // Existing iPad shells and browsers can hand the exact PDF to the OS
-      // share/open chooser directly from this user gesture when supported.
+      // Preview is a direct viewer action. Only Open in… may open an app chooser.
+      if (action === "preview") {
+        if (ttIsNativeIpadShell()) ttShowBackupToast("Apple PDF preview needs the updated Stage app. Your PDF is open here in the meantime.","warning");
+        else if (!window.open(overlay._exportBlobUrl,"_blank","noopener")) ttShowBackupToast("Your PDF is open here. Use Download to save a copy.","warning");
+        return;
+      }
       const file = new File([bytes], overlay._exportFilename || "Lesson.pdf", {type:"application/pdf"});
       if (navigator.canShare?.({files:[file]})) { await navigator.share({files:[file],title:overlay._exportFilename}); return; }
       if (!ttIsNativeIpadShell()) {
@@ -17759,7 +17763,7 @@ function ttRenderLessonLibrary(options = {}) {
     ${participation ? `<p>${escapeHtml(participation)}</p>` : ""}
     <small>${escapeHtml(ttSavedLessonArchiveText(plan))}</small></div>
     <div><button type="button" data-library-open="${index}">View PDF</button>
-    <button type="button" data-library-device="${index}">Open on device</button>
+    <button type="button" data-library-device="${index}" title="Open Apple’s built-in PDF preview">Preview PDF</button>
     ${!lessonIndex && plan.lessonPlanVersions?.planned ? `<button type="button" data-library-planned="${index}">Original planned PDF</button>` : ""}</div></article>`).join("") || '<p>No linked saved lessons match these filters. Older lessons without verified student links remain available in the group view.</p>';
   list.querySelectorAll("[data-library-open], [data-library-device], [data-library-planned]").forEach(button => button.addEventListener("click", () => {
     const index = Number(button.dataset.libraryOpen ?? button.dataset.libraryDevice ?? button.dataset.libraryPlanned);
@@ -17802,7 +17806,7 @@ async function ttOpenSavedLessonPlanPdf(group, plan, stage = "latest", options =
     ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
       title: `${group.name} — ${stage === "planned" ? "Original planned" : plan.status || "Saved"} lesson`,
       filename: ttLessonPlanArchiveFileName(group, lesson, plan, stage).replace(/\.pdf$/i, ` - item ${Number(options.lessonIndex || 0) + 1}.pdf`), contentType: "pdf", bytes, deviceGroupFolder: ttLessonPlanGroupFolderName(group) });
-    if (options.device && ttNativePdfViewerAvailable()) await ttOpenExportOnDevice("preview");
+    if (options.device) await ttOpenExportOnDevice("preview");
   } catch (error) {
     ttShowBackupToast(`Could not create the lesson PDF. ${error.message || error}`, "warning");
   }

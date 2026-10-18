@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-18
+
+- Installed signed native Stage build 2 over the existing app after a private backup; main and retained recovery database records match exactly before/after installation and the app relaunches. Added **Preview PDF** labeling and a strict preview/share distinction: preview never falls back to an app chooser, while Open in remains an explicit share action. Corrected the native build-number substitution. All 89 tracked checks pass. Web publication and final viewer interaction verification are pending.
+
 ## 2026-10-16
 
 - Added the private read-only Lesson library on Home and the lesson toolbar, with school-year/group/student/status filters, stable historical student links, labeled attendance, original planned/current PDF actions, and a prominent per-group Print All button. History also gains a direct group-print shortcut. Group exports respect explicit lesson years and preserve distinct weekly lessons. Added native Quick Look/Open in/AirPrint with strict local PDF archive validation and private display handling; older shells retain existing PDF/sharing/Files fallback. PDF actions wrap at portrait/mobile widths. Existing Files/connected Drive folders and all classroom data remain intact. All 88 checks and isolated browser flows pass; signed iOS build succeeds. Published in `5c86edf` and `7d2a9bd`; six public runtime files match the final `20261016-lesson-library-2` release byte-for-byte. Native installation and physical sharing/printing are pending teacher availability.

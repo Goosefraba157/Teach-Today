@@ -58,3 +58,22 @@ print("Native PDF boundary verified")
     assert.match(result.stdout,/Native PDF boundary verified/);
   } finally { fs.rmSync(directory,{recursive:true,force:true}); }
 });
+
+const vm = require('node:vm');
+test('Preview never opens an app chooser; Open in shares explicitly; updated Stage opens Quick Look', async()=>{
+  const source=fs.readFileSync('teach-today.js','utf8');
+  const body=source.slice(source.indexOf('async function ttOpenExportOnDevice'),source.indexOf('function ttNativeDocumentAvailable'));
+  let available=false,shares=0,previews=0,saves=0;const messages=[];
+  const overlay={_exportBytes:new Uint8Array([1]),_exportFilename:'Lesson.pdf',_deviceGroupFolder:'Group 1',
+    _deviceArchive:{groupFolder:'Group 1',files:[{fileName:'Lesson.pdf',local:{status:'saved',path:'Lesson Plans/Group 1/Downloaded/Lesson.pdf'}}]}};
+  const context=vm.createContext({Uint8Array,File:class {},ttById:()=>overlay,ttNativePdfViewerAvailable:()=>available,
+    navigator:{canShare:()=>true,share:async()=>{shares++;}},ttIsNativeIpadShell:()=>true,
+    ttShowBackupToast:message=>messages.push(message),ttSaveLessonBundleArchive:async()=>{saves++;},
+    ttRequestNativePdfViewer:async(paths,action)=>{assert.deepEqual(Array.from(paths),['Lesson Plans/Group 1/Downloaded/Lesson.pdf']);assert.equal(action,'preview');previews++;}
+  });
+  vm.runInContext(body,context);
+  await context.ttOpenExportOnDevice('preview');assert.equal(shares,0);assert.equal(previews,0);assert.equal(saves,0);
+  assert.match(messages[0],/PDF is open here/);
+  await context.ttOpenExportOnDevice('share');assert.equal(shares,1);
+  available=true;await context.ttOpenExportOnDevice('preview');assert.equal(previews,1);assert.equal(shares,1);assert.equal(saves,0);
+});
