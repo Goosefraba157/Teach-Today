@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-18
 
-- Installed signed native Stage build 2 over the existing app after a private backup; main and retained recovery database records match exactly before/after installation and the app relaunches. Added **Preview PDF** labeling and a strict preview/share distinction: preview never falls back to an app chooser, while Open in remains an explicit share action. Corrected the native build-number substitution. All 89 tracked checks pass. Web publication and final viewer interaction verification are pending.
+- Installed signed native Stage build 2 over the existing app after a private backup; main and retained recovery database records match exactly before/after installation and the app relaunches. Added **Preview PDF** labeling and a strict preview/share distinction: preview never falls back to an app chooser, while Open in remains an explicit share action. Corrected the native build-number substitution. All 89 tracked checks pass. Published `20261018-pdf-preview-1` in `afc5bfd`; public runtime files and the exact native entry URL match the tested bytes. The entire saved state remains equal after relaunch, and all 71 existing lesson archive files retain their paths/sizes. The teacher’s final direct-viewer interaction/physical printing check remains outstanding.
 
 ## 2026-10-16
 
