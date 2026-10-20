@@ -39,6 +39,7 @@ function normalizeName(value) {
 
 function dateValue(value) {
   if (!value) return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) value = `${value}T12:00:00`;
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -214,15 +215,16 @@ function observations() {
   const rows = groupsForYear(selectedYearId).flatMap((group) => {
     const encoding = (group.encodingObservations || []).filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
       .map((record) => ({ ...record, _group: group, section: record.section || "section8" }));
-    const encodingKeys = new Set(encoding.map((record) => `${record.planId || record.lessonId || ""}|${normalizeName(record.item)}|${String(recordDate(record)).slice(0, 10)}`));
+    const mirrorKey = (record) => JSON.stringify([record.section || "section8", record.lessonId || record.planId || "", record.category || "", normalizeName(record.item), window.TeachTodayDictationProfile.observedDay(record)]);
+    const encodingKeys = new Set(encoding.filter((record) => record.item).map(mirrorKey));
     const dictationOnly = (group.dictationMisses || []).filter((record) => matchesStudent(record, student) && recordYear(record, group) === selectedYearId)
-      .filter((record) => !encodingKeys.has(`${record.planId || record.lessonId || ""}|${normalizeName(record.item)}|${String(recordDate(record)).slice(0, 10)}`))
+      .filter((record) => !encodingKeys.has(mirrorKey(record)))
       .map((record) => ({ ...record, _group: group, section: "section8", observationCode: "Miss", observationKind: "missed-item" }));
     return encoding.concat(dictationOnly);
   });
   const seen = new Set();
   return rows.filter((record) => {
-    const key = record.id || `${record.section}|${record.planId || record.lessonId || ""}|${record.studentId || normalizeName(record.student)}|${recordTime(record)}|${record.item || record.note || ""}`;
+    const key = record.id || JSON.stringify([record.section, record.lessonId || record.planId || "", record.category, record.studentId || normalizeName(record.student), record.date, record.item, record.note]);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -696,30 +698,6 @@ function section8Assessments(student = selectedStudent()) {
     .sort((a, b) => recordTime(b) - recordTime(a));
 }
 
-function section8AssessmentSummary(categoryNames, emptyText) {
-  const assessment = section8Assessments()[0];
-  const marks = observations();
-  if (!assessment) {
-    const legacyMisses = marks.filter((record) => record.section === "section8" && categoryNames.includes(record.category));
-    return legacyMisses.length
-      ? `<p><strong>Earlier saved misses</strong></p><div class="miss-chip-row">${legacyMisses.slice(0, 8).map((record) => `<span class="miss-chip">${escapeHtml(record.item)}</span>`).join("")}</div><p>Scores begin after you confirm assessed students when finishing a lesson. Missed items save as you teach.</p>`
-      : emptyText;
-  }
-  const categories = assessment.categories || {};
-  const plans = categoryNames.map((name) => ({ name, items: categories[name] || [] })).filter((entry) => entry.items.length);
-  if (!plans.length) return emptyText;
-  const lessonMisses = marks.filter((record) => record.section === "section8"
-    && (record.lessonId === assessment.lessonId || record.planId === assessment.planId)
-    && categoryNames.includes(record.category));
-  return plans.map(({ name, items }) => {
-    const itemKeys = new Set(items.map((item) => String(item).toLowerCase()));
-    const missed = [...new Set(lessonMisses.filter((record) => record.category === name && itemKeys.has(String(record.item || "").toLowerCase())).map((record) => record.item))];
-    const correct = Math.max(0, items.length - missed.length);
-    const percent = Math.round((correct / items.length) * 100);
-    return `<section class="dictation-score"><strong>${escapeHtml(name.replace(/^\d+\s*/, ""))}: ${correct}/${items.length} · ${percent}%</strong>${missed.length ? `<div class="miss-chip-row">${missed.map((item) => `<span class="miss-chip">${escapeHtml(item)}</span>`).join("")}</div>` : "<p>No missed items saved.</p>"}</section>`;
-  }).join("");
-}
-
 const section8ScoreColumns = [
   ["5 sounds", "Sounds"],
   ["5 word elements", "Word elements"],
@@ -729,18 +707,10 @@ const section8ScoreColumns = [
 ];
 
 function section8AssessmentDetail(assessment, marks = observations()) {
-  const categories = assessment.categories || {};
-  const lessonMisses = marks.filter((record) => record.section === "section8"
-    && (record.lessonId === assessment.lessonId || record.planId === assessment.planId));
   const byCategory = new Map();
-  Object.entries(categories).forEach(([category, items]) => {
-    const available = (items || []).map((item) => String(item));
-    const availableKeys = new Set(available.map((item) => item.toLowerCase()));
-    const importedMisses = assessment.missesByCategory?.[category];
-    const missed = Array.isArray(importedMisses)
-      ? importedMisses.filter((item) => availableKeys.has(String(item).toLowerCase()))
-      : [...new Set(lessonMisses.filter((record) => record.category === category && availableKeys.has(String(record.item || "").toLowerCase())).map((record) => String(record.item)))];
-    byCategory.set(category, { total: available.length, correct: Math.max(0, available.length - missed.length), missed });
+  Object.keys(assessment.categories || {}).forEach((category) => {
+    const score = window.TeachTodayDictationProfile.score(assessment, category, marks);
+    if (score) byCategory.set(category, { ...score, missed: score.words.filter(word => !word.correct).map(word => word.target) });
   });
   return byCategory;
 }
@@ -808,8 +778,7 @@ function renderSection8ScoreHistory() {
   const chronological = rows.slice().reverse();
   const oldest = chronological[0]?.assessment;
   const newest = chronological.at(-1)?.assessment;
-  const latestLessonNumber = Math.max(...rows.map(({ assessment }) => Number(assessment.lessonNumber) || 0));
-  const summaryLesson = latestLessonNumber ? `${latestLessonNumber} lessons` : `${rows.length} scored lesson${rows.length === 1 ? "" : "s"}`;
+  const summaryLesson = `${rows.length} saved assessment${rows.length === 1 ? "" : "s"}`;
   const range = oldest && newest && formatDate(recordDate(oldest)) !== formatDate(recordDate(newest))
     ? `${formatDate(recordDate(oldest))} – ${formatDate(recordDate(newest))}`
     : formatDate(recordDate(newest));
@@ -827,11 +796,18 @@ function renderEncoding() {
   byId("section6Summary").innerHTML = sectionSummary("section6");
   byId("section7Summary").innerHTML = sectionSummary("section7");
   byId("section8Summary").innerHTML = sectionSummary("section8");
-  byId("section8SoundsElementsSummary").innerHTML = section8AssessmentSummary(["5 sounds", "5 word elements"], "No Section 8 sounds or word-element observations.");
-  byId("section8WordsSummary").innerHTML = section8AssessmentSummary(["5 real words", "3 nonsense words"], "No Section 8 real-word or nonsense-word observations.");
-  byId("section8WritingSummary").innerHTML = section8AssessmentSummary(["HFW from phrase", "3 phrases", "2 sentences"], "No Section 8 HFW, phrase, or sentence observations.");
   renderSection8ScoreHistory();
-  const rows = observations();
+  const allRows = observations();
+  window.TeachTodayDictationProfile.render(byId("dictationProfile"), {
+    scope: `${selectedYearId}|${selectedStudent().key}`, assessments: section8Assessments(), observations: allRows,
+    onChooseStudent: () => { document.body.classList.remove("dictation-focus"); byId("profileRosterPicker").scrollIntoView({ block: "center", behavior: "smooth" }); },
+    onShowObservations: () => { const details = byId("section8ObservationRows").closest("details"); details.open = true; details.scrollIntoView({ block: "start", behavior: "smooth" }); }
+  });
+  byId("section8ObservationRows").innerHTML = allRows.filter(record => record.section === "section8").map(record => `<tr>
+    <td>${escapeHtml(formatDate(window.TeachTodayDictationProfile.observedDay(record)))}</td>
+    <td>${escapeHtml(record.category || observationCode(record))}</td><td>${escapeHtml(record.item || record.note || "—")}</td>
+    <td>${escapeHtml(record.lessonTitle || record.planId || "—")}</td></tr>`).join("") || '<tr><td colspan="4">No Section 8 observations saved.</td></tr>';
+  const rows = allRows.filter(record => record.section !== "section8");
   byId("observationRows").innerHTML = rows.length ? rows.map((record) => `
     <tr>
       <td>${escapeHtml(formatDate(recordDate(record)))}</td>
@@ -864,6 +840,7 @@ function renderAll() {
   renderEncoding();
   renderTimeline(byId("studentTimeline"), timelineEntries());
   updateViewMode();
+  document.body.classList.toggle("dictation-focus", selectedTab === "dictation");
   updateUrl();
 }
 
@@ -894,6 +871,7 @@ function updateUrl() {
 
 function showTab(tab) {
   selectedTab = tab;
+  document.body.classList.toggle("dictation-focus", tab === "dictation");
   document.querySelectorAll("[data-profile-tab]").forEach((button) => button.classList.toggle("active", button.dataset.profileTab === tab));
   document.querySelectorAll("[data-profile-panel]").forEach((panel) => { panel.hidden = panel.dataset.profilePanel !== tab; });
 }
@@ -1010,15 +988,36 @@ document.querySelectorAll("[data-profile-tab]").forEach((button) => button.addEv
 byId("downloadLegacyProfile").addEventListener("click", downloadLegacyArchive);
 byId("printProfile").addEventListener("click", () => window.print());
 
+let profileRefreshInFlight = null;
+let profileRefreshPending = false;
+function refreshProfileState() {
+  profileRefreshPending = true;
+  if (profileRefreshInFlight) return profileRefreshInFlight;
+  profileRefreshInFlight = (async () => {
+    try {
+      while (profileRefreshPending) {
+        profileRefreshPending = false;
+        await window.TeachTodayStageStorage?.prepareBoot?.();
+        renderAll();
+      }
+      byId("profileRefreshStatus").hidden = true;
+    } catch (_) {
+      byId("profileRefreshStatus").textContent = "Could not refresh the saved device record. The view may be out of date. Reopen Profile before relying on its latest results.";
+      byId("profileRefreshStatus").hidden = false;
+    } finally { profileRefreshInFlight = null; }
+  })();
+  return profileRefreshInFlight;
+}
 window.addEventListener("storage", (event) => {
-  if (event.key === storageKey) renderAll();
+  if (event.key === storageKey) refreshProfileState();
 });
 profileChannel?.addEventListener("message", (event) => {
-  if (event.data?.type === "state-saved") renderAll();
+  if (event.data?.type === "state-saved") refreshProfileState();
 });
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) renderAll();
+  if (!document.hidden) refreshProfileState();
 });
+window.addEventListener("pageshow", event => { if (event.persisted) refreshProfileState(); });
 
 showTab(selectedTab);
 renderAll();

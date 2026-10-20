@@ -39,6 +39,7 @@ function pmRealRecords(student) { const results = []; pmGroups().forEach((group)
   if (!pmMatches(record, student) || pmRecordYear(record, group) !== pmYear
     || record.assessmentStatus && record.assessmentStatus !== "assessed") return;
   const category = Object.keys(record.categories || {}).find((name) => pmNormalize(name) === "5realwords") || "5 real words";
+  if (Array.isArray(record.assessedCategories) && !record.assessedCategories.some(name => pmNormalize(name) === pmNormalize(category))) return;
   const words = record.categories?.[category] || [];
   if (!words.length) return;
   const allowed = new Set(words.map(pmNormalize));

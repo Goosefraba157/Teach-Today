@@ -11977,3 +11977,11 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .export-viewer-actions { flex-wrap:wrap;max-width:100%; }
 
 body:has(#ttLessonLibraryPanel:not([hidden])) .backup-status-toast { bottom:128px; }
+
+.section-review-dialog { width: min(820px, calc(100vw - 32px)); }
+.section-review-students fieldset { border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; min-width: 0; }
+.section-review-students legend { padding: 0 5px; font-weight: 800; }
+.section-review-students fieldset > label { border: 0; padding: 4px; }
+.section-review-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.section-review-categories label { min-width: 110px; flex: 1 1 120px; padding: 8px; font-size: 12px; }
+.section-review-categories label:has(input:disabled) { opacity: .5; }

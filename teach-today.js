@@ -4025,9 +4025,13 @@ async function ttReviewSection8BeforeFinish(group, lesson, plan) {
   const session = ttAttendanceSession(group, date);
   const review = helper.model({ group, lesson, plan, entries, session });
   if (!review.needed) return true;
+  const skill = scopeMap.find(item => item.id === lesson.substep) || activeStep(group);
+  const blocks = ttActiveDictationPlan(lesson, skill);
+  const categories = Object.fromEntries(blocks.map(item => [item.label, (item.values || []).slice()]));
+  categories["HFW from phrase"] = ttHighFrequencyItemsFromPhrases(blocks).map(item => item.value);
   ttSetNativeProjectionMode("stage");
-  const selectedIds = await ttSection8ReviewDialog(review);
-  if (!selectedIds) return false;
+  const selection = await ttSection8ReviewDialog(review, categories);
+  if (!selection) return false;
   // State can change while the teacher reviews. Never apply choices to a
   // replacement lesson, roster, attendance session, or database instance.
   const currentGroup = (appState.groups || []).find(item => item.id === group.id);
@@ -4040,15 +4044,11 @@ async function ttReviewSection8BeforeFinish(group, lesson, plan) {
     ttShowBackupToast("Attendance or lesson details changed. Please finish the lesson again to review the current students.", "warning");
     return false;
   }
-  const skill = scopeMap.find(item => item.id === lesson.substep) || activeStep(group);
-  const blocks = ttActiveDictationPlan(lesson, skill);
-  const categories = Object.fromEntries(blocks.map(item => [item.label, (item.values || []).slice()]));
-  categories["HFW from phrase"] = ttHighFrequencyItemsFromPhrases(blocks).map(item => item.value);
-  helper.apply({ group, lesson, plan, entries, session, categories, selectedIds });
+  helper.apply({ group, lesson, plan, entries, session, categories, sessionDate: date, ...selection });
   return true;
 }
 
-function ttSection8ReviewDialog(review) {
+function ttSection8ReviewDialog(review, categories = {}) {
   return new Promise(resolve => {
     const previousFocus = document.activeElement;
     const dialog = document.createElement("dialog");
@@ -4058,11 +4058,11 @@ function ttSection8ReviewDialog(review) {
     dialog.setAttribute("aria-describedby", "ttSection8ReviewDescription");
     dialog.innerHTML = `<form method="dialog">
       <h2 id="ttSection8ReviewTitle">Finish lesson</h2>
-      <p id="ttSection8ReviewDescription">Confirm who completed <strong>all displayed Section 8 items</strong>. Missed items are already saved. Unchecked students receive no new score.</p>
-      <div class="section-review-students">${review.rows.map(row => `<label>
-        <input type="checkbox" value="${escapeHtml(row.studentId)}" ${row.checked ? "checked" : ""} ${row.disabled ? "disabled" : ""}>
+      <p id="ttSection8ReviewDescription">Confirm each student and the categories they completed. Select a category only if <strong>every item in that category was assessed</strong>. Real words are suggested for present students; optional categories start off. Missed items are already saved.</p>
+      <div class="section-review-students">${review.rows.map(row => `<fieldset data-review-student="${escapeHtml(row.studentId)}"><legend>${escapeHtml(row.name)}</legend><label>
+        <input type="checkbox" data-review-person value="${escapeHtml(row.studentId)}" ${row.checked ? "checked" : ""} ${row.disabled ? "disabled" : ""}>
         <span><strong>${escapeHtml(row.name)}</strong><small>${row.existing ? "Score already saved" : row.absent ? "Absent — no new score" : row.present ? "Present — uncheck if not assessed" : "Attendance unconfirmed — select only if assessed"}</small></span>
-      </label>`).join("")}</div>
+      </label><div class="section-review-categories">${Object.entries(categories).filter(([,items]) => items.length).map(([category, items]) => `<label><input type="checkbox" data-review-category value="${escapeHtml(category)}" ${row.checked && !row.disabled && category === "5 real words" ? "checked" : ""} ${row.disabled || !row.checked ? "disabled" : ""}><span>${escapeHtml(category.replace(/^\d+\s*/, ""))}<small>${items.length} items</small></span></label>`).join("")}</div></fieldset>`).join("")}</div>
       <div class="section-review-actions"><button type="button" data-review-cancel>Keep teaching</button><button type="submit" data-review-finish>Save &amp; finish lesson</button></div>
     </form>`;
     const close = value => {
@@ -4072,9 +4072,23 @@ function ttSection8ReviewDialog(review) {
     };
     dialog.addEventListener("cancel", event => { event.preventDefault(); close(null); });
     dialog.querySelector("[data-review-cancel]").addEventListener("click", () => close(null));
+    dialog.addEventListener("change", event => {
+      if (!event.target.matches("[data-review-person]")) return;
+      const row = event.target.closest("fieldset");
+      row.querySelectorAll("[data-review-category]").forEach(input => { input.disabled = !event.target.checked; });
+      if (event.target.checked && !row.querySelector("[data-review-category]:checked")) {
+        const real = [...row.querySelectorAll("[data-review-category]")].find(input => input.value === "5 real words");
+        if (real) real.checked = true;
+      }
+    });
     dialog.querySelector("form").addEventListener("submit", event => {
       event.preventDefault();
-      close([...dialog.querySelectorAll("input:checked:not(:disabled)")].map(input => input.value));
+      const selectedIds = [], assessedCategoriesByStudent = {};
+      dialog.querySelectorAll("[data-review-person]:checked:not(:disabled)").forEach(input => {
+        const selected = [...input.closest("fieldset").querySelectorAll("[data-review-category]:checked:not(:disabled)")].map(item => item.value);
+        if (selected.length) { selectedIds.push(input.value); assessedCategoriesByStudent[input.value] = selected; }
+      });
+      close({ selectedIds, assessedCategoriesByStudent });
     });
     document.body.appendChild(dialog);
     dialog.showModal();
@@ -19067,6 +19081,10 @@ function ttDictationReplacementPool(label, lesson, skill) {
 
 function ttHighFrequencyItemsFromPhrases(items = []) {
   const hfwBank = new Set();
+  // Earlier taught HFW still count when they occur in this lesson's phrases.
+  scopeMap.filter(step => isAtLeastSubstep(ttLesson?.substep || "1.1", step.id)).forEach(step => {
+    hfwWordsForSubstep(step.id, ttLesson).forEach(word => hfwBank.add(String(word).toLowerCase()));
+  });
   (ttLesson?.highFrequencyWords || []).forEach((word) => hfwBank.add(String(word).toLowerCase()));
   dictationValues("highFrequency", ttLesson?.substep, ttLesson?.readerLevel || "AB").forEach((word) => hfwBank.add(String(word).toLowerCase()));
   const sentenceData = window.readerSentenceIndex?.[ttLesson?.substep]?.[ttLesson?.readerLevel || "AB"]

@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="student-profile.css?v=20261018-charting-responses-1">
+    <link rel="stylesheet" href="student-profile.css?v=20261020-dictation-profile-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -39,6 +39,7 @@
     </header>
 
     <main class="profile-shell">
+      <p id="profileRefreshStatus" class="archive-notice" role="alert" hidden></p>
       <section class="profile-sync-strip profile-sync-compact" aria-live="polite">
         <span class="sync-dot" aria-hidden="true"></span>
         <div><strong id="syncTitle">Reading this device</strong><span id="syncDetail">Student Profile refreshes whenever Teach Today saves.</span></div>
@@ -58,7 +59,8 @@
       <nav class="profile-tabs" aria-label="Student profile sections">
         <button type="button" class="active" data-profile-tab="overview">Overview</button>
         <button type="button" data-profile-tab="charting">Section 4 Charting</button>
-        <button type="button" data-profile-tab="encoding">Sections 6–8</button>
+        <button type="button" data-profile-tab="dictation">Section 8 Dictation</button>
+        <button type="button" data-profile-tab="encoding">Sections 6–7</button>
         <button type="button" data-profile-tab="timeline">Timeline</button>
         <button type="button" data-profile-tab="legacy">Legacy archive</button>
       </nav>
@@ -137,21 +139,24 @@
         </article>
       </section>
 
+      <section class="profile-panel" data-profile-panel="dictation" hidden>
+        <article id="dictationProfile" class="profile-card dp-profile"></article>
+        <details class="profile-card dp-raw-history"><summary>All saved Section 8 observations</summary><p>Every saved item, status, and diagnostic note. These observations do not require a scored assessment.</p>
+          <div class="table-wrap"><table><thead><tr><th>Recorded date</th><th>Category / type</th><th>Item or note</th><th>Lesson</th></tr></thead><tbody id="section8ObservationRows"></tbody></table></div>
+        </details>
+        <details class="profile-card dp-raw-history"><summary>Earlier assessment table</summary><p>Saved snapshots are retained. New assessments include separate category confirmation.</p>
+          <div class="table-wrap"><table class="dictation-score-history"><thead><tr><th>Date</th><th>Lesson</th><th>Substep</th><th>Sounds</th><th>Word elements</th><th>Real words</th><th>Nonsense words</th><th>HFW from phrases</th><th>Missed items</th></tr></thead><tbody id="section8ScoreHistoryRows"></tbody></table></div>
+        </details>
+      </section>
+
       <section class="profile-panel" data-profile-panel="encoding" hidden>
         <div class="encoding-summary-grid">
           <article class="profile-card section-6-card"><span>Section 6</span><h2>Sound recognition</h2><div id="section6Summary" class="encoding-summary empty-state">No observations.</div></article>
           <article class="profile-card section-7-card"><span>Section 7</span><h2>Word building</h2><div id="section7Summary" class="encoding-summary empty-state">No observations.</div></article>
-          <article class="profile-card section-8-card"><span>Section 8 · Dictation</span><h2>Sounds and word elements</h2><div id="section8SoundsElementsSummary" class="encoding-summary empty-state">No observations.</div></article>
-          <article class="profile-card section-8-card"><span>Section 8 · Dictation</span><h2>Real words and nonsense words</h2><div id="section8WordsSummary" class="encoding-summary empty-state">No observations.</div></article>
-          <article class="profile-card section-8-card"><span>Section 8 · Dictation</span><h2>HFW from phrases, phrases, and sentences</h2><div id="section8WritingSummary" class="encoding-summary empty-state">No observations.</div></article>
           <div id="section8Summary" hidden aria-hidden="true"></div>
         </div>
         <article class="profile-card">
-          <div class="section-heading"><div><span class="section-kicker">Per completed lesson</span><h2>Section 8 Dictation Score History</h2><p>One row per verified Section 8 lesson. The first row is the cumulative score across the listed lessons.</p></div></div>
-          <div class="table-wrap"><table class="dictation-score-history"><thead><tr><th>Date</th><th>Lesson</th><th>Substep</th><th>Sounds</th><th>Word elements</th><th>Real words</th><th>Nonsense words</th><th>HFW from phrases</th><th>Missed items</th></tr></thead><tbody id="section8ScoreHistoryRows"></tbody></table></div>
-        </article>
-        <article class="profile-card">
-          <div class="section-heading"><div><span class="section-kicker">Saved evidence</span><h2>Observation history</h2><p>Section 8 duplicates are combined into one visible record.</p></div></div>
+          <div class="section-heading"><div><span class="section-kicker">Saved evidence</span><h2>Observation history</h2><p>Sections 6–7. Dictation has its own Section 8 tab.</p></div></div>
           <div class="table-wrap"><table><thead><tr><th>Date</th><th>Section</th><th>Substep</th><th>Type</th><th>Item or detail</th><th>Lesson</th></tr></thead><tbody id="observationRows"></tbody></table></div>
         </article>
       </section>
@@ -177,6 +182,6 @@
     </main>
 
     <script src="stage-storage.js?v=20260910-indexeddb-1"></script>
-    <script src="stage-app-bootstrap.js?v=20260910-indexeddb-1" data-scripts="student-profile.js?v=20261018-charting-responses-1|pwa-register.js"></script>
+    <script src="stage-app-bootstrap.js?v=20261020-dictation-profile-1" data-scripts="dictation-profile.js?v=20261020-dictation-profile-1|student-profile.js?v=20261020-dictation-profile-1|pwa-register.js"></script>
   </body>
 </html>

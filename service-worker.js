@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-18-charting-responses-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-20-dictation-profile-1";
 
 const APP_SHELL = [
   "./",
@@ -43,7 +43,7 @@ const APP_SHELL = [
   "./lesson-progress.js",
   "./lesson-assessment-review.js",
   "./lesson-progress.js?v=20261018-auto-progress-1",
-  "./lesson-assessment-review.js?v=20261018-auto-progress-1",
+  "./lesson-assessment-review.js?v=20261020-dictation-profile-1",
   "./lesson-library.js",
   "./lesson-library-preview.js",
   "./vendor/pdfjs/pdf.mjs",
@@ -68,6 +68,8 @@ const APP_SHELL = [
   "./lesson-planner-v2.js",
   "./student-display.js",
   "./student-profile.js",
+  "./dictation-profile.js",
+  "./dictation-profile.js?v=20261020-dictation-profile-1",
   "./progress-monitoring.js",
   "./student-developer-access.js",
   "./student-lesson-data.js",

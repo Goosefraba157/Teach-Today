@@ -51,7 +51,7 @@ test("each observation tap is linked and persisted immediately", () => {
 });
 
 test("the restarted Student Profile summarizes and lists Section 6–8 observations", () => {
-  assert.match(profileHtml, /data-profile-tab="encoding">Sections 6–8<\/button>/);
+  assert.match(profileHtml, /data-profile-tab="encoding">Sections 6–7<\/button>/);
   ["section6Summary", "section7Summary", "section8Summary", "observationRows"].forEach((id) => {
     assert.match(profileHtml, new RegExp(`id="${id}"`));
   });
