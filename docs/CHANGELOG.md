@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-21
+
+- Established source-verified collaborative lesson planning: use the latest private evidence and existing indexes to propose Sections 1–9, verify selected source pages, label instructional hypotheses and program-source material, distinguish supported practice from independent checks, and preserve repeated-passage continuity. A private pilot and source checks remain in ignored private-input for teacher review; no student details or draft content are published. No application or classroom data changes.
+
 ## 2026-10-20
 
 - Added the approved read-only Section 8 Profile graphs for real words, nonsense words, HFW from phrases, and optional sounds/word elements. Saved targets appear inside proportional bars with correct/missed markers; written responses appear only when explicitly recorded. Complete date/attempt history, unscored observations, linked raw evidence, weighted totals, recurring misses, and teacher tags remain accessible. Prior snapshots are retained with provenance and honest date/category labels; no source data is rewritten.
