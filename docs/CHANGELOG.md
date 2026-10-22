@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-22
+
+- Regenerated the private supervisor-format Section 4 fillable report with wrapped parenthesized responses and target-only missing responses. Compared the current checkpoint to the supplied original PDF and preserved older printed evidence in the reporting copy with private source provenance. Verified the 64-page/12,352-field editable output, independent checkbox selection, preserved prior responses, and exact SHA-256 readback from its private Drive destination. Classroom records and runtime remain unchanged; in-app export controls and live recovery are still pending.
+
 ## 2026-10-21
 
 - Refined the private lesson's sound inventories, compact HFW banks, rotated review words, expanded current spelling choices, review/current dictation mix and phrase/sentence connections; removed reader-directed asides. Preserved its preceding version; verified 86 editable fields, source/list checks and final page renders. Updated shared planning conventions without student content; no runtime or classroom state changes.
