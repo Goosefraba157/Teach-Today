@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-21
 
+- Shortened the private lesson's Review Concepts fields to the teacher's shorthand, kept explanations in notes, preserved the prior version and verified the editable PDF/render. Documented the notation convention; no student content or app changes published.
+
 - Refined the private diagnostic plan to connect specific observed sound/position/structure errors with teaching words and independent checks. Preserved the preceding version; reverified all 86 editable fields and three rendered pages. Added the teacher's explicit trouble-spot-driven word-selection requirement to shared decisions without student content. No runtime or classroom data changes.
 
 - Produced the requested next-day lesson in the existing three-page expanded standard PDF form, with complete planned section fields, diagnostic teaching notes and source references. Repaired field wrapping and visual clipping in this private artifact, retained editability, and verified 86 logical/widget field values plus all rendered pages. Educational content and outputs remain ignored; no application or classroom state changed.
