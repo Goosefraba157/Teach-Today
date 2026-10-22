@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-21
 
+- Refined the private lesson's sound inventories, compact HFW banks, rotated review words, expanded current spelling choices, review/current dictation mix and phrase/sentence connections; removed reader-directed asides. Preserved its preceding version; verified 86 editable fields, source/list checks and final page renders. Updated shared planning conventions without student content; no runtime or classroom state changes.
+
 - Shortened the private lesson's Review Concepts fields to the teacher's shorthand, kept explanations in notes, preserved the prior version and verified the editable PDF/render. Documented the notation convention; no student content or app changes published.
 
 - Refined the private diagnostic plan to connect specific observed sound/position/structure errors with teaching words and independent checks. Preserved the preceding version; reverified all 86 editable fields and three rendered pages. Added the teacher's explicit trouble-spot-driven word-selection requirement to shared decisions without student content. No runtime or classroom data changes.
