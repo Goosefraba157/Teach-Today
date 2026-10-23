@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-22
 
+- Added Charting Central with an automatic large PDF view, current/remembered student and student/group/whole-roster/year choices, complete page flipping and student jumps. Export Charting Pages produces the unchanged editable WRS form with wrapped responses and verified private Drive saving, download/Files and printing. Optional earlier PDFs preserve missing printed evidence only for the current report session; no classroom data import or migration. Added offline assets and identity/pagination/form/Drive regressions; all 139 checks and a synthetic full-app browser audit pass, and the generator reproduces the approved report's complete printed evidence.
+
 - Regenerated the private supervisor-format Section 4 fillable report with wrapped parenthesized responses and target-only missing responses. Compared the current checkpoint to the supplied original PDF and preserved older printed evidence in the reporting copy with private source provenance. Verified the 64-page/12,352-field editable output, independent checkbox selection, preserved prior responses, and exact SHA-256 readback from its private Drive destination. Classroom records and runtime remain unchanged; in-app export controls and live recovery are still pending.
 
 ## 2026-10-21

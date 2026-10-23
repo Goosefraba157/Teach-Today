@@ -11952,6 +11952,27 @@ body.attendance-modal-open { position: fixed; left: 0; right: 0; width: 100%; ov
 .lesson-library-pdf-viewport { position:relative;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;padding:12px;background:#e2e8f0; }
 .lesson-library-pdf-viewport canvas { display:block;max-width:none;margin:0 auto;box-shadow:0 2px 10px #33415530;background:white; }
 #ttLibraryPdfMessage { margin:0;position:absolute;top:20px;left:20px;right:20px;padding:12px;border-radius:8px;background:#fff;color:#475569;font-size:13px;line-height:1.5;box-shadow:0 2px 10px #33415520; }
+#ttChartingPdfMessage { margin:0;padding:18px;color:#475569;font-size:14px; }
+.charting-export-overlay { position:fixed;inset:0;z-index:13500;display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:16px;background:#f8fafc;color:#142033;height:100vh;height:100dvh;box-sizing:border-box;overflow:hidden; }
+.charting-export-overlay[hidden],.charting-export-overlay [hidden] { display:none!important; }
+.charting-export-overlay > header { display:flex;justify-content:space-between;align-items:center;gap:12px; }
+.charting-export-overlay h2 { margin:0;font-size:24px; }.charting-export-overlay header p { margin:4px 0 0;color:#475569; }
+.charting-export-overlay button,.charting-export-overlay select { min-height:44px;border:1px solid #94a3b8;border-radius:9px;padding:9px;background:#fff;color:#142033;max-width:100%;font:inherit; }
+.charting-export-overlay button { background:#ecfdf5;border-color:#0f766e;color:#115e59;font-weight:750;cursor:pointer; }
+.charting-export-overlay button:disabled { opacity:.5;cursor:default; }
+.charting-export-overlay :is(button,select,input,summary):focus-visible { outline:3px solid #38bdf8;outline-offset:2px; }
+.charting-export-workspace { display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr);gap:14px;min-height:0; }
+.charting-export-options { overflow:auto;min-width:0;padding:2px 10px 16px 2px;display:flex;flex-direction:column;gap:10px;align-items:stretch; }
+.charting-export-options > label { display:grid;gap:5px;font-weight:750; }.charting-export-options select { width:100%; }
+.charting-export-options details { padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff; }
+.charting-export-options summary { cursor:pointer;font-weight:750;min-height:32px; }.charting-export-options input[type=file] { width:100%;font-size:12px;margin:8px 0; }
+.charting-export-options p { margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere; }
+.charting-export-options details p { margin-top:8px; }#ttChartingWarnings { color:#6b4d14; }#ttChartingDelivery { white-space:pre-wrap;font-weight:700; }
+.charting-central-actions { display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end; }.charting-export-buttons { display:grid;gap:8px; }
+.charting-export-preview { display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;min-width:0;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;background:#fff; }
+.charting-export-preview > footer { display:flex;flex-wrap:wrap;gap:8px;padding:7px;align-items:center;justify-content:center;border-top:1px solid #cbd5e1; }
+.charting-export-preview .lesson-library-pdf-viewport { min-height:0; }
+@media(max-width:700px) { .charting-export-overlay { padding:10px; }.charting-export-overlay header p { font-size:12px; }.charting-export-workspace { display:flex;flex-direction:column;overflow:auto; }.charting-export-options { overflow:visible;flex:none;padding-right:0; }.charting-export-preview { flex:none;height:65vh;min-height:320px; }.charting-export-overlay h2 { font-size:20px; } }
 .lesson-library-pdf > footer { display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:6px 8px;border-top:1px solid #dbe3ee; }
 .lesson-library-page-controls,.lesson-library-zoom-controls { display:flex;align-items:center;gap:5px; }
 .lesson-library-page-controls > span { min-width:74px;text-align:center;font-size:12px;font-weight:750; }.lesson-library-zoom-controls > span { min-width:32px;font-size:11px;text-align:center; }

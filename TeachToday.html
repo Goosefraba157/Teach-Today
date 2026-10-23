@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20261020-dictation-profile-1">
+    <link rel="stylesheet" href="teach-today.css?v=20261022-charting-export-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -259,6 +259,7 @@
           <button id="ttRecoverMissingAttendance" type="button">Recover missing attendance for one date</button>
           <button id="ttImportHistoricalWrs" type="button">Import historical WRS</button>
           <button id="ttExportCsv" type="button">Export spreadsheet</button>
+          <button id="ttChartingExportRecords" type="button">Charting Central</button>
         </div>
         <input id="ttRestoreFile" type="file" accept="application/json,.json" hidden>
         <input id="ttSection8HistoryFile" type="file" accept="application/json,.json" hidden>
@@ -417,6 +418,7 @@
             <button id="ttHomeAttendanceCentral" class="home-data-button home-data-attendance" type="button" title="Attendance calendar and daily summaries">Attendance</button>
             <button id="ttHomeSavedToggle" class="home-data-button" type="button" title="Saved lessons" aria-controls="ttSavedPanel" aria-expanded="false">History</button>
             <button id="ttHomeLessonLibrary" class="home-data-button" type="button">Lesson library</button>
+            <button id="ttHomeChartingExport" class="home-data-button" type="button">Charting Central</button>
             <button id="ttHomeDataToggle" class="home-data-button" type="button" title="Data center and records" aria-controls="ttDataPanel" aria-expanded="false">Records</button>
             <button id="ttHomeProfile" class="home-data-button home-data-profile" type="button" title="Student profile">Profile</button>
             <button id="ttHomeProgressMonitoring" class="home-data-button" type="button" title="EdPlan progress-monitoring evidence">Progress</button>
@@ -559,6 +561,27 @@
           <section><h3>Suffixes</h3><div id="ttWbSuffixes" class="wb-card-tray"></div></section>
           <section><h3>Latin bases</h3><div id="ttWbLatin" class="wb-card-tray"></div></section>
         </aside>
+      </div>
+    </section>
+
+    <section id="ttChartingExportPanel" class="charting-export-overlay" role="dialog" aria-modal="true" aria-labelledby="ttChartingExportTitle" hidden>
+      <header><div><h2 id="ttChartingExportTitle">Charting Central</h2><p>School-year charting pages, with wrapped student responses.</p></div><div class="charting-central-actions"><button id="ttChartingExportMenu" type="button">Export Charting Pages</button><button id="ttChartingClose" type="button">Close</button></div></header>
+      <div class="charting-export-workspace">
+        <aside class="charting-export-options">
+          <label>School year<select id="ttChartingYear"></select></label>
+          <label>View<select id="ttChartingScope"><option value="student" selected>One student</option><option value="group">Whole group</option><option value="roster">Whole roster</option></select></label>
+          <label id="ttChartingGroupLabel">Group<select id="ttChartingGroup"></select></label>
+          <label id="ttChartingStudentLabel" hidden>Student<select id="ttChartingStudent"></select></label>
+          <details><summary>Include an earlier charting PDF</summary><p>Optional: retain older printed entries missing from this device. This does not restore or change classroom records.</p><input id="ttChartingPriorFile" type="file" accept="application/pdf,.pdf" aria-label="Earlier fillable charting PDF"><button id="ttChartingPriorClear" type="button">Remove earlier PDF</button><p id="ttChartingPriorStatus" role="status">No earlier PDF selected.</p></details>
+          <p id="ttChartingSummary" role="status"></p><p id="ttChartingWarnings"></p>
+          <button id="ttChartingCreate" type="button">Refresh pages</button>
+          <details id="ttChartingExportActions"><summary>Export Charting Pages</summary><div class="charting-export-buttons"><button id="ttChartingDrive" type="button" disabled>Save to Google Drive</button><button id="ttChartingDownload" type="button" disabled>Download PDF</button><button id="ttChartingOpen" type="button" disabled>Open / Print PDF</button></div><p>Exports the student, group, or roster currently displayed.</p></details>
+          <p id="ttChartingDelivery" role="status" aria-live="polite"></p>
+        </aside>
+        <div class="charting-export-preview">
+          <div id="ttChartingPdfViewport" class="lesson-library-pdf-viewport"><p id="ttChartingPdfMessage" role="status">Choose a scope, then create the charting PDF.</p><canvas id="ttChartingPdfCanvas" role="img" aria-label="Charting page" hidden></canvas></div>
+          <footer><button id="ttChartingPrevious" type="button" aria-label="Previous charting page" disabled>‹</button><span id="ttChartingPdfPage" aria-live="polite">No PDF created</span><button id="ttChartingNext" type="button" aria-label="Next charting page" disabled>›</button><label id="ttChartingJumpLabel" hidden>Go to student <select id="ttChartingJump"></select></label><label>Fit <select id="ttChartingFit"><option value="width">Fit width</option><option value="page">Whole page</option></select></label></footer>
+        </div>
       </div>
     </section>
 
@@ -1236,6 +1259,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20261020-dictation-profile-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|teach-today.js?v=20261020-dictation-profile-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261022-charting-export-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|charting-export.js?v=20261022-charting-export-1|charting-export-ui.js?v=20261022-charting-export-1|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|teach-today.js?v=20261022-charting-export-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

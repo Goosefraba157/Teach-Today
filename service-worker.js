@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-20-dictation-profile-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-22-charting-export-1";
 
 const APP_SHELL = [
   "./",
@@ -40,12 +40,22 @@ const APP_SHELL = [
   "./developer-data-diagnostic.js",
   "./onboarding.js",
   "./teach-today.js",
+  "./teach-today.js?v=20261022-charting-export-1",
+  "./teach-today.css?v=20261022-charting-export-1",
+  "./stage-app-bootstrap.js?v=20261022-charting-export-1",
   "./lesson-progress.js",
   "./lesson-assessment-review.js",
   "./lesson-progress.js?v=20261018-auto-progress-1",
   "./lesson-assessment-review.js?v=20261020-dictation-profile-1",
   "./lesson-library.js",
   "./lesson-library-preview.js",
+  "./charting-export.js",
+  "./charting-export-ui.js",
+  "./charting-export.js?v=20261022-charting-export-1",
+  "./charting-export-ui.js?v=20261022-charting-export-1",
+  "./vendor/fontkit-1.1.1.min.js",
+  "./assets/wrs-charting-template.pdf",
+  "./assets/wrs-charting-fields.json",
   "./vendor/pdfjs/pdf.mjs",
   "./vendor/pdfjs/pdf.worker.mjs",
   "./vendor/pdfjs/standard_fonts/FoxitDingbats.pfb",

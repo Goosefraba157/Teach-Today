@@ -14476,7 +14476,7 @@ function ttCloseExportViewer() {
   if (!overlay) return;
   frame.src = "";
   overlay.setAttribute("hidden", "");
-  document.body.style.overflow = ttById("ttLessonLibraryPanel")?.hidden === false ? "hidden" : "";
+  document.body.style.overflow = ttById("ttLessonLibraryPanel")?.hidden === false || ttById("ttChartingExportPanel")?.hidden === false ? "hidden" : "";
   if (overlay._exportBlobUrl) {
     URL.revokeObjectURL(overlay._exportBlobUrl);
     overlay._exportBlobUrl = null;
@@ -14711,6 +14711,18 @@ async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
   const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
   if (!response.ok || await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
     throw new Error("Google Drive lesson PDF readback did not match the saved bytes.");
+  }
+  return file;
+}
+
+async function ttSaveDriveChartingPdf(bytes, fileName) {
+  if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted.");
+  const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
+  const folder = await ttDriveNamedFolder("Charting", root);
+  const file = await ttDriveUpsertBackup(folder, fileName, new Blob([bytes], { type: "application/pdf" }), "application/pdf");
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
+  if (!response.ok || await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
+    throw new Error("The Google Drive charting PDF readback did not match. Retry to verify that same file.");
   }
   return file;
 }
@@ -21107,6 +21119,20 @@ function ttBind() {
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
   ["ttHomeLessonLibrary", "ttLessonLibrary"].forEach(id => ttById(id)?.addEventListener("click", ttOpenLessonLibrary));
+  window.TeachTodayChartingExportUI?.install({
+    getState: () => appState,
+    activeGroupId: () => (document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup())?.id || "",
+    activeStudentId: () => { const group = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup(); return group?.studentIds?.[group.activeStudent] || ""; },
+    stopMirror: () => ttSetNativeProjectionMode("stage"),
+    saveDrive: ttSaveDriveChartingPdf,
+    reconnectDrive: async () => { ttDriveAccessToken = ""; if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted."); },
+    saveLocal: async (bytes, fileName) => {
+      if (!ttNativeDocumentAvailable()) return null;
+      if (bytes.length > 14500000) throw new Error("This PDF exceeds the iPad Files limit. Choose a smaller scope, or save the full PDF to Drive.");
+      return ttSaveNativeLessonPlanPdf(bytes, await ttDocumentSha256Hex(bytes), fileName, "Downloaded", "Charting");
+    },
+    openPdf: (bytes, filename) => ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })), title: "WRS Charting Pages", filename, bytes, deviceGroupFolder: "Charting" })
+  });
   ttById("ttLessonLibraryClose")?.addEventListener("click", ttCloseLessonLibrary);
   ttById("ttLessonLibraryPanel")?.addEventListener("keydown", ttPrivateDocumentKeydown);
   ttById("ttExportViewer")?.addEventListener("keydown", ttPrivateDocumentKeydown);
