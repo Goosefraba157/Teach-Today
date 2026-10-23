@@ -46,6 +46,11 @@ test('a prior whole-roster report quietly filters other students and never guess
  const ambiguous=api.collect(s,{...options,scope:'student',groupId:'g',studentId:'a'},[record('old',{studentId:undefined,student:'Same first name'})]);
  assert.equal(ambiguous.earlierAttempts,0);assert.match(ambiguous.warnings.join(' '),/could not be linked/);
 });
+test('earlier targets with different punctuation are distinct printed evidence',()=>{
+ const s=state();s.masterRecords=[record('saved',{wrongWords:['kings'],wordRecords:[]})];
+ const result=api.collect(s,options,[record('earlier',{studentId:undefined,wrongWords:["king's"],wordRecords:[]})]);
+ assert.equal(result.savedAttempts,1);assert.equal(result.earlierAttempts,1);assert.equal(result.attempts,2);
+});
 test('full history paginates beyond 24 attempts and error overflow continues without dropping targets',async()=>{
  const s=state();s.masterRecords=Array.from({length:25},(_,i)=>record(`r${i}`));s.masterRecords[0].wrongWords=Array.from({length:15},(_,i)=>`target${i}`);s.masterRecords[0].correct=0;
  const model=api.collect(s,{...options,scope:'student',groupId:'g',studentId:'a'}), pdf=await api.generate(model,resources), doc=await PDFLib.PDFDocument.load(pdf.bytes);

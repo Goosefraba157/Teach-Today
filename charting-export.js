@@ -54,7 +54,7 @@
     });
   }
   function signature(r) {
-    return JSON.stringify([String(r.substep || ''),String(r.wordlistPage ?? ''),String(r.seconds ?? ''),misses(r).map(m => normal(m.word))]);
+    return JSON.stringify([String(r.substep || ''),String(r.wordlistPage ?? ''),String(r.seconds ?? ''),misses(r).map(m => m.word.toLowerCase().trim())]);
   }
   function collect(state, options, prior = []) {
     const pool = students(state,{year:options.year,groupId:options.scope === 'roster' ? '' : options.groupId});
@@ -88,7 +88,7 @@
       const matching = candidates.filter(r => r._day === day(recordDate(source)));
       // A prior PDF has no stable attempt ID. Collapse only an exact printed
       // match whose recorded responses are represented in the saved attempts.
-      const responsesPresent = misses(source).every(m => !m.said || matching.some(r => misses(r).some(w => normal(w.word) === normal(m.word) && w.said.toLowerCase().trim() === m.said.toLowerCase().trim())));
+      const responsesPresent = misses(source).every(m => !m.said || matching.some(r => misses(r).some(w => w.word.toLowerCase().trim() === m.word.toLowerCase().trim() && w.said.toLowerCase().trim() === m.said.toLowerCase().trim())));
       if (matching.length && responsesPresent) continue;
       if (candidates.some(r => r._day !== day(recordDate(source)))) possibleDates++;
       attempts.push({...clone(source),_studentId:sid,_key:`printed-${earlier++}`,_day:day(recordDate(source)),_printed:true});
