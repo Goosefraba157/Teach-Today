@@ -1,4 +1,4 @@
-/* Session-only charting export controls. The adapter owns existing app services. */
+/* Charting preview and private export history. Classroom records remain read-only. */
 (function (root) {
   'use strict';
   let assets;
@@ -18,7 +18,88 @@
     const api=root.TeachTodayChartingExport, by=id=>document.getElementById(id), panel=by('ttChartingExportPanel');
     if (!panel || panel.dataset.installed) return;panel.dataset.installed='true';
     let serial=0,prior=[],artifact=null,viewer=null,returnFocus=null,busy=false,reconnect=false;
+    const archiveApi=root.TeachTodayChartingArchive,store=archiveApi.openStore(root.indexedDB);
+    let historyLimit=10,historySerial=0,archiveError='',historyTimer;
+    const scheduler=archiveApi.service({store,adapter,generate:buildWeekly,changed:error=>{
+      archiveError=error || '';clearTimeout(historyTimer);historyTimer=setTimeout(()=>void renderHistory(),80);
+    }});
     const viewKey='teachToday.chartingCentral.view';
+    const when=value=>value?new Date(value).toLocaleString():'';
+    async function buildWeekly(state,meta) {
+      const model=api.collect(state,{year:meta.year,scope:'roster'});
+      if(!model.rows.length)throw new Error('No saved roster is available for the active school year.');
+      const parts=await archiveApi.generateFiles(model,api,await dependencies());
+      return reportFrom(meta,model,parts,state);
+    }
+    function reportFrom(meta,model,parts,state) {
+      const name=archiveApi.fileName(meta);
+      return {...meta,fileName:name,students:model.rows.length,attempts:model.attempts,earlierAttempts:model.earlierAttempts,
+        warnings:model.warnings,sourceSavedAt:state.lastSavedAt || '',pages:parts.reduce((sum,f)=>sum+f.pages,0),
+        files:parts.map((part,i)=>({...part,fileName:parts.length>1?name.replace(/\.pdf$/i,` - part ${i+1} of ${parts.length}.pdf`):name}))};
+    }
+    async function persist(file) {
+      if(!file.report) {
+        file.meta.snapshotAt=file.meta.createdAt;file.meta.createdAt=new Date().toISOString();file.fileName=archiveApi.fileName(file.meta);
+        const parts=file.bytes.length<=14500000?[{bytes:file.bytes,pages:file.pages}]:await archiveApi.generateFiles(file.model,api,await dependencies());
+        file.report=reportFrom(file.meta,file.model,parts,file.source);
+      }
+      await scheduler.record(file.report);return file.report;
+    }
+    function download(file) {
+      const url=URL.createObjectURL(new Blob([file.bytes],{type:'application/pdf'})),link=document.createElement('a');
+      link.href=url;link.download=file.fileName;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }
+    async function renderHistory() {
+      const request=++historySerial;
+      try {
+        const [reports,settings]=await Promise.all([store.list(),scheduler.settings()]);if(request!==historySerial)return;
+        by('ttChartingWeeklyEnabled').checked=settings.enabled;
+        const weekly=reports.filter(r=>r.kind==='weekly'),latest=weekly[0];
+        const pending=weekly.reduce((sum,r)=>sum+r.files.filter(f=>f.local?.status!=='verified'||f.drive?.status!=='verified').length,0);
+        by('ttChartingWeeklyStatus').textContent=(archiveError || settings.lastFailure)?`Weekly copy needs attention: ${archiveError || settings.lastFailure}`:
+          `${settings.enabled?'On · Fridays at 4 PM (device time).':'Paused.'} ${latest?`Latest weekly copy: ${when(latest.createdAt)}. `:''}${pending?`${pending} file(s) need a destination save. `:latest?'Latest copy verified locally and in Drive. ':''}${settings.enabled?`Next Friday: ${archiveApi.nextFriday(new Date()).toLocaleDateString()}.`:''}`;
+        const list=by('ttChartingHistoryList');list.replaceChildren();
+        if(!reports.length){const p=document.createElement('p');p.textContent='No exports recorded on this device yet. History starts with this update.';list.append(p);}
+        for(const report of reports.slice(0,historyLimit)) {
+          const item=document.createElement('details'),title=document.createElement('summary');
+          title.textContent=`${report.kind==='weekly'?'Weekly · ':''}${report.label} · ${when(report.createdAt)}`;item.append(title);
+          const p=document.createElement('p');p.textContent=`${report.year} · ${report.students} student(s) · ${report.attempts} entries · ${report.pages} pages.${report.dueFriday?` Due Friday ${report.dueFriday}; created ${when(report.createdAt)} from the saved records then available.`:''}${report.snapshotAt&&report.snapshotAt!==report.createdAt?` Snapshot prepared ${when(report.snapshotAt)}.`:''}${report.earlierAttempts?` Includes ${report.earlierAttempts} earlier printed entries.`:''}`;item.append(p);
+          if(report.openRequestedAt || report.previewDownloadRequestedAt){const action=document.createElement('p');action.textContent=`${report.openRequestedAt?`Open / Print requested ${when(report.openRequestedAt)}. `:''}${report.previewDownloadRequestedAt?`Full PDF download requested ${when(report.previewDownloadRequestedAt)}. `:''}Printing and browser downloads are not confirmed deliveries.`;item.append(action);}
+          if(report.warnings?.length){const warning=document.createElement('p');warning.textContent=report.warnings.join(' ');item.append(warning);}
+          report.files.forEach((file,index)=>{
+            const name=document.createElement('p');name.className='charting-history-filename';name.textContent=file.fileName;item.append(name);
+            for(const [key,label] of [['local','Local copy'],['drive','Google Drive']]) {
+              const receipt=file[key],status=document.createElement('p');
+              status.textContent=receipt?.status==='verified'?`${label}: verified ${when(receipt.verifiedAt)}${receipt.path?` · ${receipt.path}`:''}`:
+                `${label}: ${receipt?.status==='saving'?'save in progress or interrupted':receipt?.error || 'not saved'}${receipt?.attemptedAt?` · tried ${when(receipt.attemptedAt)}`:''}`;item.append(status);
+            }
+            if(file.downloadRequestedAt){const p=document.createElement('p');p.textContent=`Download requested ${when(file.downloadRequestedAt)}; browser save is not verified.`;item.append(p);}
+            const open=document.createElement('button');open.type='button';open.textContent=report.files.length>1?`Open / Print part ${index+1}`:'Open / Print saved PDF';
+            open.onclick=async()=>{open.disabled=true;try{const stored=await store.get(report.id);await scheduler.note(report.id,'openRequestedAt');adapter.openPdf(stored.files[index].bytes,file.fileName);}catch(error){by('ttChartingHistoryMessage').textContent=error.message;}finally{open.disabled=false;}};item.append(open);
+            if(!adapter.isNative?.()){
+              const button=document.createElement('button');button.type='button';button.textContent='Download saved PDF';button.onclick=async()=>{
+                button.disabled=true;try{const stored=await store.get(report.id);download(stored.files[index]);await scheduler.note(report.id,'downloadRequestedAt',index);await renderHistory();}catch(error){by('ttChartingHistoryMessage').textContent=error.message;}finally{button.disabled=false;}
+              };item.append(button);
+            }
+          });
+          const incomplete=report.files.some(f=>f.local?.status!=='verified'||f.drive?.status!=='verified');
+          if(incomplete){const retry=document.createElement('button');retry.type='button';retry.textContent='Retry pending saves';retry.onclick=async()=>{retry.disabled=true;try{await scheduler.deliver(await store.get(report.id),['local','drive'],true);await renderHistory();}catch(error){by('ttChartingHistoryMessage').textContent=error.message;retry.disabled=false;}};item.append(retry);}
+          list.append(item);
+        }
+        by('ttChartingHistoryMore').hidden=reports.length<=historyLimit;
+      }catch(error){by('ttChartingHistoryMessage').textContent=`Export history is unavailable. ${error.message}`;}
+    }
+    by('ttChartingHistoryMore').onclick=()=>{historyLimit+=10;void renderHistory();};
+    by('ttChartingWeeklyEnabled').onchange=async()=>{try{await scheduler.enable(by('ttChartingWeeklyEnabled').checked);await renderHistory();}catch(error){by('ttChartingHistoryMessage').textContent=error.message;}};
+    by('ttChartingWeeklyRetry').onclick=async()=>{const button=by('ttChartingWeeklyRetry');button.disabled=true;try{await scheduler.run({force:true,interactive:true});await renderHistory();}finally{button.disabled=false;}};
+    by('ttChartingLocalFolder').hidden=!adapter.connectLocalFolder || Boolean(adapter.isNative?.());
+    by('ttChartingLocalFolder').onclick=async()=>{try{await adapter.connectLocalFolder(store);by('ttChartingHistoryMessage').textContent='Local charting folder connected. Retrying pending weekly copies…';await scheduler.run({force:true});await renderHistory();}catch(error){by('ttChartingHistoryMessage').textContent=error.message;}};
+    const checkWeekly=()=>{if(document.visibilityState!=='hidden')void scheduler.run();};
+    setTimeout(checkWeekly,12000);setInterval(checkWeekly,60000);
+    root.addEventListener('online',()=>void scheduler.run({force:true}));root.addEventListener('pageshow',checkWeekly);
+    document.addEventListener('visibilitychange',checkWeekly);
+    let savedTimer;root.addEventListener('teachTodayStateSaved',()=>{clearTimeout(savedTimer);savedTimer=setTimeout(checkWeekly,15000);});
+    void renderHistory();
     const remembered=()=>{try{return JSON.parse(localStorage.getItem(viewKey)||'null');}catch(_){return null;}};
     const remember=()=>{try{localStorage.setItem(viewKey,JSON.stringify(options()));}catch(_){/* View preferences never block reporting. */}};
     const selectOptions=(element,items,value) => {
@@ -63,11 +144,12 @@
     }
     function open() {
       returnFocus=document.activeElement;adapter.stopMirror();
+      by('ttChartingDownload').textContent=adapter.isNative?.()?'Save to iPad Files':'Download / Save PDF';
       const state=adapter.getState(),last=remembered(),year=state.activeSchoolYearId || `${new Date().getFullYear()}-${new Date().getFullYear()+1}`;
       const years=[...new Set([year,...(state.schoolYears || []).map(y=>y.id),...(state.groups || []).map(g=>g.schoolYearId)])].filter(Boolean).sort().reverse();
       selectOptions(by('ttChartingYear'),years.map(id=>({id,name:id})),last?.year || year);
       by('ttChartingScope').value=['student','group','roster'].includes(last?.scope)?last.scope:'student';panel.hidden=false;document.body.style.overflow='hidden';
-      pickers(true,true,last || {groupId:adapter.activeGroupId(),studentId:adapter.activeStudentId?.() || ''});by('ttChartingClose').focus();
+      pickers(true,true,last || {groupId:adapter.activeGroupId(),studentId:adapter.activeStudentId?.() || ''});void renderHistory();by('ttChartingClose').focus();
     }
     function close() {
       serial++;panel.hidden=true;busy=false;prior=[];by('ttChartingPriorFile').value='';by('ttChartingPriorStatus').textContent='No earlier PDF selected.';
@@ -105,9 +187,8 @@
         const state=JSON.parse(JSON.stringify(adapter.getState())),o=options(),model=api.collect(state,o,prior);
         const result=await api.generate(model,{...await dependencies(),shouldContinue:()=>request===serial,onProgress:(page,total)=>{if(request===serial)by('ttChartingDelivery').textContent=`Preparing charting pages: ${page} of ${total}…`;}});if(request!==serial)return;
         const scope=o.scope==='roster'?'Whole roster':o.scope==='student'?model.rows[0].name:api.groups(state,o.year).find(g=>g.id===o.groupId)?.name || 'Group';
-        const clean=value=>String(value).replace(/[^a-z0-9 ._()-]+/gi,'-').slice(0,40);
-        const stamp=new Date().toISOString().replace(/[:.]/g,'-'),identity=root.crypto.randomUUID?.().slice(0,8) || Math.random().toString(16).slice(2,10);
-        artifact={bytes:result.bytes,studentPages:result.studentPages,fileName:`WRS Charting - ${clean(o.year)} - ${clean(scope)} - ${stamp} - ${identity}.pdf`};
+        const meta={id:root.crypto.randomUUID?.() || `export-${Date.now()}-${Math.random().toString(16).slice(2)}`,kind:'manual',year:o.year,scope:o.scope,label:scope,createdAt:new Date().toISOString()};
+        artifact={bytes:result.bytes,studentPages:result.studentPages,pages:result.pages,model,meta,source:{lastSavedAt:state.lastSavedAt},fileName:archiveApi.fileName(meta)};
         selectOptions(by('ttChartingJump'),result.studentPages.map(s=>({id:String(s.firstPage),name:s.name})),String(result.studentPages[0].firstPage));
         by('ttChartingJumpLabel').hidden=result.studentPages.length<=1;
         by('ttChartingSummary').textContent=`${model.rows.length} student(s) · ${model.attempts} charting entries · ${result.pages} pages · ${model.year}.`;
@@ -123,22 +204,34 @@
       file.saving=true;controls();by('ttChartingDelivery').textContent='Saving to Google Drive and verifying the PDF…';
       try {
         if(reconnect)await adapter.reconnectDrive();
-        const saved=await adapter.saveDrive(file.bytes,file.fileName);file.driveSaved=true;
+        const report=await scheduler.deliver(await persist(file),['drive'],true);
+        file.report=report || file.report;file.driveSaved=file.report.files.every(f=>f.drive?.status==='verified');
         if(artifact!==file)return;
-        by('ttChartingDelivery').textContent=`Verified in Google Drive: Teach Today Backups/Charting/${file.fileName}`;
-        if(saved.webViewLink){const link=document.createElement('a');link.textContent=' Open saved PDF';link.href=saved.webViewLink;link.target='_blank';link.rel='noopener';by('ttChartingDelivery').append(link);}
+        if(!file.driveSaved)throw new Error(file.report.files.find(f=>f.drive?.status!=='verified')?.drive?.error || 'Another save is in progress. Retry shortly.');
+        by('ttChartingDelivery').textContent=`Verified in Google Drive: Teach Today Backups/Charting/${file.report.files.map(f=>f.fileName).join('; ')}`;
         by('ttChartingDrive').textContent='Saved to Google Drive';
       }catch(error){if(artifact===file){reconnect=true;by('ttChartingDrive').textContent='Reconnect Drive & retry';by('ttChartingDelivery').textContent=`Google Drive was not verified. ${error.message} The created PDF is still available to download.`;}}
-      finally{file.saving=false;if(artifact===file){controls();by('ttChartingDrive').disabled=Boolean(file.driveSaved);}}
+      finally{file.saving=false;if(artifact===file){controls();by('ttChartingDrive').disabled=Boolean(file.driveSaved);}void renderHistory();}
     });
     by('ttChartingDownload').addEventListener('click',async()=>{
-      const file=artifact;if(!file)return;
+      const file=artifact;if(!file||file.saving)return;file.saving=true;controls();
       try {
-        if(adapter.saveLocal){const result=await adapter.saveLocal(file.bytes,file.fileName);if(result){if(artifact===file)by('ttChartingDelivery').textContent=`Saved to iPad Files: ${result.path}`;return;}}
-        const url=URL.createObjectURL(new Blob([file.bytes],{type:'application/pdf'})),link=document.createElement('a');link.href=url;link.download=file.fileName;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+        let report=await persist(file);
+        if(adapter.isNative?.() || await adapter.hasLocalFolder?.(store)) {
+          report=await scheduler.deliver(report,['local'],true) || report;file.report=report;
+          const pending=report.files.find(f=>f.local?.status!=='verified');if(pending)throw new Error(pending.local?.error || 'Another save is in progress. Retry shortly.');
+          if(artifact===file)by('ttChartingDelivery').textContent=`${adapter.isNative?.()?'Saved to iPad Files':'Verified in local folder'}: ${report.files.map(f=>f.local.path).join('; ')}`;
+        } else {
+          download(file);await scheduler.note(report.id,'previewDownloadRequestedAt');
+          if(report.files.length===1)await scheduler.note(report.id,'downloadRequestedAt',0);if(artifact===file)by('ttChartingDelivery').textContent='Download requested. Your browser controls the save location; local saving is not verified.';
+        }
       }catch(error){if(artifact===file)by('ttChartingDelivery').textContent=`The PDF could not be saved on this device. ${error.message} Save to Google Drive or use Open / Print PDF.`;}
+      finally{file.saving=false;if(artifact===file)controls();void renderHistory();}
     });
-    by('ttChartingOpen').addEventListener('click',()=>{if(artifact)adapter.openPdf(artifact.bytes,artifact.fileName);});
+    by('ttChartingOpen').addEventListener('click',async()=>{
+      const file=artifact;if(!file||file.saving)return;file.saving=true;controls();
+      try{const report=await persist(file);await scheduler.note(report.id,'openRequestedAt');adapter.openPdf(file.bytes,file.fileName);}catch(error){by('ttChartingDelivery').textContent=`Export history could not be saved. ${error.message}`;}finally{file.saving=false;if(artifact===file)controls();void renderHistory();}
+    });
     by('ttChartingPrevious').addEventListener('click',()=>preview().goTo(preview().page-1));
     by('ttChartingNext').addEventListener('click',()=>preview().goTo(preview().page+1));
     by('ttChartingFit').addEventListener('change',()=>preview().setView({fit:by('ttChartingFit').value}));

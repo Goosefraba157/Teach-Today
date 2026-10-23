@@ -14715,16 +14715,49 @@ async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
   return file;
 }
 
-async function ttSaveDriveChartingPdf(bytes, fileName) {
-  if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted.");
-  const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
-  const folder = await ttDriveNamedFolder("Charting", root);
-  const file = await ttDriveUpsertBackup(folder, fileName, new Blob([bytes], { type: "application/pdf" }), "application/pdf");
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
-  if (!response.ok || await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
-    throw new Error("The Google Drive charting PDF readback did not match. Retry to verify that same file.");
+async function ttSaveDriveChartingPdf(bytes, fileName, options = { interactive: true }) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      if (!(await ttEnsureDrivePermission({ interactive: Boolean(options.interactive) }))) throw new Error("Connect Google Drive in Records, then retry the charting copy.");
+      const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
+      const folder = await ttDriveNamedFolder("Charting", root);
+      const file = await ttDriveUpsertBackup(folder, fileName, new Blob([bytes], { type: "application/pdf" }), "application/pdf");
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
+      if (!response.ok) throw new Error(`Google Drive charting readback failed (${response.status}).`);
+      if (await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
+        throw new Error("The Google Drive charting PDF readback did not match. Retry to verify that same file.");
+      }
+      return file;
+    } catch (error) {
+      // Refresh an expired in-memory token once, silently for automatic copies.
+      if (attempt === 0 && /\b401\b|invalid_token|UNAUTHENTICATED/i.test(error.message)) { ttDriveAccessToken = ""; continue; }
+      throw error;
+    }
   }
-  return file;
+}
+
+// Report files use a separate handle and do not enable classroom synchronization.
+let ttChartingFolderStore;
+function ttChartingArchiveStore() {
+  return ttChartingFolderStore ||= window.TeachTodayChartingArchive.openStore(window.indexedDB);
+}
+async function ttSaveLocalChartingPdf(bytes, fileName) {
+  if (ttNativeDocumentAvailable()) {
+    if (bytes.length > 14500000) throw new Error("This charting part exceeds the installed iPad Files limit.");
+    return ttSaveNativeLessonPlanPdf(bytes, await ttDocumentSha256Hex(bytes), fileName, "Downloaded", "Charting");
+  }
+  if (ttIsNativeIpadShell()) throw new Error("The iPad Files document bridge is unavailable. Reopen Stage and retry.");
+  const folder = await ttChartingArchiveStore().getSetting("localFolder");
+  if (!folder || !(await ttCloudSyncPermission(folder, true, false))) {
+    throw new Error("Choose or reconnect a local charting folder in Charting Central.");
+  }
+  const handle = await folder.getFileHandle(fileName, { create: true });
+  const writable = await handle.createWritable();
+  try { await writable.write(bytes); await writable.close(); }
+  catch (error) { try { await writable.abort(); } catch (_) {} throw error; }
+  const saved = new Uint8Array(await (await handle.getFile()).arrayBuffer());
+  if (await ttDocumentSha256Hex(saved) !== await ttDocumentSha256Hex(bytes)) throw new Error("The local charting PDF readback did not match. Retry this same file.");
+  return { path: `${folder.name}/${fileName}` };
 }
 
 async function ttSaveDownloadedLessonPlanPdf(bytes, fileName) {
@@ -21126,11 +21159,16 @@ function ttBind() {
     stopMirror: () => ttSetNativeProjectionMode("stage"),
     saveDrive: ttSaveDriveChartingPdf,
     reconnectDrive: async () => { ttDriveAccessToken = ""; if (!(await ttEnsureDrivePermission({ interactive: true }))) throw new Error("Google Drive permission was not granted."); },
-    saveLocal: async (bytes, fileName) => {
-      if (!ttNativeDocumentAvailable()) return null;
-      if (bytes.length > 14500000) throw new Error("This PDF exceeds the iPad Files limit. Choose a smaller scope, or save the full PDF to Drive.");
-      return ttSaveNativeLessonPlanPdf(bytes, await ttDocumentSha256Hex(bytes), fileName, "Downloaded", "Charting");
-    },
+    ready: () => window.TeachTodayStageStorage?.flush?.(),
+    isNative: () => ttNativeDocumentAvailable() || ttIsNativeIpadShell(),
+    saveLocal: ttSaveLocalChartingPdf,
+    notify: ttShowBackupToast,
+    hasLocalFolder: async store => Boolean(await store.getSetting("localFolder")),
+    connectLocalFolder: window.showDirectoryPicker ? async store => {
+      const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+      if (!(await ttCloudSyncPermission(handle, true, true))) throw new Error("The local charting folder needs write permission.");
+      await store.setSetting("localFolder", handle);
+    } : null,
     openPdf: (bytes, filename) => ttOpenExportViewer({ url: URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })), title: "WRS Charting Pages", filename, bytes, deviceGroupFolder: "Charting" })
   });
   ttById("ttLessonLibraryClose")?.addEventListener("click", ttCloseLessonLibrary);

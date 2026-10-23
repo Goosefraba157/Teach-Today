@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="assets/morrocoy-logo.png">
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
-    <link rel="stylesheet" href="teach-today.css?v=20261022-charting-export-2">
+    <link rel="stylesheet" href="teach-today.css?v=20261022-charting-weekly-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -577,6 +577,14 @@
           <button id="ttChartingCreate" type="button">Refresh pages</button>
           <details id="ttChartingExportActions"><summary>Export Charting Pages</summary><div class="charting-export-buttons"><button id="ttChartingDrive" type="button" disabled>Save to Google Drive</button><button id="ttChartingDownload" type="button" disabled>Download PDF</button><button id="ttChartingOpen" type="button" disabled>Open / Print PDF</button></div><p>Exports the student, group, or roster currently displayed.</p></details>
           <p id="ttChartingDelivery" role="status" aria-live="polite"></p>
+          <details id="ttChartingWeekly" open><summary>Friday automatic copy</summary>
+            <label class="charting-weekly-toggle"><input id="ttChartingWeeklyEnabled" type="checkbox" checked> Save whole active-year roster weekly</label>
+            <p id="ttChartingWeeklyStatus" role="status"></p>
+            <p>Stage must be open. If closed on Friday at 4 PM, it catches up next time it opens using the records then available. Drive must be connected. Older PDF-only entries are included only in manual exports when you select that PDF.</p>
+            <button id="ttChartingWeeklyRetry" type="button">Retry weekly copies</button>
+            <button id="ttChartingLocalFolder" type="button" hidden>Choose local charting folder</button>
+          </details>
+          <details id="ttChartingHistory"><summary>Export history</summary><p>Private history on this device, with separate local and Drive verification. Saved PDFs can be reopened without recreating them.</p><p id="ttChartingHistoryMessage" role="status" aria-live="polite"></p><div id="ttChartingHistoryList"></div><button id="ttChartingHistoryMore" type="button" hidden>Show older exports</button></details>
         </aside>
         <div class="charting-export-preview">
           <div id="ttChartingPdfViewport" class="lesson-library-pdf-viewport"><p id="ttChartingPdfMessage" role="status">Choose a scope, then create the charting PDF.</p><canvas id="ttChartingPdfCanvas" role="img" aria-label="Charting page" hidden></canvas></div>
@@ -1259,6 +1267,6 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
-    <script src="stage-app-bootstrap.js?v=20261022-charting-export-2" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|charting-export.js?v=20261022-charting-export-2|charting-export-ui.js?v=20261022-charting-export-2|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|teach-today.js?v=20261022-charting-export-2|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261022-charting-weekly-1" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|charting-export.js?v=20261022-charting-weekly-1|charting-archive.js?v=20261022-charting-weekly-1|charting-export-ui.js?v=20261022-charting-weekly-1|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|teach-today.js?v=20261022-charting-weekly-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>
