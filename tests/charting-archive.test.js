@@ -81,3 +81,9 @@ test('weekly Drive saver refreshes an expired token once without opening automat
  const context=vm.createContext({Blob,Uint8Array,encodeURIComponent,ttDriveAccessToken:'expired',ttEnsureDrivePermission:async o=>{permissions.push(o.interactive);return true;},ttIndependentDriveFolderName:'Teach Today Backups',ttDriveNamedFolder:async name=>name,ttDriveUpsertBackup:async(_folder,name)=>{assert.equal(name,'same.pdf');if(saves++===0)throw new Error('Drive request failed (401)');return {id:'file'};},ttDriveHeaders:()=>({}),ttDocumentSha256Hex:async b=>crypto.createHash('sha256').update(b).digest('hex'),fetch:async()=>({ok:true,arrayBuffer:async()=>bytes.buffer})});
  vm.runInContext(source.slice(start,end),context);assert.equal((await context.ttSaveDriveChartingPdf(bytes,'same.pdf',{interactive:false})).id,'file');assert.equal(context.ttDriveAccessToken,'');assert.deepEqual(permissions,[false,false]);assert.equal(saves,2);
 });
+
+test('idle weekly checks read only metadata after completion, without loading PDFs or cloning classroom data',async()=>{
+ const f=fixture();f.offline=false;const service=f.make();await service.run();let reads=0,clones=0;const get=f.store.get;
+ f.store.get=async id=>{reads++;return get(id);};f.state.toJSON=()=>{clones++;return {activeSchoolYearId:'2026-2027'};};
+ await service.run();assert.equal(reads,0);assert.equal(clones,0);assert.equal(f.count,1);
+});

@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-22-charting-weekly-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-22-charting-weekly-2";
 
 const APP_SHELL = [
   "./",
@@ -40,9 +40,9 @@ const APP_SHELL = [
   "./developer-data-diagnostic.js",
   "./onboarding.js",
   "./teach-today.js",
-  "./teach-today.js?v=20261022-charting-weekly-1",
-  "./teach-today.css?v=20261022-charting-weekly-1",
-  "./stage-app-bootstrap.js?v=20261022-charting-weekly-1",
+  "./teach-today.js?v=20261022-charting-weekly-2",
+  "./teach-today.css?v=20261022-charting-weekly-2",
+  "./stage-app-bootstrap.js?v=20261022-charting-weekly-2",
   "./lesson-progress.js",
   "./lesson-assessment-review.js",
   "./lesson-progress.js?v=20261018-auto-progress-1",
@@ -52,9 +52,9 @@ const APP_SHELL = [
   "./charting-export.js",
   "./charting-export-ui.js",
   "./charting-archive.js",
-  "./charting-archive.js?v=20261022-charting-weekly-1",
-  "./charting-export.js?v=20261022-charting-weekly-1",
-  "./charting-export-ui.js?v=20261022-charting-weekly-1",
+  "./charting-archive.js?v=20261022-charting-weekly-2",
+  "./charting-export.js?v=20261022-charting-weekly-2",
+  "./charting-export-ui.js?v=20261022-charting-weekly-2",
   "./vendor/fontkit-1.1.1.min.js",
   "./assets/wrs-charting-template.pdf",
   "./assets/wrs-charting-fields.json",

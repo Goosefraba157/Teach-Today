@@ -138,9 +138,11 @@
         for(const r of pending)await announce(await deliver(await store.get(r.id),['local','drive'],Boolean(options.interactive)));
         const due=dueFriday(now(),s.startedOn);if(!s.enabled||!due)return;
         if(!options.force&&s.lastFailure&&s.lastAttemptFriday===due&&now()-new Date(s.lastAttemptAt)<retryAfter)return;
-        await adapter.ready?.();const state=JSON.parse(JSON.stringify(adapter.getState())),year=state.activeSchoolYearId;
+        const year=adapter.getState().activeSchoolYearId;
         if(!year)throw new Error('Choose the active school year before the weekly charting export.');
-        const id=`weekly-${due}-${year}`;if(await store.get(id))return;
+        const id=`weekly-${due}-${year}`;if(reports.some(r=>r.id===id))return;
+        await adapter.ready?.();const state=JSON.parse(JSON.stringify(adapter.getState()));
+        if(state.activeSchoolYearId!==year)return;
         await store.setSettings({...await settings(),lastAttemptAt:iso(),lastAttemptFriday:due,lastFailure:''});changed();
         try {
           const report=await generate(state,{id,kind:'weekly',dueFriday:due,createdAt:iso(),year,scope:'roster',label:'Whole roster'});
