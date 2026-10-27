@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-27
+
+- Added five brief 4.2 reading discoveries (compounds, prefix + base, fore-, syllable division, and later complex bases) with independent Section 2/2B choices and matching short Section 7 spelling activities. Verified Reader 4 pp.50–54: compounds p.50, prefix + base p.51, mixed division/complex bases p.52, then suffixes; fore- has no standalone chart page. Retained existing intro tools, notebook entries, colored cards and syllable marking. Student Stage renders from the installed native whitelist without a shell update or teacher-cue projection. Charting/lesson records are untouched. All 164 checks and a 165-case synthetic desktop/iPad browser audit pass; deployment verification pending.
+
 ## 2026-10-22
 
 - Added dated Charting Central export history, retained exact PDFs, separate verified Files/Drive receipts and persistent retries. Enabled the teacher-requested whole-active-year roster copy each Friday at 4 PM in device local time, with next-open catch-up, no fabricated historical snapshots, silent bounded Drive refresh, cross-tab locking, retry backoff and pending-save notices. Large reports become matching numbered editable PDFs in both destinations; browser local automation uses a separately chosen folder with SHA-256 readback. Original form geometry and classroom/Firebase state are unchanged. Earlier PDF-only evidence remains a manual reporting input. All 153 tests, full synthetic browser/reload/Friday/retry checks, mobile bounds and four-page multipart form/render checks pass. Release `20261022-charting-weekly-2` published through `5b94df7`; Pages succeeded, all 13 checked public responses match tested bytes (including the native Stage route), and a fresh public-site synthetic browser passed the full Friday/history/reload/corrupt-save/retry workflow with zero page errors. Idle schedule checks avoid loading PDFs or cloning classroom data. No live classroom, actual Drive account, Firebase or native binary was changed.

@@ -16,6 +16,7 @@ let ttIntro21Open = false;
 let ttIntro21Index = 0;
 let ttIntro21Variant = "guided";
 let ttIntro41Scenes = [];
+let ttIntro42Lesson = "compounds";
 let ttIntroTeacherMirror = false;
 let ttIntroSourceSection = "section2";
 let ttIntroLaunchButtonId = "ttOpenIntro21";
@@ -2873,7 +2874,21 @@ function ttRender() {
   if (intro35DiscoveryB2Button) intro35DiscoveryB2Button.hidden = skill.id !== "3.5";
   const intro35SpellingButton = ttById("ttOpenIntro35Spelling");
   if (intro35SpellingButton) intro35SpellingButton.hidden = skill.id !== "3.5";
-  const activeIntroSubstep = ttIntro21Variant === "discovery41" ? "4.1" : ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
+  ["ttOpenIntro42Discovery", "ttOpenIntro42DiscoveryB2", "ttOpenIntro42Spelling", "ttIntro42Choice", "ttIntro42ChoiceB2", "ttIntro42SpellingChoice"].forEach((id) => {
+    const button = ttById(id);
+    if (button) button.hidden = skill.id !== "4.2";
+  });
+  ["ttIntro42Choice", "ttIntro42ChoiceB2", "ttIntro42SpellingChoice"].forEach(id => {
+    const select = ttById(id);
+    if (!select || skill.id !== "4.2") return;
+    const lessonKey = `${group.id}:${lesson.id || ""}:${lesson.wordlistPageNumber || ""}`;
+    if (select.dataset.introLessonKey !== lessonKey) {
+      select.innerHTML = Object.entries(TTIntro42.lessons).map(([key, value]) => `<option value="${key}">${escapeHtml(value.label)}</option>`).join("");
+      select.value = Number(lesson.wordlistPageNumber) === 51 ? "prefixes" : "compounds";
+      select.dataset.introLessonKey = lessonKey;
+    }
+  });
+  const activeIntroSubstep = ttIntro21Variant === "discovery42" ? "4.2" : ttIntro21Variant === "discovery41" ? "4.1" : ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
   if (ttIntro21Open && skill.id !== activeIntroSubstep) ttCloseIntro21();
   ttFillGroups(group.id);
   ttFillLessonControls(group);
@@ -12668,6 +12683,7 @@ function ttIntro21Scene() {
 }
 
 function ttIntro21Scenes() {
+  if (ttIntro21Variant === "discovery42") return TTIntro42.getScenes(ttIntro42Lesson, ttIntroSourceSection === "section7");
   if (ttIntro21Variant === "discovery41") return ttIntro41Scenes;
   if (ttIntro21Variant === "discovery35") return TT_INTRO_35_DISCOVERY_SCENES;
   return ttIntro21Variant === "discovery" ? TT_INTRO_21_DISCOVERY_SCENES : TT_INTRO_21_SCENES;
@@ -12922,6 +12938,7 @@ function ttIntro35VisualHtml(scene) {
 }
 
 function ttIntro21VisualHtml(scene) {
+  if (ttIntro21Variant === "discovery42") return TTIntro42.render(scene);
   if (ttIntro21Variant === "discovery41") return ttIntro41VisualHtml(scene);
   if (ttIntro21Variant === "discovery35") return ttIntro35VisualHtml(scene);
   if (scene.layout === "welcome") {
@@ -12989,17 +13006,20 @@ function ttIntro21VisualHtml(scene) {
 function ttIntro21CardDisplayPayload() {
   const scene = ttIntro21Scene();
   const scenes = ttIntro21Scenes();
+  const isIntro42 = ttIntro21Variant === "discovery42";
   const isIntro41 = ttIntro21Variant === "discovery41";
   const isIntro35 = ttIntro21Variant === "discovery35";
   const intro35SpellingStart = scenes.findIndex((item) => item.id === "spell-bridge");
   const isIntro35Spelling = isIntro35 && intro35SpellingStart >= 0 && ttIntro21Index >= intro35SpellingStart;
   const pairItems = (scene.pairs || []).flatMap((pair, pairIndex) => pair.map((text) => ({ text, type: "welded", pair: String(pairIndex) })));
   return {
-    kind: isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21",
+    kind: isIntro42 ? "intro-42" : isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21",
     variant: ttIntro21Variant,
     layout: scene.layout,
-    key: `${isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
-    sectionLabel: isIntro41
+    key: `${isIntro42 ? "intro-42" : isIntro41 ? "intro-41" : isIntro35 ? "intro-35" : "intro-21"}-${scene.id}`,
+    sectionLabel: isIntro42
+      ? `${ttIntroSourceSection === "section7" ? "Section 7" : ttIntroSourceSection === "section2b" ? "Section 2B" : "Section 2"} - Discovery 4.2`
+      : isIntro41
       ? "Section 2 - Discovery 4.1"
       : isIntro35
       ? `${isIntro35Spelling || ttIntroSourceSection === "section7"
@@ -13010,12 +13030,12 @@ function ttIntro21CardDisplayPayload() {
     subhead: scene.subhead || "",
     word: scene.word || "",
     wordNote: scene.wordNote || "",
-    label: isIntro41 ? "Closed syllable discovery" : isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
+    label: isIntro42 ? "Closed and v-e syllables" : isIntro41 ? "Closed syllable discovery" : isIntro35 ? "Suffix discovery" : "Welded sounds introduction",
     position: `${ttIntro21Index + 1} of ${scenes.length}`,
     teacherMirror: ttIntroTeacherMirror,
     teacherView: {
-      substepLabel: isIntro41 ? "Substep 4.1" : isIntro35 ? "Substep 3.5" : "Substep 2.1",
-      title: isIntro41
+      substepLabel: isIntro42 ? "Substep 4.2" : isIntro41 ? "Substep 4.1" : isIntro35 ? "Substep 3.5" : "Substep 2.1",
+      title: isIntro42 ? TTIntro42.lessons[ttIntro42Lesson].title : isIntro41
         ? "Closed Syllable Discovery"
         : isIntro35
         ? "Suffixes -ed and -ing Visual Discovery"
@@ -13051,7 +13071,7 @@ function ttRenderIntro21() {
   const scenes = ttIntro21Scenes();
   const substepLabel = ttById("ttIntro21SubstepLabel");
   if (substepLabel) {
-    substepLabel.textContent = ttIntro21Variant === "discovery41" ? "Substep 4.1" : ttIntro21Variant === "discovery35" ? "Substep 3.5" : "Substep 2.1";
+    substepLabel.textContent = ttIntro21Variant === "discovery42" ? "Substep 4.2" : ttIntro21Variant === "discovery41" ? "Substep 4.1" : ttIntro21Variant === "discovery35" ? "Substep 3.5" : "Substep 2.1";
   }
   target.classList.remove("intro-scene-enter");
   target.innerHTML = `<div class="intro-scene-inner">
@@ -13064,7 +13084,7 @@ function ttRenderIntro21() {
   </div>`;
   requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
   ttById("ttIntro21Cue").textContent = scene.cue || "";
-  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery41"
+  ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery42" ? TTIntro42.lessons[ttIntro42Lesson].title : ttIntro21Variant === "discovery41"
     ? "Closed Syllable Discovery"
     : ttIntro21Variant === "discovery35"
     ? "Suffixes -ed and -ing Visual Discovery"
@@ -13177,6 +13197,30 @@ function ttOpenIntro41() {
   ttIntroTeacherMirror = false;
   overlay.hidden = false;
   overlay.setAttribute("aria-label", "Substep 4.1 closed syllable discovery lesson");
+  ttSetIntro21BackgroundInert(true);
+  document.body.classList.add("intro-lesson-open");
+  ttSetNativeProjectionMode("stage");
+  ttStudentDisplayMode = "follow";
+  localStorage.setItem("teachToday.studentDisplayMode", "follow");
+  ttToggleGlobalInkPalette(true);
+  ttSetGlobalInkActive(false);
+  ttRenderIntro21();
+  ttById("ttIntro21Next")?.focus();
+}
+
+function ttOpenIntro42(sourceSection = "section2", launchButtonId = "ttOpenIntro42Discovery") {
+  const overlay = ttById("ttIntro21");
+  if (!overlay) return;
+  ttIntro21Variant = "discovery42";
+  const choiceId = sourceSection === "section7" ? "ttIntro42SpellingChoice" : sourceSection === "section2b" ? "ttIntro42ChoiceB2" : "ttIntro42Choice";
+  ttIntro42Lesson = ttById(choiceId)?.value || "compounds";
+  ttIntro21Index = 0;
+  ttIntroSourceSection = sourceSection;
+  ttIntroLaunchButtonId = launchButtonId;
+  ttIntro21Open = true;
+  ttIntroTeacherMirror = false;
+  overlay.hidden = false;
+  overlay.setAttribute("aria-label", "Substep 4.2 closed and v-e syllable discovery lesson");
   ttSetIntro21BackgroundInert(true);
   document.body.classList.add("intro-lesson-open");
   ttSetNativeProjectionMode("stage");
@@ -21265,6 +21309,9 @@ function ttBind() {
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
+  ttById("ttOpenIntro42Discovery")?.addEventListener("click", () => ttOpenIntro42());
+  ttById("ttOpenIntro42DiscoveryB2")?.addEventListener("click", () => ttOpenIntro42("section2b", "ttOpenIntro42DiscoveryB2"));
+  ttById("ttOpenIntro42Spelling")?.addEventListener("click", () => ttOpenIntro42("section7", "ttOpenIntro42Spelling"));
   ttById("ttOpenIntro41Discovery")?.addEventListener("click", () => ttOpenIntro41());
   ttById("ttOpenIntro21B2")?.addEventListener("click", () => ttOpenIntro21("guided", "section2b", "ttOpenIntro21B2"));
   ttById("ttOpenIntro21DiscoveryB2")?.addEventListener("click", () => ttOpenIntro21("discovery", "section2b", "ttOpenIntro21DiscoveryB2"));
