@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-27-intro42-1";
+const CACHE_NAME = "teach-today-offline-v2026-10-27-intro42-2";
 
 const APP_SHELL = [
   "./",
@@ -41,7 +41,7 @@ const APP_SHELL = [
   "./onboarding.js",
   "./teach-today.js",
   "./intro-42.js",
-  "./intro-42.js?v=20261027-intro42-1",
+  "./intro-42.js?v=20261027-intro42-2",
   "./student-display.js?v=20261027-intro42-1",
   "./student-display.css?v=20261027-intro42-1",
   "./teach-today.js?v=20261027-intro42-1",

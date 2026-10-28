@@ -64,7 +64,7 @@
     add(`spell-${word}-first`, "spell", "Check the first syllable", "Now name and spell the next syllable.", [part(prefix ? `${a}-` : a, cardType), part("?", "base")],
       `Reveal ${a} only after it is spelled. Keep ${b} hidden until the student names and spells it.`, { kicker: "Spelling 4.2" });
     add(`spell-${word}-answer`, "spell", "Check. Scoop. Read it back.", word, [part(prefix ? `${a}-` : a, cardType), part(b)],
-      `Reveal ${b}; student reads ${word} while scooping. ${word === "misname" ? "Practice misuse, dislike and midline as time permits." : word === "forecast" ? "Dictate fore- separately: student repeats, spells f-o-r-e and traces the prefix dash. Optional practice: foretold, foremost." : "Optional compound spelling: baseball, classmate, campfire and flagpole. Also practice reptile, invite and escape as syllable words."}`, { kicker: "Spelling 4.2" });
+      `Reveal ${b}; student reads ${word} while scooping. ${word === "misname" ? "Practice misuse, dislike and midline as time permits." : word === "forecast" ? "Dictate fore- separately: student repeats, spells f-o-r-e and traces the prefix dash. Optional practice: foretold, foremost." : "Optional compound spelling: baseball, classmate, campfire and flagpole."}`, { kicker: "Spelling 4.2" });
   }
   add("suffix-question", "elements", "What do we spell before the suffix?", "Read the base word first. Then read the whole word.", [part("dis-", "prefix"), part("like"), part("-s", "suffix")],
     "Read dislike, then dislikes. Before spelling, students name and spell the word without its suffix, then add -s. No vowel-suffix spelling changes are introduced here.");
@@ -106,7 +106,20 @@
   }
   const byId = new Map(scenes.map(s => [s.id, s]));
   const pick = ids => ids.map(id => { if (!byId.has(id)) throw new Error(`Unknown 4.2 scene: ${id}`); return byId.get(id); });
-  const spelling = (word, extra = []) => pick(["spell-bridge", `spell-${word}-hidden`, `spell-${word}-first`, `spell-${word}-answer`, ...extra]);
+  const dictationChoices = {
+    sunshine: "sunshine, baseball, classmate, campfire, flagpole",
+    misname: "misname, misuse, dislike, midline, unsafe",
+    forecast: "forecast, foretold, foremost",
+    escape: "escape, reptile, invite",
+    include: "include, consume, confuse, expose, compute"
+  };
+  const spelling = (word, extra = []) => {
+    const selected = pick(["spell-bridge", `spell-${word}-hidden`, `spell-${word}-first`, `spell-${word}-answer`, ...extra]);
+    return selected.map((scene, index) => index === 0 ? {
+      ...scene,
+      cue: `Dictation choices: ${dictationChoices[word]}. Choose a few. Repeat the word; name both syllables; spell one at a time; scoop and read back.`
+    } : scene);
+  };
   const lessons = {
     compounds: { title: "Compound Words", label: "1 · Compound words · Reader 4 p.50", reading: pick(["review-question", "compound-question", "compound-answer", "classmate-question", "classmate-answer", "baseball-question", "baseball-answer", "compound-notebook", "compound-check"]), spelling: spelling("sunshine") },
     prefixes: { title: "Prefix + Base Word", label: "2 · Prefix + base · Reader 4 p.51", reading: pick(["safe-base", "unsafe-question", "unsafe-answer", "prefix-practice", "prefix-check"]), spelling: spelling("misname", ["suffix-question"]) },
