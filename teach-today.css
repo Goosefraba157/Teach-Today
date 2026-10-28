@@ -12045,3 +12045,8 @@ body:has(#ttLessonLibraryPanel:not([hidden])) .backup-status-toast { bottom:128p
   .intro-42-element { padding: 12px; }
 }
 .intro-42-choice { max-width: min(360px, 100%); padding: 9px 12px; border: 2px solid #94a3b8; border-radius: 10px; background: white; color: #172033; font: inherit; }
+
+.intro-42-follow { color: #475569; font-weight: 750; font-size: 14px; }
+.intro-42-word-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 13px; font-weight: 750; color: #475569; }
+.intro-42-word-picker[hidden] { display: none; }
+.intro-42-word-picker select { max-width: 100%; min-height: 34px; padding: 3px 8px; border: 1px solid #94a3b8; border-radius: 7px; background: #fff; color: #172033; font: inherit; }

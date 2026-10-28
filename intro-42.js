@@ -104,6 +104,35 @@
     add(`spell-${word}-first`, "spell", "Check the first syllable", "Now name and spell the next syllable.", [part(a, prefix ? "prefix" : "base"), part("?")], "Reveal only the first card after it is spelled; retain the next face-down card.", { kicker: "Spelling 4.2" });
     add(`spell-${word}-answer`, "spell", "Check. Scoop. Read the whole word.", word, [part(a, prefix ? "prefix" : "base"), part(b)], `Read back ${word}. ${prefix ? "Other later spelling examples: consume, confuse, expose and compute. Identify a complex base before dictating it." : "Additional noncompound practice: reptile and invite."}`, { kicker: "Spelling 4.2" });
   }
+  const reinforcement = {};
+  function reinforceWords(key, words, kind) {
+    reinforcement[key] = [];
+    for (const [word, a, b, firstType = "closed", secondType = "v-e"] of words) {
+      const questionId = `day2-${word}-question`;
+      const answerId = `day2-${word}-answer`;
+      add(questionId, "word", kind === "compound" ? "Which two words make this compound?" : kind === "prefix" ? "Find the prefix and the base word" : kind === "complex" ? "Find the prefix and Latin base" : "Where will you divide?", kind === "compound" ? "Read both words. Explain how they make one meaning." : "Read the word. Explain the parts before checking.", [part(word)], kind === "compound" ? `Wait for ${a} and ${b}. Both are words and contribute to the meaning. Ask for the syllable types too.` : `Let students analyze ${word} before revealing the parts.`, { kicker: "Section 2B · Try another" });
+      const elements = ["prefix", "complex"].includes(kind);
+      add(answerId, elements ? "elements" : "marked", kind === "compound" ? "Two words make one compound word" : elements ? "Check the meaningful parts" : "Keep the v-e syllable together", `${a} + ${b} → ${word}`, elements ? [part(a, "prefix"), part(b)] : [part(a, firstType), part(b, secondType)], kind === "compound" ? `Read ${a}, ${b}, then ${word}. Connect each word to the meaning of the compound. Name ${firstType === "v-e" ? "V-e" : "C"} and ${secondType === "v-e" ? "V-e" : "C"}.` : key === "fore" ? "fore- means before or in front. Foremost means first or in front; foretell means tell before something happens. Read the prefix as taught; do not force a regular long-o sound." : kind === "prefix" ? "Name the prefix and complete base word. Scoop the two syllables, read each, and blend the whole word." : kind === "complex" ? "The prefix and Latin base together form the complex base word. Also scoop and identify C/V-e; the Latin element does not stand alone as a word." : "Scoop and read each syllable, then blend. These are syllable chunks, not two meaningful compound words.", { kicker: "Section 2B · Check" });
+      reinforcement[key].push(questionId, answerId);
+    }
+  }
+  reinforceWords("compounds", [["campfire", "camp", "fire"], ["flagpole", "flag", "pole"], ["notepad", "note", "pad", "v-e", "closed"]], "compound");
+  reinforceWords("prefixes", [["misfile", "mis-", "file"], ["midsize", "mid-", "size"]], "prefix");
+  reinforceWords("fore", [["foremost", "fore-", "most"], ["foretell", "fore-", "tell"]], "prefix");
+  reinforceWords("division", [["admire", "ad", "mire"], ["umpire", "um", "pire"]], "syllables");
+  reinforceWords("complex", [["expose", "ex-", "-pose-"], ["exclude", "ex-", "-clude-"]], "complex");
+  const extraSpelling = {
+    sunshine: [["baseball", "base", "ball"], ["classmate", "class", "mate"]],
+    misname: [["misuse", "mis-", "use", true], ["dislike", "dis-", "like", true]],
+    forecast: [["foretold", "fore-", "told", true], ["foremost", "fore-", "most", true]],
+    escape: [["reptile", "rep", "tile"], ["invite", "in", "vite"]],
+    include: [["consume", "con-", "-sume-", true], ["compute", "com-", "-pute-", true]]
+  };
+  for (const words of Object.values(extraSpelling)) for (const [word, a, b, prefix = false] of words) {
+    add(`spell-${word}-hidden`, "spell", "Listen. Repeat. Name both syllables.", "Touch the two face-down cards. Name and spell the first syllable.", [part("?", prefix ? "prefix" : "base"), part("?")], `Dictate ${word}. ${word === "consume" || word === "compute" ? "Tell students it is a complex base word; put the element cards under two blank syllable cards." : prefix ? "Use a yellow prefix card and a white base-word card." : "Use two white syllable cards."} Wait for the student to repeat the whole word and name both syllables.`, { kicker: "Spelling 4.2" });
+    add(`spell-${word}-first`, "spell", "Check the first syllable", "Now name and spell the second syllable. Keep it hidden until it is spelled.", [part(a, prefix ? "prefix" : "base"), part("?")], `Reveal ${a} after it is spelled. Leave ${b} hidden while students name and spell it.`, { kicker: "Spelling 4.2" });
+    add(`spell-${word}-answer`, "spell", "Check. Scoop. Read the whole word.", word, [part(a, prefix ? "prefix" : "base"), part(b)], `Reveal ${b} after it is spelled. Students scoop and read ${word} back. Use Back to repeat the model or choose another practice word.`, { kicker: "Spelling 4.2" });
+  }
   const byId = new Map(scenes.map(s => [s.id, s]));
   const pick = ids => ids.map(id => { if (!byId.has(id)) throw new Error(`Unknown 4.2 scene: ${id}`); return byId.get(id); });
   const dictationChoices = {
@@ -114,11 +143,9 @@
     include: "include, consume, confuse, expose, compute"
   };
   const spelling = (word, extra = []) => {
-    const selected = pick(["spell-bridge", `spell-${word}-hidden`, `spell-${word}-first`, `spell-${word}-answer`, ...extra]);
-    return selected.map((scene, index) => index === 0 ? {
-      ...scene,
-      cue: `Dictation choices: ${dictationChoices[word]}. Choose a few. Repeat the word; name both syllables; spell one at a time; scoop and read back.`
-    } : scene);
+    const models = [word, ...extraSpelling[word].map(item => item[0])];
+    const bridge = { ...byId.get("spell-bridge"), cue: `Dictation choices: ${dictationChoices[word]}. Three guided words follow. Use Practice word to jump to a model; Close returns to Section 7 anytime.` };
+    return [bridge, ...models.flatMap(model => pick([`spell-${model}-hidden`, `spell-${model}-first`, `spell-${model}-answer`]).map(scene => ({ ...scene, practiceWord: model }))), ...pick(extra)];
   };
   const lessons = {
     compounds: { title: "Compound Words", label: "1 · Compound words · Reader 4 p.50", reading: pick(["review-question", "compound-question", "compound-answer", "classmate-question", "classmate-answer", "baseball-question", "baseball-answer", "compound-notebook", "compound-check"]), spelling: spelling("sunshine") },
@@ -127,11 +154,12 @@
     division: { title: "Keep V-e Together", label: "4 · Divide syllables · p.52 selections", reading: pick(["entire-question", "entire-divide", "entire-answer", "escape-question", "escape-answer", "volume-question", "volume-answer", "notebook-syllables", "division-check"]), spelling: spelling("escape") },
     complex: { title: "Complex Base Words", label: "5 · Complex bases · subsequent lesson · p.52", reading: pick(["complex-question", "complex-answer", "complex-build", "complex-practice", "complex-suffix", "complex-check"]), spelling: spelling("include") }
   };
-  function getScenes(key = "compounds", forSpelling = false) {
+  for (const [key, ids] of Object.entries(reinforcement)) lessons[key].reinforcement = pick(ids);
+  function getScenes(key = "compounds", forSpelling = false, forDay2 = false) {
     const lesson = lessons[key] || lessons.compounds;
-    return forSpelling ? lesson.spelling : lesson.reading;
+    return forSpelling ? lesson.spelling : forDay2 ? lesson.reinforcement : lesson.reading;
   }
-  const api = { scenes: [...new Set(Object.values(lessons).flatMap(l => [...l.reading, ...l.spelling]))], lessons, getScenes, render };
+  const api = { scenes: [...new Set(Object.values(lessons).flatMap(l => [...l.reading, ...l.reinforcement, ...l.spelling]))], lessons, getScenes, render };
 
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.TTIntro42 = api;

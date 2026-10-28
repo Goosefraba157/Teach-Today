@@ -2878,16 +2878,7 @@ function ttRender() {
     const button = ttById(id);
     if (button) button.hidden = skill.id !== "4.2";
   });
-  ["ttIntro42Choice", "ttIntro42ChoiceB2", "ttIntro42SpellingChoice"].forEach(id => {
-    const select = ttById(id);
-    if (!select || skill.id !== "4.2") return;
-    const lessonKey = `${group.id}:${lesson.id || ""}:${lesson.wordlistPageNumber || ""}`;
-    if (select.dataset.introLessonKey !== lessonKey) {
-      select.innerHTML = Object.entries(TTIntro42.lessons).map(([key, value]) => `<option value="${key}">${escapeHtml(value.label)}</option>`).join("");
-      select.value = Number(lesson.wordlistPageNumber) === 51 ? "prefixes" : "compounds";
-      select.dataset.introLessonKey = lessonKey;
-    }
-  });
+  if (skill.id === "4.2") ttFillIntro42Choices(lesson, group);
   const activeIntroSubstep = ttIntro21Variant === "discovery42" ? "4.2" : ttIntro21Variant === "discovery41" ? "4.1" : ttIntro21Variant === "discovery35" ? "3.5" : "2.1";
   if (ttIntro21Open && skill.id !== activeIntroSubstep) ttCloseIntro21();
   ttFillGroups(group.id);
@@ -12683,7 +12674,7 @@ function ttIntro21Scene() {
 }
 
 function ttIntro21Scenes() {
-  if (ttIntro21Variant === "discovery42") return TTIntro42.getScenes(ttIntro42Lesson, ttIntroSourceSection === "section7");
+  if (ttIntro21Variant === "discovery42") return TTIntro42.getScenes(ttIntro42Lesson, ttIntroSourceSection === "section7", ttIntroSourceSection === "section2b");
   if (ttIntro21Variant === "discovery41") return ttIntro41Scenes;
   if (ttIntro21Variant === "discovery35") return TT_INTRO_35_DISCOVERY_SCENES;
   return ttIntro21Variant === "discovery" ? TT_INTRO_21_DISCOVERY_SCENES : TT_INTRO_21_SCENES;
@@ -13084,6 +13075,7 @@ function ttRenderIntro21() {
   </div>`;
   requestAnimationFrame(() => target.classList.add("intro-scene-enter"));
   ttById("ttIntro21Cue").textContent = scene.cue || "";
+  ttUpdateIntro42WordPicker(scene, scenes);
   ttById("ttIntro21Title").textContent = ttIntro21Variant === "discovery42" ? TTIntro42.lessons[ttIntro42Lesson].title : ttIntro21Variant === "discovery41"
     ? "Closed Syllable Discovery"
     : ttIntro21Variant === "discovery35"
@@ -13208,12 +13200,54 @@ function ttOpenIntro41() {
   ttById("ttIntro21Next")?.focus();
 }
 
+function ttFillIntro42Choices(lesson = ttLesson, group = ttActiveGroup()) {
+  const topic = TTIntro42.lessons[lesson?.intro42Topic] ? lesson.intro42Topic : Number(lesson?.wordlistPageNumber) === 51 ? "prefixes" : "compounds";
+  const lessonKey = `${group.id}:${lesson?.id || ""}:${lesson?.wordlistPageNumber || ""}`;
+  ["ttIntro42Choice", "ttIntro42SpellingChoice"].forEach(id => {
+    const select = ttById(id);
+    if (!select) return;
+    if (select.dataset.introLessonKey !== lessonKey) {
+      select.innerHTML = Object.entries(TTIntro42.lessons).map(([key, value]) => `<option value="${key}">${escapeHtml(value.label)}</option>`).join("");
+      select.value = topic;
+      select.dataset.introLessonKey = lessonKey;
+    }
+    if (id === "ttIntro42Choice") select.value = topic;
+  });
+  const follow = ttById("ttIntro42ChoiceB2");
+  if (follow) follow.textContent = `Follows Section 2: ${TTIntro42.lessons[topic].title}`;
+}
+
+async function ttChooseIntro42Topic(topic) {
+  if (!ttLesson || ttLesson.substep !== "4.2" || !TTIntro42.lessons[topic]) return;
+  ttLesson.intro42Topic = topic;
+  const savedLesson = ttCurrentPlan()?.lessons?.find(lesson => lesson.id === ttLesson.id);
+  if (savedLesson) savedLesson.intro42Topic = topic;
+  else {
+    appState.lessonDrafts ||= {};
+    appState.lessonDrafts[ttDraftKey()] = ttClone(ttLesson);
+  }
+  ttFillIntro42Choices();
+  await saveState();
+}
+
+function ttUpdateIntro42WordPicker(scene, scenes) {
+  const label = ttById("ttIntro42WordPicker");
+  const select = ttById("ttIntro42WordChoice");
+  if (!label || !select) return;
+  label.hidden = ttIntro21Variant !== "discovery42" || ttIntroSourceSection !== "section7";
+  if (label.hidden) return;
+  const words = [...new Set(scenes.map(item => item.practiceWord).filter(Boolean))];
+  select.innerHTML = `<option value="">Start / routine</option>${words.map(word => `<option value="${escapeHtml(word)}">${escapeHtml(word)}</option>`).join("")}`;
+  select.value = scene.practiceWord || "";
+}
+
 function ttOpenIntro42(sourceSection = "section2", launchButtonId = "ttOpenIntro42Discovery") {
   const overlay = ttById("ttIntro21");
   if (!overlay) return;
   ttIntro21Variant = "discovery42";
-  const choiceId = sourceSection === "section7" ? "ttIntro42SpellingChoice" : sourceSection === "section2b" ? "ttIntro42ChoiceB2" : "ttIntro42Choice";
-  ttIntro42Lesson = ttById(choiceId)?.value || "compounds";
+  const choiceId = sourceSection === "section7" ? "ttIntro42SpellingChoice" : "ttIntro42Choice";
+  const topic = ttById(choiceId)?.value || ttLesson?.intro42Topic || "compounds";
+  ttIntro42Lesson = TTIntro42.lessons[topic] ? topic : "compounds";
   ttIntro21Index = 0;
   ttIntroSourceSection = sourceSection;
   ttIntroLaunchButtonId = launchButtonId;
@@ -21309,6 +21343,15 @@ function ttBind() {
   ttById("ttOpenIntro21")?.addEventListener("click", () => ttOpenIntro21("guided"));
   ttById("ttOpenIntro21Discovery")?.addEventListener("click", () => ttOpenIntro21("discovery"));
   ttById("ttOpenIntro35Discovery")?.addEventListener("click", () => ttOpenIntro35());
+  ttById("ttIntro42Choice")?.addEventListener("change", event => {
+    ttChooseIntro42Topic(event.target.value).catch(error => ttShowBackupToast(`Discovery topic could not be saved: ${error.message || error}`, "warning"));
+  });
+  ttById("ttIntro42WordChoice")?.addEventListener("change", event => {
+    const index = event.target.value ? ttIntro21Scenes().findIndex(scene => scene.id === `spell-${event.target.value}-hidden`) : 0;
+    if (index < 0) return;
+    ttIntro21Index = index;
+    ttRenderIntro21();
+  });
   ttById("ttOpenIntro42Discovery")?.addEventListener("click", () => ttOpenIntro42());
   ttById("ttOpenIntro42DiscoveryB2")?.addEventListener("click", () => ttOpenIntro42("section2b", "ttOpenIntro42DiscoveryB2"));
   ttById("ttOpenIntro42Spelling")?.addEventListener("click", () => ttOpenIntro42("section7", "ttOpenIntro42Spelling"));
@@ -21447,6 +21490,7 @@ function ttBind() {
       return;
     }
     if (ttIntro21Open) {
+      if (event.target?.id === "ttIntro42WordChoice") return;
       if (event.key === "ArrowRight" || event.key === "PageDown") {
         event.preventDefault();
         ttStepIntro21(1);
