@@ -12050,3 +12050,23 @@ body:has(#ttLessonLibraryPanel:not([hidden])) .backup-status-toast { bottom:128p
 .intro-42-word-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 5px; font-size: 13px; font-weight: 750; color: #475569; }
 .intro-42-word-picker[hidden] { display: none; }
 .intro-42-word-picker select { max-width: 100%; min-height: 34px; padding: 3px 8px; border: 1px solid #94a3b8; border-radius: 7px; background: #fff; color: #172033; font: inherit; }
+
+/* 2.3 green welded cards; all visuals reconstruct from native-safe text fields. */
+.intro-23-cards { display:flex; flex-wrap:wrap; justify-content:center; gap:clamp(14px,3vw,40px); }
+.intro-23-cards article { display:flex; flex-direction:column; align-items:center; gap:14px; }
+.intro-23-card { display:block; padding:18px 28px; border:2px solid #667831; border-radius:8px; font-size:clamp(38px,6vw,80px); line-height:1.2; color:#20320e; background:#c7d884; }
+.intro-23-card.letter { background:#f8d468; border-color:#ab842b; color:#30270c; }
+.intro-23-cards article > span { font-size:clamp(18px,2.3vw,30px); }
+.intro-23-build { gap:12px; }
+.intro-23-memory { width:min(760px,90%); margin:auto; text-align:center; }
+.intro-23-sketch { height:clamp(110px,22vh,240px); border:2px dashed #9aa884; border-radius:18px; display:grid; place-items:center; color:#62714d; margin-bottom:16px; }
+.intro-23-memory strong { font-size:clamp(20px,3vw,34px); }
+.intro-23-marked { display:flex; flex-direction:column; align-items:center; width:max-content; margin:auto; }
+.intro-23-marked > strong { font-size:clamp(66px,10vw,120px); font-family:Georgia,serif; font-weight:normal; }
+.intro-23-scoop { height:24px; width:100%; border-bottom:3px solid currentColor; border-radius:0 0 50% 50%; }
+.intro-23-exception { position:relative; font:48px Georgia,serif; }
+.intro-23-exception > span { position:absolute; left:-4px; top:5px; font-size:54px; }
+.intro-23-listen { display:flex; flex-direction:column; align-items:center; gap:30px; text-align:center; padding:30px; }
+.intro-23-listen strong { font-size:clamp(30px,4vw,58px); color:#365c32; }
+.intro-23-listen span { font-size:clamp(22px,3vw,38px); }
+.intro-23-glued-box { display:inline-block; border:3px solid currentColor; padding:0 8px 4px; margin-left:3px; line-height:1.25; }

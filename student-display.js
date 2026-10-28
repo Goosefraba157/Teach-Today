@@ -149,6 +149,14 @@ function renderCards(payload) {
   if ((card.kind === "intro-21" || card.kind === "intro-35") && card.teacherMirror) {
     return renderIntroTeacherMirror(card);
   }
+  if (card.kind === "intro-23") {
+    if (card.teacherMirror) return renderIntroTeacherMirror(card);
+    return `<article class="stage-intro-lesson stage-intro-23">
+      <div class="stage-intro-heading"><span>${escapeHtml(card.sectionLabel)}</span><h2>${escapeHtml(card.headline)}</h2><p>${escapeHtml(card.subhead)}</p></div>
+      <div class="stage-intro-visual">${TTIntro23.render(card)}</div>
+      <span class="stage-intro-position">${escapeHtml(card.position)}</span>
+    </article>`;
+  }
   if (card.kind === "intro-42") {
     if (card.teacherMirror) return renderIntroTeacherMirror(card);
     return `<article class="stage-intro-lesson stage-intro-42">

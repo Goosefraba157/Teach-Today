@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-28
+
+- Added the 2.3 Rule Breakers discovery to V1 Sections 2/2B: private auditory word prompts precede written pattern comparisons and individual green keyword cards, followed by long-vowel discovery, welded tapping, mnemonic sketching, boxed glued-sound marking and notebook review. Student Stage uses native-safe fields; chart selections and student records are unchanged. All 173 automated checks pass, plus 78 responsive teacher-scene checks.
+
 ## 2026-10-27
 
 - Linked 4.2 Section 2B to the saved Section 2 topic, with separate short reinforcement examples and reload/Day 2 retention. Added three staged spelling models per topic plus a teacher-only word picker, preserving face-down answers and clean native/student projection. Topic selection writes only existing lesson/draft metadata; assessment and charting behavior remain unchanged. All 168 automated checks and a 321-case synthetic desktop/iPad browser audit pass, including topic reopening, word jumps, keyboard behavior and unchanged assessment evidence; published in `e331e6e`. Pages succeeded, all nine checked public runtime/native-entry responses match tested bytes, and a fresh public-site browser passed the same 321-case workflow without page errors or bounds failures. Physical iPad teaching remains a teacher check.
