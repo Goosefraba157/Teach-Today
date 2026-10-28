@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-28
 
-- Added the 2.3 Rule Breakers discovery to V1 Sections 2/2B: private auditory word prompts precede written pattern comparisons and individual green keyword cards, followed by long-vowel discovery, welded tapping, mnemonic sketching, boxed glued-sound marking and notebook review. Student Stage uses native-safe fields; chart selections and student records are unchanged. All 173 automated checks pass, plus 78 responsive teacher-scene checks.
+- Added the 2.3 Rule Breakers discovery to V1 Sections 2/2B: private auditory word prompts precede written pattern comparisons and individual green keyword cards, followed by long-vowel discovery, welded tapping, mnemonic sketching, boxed glued-sound marking and notebook review. Student Stage uses native-safe fields; chart selections and student records are unchanged. All 173 automated checks pass, plus 78 responsive teacher-scene checks and all 26 live student-Stage scenes with no cue/auditory-word leaks or console errors. Published in `9b453e3`; Pages succeeded and all nine checked public runtime/native-entry responses match tested bytes.
 
 ## 2026-10-27
 
