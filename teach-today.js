@@ -3986,8 +3986,12 @@ async function ttSetSectionFinished(sectionId, options = {}) {
     const current = ttSectionProgressContext();
     if (!current || current.group !== group || current.lesson !== lesson || current.plan !== plan) return false;
     const before = { completedSections: lesson.completedSections && ttClone(lesson.completedSections),
-      sectionProgress: lesson.sectionProgress && ttClone(lesson.sectionProgress) };
+      sectionProgress: lesson.sectionProgress && ttClone(lesson.sectionProgress),
+      lastSectionActivity: lesson.lastSectionActivity && ttClone(lesson.lastSectionActivity) };
     if (!window.TeachTodayLessonProgress.mark(lesson, sectionId, options)) return true;
+    if (options.state === undefined || options.state === "done") {
+      lesson.lastSectionActivity = { sectionId, at: new Date().toISOString() };
+    }
     const index = plan.lessons.findIndex(saved => saved.id === lesson.id);
     const previousLesson = plan.lessons[index];
     plan.lessons[index] = lesson;
@@ -3998,7 +4002,7 @@ async function ttSetSectionFinished(sectionId, options = {}) {
       ttUpdateSaveStatus(plan);
       return true;
     } catch (error) {
-      for (const key of ["completedSections", "sectionProgress"]) {
+      for (const key of ["completedSections", "sectionProgress", "lastSectionActivity"]) {
         if (before[key] === undefined) delete lesson[key]; else lesson[key] = before[key];
       }
       plan.lessons[index] = previousLesson;
@@ -4025,7 +4029,11 @@ function ttToggleSectionDone(sectionId) {
 
 function ttTrackLessonSectionActivity(sectionId) {
   const context = ttSectionProgressContext();
-  if (!context || !window.TeachTodayLessonProgress.activity(context.lesson, sectionId)) return;
+  if (!context || !Object.hasOwn(window.TeachTodayLessonProgress.summary(context.lesson).statuses, sectionId)) return;
+  const changed = window.TeachTodayLessonProgress.activity(context.lesson, sectionId);
+  const moved = context.lesson.lastSectionActivity?.sectionId !== sectionId;
+  if (!changed && !moved) return;
+  context.lesson.lastSectionActivity = { sectionId, at: new Date().toISOString() };
   const index = context.plan.lessons.findIndex(saved => saved.id === context.lesson.id);
   context.plan.lessons[index] = context.lesson;
   ttInitSectionCompletion();
@@ -6663,6 +6671,25 @@ function ttRenderHomeScreen() {
   const home = ttById("ttHomeScreen");
   if (!home || home.hidden) return;
   ttUpdateHomeFirebaseStatus();
+  const homeLink = ttById("ttHomeNavHome");
+  if (homeLink && !homeLink.dataset.bound) {
+    homeLink.dataset.bound = "true";
+    homeLink.addEventListener("click", event => {
+      event.preventDefault();
+      ttCloseSharedDataPanels();
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
+  }
+  const navToggle = ttById("ttHomeNavToggle");
+  if (navToggle && !navToggle.dataset.bound) {
+    navToggle.dataset.bound = "true";
+    navToggle.addEventListener("click", () => {
+      const expanded = navToggle.getAttribute("aria-expanded") !== "true";
+      navToggle.setAttribute("aria-expanded", String(expanded));
+      navToggle.textContent = expanded ? "Hide tools" : "Tools";
+      navToggle.closest(".home-sidebar").classList.toggle("mobile-open", expanded);
+    });
+  }
   const yearSelect = ttById("ttHomeSchoolYear");
   const activeYearId = appState.activeSchoolYearId || currentSchoolYearId();
   const schoolYears = (appState.schoolYears || []).slice().sort((a, b) => b.id.localeCompare(a.id));
@@ -6992,44 +7019,68 @@ function ttSubstepProgressBar(group) {
   const currentIndex = group.pageProgress?.wordlist || 0;
   const pct = Math.min(100, Math.round((currentIndex / totalPages) * 100));
   const pageLabel = `${currentIndex} of ${totalPages} pages`;
-  return `<div class="group-progress-bar" title="${pageLabel}">
+  return `<div class="group-progress-bar" role="progressbar" aria-label="Substep charting pages" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pageLabel}" title="${pageLabel}">
     <div class="group-progress-fill" style="width:${pct}%"></div>
     <span class="group-progress-label">${pageLabel}${nPages.length ? ` · ${nPages.length} nonsense` : ""}</span>
   </div>`;
 }
 
+// A read-only projection: rendering a card never opens, repairs, or starts a plan.
+function ttHomeGroupLessonSummary(group) {
+  const plans = (group.history || []).filter(plan => ["TeachToday", "CombinedSession"].includes(plan.source)
+    && plan.lessons?.[0] && !plan.excludedFromLessonSequence && String(plan.status || "").trim().toLowerCase() !== "test");
+  const terminal = plan => ["complete", "incomplete"].includes(String(plan.status || "").trim().toLowerCase());
+  const open = plans.find(plan => plan.id === group.activeLessonPlanId && !terminal(plan))
+    || plans.slice().reverse().find(plan => !terminal(plan));
+  const plan = open || plans.at(-1);
+  const planState = String(plan?.status || "").trim().toLowerCase();
+  const draft = !open && appState.lessonDrafts?.[group.id];
+  const lesson = draft || plan?.lessons?.[0];
+  const validSection = id => /^section(?:[1-9]|10|[12]b)$/.test(id || "");
+  const activity = Object.entries(lesson?.sectionProgress || {}).flatMap(([sectionId, entry]) => {
+    if (!validSection(sectionId)) return [];
+    const at = Math.max(Date.parse(entry.startedAt) || 0, Date.parse(entry.completedAt) || 0);
+    return at ? [{ sectionId, at }] : [];
+  });
+  const last = lesson?.lastSectionActivity;
+  if (validSection(last?.sectionId) && Date.parse(last.at)) activity.push({ sectionId: last.sectionId, at: Date.parse(last.at) });
+  activity.sort((a, b) => b.at - a.at);
+  // Without timestamps, legacy completion cannot tell us which section was last.
+  const lastSection = draft ? "" : activity[0]?.sectionId || "";
+  const hasProgress = activity.length > 0 || Object.values(lesson?.completedSections || {}).some(value => ["done", "skipped"].includes(value));
+  const started = hasProgress || plan?.hasStudentData || ["in progress", "taught"].includes(planState)
+    || Object.values(plan?.sessions || {}).some(session => session.startedAt || ["In progress", "Complete"].includes(session.status));
+  let status = "No lesson yet";
+  let state = "empty";
+  if (draft) { status = "Draft planned · Not started"; state = "planned"; }
+  else if (planState === "complete") { status = "Lesson completed"; state = "complete"; }
+  else if (planState === "incomplete") { status = "Closed incomplete"; state = "incomplete"; }
+  else if (plan) {
+    status = started ? "In progress" : "Next lesson planned · Not started";
+    state = started ? "inprogress" : "planned";
+  }
+  return { substep: lesson?.substep || group.substep || "—",
+    number: draft ? "Next" : plan?.lessonNumber || lesson?.lessonSequence || "—",
+    status, state, lastSection };
+}
+
 function ttHomeGroupCardHtml(group, editable = true) {
   const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
   const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
-  const recentHistory = (group.history || []).slice().reverse();
-  const lastPlan = recentHistory.find((plan) => ["TeachToday", "CombinedSession"].includes(plan.source) && plan.lessons?.[0] && !plan.excludedFromLessonSequence)
-    || recentHistory.find((plan) => !plan.excludedFromLessonSequence);
-  const lastLesson = lastPlan?.lessons?.[0];
-  const records = (appState.masterRecords || [])
-    .filter((record) => record.groupId === group.id || record.group === group.name)
-    .sort((a, b) => new Date(b.date || b.displayDate || 0) - new Date(a.date || a.displayDate || 0));
-  const lastRecord = records[0];
+  const summary = ttHomeGroupLessonSummary(group);
   const students = (group.students || []).join(", ");
   const todayCombination = group.temporaryCombinations?.[ttTodayKey()];
   const combinedNames = (todayCombination?.sourceGroupIds || []).map((groupId) => (appState.groups || []).find((item) => item.id === groupId)?.name).filter(Boolean);
   const active = group.id === ttPlannerGroupId ? " active" : "";
-  const lastText = lastLesson
-    ? `${lastLesson.substep} / Reader ${lastLesson.reader}, p. ${lastLesson.wordlistPageNumber || "--"}`
-    : `${group.substep || "--"} / no saved lesson yet`;
-  const chartText = lastRecord
-    ? `${ttStudentDisplayName(lastRecord.studentId, lastRecord.student)}: ${lastRecord.correct ?? "--"}/${lastRecord.total || 15}${lastRecord.seconds ? ` in ${lastRecord.seconds}s` : ""}`
-    : "No charting saved";
-  const preferredType = ttPlannerFormatLabel(ttPreferredLessonType(group));
   return `<div class="home-group-card-shell" style="--group-color: ${color};">
     <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}" aria-pressed="${group.id === ttPlannerGroupId ? "true" : "false"}">
-      <span>${escapeHtml(group.time || "Group")}</span>
-      <strong>${escapeHtml(group.name || "Unnamed group")}</strong>
+      <span class="home-group-time">${escapeHtml(group.time || "Group")}</span>
+      <strong class="home-group-name">${escapeHtml(group.name || "Unnamed group")}</strong>
+      <em class="home-group-students">${escapeHtml(students || "No students yet")}</em>
       ${ttSubstepProgressBar(group)}
-      <em>${escapeHtml(students || "No students yet")}</em>
+      <span class="home-group-position"><span><small>Substep</small><b>${escapeHtml(summary.substep)}</b></span><span><small>Lesson</small><b>${escapeHtml(summary.number)}</b></span></span>
+      <span class="home-group-status" data-lesson-state="${summary.state}"><small>${escapeHtml(summary.status)}</small>${summary.lastSection ? `<small class="home-group-last-section">Last worked: Section ${escapeHtml(ttSectionDisplayName(summary.lastSection))}</small>` : ""}</span>
       ${combinedNames.length ? `<small class="home-group-combined">Today: combined with ${escapeHtml(combinedNames.join(", "))}</small>` : ""}
-      <small>Last lesson: ${escapeHtml(lastText)}</small>
-      <small>Last chart: ${escapeHtml(chartText)}</small>
-      <small class="home-group-preference">Preferred: ${escapeHtml(preferredType)}</small>
     </button>
     ${editable ? `<div class="home-group-card-actions"><button type="button" class="home-group-combine" data-combine-group="${escapeHtml(group.id)}" aria-label="Combine ${escapeHtml(group.name || "group")} for one session" title="Combine groups for one session">Combine</button><button type="button" class="home-group-edit" data-edit-group="${escapeHtml(group.id)}" aria-label="Edit ${escapeHtml(group.name || "group")}" title="Edit group">Edit</button></div>` : ""}
   </div>`;

@@ -12085,3 +12085,104 @@ body:has(#ttLessonLibraryPanel:not([hidden])) .backup-status-toast { bottom:128p
   cursor: pointer;
 }
 #section8 .dictation-date-toggle:focus-visible { outline: 2px solid #64748b; }
+
+/* Compact Home workspace: the existing teaching routes stay in the sidebar. */
+body.home-mode { background: #fff; }
+body.home-mode .home-screen { max-width: none; margin-left: 210px; padding: 26px 20px; }
+.home-sidebar {
+  position: fixed; inset: 0 auto 0 0; z-index: 42; width: 210px;
+  display: flex; flex-direction: column; gap: 16px; padding: 20px 12px 14px;
+  overflow-y: auto; border-right: 1px solid #e2e8f0; background: #fcfefe;
+}
+.home-sidebar-brand { display: flex; align-items: center; gap: 9px; min-height: 42px; color: #0f172a; text-decoration: none; }
+.home-sidebar-brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.home-sidebar-brand strong { font-size: 21px; letter-spacing: -.7px; }
+.home-sidebar nav { display: grid; gap: 2px; }
+.home-sidebar nav :is(button.home-data-button, button.home-reference-button, a.home-nav-current, a.home-game-link) {
+  display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+  width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 10px;
+  border: 1px solid transparent; border-radius: 10px; background: transparent;
+  color: #334665; font: inherit; font-size: 14px; font-weight: 650; text-decoration: none; text-align: left; box-shadow: none;
+}
+.home-sidebar nav :is(button, a):is(:hover, :focus-visible) { background: #eff8f7; outline: 2px solid #0f766e; outline-offset: -2px; }
+.home-sidebar nav :is(a.home-nav-current, a.home-game-link) { background: #e4f8f3; color: #0f766e; font-weight: 800; }
+.home-sidebar nav img { width: 21px; height: 21px; flex: 0 0 21px; opacity: .78; }
+.home-sidebar .home-nav-label { margin: 16px 10px 5px; color: #64748b; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.home-sidebar .home-reference-menu { display: block; min-width: 0; }
+.home-sidebar .home-reference-popover { position: static; width: 100%; min-width: 0; margin: 3px 0; box-shadow: none; }
+.home-sidebar .home-game-link { margin-top: 14px !important; }
+.home-sidebar .home-account-control { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 7px; margin-top: auto; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+.home-sidebar .home-account-control button { min-height: 44px; }
+.home-sidebar .firebase-user-badge { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.home-screen .home-head { align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 24px; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+.home-screen .home-head > :first-child { min-width: 200px; flex: 1; }
+.home-screen .home-head h2 { font-size: 32px; letter-spacing: -.8px; line-height: 1.15; }
+.home-screen .home-head span { font-weight: 600; }
+.home-screen .home-school-year-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; width: auto; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.home-screen .home-school-year-bar label { font-size: 13px; }
+.home-screen .home-school-year-bar select { min-height: 44px; max-width: 100%; font-size: 13px; }
+.home-screen #ttHomeSchoolYearStatus { flex-basis: 100%; font-size: 11px; margin: 0; text-align: right; }
+.home-screen .home-groups { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; align-items: stretch; }
+.home-screen .home-group-card-shell { display: flex; flex-direction: column; border: 1px solid #dce4ee; border-left: 6px solid var(--group-color); border-radius: 14px; background: #fff; overflow: hidden; }
+.home-screen .home-group-card-shell:has(.home-group-card.active) { border-color: var(--group-color); background: color-mix(in srgb, var(--group-color) 6%, white); box-shadow: 0 0 0 1px var(--group-color); }
+.home-screen .home-group-card-shell .home-group-card { display: flex; flex-direction: column; gap: 9px; flex: 1; width: 100%; height: auto; min-height: 0; padding: 14px 12px 8px; border: 0; border-radius: 0; background: transparent; outline: none; box-shadow: none; }
+.home-screen .home-group-card:focus-visible { outline: 3px solid #0f766e; outline-offset: -3px; }
+.home-screen .home-group-card .home-group-time { color: var(--group-color); font-size: 13px; }
+.home-screen .home-group-card .home-group-name { font-size: 20px; overflow-wrap: anywhere; line-height: 1.15; }
+.home-screen .home-group-card .home-group-students { min-height: 54px; font-size: 14px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
+.home-screen .group-progress-bar { flex: 0 0 7px; width: 100%; margin: 2px 0 4px; }
+.home-screen .group-progress-label { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+.home-screen .home-group-card .home-group-position { display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 10px 4px; border-radius: 9px; background: color-mix(in srgb, var(--group-color) 8%, white); text-transform: none; }
+.home-screen .home-group-position > span { display: grid; gap: 3px; text-align: center; text-transform: none; }
+.home-screen .home-group-position > span + span { border-left: 1px solid color-mix(in srgb, var(--group-color) 18%, white); }
+.home-screen .home-group-position small { color: #334155; font-size: 12px; font-weight: 500; }
+.home-screen .home-group-position b { color: #0f172a; font-size: 26px; line-height: 1.15; }
+.home-screen .home-group-card .home-group-status { display: grid; align-content: start; gap: 4px; min-height: 58px; width: 100%; border-radius: 8px; padding: 8px; background: color-mix(in srgb, var(--group-color) 6%, white); text-transform: none; }
+.home-screen .home-group-status small { color: #263850; font-size: 12px; font-weight: 650; line-height: 1.3; }
+.home-screen .home-group-status .home-group-last-section { font-weight: 500; }
+.home-screen .home-group-status[data-lesson-state="complete"] > small:first-child { color: #116445; }
+.home-screen .home-group-card-actions { position: static; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; }
+.home-screen :is(.home-group-edit, .home-group-combine) { min-height: 44px; padding: 7px 10px; font-size: 12px; font-weight: 700; }
+.home-screen .home-group-add-card { min-height: 170px; box-shadow: none; }
+body.home-mode :is(.tt-app-home, .tt-app-back) { display: none; }
+@media (min-width: 1500px) {
+  .home-screen .home-groups { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .home-sidebar { width: 184px; padding-inline: 9px; }
+  .home-sidebar-brand strong { font-size: 18px; }
+  .home-sidebar nav :is(button.home-data-button, button.home-reference-button, a.home-nav-current, a.home-game-link) { gap: 9px; font-size: 13px; }
+  body.home-mode .home-screen { margin-left: 184px; padding: 20px 14px; }
+}
+@media (max-width: 600px) {
+  body.home-mode .home-screen { margin-left: 0; padding: 12px; }
+  .home-sidebar { position: static; width: 100%; max-height: none; margin-bottom: 20px; border-right: 0; border-bottom: 1px solid #e2e8f0; padding: 0 0 12px; }
+  .home-sidebar nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-sidebar .home-nav-label { grid-column: 1 / -1; margin-top: 8px; }
+  .home-sidebar .home-game-link { margin-top: 0 !important; }
+  .home-sidebar .home-account-control { margin-top: 0; }
+  .home-screen .home-head h2 { font-size: 28px; }
+  .home-screen .home-head > :first-child { flex-basis: 100%; }
+  .home-screen .home-school-year-bar { justify-content: flex-start; }
+  .home-screen #ttHomeSchoolYearStatus { text-align: left; }
+  .home-screen .home-groups { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+}
+
+.home-sidebar nav button.home-data-button { min-height: 44px !important; padding: 10px !important; font-size: 14px !important; font-weight: 650 !important; line-height: 1.2; }
+.home-sidebar nav .home-data-attendance { border-color: transparent !important; background: transparent !important; color: #334665 !important; }
+.home-sidebar .home-account-control button { min-height: 44px !important; }
+.home-nav-toggle { display: none; }
+@media (min-width: 601px) and (max-width: 900px) {
+  .home-sidebar nav button.home-data-button { font-size: 13px !important; }
+}
+@media (max-width: 600px) {
+  .home-sidebar { position: relative; }
+  .home-nav-toggle { display: block; position: absolute; top: 0; right: 0; min-height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 10px; color: #0f766e; background: #e4f8f3; font: inherit; }
+  .home-sidebar:not(.mobile-open) nav { display: none; }
+}
+
+.home-sidebar [hidden] { display: none !important; }
+.home-screen .lesson-history-heading > div,
+.home-screen .lesson-history-controls { min-width: 0; max-width: 100%; }
+.home-screen .lesson-history-controls select { min-width: 0; max-width: 100%; }
+.home-screen .home-lesson-history { grid-template-columns: minmax(0, 1fr); }

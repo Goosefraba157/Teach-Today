@@ -53,7 +53,7 @@ test('Section 4 return and group changes prevent automatic completion',async()=>
 test('failed section save restores progress and stays on the same section',async()=>{
   const f=fixture({save:async()=>{throw Error('storage full');}});
   await f.ctx.ttGoToTeachingSection(1,'section1');assert.equal(f.lesson.completedSections,undefined);
-  assert.equal(f.lesson.sectionProgress,undefined);assert.deepEqual(f.calls.scroll,[]);
+  assert.equal(f.lesson.sectionProgress,undefined);assert.equal(f.lesson.lastSectionActivity,undefined);assert.deepEqual(f.calls.scroll,[]);
 });
 test('Day 2 follows the visible order and final Next opens Wrap-Up',async()=>{
   const f=fixture({ids:['section1b','section2b','section6','section10']});

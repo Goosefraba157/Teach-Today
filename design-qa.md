@@ -1,54 +1,37 @@
-# Section 8 Student Profile — design verification
+# V1 compact Home — visual verification
+
+- Source visual truth: `/Users/macg/.codex/generated_images/01a18a38-c480-7692-b1e9-97457bb9e3dc/exec-8fb95b8c-a93a-42dc-b279-a95c078d9e70.png`, followed by the teacher-approved completed/planned/in-progress/no-lesson status wording.
+- Implementation: `http://localhost:4174/TeachToday.html`, isolated synthetic fixture only.
+- Screenshot: `tmp/home-design/home-desktop.png`; comparison: `tmp/home-design/comparison.png`.
+- Source pixels 1505×1045 normalized to 1280×889; browser capture 1280×889 CSS/pixel size at density 1. State: Home, first group selected, ten synthetic groups, top of page, closed menus. Screenshot names/data are fictional; no classroom data was used.
+- Additional captures: `tmp/home-design/home-ipad-landscape.png` (1024×768), `home-ipad-portrait.png` (834×1194), `home-phone.png` (390×844). These local test artifacts are not published.
+
+## Comparison history
+
+1. Initial browser review found legacy `!important` styles shrinking sidebar data labels to 11px and tap targets to 34px. Fixed with scoped 14px/44px sidebar rules; preserved 13px labels at narrow tablet sizes. Hid legacy hidden account badges explicitly.
+2. Responsive review found the existing lesson-history select creating 455px document width at 390px viewport. Constrained the history grid track and select; final browser measurement is 390px document width, with Tools opening/closing normally.
+3. Final combined source/implementation image opened and visually inspected. No actionable P0/P1/P2 findings remain. Source image and implementation were compared at the same normalized viewport and Home state. Whole-screen comparison includes sidebar, header and both group-card rows; separate cropped regions were unnecessary because the combined image exposes all fidelity surfaces.
+
+## Fidelity surfaces
+
+- Typography: existing system/Inter stack retained, navy hierarchy, 14px roster text, 26px position values, 14px sidebar labels, readable wrapping. No roster truncation. Card titles retain actual saved group names.
+- Spacing/layout: compact header, light 210px sidebar, five uniform columns at 1280px, four at iPad landscape, three portrait, one phone column. Consistent card field order and clear separate 44px Combine/Edit controls. Longer status wording intentionally adds a second line. Existing new/demo cards and continuation/history controls remain below.
+- Colors/tokens: light white/mint/teal navigation, existing per-group colors preserved rather than reassigning mock colors. Selected card subtle group tint; position/status blocks use consistent pale group shades and dark readable text.
+- Assets: original product logo retained intentionally rather than replacing it with the generated book symbol. Vendored Bootstrap Icons 1.11.3 SVG files with MIT license; no handcrafted icons or rasterized UI. Icons are offline-cached.
+- Copy/content: all requested card removals made; names/progress preserved. State labels reflect saved plans and explicit drafts. Last section follows timestamps and meaningful activity; no synthetic chronology for untimed legacy records. No lesson number fabricated for unnumbered drafts.
+
+## Interactions and verification
+
+- Sidebar Readers popover, History and Records open; Home closes shared panels.
+- Combine and Edit dialogs open and cancel without saving changes.
+- School-year switching retains archived read-only group cards and restores current groups.
+- Continue Lesson opens the existing teacher/Present flow. Working with Section 3 and returning through the presentation menu updates Home to Last worked: Section 3; no automatic section completion.
+- Mobile Tools opens/closes with matching aria-expanded state.
+- No sideways overflow at the four tested sizes. Sidebar scrolls at shorter tablet heights so all destinations remain available.
+- Browser console: zero errors in the synthetic workflow. Automated checks: 183 passed; syntax and diff checks passed.
+
+## Follow-up polish / limits
+
+- Physical iPad touch and the teacher's real long group names remain classroom checks. Existing product branding, group-color assignment, account controls and attendance reminder intentionally remain.
 
 final result: passed
-
-This report covers synthetic fixtures only. No screenshots or records from a real student are included. Referenced images are retained locally in ignored private-input; machine-specific paths are excluded from this public report.
-
-## Visual targets and capture
-
-- Real words: `private-input/dictation-profile-qa-20261020/reference-real.png`
-- Nonsense: `private-input/dictation-profile-qa-20261020/reference-nonsense.png`
-- HFW: `private-input/dictation-profile-qa-20261020/reference-hfw.png`
-- Browser: Codex in-app browser; local-only synthetic fixture at port 8797.
-- Tablet CSS viewport and screenshot: 1440 × 1024, density 1. Source rasters: 1487 × 1058. Sources were proportionally fitted/padded to 1440 × 1024 for combined comparisons.
-- Mobile CSS viewport and screenshot: 390 × 844, density 1. No mobile source design was supplied; mobile checks assess usability rather than pixel fidelity.
-- Final captures: `private-input/dictation-profile-qa-20261020/teach-today-dictation-real-final.jpg`, `private-input/dictation-profile-qa-20261020/teach-today-dictation-nonsense-final.jpg`, `private-input/dictation-profile-qa-20261020/teach-today-dictation-hfw-final.jpg`, `private-input/dictation-profile-qa-20261020/teach-today-dictation-mobile-final.jpg`.
-- Full-view combined comparisons: `private-input/dictation-profile-qa-20261020/teach-today-dictation-real-final-comparison.jpg`, `private-input/dictation-profile-qa-20261020/teach-today-dictation-nonsense-final-comparison.jpg`, `private-input/dictation-profile-qa-20261020/teach-today-dictation-hfw-final-comparison.jpg`.
-- Focused chart/text comparison: `private-input/dictation-profile-qa-20261020/teach-today-dictation-final-focused-comparison.jpg`.
-
-## Comparison history and fixes
-
-1. Initial capture: the existing group picker pushed the graph below the useful tablet viewport (P2). The dictation view now collapses that picker behind a working Change student/group action. Compact heading/metrics spacing restores the graph and all date labels within the landscape viewport. Post-fix tablet capture and combined comparison were inspected.
-2. Narrow-screen check: the existing flex header squeezed student identity behind the school-year controls (P2). A Profile-only mobile grid separates identity and controls, with normal document flow and a scrollable tab row. Final mobile screenshot was inspected; DOM width is 390 at a 390px viewport.
-3. Bar text: increased saved-target text to 16px and adjusted uniform plot-height calculations for wrapping. Browser bounding-box checks confirmed every target stays inside its scored bar in real/nonsense/HFW views. Short bars keep an even numeric scale; zero is an annotation without a misleading filled bar.
-
-No actionable P0/P1/P2 findings remain.
-
-## Required fidelity surfaces
-
-- Fonts/typography: retained V1's Inter/system stack and existing app header; 28px section title, 16px saved targets, 19px score labels. Correct/missed markers supplement color. The original header scale is intentionally retained rather than copying generated brand lettering.
-- Spacing/layout: one full-width graph, no right duplicate list. All assessed targets are inside their bars. Date controls, evidence expansion, category selection, summary/history, and student switching work. Longer histories use horizontal scrolling; narrow screens retain usable column widths.
-- Colors/tokens: existing teal/navy/white system; blue targets, red recorded errors/missed markers, teal correct markers, neutral observations-only columns, purple teacher tags. Existing V1 borders/radii are retained.
-- Image/asset quality: existing app turtle/logo asset reused, with no substitute image assets or third-party viewer. Charts are live data visualizations, not raster mockups.
-- Copy/content: production shows saved data, not sample error spellings. Missing written responses show a missed target only. Existing snapshots expose their legacy category-confirmation limitation. Variable HFW totals use percentage axes and actual denominators; the fixture's lists differ slightly from the illustrative mock and therefore its computed aggregate differs honestly.
-
-## Behavior and integrity
-
-- All 136 repository checks pass, including exact student/lesson matching, legacy preservation, per-category assessment, three category modes, future lessons, HFW-only exclusion from Real Words Progress Monitoring, timezone date labels, and fresh Stage storage reads.
-- In-app browser verified correct weighted fixture totals, five/three/variable in-bar item counts, observation-only dates, date expansion, complete history, recurring misses, supporting-tag links (29 raw observations), empty/student switching, absence/unknown attendance safeguards, cancellation, and creation of only chosen category snapshots.
-- A new synthetic lesson save refreshed the open graph immediately: latest date and total updated while unassessed HFW/nonsense totals stayed unchanged.
-- The synthetic fixture's visible read-only check reported byte-identical saved state after browsing and zero page errors. Browser error logs were empty.
-- Existing live teaching item buttons were not redesigned. No real device, cloud data, migration, or recovery operation was used.
-
-## Remaining limits and follow-up polish
-
-- Physical iPad touch, native WebKit rendering, and printing remain teacher/device checks. Printing uses the complete history table rather than clipping long graphs.
-- P3: wording and density can be tuned after normal classroom use; no further styling loop is required before release.
-
-## Implementation checklist
-
-- [x] Approved graph layout and all three main categories.
-- [x] Accurate source identity, provenance, category totals, date labels, and old-data preservation.
-- [x] New-lesson confirmation/save path and fresh Profile updates.
-- [x] Browser interactions, read-only integrity, mobile check, and combined visual comparisons.
-- [x] Runtime/cache references and project continuity documentation updated.

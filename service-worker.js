@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-29-sheet-reference-2";
+const CACHE_NAME = "teach-today-offline-v2026-10-29-home-compact-1";
 
 const APP_SHELL = [
   "./",
@@ -511,6 +511,16 @@ const APP_SHELL = [
   "./pwa-register.js",
   "./manifest.webmanifest",
   "./assets/morrocoy-logo.png",
+  "./assets/home-icons/bar-chart-line.svg",
+  "./assets/home-icons/book.svg",
+  "./assets/home-icons/calendar-check.svg",
+  "./assets/home-icons/clock-history.svg",
+  "./assets/home-icons/controller.svg",
+  "./assets/home-icons/file-earmark-text.svg",
+  "./assets/home-icons/graph-up.svg",
+  "./assets/home-icons/house-door.svg",
+  "./assets/home-icons/journal-text.svg",
+  "./assets/home-icons/person.svg",
   "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ang-sound-card-high-res.png",
   "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ing-sound-card-high-res.png",
   "./Pics%20for%20Lessons%20and%20Stuff/high-res-sound-cards/ong-sound-card-high-res.png",
