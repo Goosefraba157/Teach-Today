@@ -1960,7 +1960,7 @@ body.stage-inking .stage-ink-canvas {
   }
 }
 
-/* Reserve a slim header strip so the reference never covers the original sheet. */
+/* The original page retains a small title; lesson references live on its printed lines. */
 .stage-mode-dictation-paper .chart-mini-header {
   position: absolute;
   top: 0;
@@ -1985,4 +1985,41 @@ body.stage-inking .stage-ink-canvas {
 }
 .stage-mode-dictation-paper .chart-mini-header strong { font-weight: 400; }
 .stage-mode-dictation-paper .stage-body { padding-top: 46px; }
-.dictation-lesson-reference { overflow-wrap: anywhere; }
+/* Both the image and field positions share the exact 8.5-by-11 fitted surface. */
+.dictation-document-panel { container-type: size; }
+.dictation-sheet-surface {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100cqw, 77.272727cqh);
+  height: min(100cqh, 129.411765cqw);
+  container-type: inline-size;
+  pointer-events: none;
+}
+.dictation-sheet-fields { visibility: hidden; }
+.dictation-document-ready .dictation-sheet-fields { visibility: visible; }
+.dictation-sheet-fields span {
+  position: absolute;
+  top: 8.6%;
+  height: 5.4%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid #a5a5a5;
+  color: #17212b;
+  font-family: Arial, sans-serif;
+  font-size: 4.4cqw;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.dictation-sheet-fields .dictation-sheet-name { left: 8.8%; width: 36.8%; }
+.dictation-sheet-fields .dictation-sheet-substep { left: 49.3%; width: 10.4%; }
+.dictation-sheet-fields .dictation-sheet-lesson { left: 63.2%; width: 10.4%; }
+.dictation-sheet-fields small { font-size: 1.6cqw; font-weight: 400; line-height: 1.2; }
+.dictation-sheet-fields strong { text-align: center; font-size: 4.4cqw; font-weight: 700; line-height: 1.05; }
+.dictation-sheet-fields .dictation-sheet-date { left: 77%; width: 14.3%; }
+.dictation-sheet-fields .dictation-sheet-date strong { font-size: 3cqw; }
+.dictation-fallback-reference { color: #17212b; font-weight: 700; }

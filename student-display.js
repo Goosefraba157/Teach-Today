@@ -565,12 +565,27 @@ function renderJournal(payload) {
   `, "Section 7");
 }
 
+function dictationSheetReference(payload) {
+  // Retain compatibility with the installed native prompt whitelist and old payloads.
+  const match = String(payload.dictationPaper?.prompt || "").match(/^Substep ([\d.]+) · Lesson (\d+|Next)(?: · Date (.+))?$/);
+  if (!match) return { substep: "", lesson: "", date: "" };
+  const date = match[3] ? new Date(match[3]) : null;
+  return {
+    substep: match[1],
+    lesson: match[2],
+    date: date && !Number.isNaN(date.getTime())
+      ? date.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" }) : ""
+  };
+}
+
 function renderDictationPaper(payload) {
+  const reference = dictationSheetReference(payload);
   const rows = (count) => Array.from({ length: count }, (_, index) => `
     <div class="dictation-line"><span>${index + 1}</span></div>
   `).join("");
   const fallbackPage = `
     <article class="dictation-paper-stage dictation-document-fallback">
+      <p class="dictation-fallback-reference">Substep ${escapeHtml(reference.substep)} · Lesson ${escapeHtml(reference.lesson)}${reference.date ? ` · Date ${escapeHtml(reference.date)}` : ""}</p>
       <p>Listen, repeat, tap the sounds, and write.</p>
       <div class="dictation-paper">
         <section><h2>Sounds</h2>${rows(5)}</section>
@@ -583,17 +598,24 @@ function renderDictationPaper(payload) {
     <section class="stage-shell stage-mode-dictation-paper">
       <div class="chart-mini-header">
         <strong>Section 8 - Dictation Paper</strong>
-        <span class="dictation-lesson-reference">${escapeHtml(payload.dictationPaper?.prompt || "")}</span>
       </div>
       <div class="stage-body">
         <section class="dictation-document-stage">
           <article class="dictation-document-panel">
             ${fallbackPage}
-            <img
-              class="dictation-page-image"
-              alt="WRS Student Dictation Page"
-              data-dictation-page-src="assets/stage/wrs-student-dictation-page.webp"
-            >
+            <div class="dictation-sheet-surface">
+              <img
+                class="dictation-page-image"
+                alt="WRS Student Dictation Page"
+                data-dictation-page-src="assets/stage/wrs-student-dictation-page.webp"
+              >
+              <div class="dictation-sheet-fields" aria-label="Lesson reference">
+                <span class="dictation-sheet-name"><small>Student Name</small><strong></strong></span>
+                <span class="dictation-sheet-substep"><small>Substep</small><strong>${escapeHtml(reference.substep)}</strong></span>
+                <span class="dictation-sheet-lesson"><small>Lesson Number</small><strong>${escapeHtml(reference.lesson)}</strong></span>
+                <span class="dictation-sheet-date"><small>Date</small><strong>${escapeHtml(reference.date)}</strong></span>
+              </div>
+            </div>
           </article>
         </section>
       </div>

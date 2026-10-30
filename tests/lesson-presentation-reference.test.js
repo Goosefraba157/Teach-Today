@@ -34,3 +34,23 @@ test('date stays absent until explicitly revealed and hides again without changi
   assert.match(context.ttDictationLessonReference(lesson, {}, null, true), /Date Oct 29, 2026$/);
   assert.equal(context.ttDictationLessonReference(lesson, {}, null, false), 'Substep 4.2 · Lesson 7');
 });
+
+const display = fs.readFileSync(require.resolve('../student-display.js'), 'utf8');
+const readStart = display.indexOf('function dictationSheetReference(');
+const readEnd = display.indexOf('\nfunction ', readStart + 1);
+vm.runInContext(display.slice(readStart, readEnd), context);
+
+test('installed native prompt renders separate on-sheet fields with an optional compact date', () => {
+  const prompt = 'Substep 6.4 · Lesson 5 · Date Oct 29, 2026';
+  const shown = context.dictationSheetReference({dictationPaper:{prompt}});
+  assert.equal(shown.substep, '6.4'); assert.equal(shown.lesson, '5'); assert.equal(shown.date, '10/29/26');
+  const hidden = context.dictationSheetReference({dictationPaper:{prompt:'Substep 6.4 · Lesson 5'}});
+  assert.equal(hidden.date, ''); assert.equal(hidden.substep, shown.substep); assert.equal(hidden.lesson, shown.lesson);
+});
+
+test('legacy prompts and malformed references leave sheet fields blank', () => {
+  for (const prompt of ['Listen, repeat, tap the sounds, and write.', 'Substep <script> · Lesson 5', 'PRIVATE NAME', '']) {
+    const result = context.dictationSheetReference({dictationPaper:{prompt}});
+    assert.equal(result.substep, ''); assert.equal(result.lesson, ''); assert.equal(result.date, '');
+  }
+});

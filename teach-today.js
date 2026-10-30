@@ -5121,14 +5121,12 @@ function ttRecordPlanRevision(plan, lesson, reason = "Saved changes") {
 }
 
 function ttRenderLessonIdentity(group = ttActiveGroup(), lesson = ttLesson) {
-  const reference = ttById("ttPresentLessonNumber");
-  if (reference) reference.textContent = lesson ? `Lesson ${ttPlanLessonNumber(ttCurrentPlan(), lesson, group)}` : "";
   const dateToggle = ttById("ttPresentDateToggle");
   if (dateToggle) {
     dateToggle.setAttribute("aria-pressed", String(ttDictationDateVisible));
     dateToggle.setAttribute("aria-label", ttDictationDateVisible ? "Hide dictation date" : "Show dictation date");
     dateToggle.title = ttDictationDateVisible ? "Hide dictation date" : "Show dictation date";
-    dateToggle.textContent = ttDictationDateVisible && lesson ? ttDictationLessonReference(lesson, group).split(" · Date ")[1] || "" : "";
+    dateToggle.textContent = "";
   }
   const banner = ttById("ttLessonIdentity");
   if (!banner || !lesson || document.body.classList.contains("home-mode")) {
@@ -21436,6 +21434,7 @@ function ttBind() {
   const trackSectionControl = (event, source) => {
     const card = event.target.closest?.(".teach-card[id^='section']");
     if (!card) return;
+    if (event.target.closest?.("#ttPresentDateToggle")) return;
     const meaningful = event.target.closest?.("button, a, input, select, textarea, canvas, [role='button'], [contenteditable='true']");
     if (meaningful) ttRecordSectionInteraction(card.id, source);
   };
