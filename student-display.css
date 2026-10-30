@@ -1959,3 +1959,30 @@ body.stage-inking .stage-ink-canvas {
     grid-template-columns: 1fr;
   }
 }
+
+/* Reserve a slim header strip so the reference never covers the original sheet. */
+.stage-mode-dictation-paper .chart-mini-header {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  left: 58px;
+  max-width: none;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #52616b;
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 400;
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  column-gap: 14px;
+}
+.stage-mode-dictation-paper .chart-mini-header strong { font-weight: 400; }
+.stage-mode-dictation-paper .stage-body { padding-top: 46px; }
+.dictation-lesson-reference { overflow-wrap: anywhere; }

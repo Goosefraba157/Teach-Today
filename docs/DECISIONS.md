@@ -298,3 +298,7 @@ This file records decisions future chats should not accidentally reverse. Curren
 
 - Introduce each new glued pattern with spoken examples before showing spellings or the green card. Keep auditory word banks in private teacher cues; then reveal the written words for visual discovery, and finally teach letters–keyword–sound. Let students compare long vowels before explaining closed-syllable exceptions (“rule breakers”). These are still closed syllables; the five combinations usually have long vowels, not an unconditional pronunciation rule.
 - Box the glued letters in words, as with previously taught glued sounds. Say/tap the welded unit together with three fingers because grouping makes decoding easier; it still contains several sounds. Keep the syllable scoop, long-vowel macron and closed-exception label in the marking model. Presentation steps do not establish assessment evidence or charting readiness.
+
+## Quiet lesson references (2026-10-29)
+
+- Keep Present lesson numbers and the Section 8 student substep/lesson reference small and neutral. Preserve the original dictation page and blank student name. Date is hidden by default; a blank accessible teacher tap target beside the Present number reveals/hides the active lesson day's scheduled date. This transient teaching control must not save classroom evidence or require an iPad shell update; relay its public reference through the existing native-whitelisted dictation prompt.

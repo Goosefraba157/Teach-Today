@@ -95,6 +95,7 @@ let ttPassageZoomSaveTimer = null;
 let ttPassageGestureListenersBound = false;
 let ttPassageStageActive = false;
 let ttStudentDisplayWindow = null;
+let ttDictationDateVisible = false;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 let ttNativeProjectionMode = "stage";
 let ttGroupDay = null; // "1" | "2" | null (null = show full group lesson)
@@ -3063,6 +3064,14 @@ function ttStudentDisplaySoundReferencePayload(skill) {
   };
 }
 
+// Public classroom reference only; never include group or student identity.
+// Use the existing native-whitelisted prompt field so installed iPads can show it.
+function ttDictationLessonReference(lesson = ttLesson, group = ttActiveGroup(), plan = ttCurrentPlan(), showDate = ttDictationDateVisible) {
+  const day = ["group", "part1", "part2"].includes(lesson?.lessonType) ? ttPlanSessionDay(plan, lesson) : "1";
+  const sessionDate = plan?.sessions?.[day]?.date || lesson?.scheduledDate || plan?.scheduledDate || ttTodayKey();
+  return `Substep ${lesson?.substep || group?.substep || "—"} · Lesson ${ttPlanLessonNumber(plan, lesson, group)}${showDate ? ` · Date ${ttLessonDate(ttDateFromKey(sessionDate))}` : ""}`;
+}
+
 function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
   const group = ttActiveGroup();
   const lesson = ttLesson || ttBuildLesson();
@@ -3099,7 +3108,7 @@ function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
     },
     dictationPaper: {
       key: `dictation-${lesson.id || skill.id}`,
-      prompt: "Listen, repeat, tap the sounds, and write."
+      prompt: ttDictationLessonReference(lesson, group)
     },
     passageTitle: passage ? ttPassageLabel(passage) : `Reader ${lesson.reader}, p. ${lesson.passagePageNumber || "--"}`,
     passageText,
@@ -5112,6 +5121,15 @@ function ttRecordPlanRevision(plan, lesson, reason = "Saved changes") {
 }
 
 function ttRenderLessonIdentity(group = ttActiveGroup(), lesson = ttLesson) {
+  const reference = ttById("ttPresentLessonNumber");
+  if (reference) reference.textContent = lesson ? `Lesson ${ttPlanLessonNumber(ttCurrentPlan(), lesson, group)}` : "";
+  const dateToggle = ttById("ttPresentDateToggle");
+  if (dateToggle) {
+    dateToggle.setAttribute("aria-pressed", String(ttDictationDateVisible));
+    dateToggle.setAttribute("aria-label", ttDictationDateVisible ? "Hide dictation date" : "Show dictation date");
+    dateToggle.title = ttDictationDateVisible ? "Hide dictation date" : "Show dictation date";
+    dateToggle.textContent = ttDictationDateVisible && lesson ? ttDictationLessonReference(lesson, group).split(" · Date ")[1] || "" : "";
+  }
   const banner = ttById("ttLessonIdentity");
   if (!banner || !lesson || document.body.classList.contains("home-mode")) {
     if (banner) banner.hidden = true;
@@ -21428,6 +21446,11 @@ function ttBind() {
     if (event.target.closest?.("canvas")) trackSectionControl(event, "canvas");
   }, true);
   ttById("ttPresentMenuLogo")?.addEventListener("click", () => ttHandlePresentationLogoClick());
+  ttById("ttPresentDateToggle")?.addEventListener("click", () => {
+    ttDictationDateVisible = !ttDictationDateVisible;
+    ttRenderLessonIdentity();
+    ttSyncStudentDisplay();
+  });
   document.addEventListener("pointerdown", ttHandlePresentationMenuOutsidePointer, true);
   document.querySelector(".teach-bar .brand-block")?.addEventListener("click", () => ttHandlePresentationLogoClick());
   document.querySelector(".teach-bar")?.addEventListener("pointerenter", () => {

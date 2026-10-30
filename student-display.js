@@ -571,7 +571,7 @@ function renderDictationPaper(payload) {
   `).join("");
   const fallbackPage = `
     <article class="dictation-paper-stage dictation-document-fallback">
-      <p>${escapeHtml(payload.dictationPaper?.prompt || "Listen, repeat, tap the sounds, and write.")}</p>
+      <p>Listen, repeat, tap the sounds, and write.</p>
       <div class="dictation-paper">
         <section><h2>Sounds</h2>${rows(5)}</section>
         <section><h2>Words</h2>${rows(5)}</section>
@@ -583,6 +583,7 @@ function renderDictationPaper(payload) {
     <section class="stage-shell stage-mode-dictation-paper">
       <div class="chart-mini-header">
         <strong>Section 8 - Dictation Paper</strong>
+        <span class="dictation-lesson-reference">${escapeHtml(payload.dictationPaper?.prompt || "")}</span>
       </div>
       <div class="stage-body">
         <section class="dictation-document-stage">
