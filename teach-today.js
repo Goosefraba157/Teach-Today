@@ -6680,16 +6680,6 @@ function ttRenderHomeScreen() {
       window.scrollTo({ top: 0, behavior: "auto" });
     });
   }
-  const navToggle = ttById("ttHomeNavToggle");
-  if (navToggle && !navToggle.dataset.bound) {
-    navToggle.dataset.bound = "true";
-    navToggle.addEventListener("click", () => {
-      const expanded = navToggle.getAttribute("aria-expanded") !== "true";
-      navToggle.setAttribute("aria-expanded", String(expanded));
-      navToggle.textContent = expanded ? "Hide tools" : "Tools";
-      navToggle.closest(".home-sidebar").classList.toggle("mobile-open", expanded);
-    });
-  }
   const yearSelect = ttById("ttHomeSchoolYear");
   const activeYearId = appState.activeSchoolYearId || currentSchoolYearId();
   const schoolYears = (appState.schoolYears || []).slice().sort((a, b) => b.id.localeCompare(a.id));

@@ -1,37 +1,40 @@
-# V1 compact Home — visual verification
+# Rolling turtle Home drawer — visual verification
 
-- Source visual truth: `/Users/macg/.codex/generated_images/01a18a38-c480-7692-b1e9-97457bb9e3dc/exec-8fb95b8c-a93a-42dc-b279-a95c078d9e70.png`, followed by the teacher-approved completed/planned/in-progress/no-lesson status wording.
-- Implementation: `http://localhost:4174/TeachToday.html`, isolated synthetic fixture only.
-- Screenshot: `tmp/home-design/home-desktop.png`; comparison: `tmp/home-design/comparison.png`.
-- Source pixels 1505×1045 normalized to 1280×889; browser capture 1280×889 CSS/pixel size at density 1. State: Home, first group selected, ten synthetic groups, top of page, closed menus. Screenshot names/data are fictional; no classroom data was used.
-- Additional captures: `tmp/home-design/home-ipad-landscape.png` (1024×768), `home-ipad-portrait.png` (834×1194), `home-phone.png` (390×844). These local test artifacts are not published.
+## Source and evidence
 
-## Comparison history
+- Approved layout: `/Users/macg/.codex/generated_images/01a18a38-c480-7692-b1e9-97457bb9e3dc/exec-6a43cbeb-99c9-4d02-93b2-079c7a788650.png` (full-width cards, small edge overlap; turtle character subsequently refined).
+- Approved character/roll: `/Users/macg/.codex/generated_images/01a18a38-c480-7692-b1e9-97457bb9e3dc/exec-a0c50281-f1c0-4df9-9cdd-713b527ae023.png` and original `assets/morrocoy-logo.png`.
+- Implementation: isolated synthetic Home at `http://localhost:4174/TeachToday.html`.
+- Desktop screenshots: `tmp/home-design/turtle-open.png`, `turtle-closed.png`. Full-screen comparison: `turtle-comparison.png`; focused artwork comparison: `turtle-art-comparison.png`. Original generated production atlas inspected as well.
+- Desktop CSS viewport 1280×889. Source layout normalized to 1280×889; final browser image 1269×881 (capture omits viewport gutter), normalized to 1280×889 for comparison. Source and screenshot are at Home top, first group selected, ten synthetic groups, no open panels. Keyboard focus outline on the handle is intentional accessibility feedback. No classroom data was used in screenshots.
+- Additional browser evidence: `tmp/home-design/turtle-ipad-portrait-open.png` / `turtle-ipad-portrait-closed.png`, `turtle-ipad-landscape-closed.png`, `turtle-phone-open.png` / `turtle-phone-closed.png`.
 
-1. Initial browser review found legacy `!important` styles shrinking sidebar data labels to 11px and tap targets to 34px. Fixed with scoped 14px/44px sidebar rules; preserved 13px labels at narrow tablet sizes. Hid legacy hidden account badges explicitly.
-2. Responsive review found the existing lesson-history select creating 455px document width at 390px viewport. Constrained the history grid track and select; final browser measurement is 390px document width, with Tools opening/closing normally.
-3. Final combined source/implementation image opened and visually inspected. No actionable P0/P1/P2 findings remain. Source image and implementation were compared at the same normalized viewport and Home state. Whole-screen comparison includes sidebar, header and both group-card rows; separate cropped regions were unnecessary because the combined image exposes all fidelity surfaces.
+## Comparison history and fixes
+
+1. Initial interaction review confirmed true mouse dragging and endpoint poses, with zero console errors. Removed a redundant desktop Close menu row to retain the approved compact sidebar; phones keep that secondary close control.
+2. Tablet review found that an auto-fill grid could add a column after closing and make cards smaller. Fixed column count by viewport so releasing the drawer width always enlarges existing cards: 834px viewport 194→256px, 1024px 184→236px, 1280px 196→238px. Post-fix screenshots/DOM measurements confirm no sideways overflow in open or closed states.
+3. Added inert covered content and destination auto-close for phone overlay. Browser verified inert attributes, Escape dismissal, accessible handle labels/expanded state, and opening History followed by automatic drawer closure. Reference menu buttons deliberately keep the drawer open so their links remain usable.
+4. Final full-screen source/implementation comparison and focused approved-character/production-atlas comparison opened together and inspected. No actionable P0/P1/P2 findings remain.
 
 ## Fidelity surfaces
 
-- Typography: existing system/Inter stack retained, navy hierarchy, 14px roster text, 26px position values, 14px sidebar labels, readable wrapping. No roster truncation. Card titles retain actual saved group names.
-- Spacing/layout: compact header, light 210px sidebar, five uniform columns at 1280px, four at iPad landscape, three portrait, one phone column. Consistent card field order and clear separate 44px Combine/Edit controls. Longer status wording intentionally adds a second line. Existing new/demo cards and continuation/history controls remain below.
-- Colors/tokens: light white/mint/teal navigation, existing per-group colors preserved rather than reassigning mock colors. Selected card subtle group tint; position/status blocks use consistent pale group shades and dark readable text.
-- Assets: original product logo retained intentionally rather than replacing it with the generated book symbol. Vendored Bootstrap Icons 1.11.3 SVG files with MIT license; no handcrafted icons or rasterized UI. Icons are offline-cached.
-- Copy/content: all requested card removals made; names/progress preserved. State labels reflect saved plans and explicit drafts. Last section follows timestamps and meaningful activity; no synthetic chronology for untimed legacy records. No lesson number fabricated for unnumbered drafts.
+- Typography: existing V1 fonts, navy text, compact card hierarchy and readable roster/position/status wrapping retained. No new font dependency.
+- Layout/spacing: closed drawer leaves zero reserved gutter, normal page padding only. Handle overlaps a small part of the left edge as approved, moves with the menu, and remains tappable when closed. Existing header, controls, new/demo cards, continuation/history surfaces remain; phone main content stays full width behind the overlay.
+- Colors/tokens: original white/mint/teal sidebar and group colors retained. Generated turtle matches the approved teal shell, olive/gold plates, educational emblems and friendly golden-brown face/belly.
+- Assets: genuine generated transparent nine-pose atlas, alpha preserved, uniformly normalized to a 768-square WebP (~142KB). Existing logo remains and serves as artwork-load fallback. No code-drawn replacement character. Adjacent poses blend according to actual drag position, including reversal; endpoint poses are clear at the small handle size.
+- Copy/content: card and navigation labels unchanged. Handle announces Open/Close with drag direction and expanded state. Turtle sound is explicit and off initially; its optional local sound is a synthesized chuckle effect, not recorded speech.
 
-## Interactions and verification
+## Verification
 
-- Sidebar Readers popover, History and Records open; Home closes shared panels.
-- Combine and Edit dialogs open and cancel without saving changes.
-- School-year switching retains archived read-only group cards and restores current groups.
-- Continue Lesson opens the existing teacher/Present flow. Working with Section 3 and returning through the presentation menu updates Home to Last worked: Section 3; no automatic section completion.
-- Mobile Tools opens/closes with matching aria-expanded state.
-- No sideways overflow at the four tested sizes. Sidebar scrolls at shorter tablet heights so all destinations remain available.
-- Browser console: zero errors in the synthetic workflow. Automated checks: 183 passed; syntax and diff checks passed.
+- All 192 automated checks pass, including mouse/touch gesture progress and reversal, single-tap behavior, release-click suppression, cancel/lost capture/resize, keyboard, blocked storage, saved preferences, phone focus isolation/dismissal, reduced motion and offline first-use versioned runtime resolution and asset wiring.
+- Real browser mouse drag closed/reopened the drawer; tap and arrow keys work. Readers submenu remains functional. Optional sound setting toggles without console errors. Closed state survived reload.
+- Browser responsive checks cover 1280×889, 1024×768, 834×1194 and 390×844 with no horizontal overflow. Phone overlay/backdrop, reference submenu, destination auto-close and Escape were checked.
+- Production controller never reads/writes classroom state or calls cloud/microphone APIs. Only two isolated UI preference keys are written.
+- Syntax and Git diff checks passed. Browser console: zero errors in the synthetic workflow.
 
-## Follow-up polish / limits
+## Limits / follow-up polish
 
-- Physical iPad touch and the teacher's real long group names remain classroom checks. Existing product branding, group-color assignment, account controls and attendance reminder intentionally remain.
+- Physical iPad touch and speaker audibility remain teacher checks. The optional synthesized effect is deliberately quiet; no real voice recording is included.
+- Existing production header/branding placement is retained; approved illustration poses are adapted to a small practical handle with consistent character identity.
 
 final result: passed
