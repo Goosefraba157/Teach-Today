@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-29
 
-- Added a subtle V1 Present lesson number and a small Section 8 Stage substep/lesson reference above the unchanged dictation sheet. Date is blank by default; the invisible tap target immediately right of the teacher's lesson number toggles the scheduled active-day date, with accessible keyboard focus. Reuses the installed iPad prompt whitelist without classroom writes or a reinstall. All 169 checks, syntax/diff checks and synthetic desktop/iPad/phone layout plus teacher date-toggle checks pass; zero page errors. Publication pending.
+- Added a subtle V1 Present lesson number and a small Section 8 Stage substep/lesson reference above the unchanged dictation sheet. Date is blank by default; the invisible tap target immediately right of the teacher's lesson number toggles the scheduled active-day date, with accessible keyboard focus. Reuses the installed iPad prompt whitelist without classroom writes or a reinstall. All 169 checks, syntax/diff checks and synthetic desktop/iPad/phone layout plus teacher date-toggle checks pass; zero page errors. Published in `50d290a`; Pages deployment 40979317222 succeeded and all seven changed public runtime/entry files match tested bytes. A separate student tab also followed date show/hide with zero page errors.
 
 ## 2026-10-28
 
