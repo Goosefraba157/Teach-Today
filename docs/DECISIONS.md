@@ -310,3 +310,9 @@ This file records decisions future chats should not accidentally reverse. Curren
 ## Quiet lesson references (2026-10-29)
 
 - The teacher clarified that lesson references belong only in the dictation sheet’s own header, with large dark substep/lesson values, aligned field lines and blank student name. Do not repeat the reference throughout Present or in a tiny strip outside the page. Date stays blank until the teacher toggles the invisible accessible control immediately beside the Section 8 Dictation title; use the active lesson day’s scheduled date. This transient control must not save classroom or section-progress evidence or require an iPad shell update; relay its public reference through the existing native-whitelisted dictation prompt. Keep existing Follow Lesson routes (Section 7 journal, Section 8 paper).
+
+## Optional card presentation (2026-10-31)
+
+- Sections 2/2B retain one canonical splitting/override engine and their original card renderer. Classic is the default; Animated decorates those same finished DOM cards without reclassifying, splitting, reordering or saving them. Keep Edit cards, custom words, deck arrows, original pen/laser and Whiteboard behavior shared. Do not add competing word-building mechanics as part of a visual update.
+- The choice is a separate device-local UI preference (`teachToday.cardMotion.v1`), never lesson/classroom JSON. Replay and Show all are presentation-only and excluded from section-activity evidence. Animation does not establish mastery, attendance or completion.
+- Student Stage relays visual layout and start epoch using existing native-whitelisted card fields. Repeated/reconnect payloads resume elapsed motion, not a fresh reveal. Preserve Classic teardown, reduced-motion final visibility and readable original text when glyphs/animation APIs fail. Current scope is ordinary Section 2/2B cards only; discovery routines and manual Whiteboard gestures retain their existing behavior.

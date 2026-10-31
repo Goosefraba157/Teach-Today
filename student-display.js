@@ -699,6 +699,7 @@ function renderGame(payload) {
 }
 
 function render(payload) {
+  window.TTCardMotion?.clear(root.querySelector(".stage-build-cards"));
   currentPayload = payload;
   document.body.classList.remove("stage-inking");
   document.body.classList.toggle("stage-teacher-mirror", Boolean(payload?.cardDisplay?.teacherMirror));
@@ -729,6 +730,12 @@ function render(payload) {
   else if (payload.mode === "game") root.innerHTML = renderGame(payload);
   else root.innerHTML = renderPrivate(payload);
 
+  if (payload.mode === "cards" && payload.cardDisplay?.layout === "physical-cards") {
+    const card = payload.cardDisplay;
+    window.TTCardMotion?.apply(root.querySelector(".stage-build-cards"), {
+      animated: true, startedAt: Number(card.variant), still: card.variant === "still"
+    });
+  }
   currentInkKey = nextInkKey;
   bindStageControls(payload);
   setupChartPageImage();

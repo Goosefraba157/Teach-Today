@@ -2987,6 +2987,7 @@ function ttStudentDisplayCardPayload(sectionId, lesson, skill) {
     const word = isDay2 ? ttSection2BWord : ttSection2Word;
     const cards = word ? section2CardsForWord(word, skill.id) : null;
     return {
+      ...window.TTCardMotion?.snapshot(ttById(isDay2 ? "ttSection2BDisplay" : "ttSection2Display")),
       key: `${stageSection}-${lesson.id || skill.id}-${word || "empty"}`,
       sectionLabel: ttStudentDisplaySectionLabel(stageSection),
       word,
@@ -13601,6 +13602,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
     if (deckIndex >= 0) ttSection2BIndex = deckIndex;
   }
   ttSection2BWord = word;
+  window.TTCardMotion?.clear(display);
   display.innerHTML = "";
   if (editor) editor.hidden = true;
   if (!word) {
@@ -13625,6 +13627,7 @@ function ttShowSection2BWord(word, substep, options = {}) {
     card.textContent = section2DisplayCardText(item);
     display.appendChild(card);
   });
+  ttApplyCardMotion(display);
   hint.textContent = cards.mode === "sounds"
     ? "Sound cards: yellow consonants, pink vowels, green glued/welded sounds."
     : "Syllable / word-part cards: yellow affixes and white syllable or Latin-base cards.";
@@ -14126,6 +14129,7 @@ function ttShowSection2Word(word, substep, options = {}) {
     if (deckIndex >= 0) ttSection2Index = deckIndex;
   }
   ttSection2Word = word;
+  window.TTCardMotion?.clear(display);
   display.innerHTML = "";
   if (editor) editor.hidden = true;
   if (!word) {
@@ -14149,6 +14153,7 @@ function ttShowSection2Word(word, substep, options = {}) {
     card.textContent = section2DisplayCardText(item);
     display.appendChild(card);
   });
+  ttApplyCardMotion(display);
   hint.textContent = cards.mode === "sounds"
     ? "Sound cards: yellow consonants, pink vowels, green glued/welded sounds."
     : "Syllable / word-part cards: yellow affixes and white syllable or Latin-base cards.";
@@ -14214,6 +14219,34 @@ function ttUseCustomSection2BWord() {
   }
   input.value = "";
   ttShowSection2BWord(clean, substep);
+}
+
+// Presentation preference is device-only; canonical cards, overrides and lessons are untouched.
+function ttApplyCardMotion(display, still = false) {
+  const motion = window.TTCardMotion;
+  if (!motion) return;
+  motion.apply(display, { animated: motion.style() === "animated", still });
+}
+
+function ttUpdateCardMotionControls() {
+  const motion = window.TTCardMotion;
+  ["", "B2"].forEach(suffix => {
+    const select = ttById(`ttCardStyle${suffix}`);
+    if (!select) return;
+    select.disabled = !motion;
+    select.value = motion?.style() || "classic";
+    ["ttCardReplay", "ttCardShowAll"].forEach(id => {
+      const button = ttById(`${id}${suffix}`);
+      if (button) button.hidden = select.value !== "animated";
+    });
+  });
+}
+
+function ttSetCardMotionStyle(value) {
+  window.TTCardMotion?.setStyle(value);
+  ttUpdateCardMotionControls();
+  ["ttSection2Display", "ttSection2BDisplay"].forEach(id => ttApplyCardMotion(ttById(id)));
+  ttSyncStudentDisplay();
 }
 
 function ttCurrentSection2Cards() {
@@ -21489,10 +21522,21 @@ function ttBind() {
     const btn = e.target.closest("[data-section-done]");
     if (btn) ttToggleSectionDone(btn.dataset.sectionDone);
   });
+  ttUpdateCardMotionControls();
+  ["", "B2"].forEach(suffix => {
+    const displayId = suffix ? "ttSection2BDisplay" : "ttSection2Display";
+    ttById(`ttCardStyle${suffix}`)?.addEventListener("change", event => ttSetCardMotionStyle(event.target.value));
+    ["Replay", "ShowAll"].forEach(action => {
+      ttById(`ttCard${action}${suffix}`)?.addEventListener("click", () => {
+        ttApplyCardMotion(ttById(displayId), action === "ShowAll");
+        ttSyncStudentDisplay();
+      });
+    });
+  });
   const trackSectionControl = (event, source) => {
     const card = event.target.closest?.(".teach-card[id^='section']");
     if (!card) return;
-    if (event.target.closest?.("#ttPresentDateToggle")) return;
+    if (event.target.closest?.("#ttPresentDateToggle, [data-card-motion-controls]")) return;
     const meaningful = event.target.closest?.("button, a, input, select, textarea, canvas, [role='button'], [contenteditable='true']");
     if (meaningful) ttRecordSectionInteraction(card.id, source);
   };

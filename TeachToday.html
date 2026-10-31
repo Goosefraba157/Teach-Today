@@ -13,6 +13,7 @@
     <link rel="icon" href="assets/morrocoy-logo.png">
     <link rel="stylesheet" href="app-nav.css?v=data-diagnostic-1">
     <link rel="stylesheet" href="teach-today.css?v=20261030-reader-ink-2">
+    <link rel="stylesheet" href="card-motion.css?v=20261031-card-motion-1">
     <script src="app-nav.js?v=data-diagnostic-1" defer></script>
   </head>
   <body>
@@ -793,6 +794,11 @@
               <button id="ttOpenWhiteboard" class="small-action whiteboard-open" type="button">Whiteboard</button>
             </div>
           </div>
+          <div class="tt-card-motion-controls" data-card-motion-controls="day1">
+            <label>Card style <select id="ttCardStyle" aria-label="card presentation style"><option value="classic">Classic</option><option value="animated">Animated</option></select></label>
+            <button id="ttCardReplay" type="button" hidden>Replay build</button>
+            <button id="ttCardShowAll" type="button" hidden>Show all</button>
+          </div>
           <div class="section2-card-stage">
             <button id="ttSection2Prev" class="card-arrow section2-arrow" type="button" aria-label="Previous Section 2 word">‹</button>
             <div id="ttSection2Display" class="section2-display">
@@ -1008,6 +1014,11 @@
                 <button id="ttEditSection2CardsB2" class="small-action" type="button">Edit cards</button>
                 <button id="ttOpenWhiteboardB2" class="small-action whiteboard-open" type="button">Whiteboard</button>
               </div>
+            </div>
+            <div class="tt-card-motion-controls" data-card-motion-controls="B2">
+              <label>Card style <select id="ttCardStyleB2" aria-label="Day 2 card presentation style"><option value="classic">Classic</option><option value="animated">Animated</option></select></label>
+              <button id="ttCardReplayB2" type="button" hidden>Replay build</button>
+              <button id="ttCardShowAllB2" type="button" hidden>Show all</button>
             </div>
             <div class="section2-card-stage">
               <button id="ttSection2BPrev" class="card-arrow section2-arrow" type="button" aria-label="Previous Section 2B word">‹</button>
@@ -1275,8 +1286,9 @@
     <script src="wilson-hfw-data.js"></script>
     <script src="vendor/pdf-lib.min.js"></script>
     <script src="stage-storage.js?v=20260910-stage-drive-1"></script>
+    <script src="card-motion.js?v=20261031-card-motion-1"></script>
     <script src="intro-23.js?v=20261028-intro23-1"></script>
     <script src="intro-42.js?v=20261027-intro42-3"></script>
-    <script src="stage-app-bootstrap.js?v=20261022-charting-weekly-2" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|charting-export.js?v=20261022-charting-weekly-2|charting-archive.js?v=20261022-charting-weekly-2|charting-export-ui.js?v=20261022-charting-weekly-2|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|home-sidebar.js?v=20261030-reader-ink-2|teach-today.js?v=20261030-reader-ink-2|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
+    <script src="stage-app-bootstrap.js?v=20261022-charting-weekly-2" data-scripts="app.js?v=20261016-lesson-reliability-2|sync-safety.js?v=20260828-roster-membership-2|section9-passage-companions.js?v=section9-companion-7|developer-access.js|attendance-calendar.js?v=20261007-calendar-2|attendance-export.js?v=20261007-calendar-2|lesson-library.js?v=20261018-library-split-1|lesson-library-preview.js?v=20261018-library-split-1|charting-export.js?v=20261022-charting-weekly-2|charting-archive.js?v=20261022-charting-weekly-2|charting-export-ui.js?v=20261022-charting-weekly-2|lesson-progress.js?v=20261018-auto-progress-1|lesson-assessment-review.js?v=20261020-dictation-profile-1|home-sidebar.js?v=20261030-reader-ink-2|teach-today.js?v=20261031-card-motion-1|pwa-register.js|onboarding.js?v=lesson-assistant-3|add-group.js?v=20260828-roster-membership-2"></script>
   </body>
 </html>

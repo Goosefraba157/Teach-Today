@@ -1,10 +1,16 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-30-reader-ink-2";
+const CACHE_NAME = "teach-today-offline-v2026-10-31-card-motion-1";
 
 const APP_SHELL = [
   "./",
   "./DeveloperDashboard.html",
   "./DeveloperDataDiagnostic.html",
   "./TeachToday.html",
+  "./card-motion.js",
+  "./card-motion.css",
+  "./card-motion.js?v=20261031-card-motion-1",
+  "./card-motion.css?v=20261031-card-motion-1",
+  "./teach-today.js?v=20261031-card-motion-1",
+  "./student-display.js?v=20261031-card-motion-1",
   "./home-sidebar.js",
   "./home-sidebar.js?v=20261030-reader-ink-2",
   "./teach-today.js?v=20261030-reader-ink-2",

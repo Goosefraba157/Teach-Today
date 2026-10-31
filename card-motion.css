@@ -1,0 +1,59 @@
+/* Opt-in presentation surface. Classic cards retain their existing rules. */
+.tt-card-motion-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--muted, #475569);
+  font-size: 12px;
+  font-weight: 750;
+}
+.tt-card-motion-controls select,
+.tt-card-motion-controls button {
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #155e75;
+  font: inherit;
+}
+.tt-card-motion-controls button:disabled { opacity: .5; }
+.tt-card-motion-controls [hidden] { display: none; }
+.tt-physical-cards > :is(.build-card, .stage-build-card) { position: relative; }
+.tt-physical-cards .tt-card-written { color: transparent; }
+.tt-physical-cards .tt-card-written::before,
+.tt-physical-cards .tt-card-written::after { visibility: hidden; }
+.tt-card-ink {
+  position: absolute;
+  width: calc(100% - 20px);
+  height: 80%;
+  inset: 10% 10px;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: #111;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Native Stage uses the same types as the teacher's finished card sequence. */
+.stage-build-cards.tt-physical-cards :is(.syllable, .latin) {
+  background: #fff;
+  border-color: #a3a3a3;
+  border-radius: 0;
+}
+@media print {
+  .tt-card-motion-controls { display: none; }
+  .tt-physical-cards > :is(.build-card, .stage-build-card) { opacity: 1 !important; transform: none !important; }
+  .tt-card-ink path { stroke-dashoffset: 0 !important; }
+}
+@media (forced-colors: active) {
+  .tt-card-ink { stroke: CanvasText; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-physical-cards > :is(.build-card, .stage-build-card) { opacity: 1 !important; transform: none !important; }
+  .tt-card-ink path { stroke-dashoffset: 0 !important; }
+}
