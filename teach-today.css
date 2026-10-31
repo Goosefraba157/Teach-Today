@@ -12123,26 +12123,26 @@ body.home-mode .home-screen { max-width: none; margin-left: 210px; padding: 26px
 .home-screen .home-school-year-bar select { min-height: 44px; max-width: 100%; font-size: 13px; }
 .home-screen #ttHomeSchoolYearStatus { flex-basis: 100%; font-size: 11px; margin: 0; text-align: right; }
 .home-screen .home-groups { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; align-items: stretch; }
-.home-screen .home-group-card-shell { display: flex; flex-direction: column; border: 1px solid #dce4ee; border-left: 6px solid var(--group-color); border-radius: 14px; background: #fff; overflow: hidden; }
-.home-screen .home-group-card-shell:has(.home-group-card.active) { border-color: var(--group-color); background: color-mix(in srgb, var(--group-color) 6%, white); box-shadow: 0 0 0 1px var(--group-color); }
-.home-screen .home-group-card-shell .home-group-card { display: flex; flex-direction: column; gap: 9px; flex: 1; width: 100%; height: auto; min-height: 0; padding: 14px 12px 8px; border: 0; border-radius: 0; background: transparent; outline: none; box-shadow: none; }
+.home-screen .home-group-card-shell { display: flex; flex-direction: column; border: 1px solid #dce4ee; border-radius: 18px; background: #fff; overflow: hidden; }
+.home-screen .home-group-card-shell:has(.home-group-card.active) { border-color: #0f766e; background: #fff; box-shadow: 0 0 0 1px #0f766e; }
+.home-screen .home-group-card-shell .home-group-card { display: flex; flex-direction: column; gap: 3px; flex: 1; width: 100%; height: auto; min-height: 0; padding: 10px 14px 2px; border: 0; border-radius: 0; background: transparent; outline: none; box-shadow: none; }
 .home-screen .home-group-card:focus-visible { outline: 3px solid #0f766e; outline-offset: -3px; }
-.home-screen .home-group-card .home-group-time { color: var(--group-color); font-size: 13px; }
+.home-screen .home-group-card .home-group-time { color: #52617a; font-size: 13px; }
 .home-screen .home-group-card .home-group-name { font-size: 20px; overflow-wrap: anywhere; line-height: 1.15; }
-.home-screen .home-group-card .home-group-students { min-height: 54px; font-size: 14px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
+.home-screen .home-group-card .home-group-students { min-height: 36px; font-size: 14px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
 .home-screen .group-progress-bar { flex: 0 0 7px; width: 100%; margin: 2px 0 4px; }
 .home-screen .group-progress-label { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
-.home-screen .home-group-card .home-group-position { display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 10px 4px; border-radius: 9px; background: color-mix(in srgb, var(--group-color) 8%, white); text-transform: none; }
-.home-screen .home-group-position > span { display: grid; gap: 3px; text-align: center; text-transform: none; }
-.home-screen .home-group-position > span + span { border-left: 1px solid color-mix(in srgb, var(--group-color) 18%, white); }
-.home-screen .home-group-position small { color: #334155; font-size: 12px; font-weight: 500; }
-.home-screen .home-group-position b { color: #0f172a; font-size: 26px; line-height: 1.15; }
-.home-screen .home-group-card .home-group-status { display: grid; align-content: start; gap: 4px; min-height: 58px; width: 100%; border-radius: 8px; padding: 8px; background: color-mix(in srgb, var(--group-color) 6%, white); text-transform: none; }
-.home-screen .home-group-status small { color: #263850; font-size: 12px; font-weight: 650; line-height: 1.3; }
+.home-screen .home-group-card .home-group-position { display: grid; grid-template-columns: 1fr 1fr; width: 100%; padding: 0; border-radius: 0; background: transparent; text-transform: none; }
+.home-screen .home-group-position > span { display: grid; gap: 1px; text-align: center; text-transform: none; }
+.home-screen .home-group-position > span + span { border-left: 1px solid #dce4ee; }
+.home-screen .home-group-position small { color: #334155; font-size: 11px; font-weight: 500; line-height: 1.1; }
+.home-screen .home-group-position b { color: #0f172a; font-size: 26px; line-height: 1.05; }
+.home-screen .home-group-card .home-group-status { display: grid; align-content: start; gap: 2px; min-height: 34px; width: 100%; border-radius: 0; padding: 0; background: transparent; text-transform: none; }
+.home-screen .home-group-status small { color: #263850; font-size: 13px; font-weight: 650; line-height: 1.3; }
 .home-screen .home-group-status .home-group-last-section { font-weight: 500; }
 .home-screen .home-group-status[data-lesson-state="complete"] > small:first-child { color: #116445; }
-.home-screen .home-group-card-actions { position: static; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; }
-.home-screen :is(.home-group-edit, .home-group-combine) { min-height: 44px; padding: 7px 10px; font-size: 12px; font-weight: 700; }
+.home-screen .home-group-card-actions { position: static; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 0 12px 6px; }
+.home-screen :is(.home-group-edit, .home-group-combine) { min-height: 44px; padding: 7px 14px; font-size: 13px; font-weight: 700; }
 .home-screen .home-group-add-card { min-height: 170px; box-shadow: none; }
 body.home-mode :is(.tt-app-home, .tt-app-back) { display: none; }
 @media (min-width: 1500px) {
@@ -12243,12 +12243,49 @@ body.home-mode .home-screen.home-sidebar-ready { margin-left: calc(var(--home-si
   .turtle-giggle canvas { animation: none; }
 }
 
-.home-sidebar-ready .home-groups { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-@media (max-width: 1179px) { .home-sidebar-ready .home-groups { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 989px) { .home-sidebar-ready .home-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 779px) { .home-sidebar-ready .home-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 479px) { .home-sidebar-ready .home-groups { grid-template-columns: minmax(0, 1fr); } }
+.home-sidebar-ready .home-groups { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1179px) { .home-sidebar-ready .home-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 989px) { .home-sidebar-ready .home-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .home-sidebar-ready .home-groups { grid-template-columns: minmax(0, 1fr); } }
 .home-turtle-handle .home-turtle-fallback { position: absolute; width: 52px; height: 52px; object-fit: contain; pointer-events: none; }
 .home-turtle-handle canvas { visibility: hidden; }
 .home-turtle-handle.turtle-art-ready .home-turtle-fallback { display: none; }
 .home-turtle-handle.turtle-art-ready canvas { visibility: visible; }
+
+/* Approved compact bubbles: only the actual substep digits carry reader ink. */
+.home-screen .home-group-position .home-group-substep { color: var(--reader-color, #334155); }
+.home-screen .home-group-combine { color: #00758c; border-color: #79b5c1; }
+.home-screen .home-group-combined { font-size: 12px; line-height: 1.3; }
+
+/* Navigation personality is decorative, local and independent of classroom data. */
+.home-sidebar nav :is(#ttHomeAttendanceCentral, #ttHomeLessonLibrary, #ttHomeChartingExport, #ttHomeProfile) {
+  position: relative; isolation: isolate; overflow: hidden;
+  background: #fdf9f0 !important;
+}
+.home-sidebar nav .home-nav-text, .home-sidebar nav button.home-data-button > img { position: relative; z-index: 1; }
+.home-sidebar nav :is(#ttHomeLessonLibrary, #ttHomeChartingExport, #ttHomeProfile)::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-repeat: no-repeat; background-position: right center;
+}
+.home-sidebar nav #ttHomeLessonLibrary::before {
+  background-image: url("assets/home-navigation/lesson-binder.webp"); background-size: auto 100%; opacity: .46;
+}
+.home-sidebar nav #ttHomeChartingExport { background: #effaf8 !important; }
+.home-sidebar nav #ttHomeChartingExport::before {
+  background-image: url("assets/home-navigation/charting-paper.webp"); background-size: auto 100%; opacity: .4;
+}
+.home-sidebar nav #ttHomeProfile::before {
+  background-image: url("assets/home-navigation/profile-circles.webp"); background-size: 72px auto; opacity: .85;
+  right: 5px;
+}
+.home-sidebar .home-nav-day {
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%); pointer-events: none;
+  color: #fad7a0; font-size: 34px; font-weight: 850; line-height: 1; letter-spacing: -2px;
+}
+.home-sidebar nav :is(#ttHomeAttendanceCentral, #ttHomeLessonLibrary, #ttHomeChartingExport, #ttHomeProfile):is(:hover, :focus-visible) {
+  outline: 2px solid #0f766e; outline-offset: -2px;
+}
+@media (forced-colors: active) {
+  .home-sidebar nav button::before, .home-sidebar .home-nav-day { display: none; }
+  .home-screen .home-group-position .home-group-substep { color: ButtonText; }
+}

@@ -89,3 +89,37 @@ test('Revisiting a section updates only lesson-position metadata, never section 
   ctx.ttTrackLessonSectionActivity('bogus');
   assert.equal(queued, 1, 'repeated same-section controls do not add writes');
 });
+
+test('Reader ink uses all twelve cover families, rejects invalid values and maintains readable contrast', () => {
+  const ctx=vm.createContext({});
+  vm.runInContext(source.slice(source.indexOf('function ttHomeReaderColor('),source.indexOf('function ttHomeGroupCardHtml(')),ctx);
+  const ink=ctx.ttHomeReaderColor;
+  const expected=['#c62828','#b94b00','#946200','#856600','#527600','#187336','#1464c0','#00758c','#773ac2','#b32278','#666666','#333333'];
+  for(let n=1;n<=12;n++) {
+    assert.equal(ink(`${n}.2`),expected[n-1]);
+    assert.equal(ink(String(n)),expected[n-1]);
+    const channel=[1,3,5].map(i=>parseInt(expected[n-1].slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+    const luminance=.2126*channel[0]+.7152*channel[1]+.0722*channel[2];
+    assert.ok(1.05/(luminance+.05)>=4.5, `Reader ${n} should remain readable on white`);
+  }
+  for(const value of [null,undefined,'','—','bogus','2.2<script>','0.2','13.1','2e1','2.2.2']) assert.equal(ink(value),'#334155');
+});
+test('Rendering bubbles retains full escaped names, progress and controls and leaves all classroom data byte-identical', () => {
+  const f=fixture();
+  f.group.name='Preview group'; f.group.time='8:00'; f.group.students=['Alex P.','Taylor M.','Sam R.','Jamie L.','Casey D.','Morgan T.','A&B <test>'];
+  f.group.history.push(f.plan('p','In progress',7,{substep:'2.2',lastSectionActivity:{sectionId:'section4',at:'2026-10-30T12:00:00Z'}}));
+  Object.assign(f.ctx,{ttTodayKey:()=> '2026-10-30',ttPlannerGroupId:'g',
+    escapeHtml:s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'),
+    ttSectionDisplayName:()=> '4',ttSubstepProgressBar:()=> '<span role="progressbar">saved progress</span>'});
+  vm.runInContext(source.slice(source.indexOf('function ttHomeReaderColor('),source.indexOf('function ttPlannerGroup()')),f.ctx);
+  const before=JSON.stringify(f.state);
+  const html=f.ctx.ttHomeGroupCardHtml(f.group);
+  assert.match(html,/--reader-color: #b94b00/,'use displayed lesson 2.2 rather than group default4.2');
+  assert.match(html,/class="home-group-substep">2.2/);
+  assert.match(html,/Alex P., Taylor M., Sam R., Jamie L., Casey D., Morgan T., A&amp;B &lt;test&gt;/);
+  assert.match(html,/role="progressbar"/); assert.match(html,/Last worked: Section 4/);
+  assert.match(html,/data-combine-group="g"/); assert.match(html,/data-edit-group="g"/);
+  const archived=f.ctx.ttHomeGroupCardHtml(f.group,false);
+  assert.doesNotMatch(archived,/data-(?:combine|edit)-group/);
+  assert.equal(JSON.stringify(f.state),before);
+});

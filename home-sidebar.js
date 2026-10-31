@@ -26,6 +26,15 @@
     const canvas = handle?.querySelector('canvas');
     if (!home || !panel || !canvas || handle.dataset.bound) return;
     handle.dataset.bound = 'true';
+    // Decorative local calendar only: no attendance event or classroom storage write.
+    const day = document.getElementById('ttHomeAttendanceDay');
+    if (day) {
+      const refreshDay = () => { day.textContent = String(new Date().getDate()); };
+      refreshDay();
+      root.setInterval(refreshDay, 60000);
+      root.addEventListener('focus', refreshDay);
+      document.addEventListener('visibilitychange', refreshDay);
+    }
     const ctx = canvas.getContext('2d');
     const narrow = matchMedia('(max-width: 600px)');
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');

@@ -7054,21 +7054,32 @@ function ttHomeGroupLessonSummary(group) {
     status, state, lastSection };
 }
 
+// Presentation only: derive ink from the displayed lesson's substep, never change records.
+function ttHomeReaderColor(substep) {
+  const match = String(substep ?? "").trim().match(/^(\d{1,2})(?:\.\d+)?$/);
+  const reader = match ? Number(match[1]) : 0;
+  // Cover-inspired shades darkened for legibility on white, including yellow/lime/gray.
+  const colors = ["#c62828", "#b94b00", "#946200", "#856600", "#527600", "#187336",
+    "#1464c0", "#00758c", "#773ac2", "#b32278", "#666666", "#333333"];
+  return colors[reader - 1] || "#334155";
+}
+
 function ttHomeGroupCardHtml(group, editable = true) {
   const palette = ["#2563eb", "#0f766e", "#7c3aed", "#c2410c", "#0891b2", "#be123c", "#4f46e5", "#15803d", "#b45309", "#0e7490"];
   const color = palette[Math.max(0, (appState.groups || []).findIndex((item) => item.id === group.id)) % palette.length];
   const summary = ttHomeGroupLessonSummary(group);
+  const readerColor = ttHomeReaderColor(summary.substep);
   const students = (group.students || []).join(", ");
   const todayCombination = group.temporaryCombinations?.[ttTodayKey()];
   const combinedNames = (todayCombination?.sourceGroupIds || []).map((groupId) => (appState.groups || []).find((item) => item.id === groupId)?.name).filter(Boolean);
   const active = group.id === ttPlannerGroupId ? " active" : "";
-  return `<div class="home-group-card-shell" style="--group-color: ${color};">
+  return `<div class="home-group-card-shell" style="--group-color: ${color}; --reader-color: ${readerColor};">
     <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}" aria-pressed="${group.id === ttPlannerGroupId ? "true" : "false"}">
       <span class="home-group-time">${escapeHtml(group.time || "Group")}</span>
       <strong class="home-group-name">${escapeHtml(group.name || "Unnamed group")}</strong>
       <em class="home-group-students">${escapeHtml(students || "No students yet")}</em>
       ${ttSubstepProgressBar(group)}
-      <span class="home-group-position"><span><small>Substep</small><b>${escapeHtml(summary.substep)}</b></span><span><small>Lesson</small><b>${escapeHtml(summary.number)}</b></span></span>
+      <span class="home-group-position"><span><small>Substep</small><b class="home-group-substep">${escapeHtml(summary.substep)}</b></span><span><small>Lesson</small><b>${escapeHtml(summary.number)}</b></span></span>
       <span class="home-group-status" data-lesson-state="${summary.state}"><small>${escapeHtml(summary.status)}</small>${summary.lastSection ? `<small class="home-group-last-section">Last worked: Section ${escapeHtml(ttSectionDisplayName(summary.lastSection))}</small>` : ""}</span>
       ${combinedNames.length ? `<small class="home-group-combined">Today: combined with ${escapeHtml(combinedNames.join(", "))}</small>` : ""}
     </button>

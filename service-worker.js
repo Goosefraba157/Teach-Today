@@ -1,4 +1,4 @@
-const CACHE_NAME = "teach-today-offline-v2026-10-29-home-turtle-2";
+const CACHE_NAME = "teach-today-offline-v2026-10-30-home-bubbles-1";
 
 const APP_SHELL = [
   "./",
@@ -6,10 +6,13 @@ const APP_SHELL = [
   "./DeveloperDataDiagnostic.html",
   "./TeachToday.html",
   "./home-sidebar.js",
-  "./home-sidebar.js?v=20261029-home-turtle-2",
-  "./teach-today.js?v=20261029-home-turtle-2",
-  "./teach-today.css?v=20261029-home-turtle-2",
+  "./home-sidebar.js?v=20261030-home-bubbles-1",
+  "./teach-today.js?v=20261030-home-bubbles-1",
+  "./teach-today.css?v=20261030-home-bubbles-1",
   "./assets/home-turtle/roll.webp",
+  "./assets/home-navigation/lesson-binder.webp",
+  "./assets/home-navigation/charting-paper.webp",
+  "./assets/home-navigation/profile-circles.webp",
   "./lesson-planner-v2.html",
   "./PdfViewer.html",
   "./ReferencePdfs.html",

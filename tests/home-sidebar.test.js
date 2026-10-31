@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const helper = require('../home-sidebar.js');
 const source = fs.readFileSync('home-sidebar.js', 'utf8');
-function fixture({ narrow = false, reduced = false, stored, blockedStorage = false } = {}) {
+function fixture({ narrow = false, reduced = false, stored, blockedStorage = false, withDay = false } = {}) {
   const writes = [];
   const store = new Map(stored ? [['teachToday.homeSidebar.v1', stored]] : []);
   let active;
@@ -32,20 +32,25 @@ function fixture({ narrow = false, reduced = false, stored, blockedStorage = fal
   handle.hasPointerCapture=id=>captured.has(id);
   handle.releasePointerCapture=id=>captured.delete(id);
   const elements = {ttHomeScreen:home,ttHomeTurtle:handle,ttHomeSidebarClose:close,ttHomeSidebarBackdrop:backdrop,ttHomeTurtleSound:sound};
+  const day = withDay ? element() : undefined;
+  if (day) elements.ttHomeAttendanceDay = day;
+  const ticks = [];
+  let clock = new Date(2026, 9, 30, 23, 59);
+  class ClockDate extends Date { constructor(...args) { super(...(args.length ? args : [clock.getTime()])); } }
   const document = element();
   document.getElementById=id=>elements[id];document.querySelector=()=>null;document.readyState='complete';
   Object.defineProperty(document,'activeElement',{get:()=>active});
   const window = element();
   const media = query=>({matches:query.includes('600')?narrow:reduced});
   const storage = {getItem(k){if(blockedStorage)throw Error('blocked');return store.get(k)||null;},setItem(k,v){if(blockedStorage)throw Error('blocked');store.set(k,v);writes.push([k,v]);}};
-  Object.assign(window,{document,localStorage:storage});
-  const ctx=vm.createContext({window,document,localStorage:storage,matchMedia:media,Image:class {complete=true;naturalWidth=768;},
+  Object.assign(window,{document,localStorage:storage,setInterval:(f,ms)=>{ticks.push({f,ms});}});
+  const ctx=vm.createContext({window,document,Date:ClockDate,localStorage:storage,matchMedia:media,Image:class {complete=true;naturalWidth=768;},
     performance:{now:()=>now},requestAnimationFrame:f=>{queue.set(++nextFrame,f);return nextFrame;},cancelAnimationFrame:id=>queue.delete(id)});
   vm.runInContext(source,ctx);
   function flush(){for(let i=0;queue.size&&i<20;i++){now+=60;const list=[...queue.values()];queue.clear();list.forEach(f=>f(now));}assert.equal(queue.size,0);}
   function pointer(kind,x,type='mouse',extra={}) {handle.emit(kind,{pointerId:1,isPrimary:true,pointerType:type,button:0,clientX:x,clientY:400,...extra});}
   const value=()=>Number(home.style.values['--home-sidebar-progress']);
-  return {home,panel,handle,close,backdrop,sound,document,window,pointer,flush,value,store,writes,draws};
+  return {home,panel,handle,close,backdrop,sound,document,window,pointer,flush,value,store,writes,draws,day,ticks,setClock:value=>{clock=value;}};
 }
 test('roll interpolation is reversible and clamps both end poses',()=>{
   assert.deepEqual(helper.pose(1),{first:0,second:1,mix:0});
@@ -104,7 +109,7 @@ test('reduced motion settles without intermediate roll; other pointers cannot hi
 });
 test('the animation asset and controller are cached and versioned with V1 only',()=>{
   const html=fs.readFileSync('TeachToday.html','utf8'),sw=fs.readFileSync('service-worker.js','utf8');
-  assert.match(html,/home-sidebar\.js\?v=20261029-home-turtle-2/);
+  assert.match(html,/home-sidebar\.js\?v=20261030-home-bubbles-1/);
   assert.match(sw,/\.\/home-sidebar\.js/);assert.match(sw,/assets\/home-turtle\/roll.webp/);
   assert.doesNotMatch(source,/appState|saveState|fetch\(|getUserMedia|Firebase/);
   assert.ok(fs.statSync('assets/home-turtle/roll.webp').size<200000);
@@ -119,8 +124,22 @@ test('offline first use resolves the exact new versioned runtime from the instal
     fetch:async()=>{throw Error('offline');}});
   vm.runInContext(sw,ctx);
   let installing;handlers.install({waitUntil:p=>installing=p});await installing;
-  for(const path of ['home-sidebar.js?v=20261029-home-turtle-2','teach-today.js?v=20261029-home-turtle-2','teach-today.css?v=20261029-home-turtle-2']){
+  for(const path of ['home-sidebar.js?v=20261030-home-bubbles-1','teach-today.js?v=20261030-home-bubbles-1','teach-today.css?v=20261030-home-bubbles-1','assets/home-navigation/lesson-binder.webp','assets/home-navigation/charting-paper.webp','assets/home-navigation/profile-circles.webp']){
     let response;handlers.fetch({request:{url:origin+path,method:'GET',destination:path.includes('.css')?'style':'script'},respondWith:p=>response=p});
     assert.equal((await response).kind,'./'+path,'never return HTML for a new offline runtime request');
   }
+});
+
+test('Attendance watermark follows the local date across midnight, month end and foreground without any storage write',()=>{
+  const f=fixture({withDay:true});
+  assert.equal(f.day.textContent,'30');
+  assert.equal(f.ticks.length,1);
+  assert.equal(f.ticks[0].ms,60000);
+  f.setClock(new Date(2026,9,31,0,0)); f.ticks[0].f();
+  assert.equal(f.day.textContent,'31');
+  f.setClock(new Date(2026,10,1,8)); f.document.emit('visibilitychange');
+  assert.equal(f.day.textContent,'1');
+  f.setClock(new Date(2026,10,2,8)); f.window.emit('focus');
+  assert.equal(f.day.textContent,'2');
+  assert.deepEqual(f.writes,[], 'calendar decoration must not persist attendance or preferences');
 });
