@@ -13,3 +13,5 @@ Source: built-in ImageGen reference `exec-4ba8c569-6c51-47fc-9558-413ec15e2488.p
 The assets intentionally preserve the soft, low-contrast approved style and warm paper backgrounds. Keep actual menu labels as accessible live text above the art. Recommended row-art height is 44px; binder and chart may extend behind the end of a label, provided the label stays readable. Do not stretch the aspect ratio or interpret these illustrative motifs as student status values.
 
 Extraction used FFmpeg image cropping and lossless WebP encoding. Every final crop was visually inspected for unwanted menu lettering or private content.
+
+Records uses the MIT-licensed Bootstrap Icons v1.11.3 `floppy.svg` from https://github.com/twbs/icons/blob/v1.11.3/icons/floppy.svg, stored in assets/home-icons with the existing Bootstrap license. It is a standard icon, also reused as a faint decorative watermark.

@@ -109,9 +109,10 @@ test('reduced motion settles without intermediate roll; other pointers cannot hi
 });
 test('the animation asset and controller are cached and versioned with V1 only',()=>{
   const html=fs.readFileSync('TeachToday.html','utf8'),sw=fs.readFileSync('service-worker.js','utf8');
-  assert.match(html,/home-sidebar\.js\?v=20261030-home-bubbles-1/);
+  assert.match(html,/home-sidebar\.js\?v=20261030-reader-ink-2/);
   assert.match(sw,/\.\/home-sidebar\.js/);assert.match(sw,/assets\/home-turtle\/roll.webp/);
   assert.doesNotMatch(source,/appState|saveState|fetch\(|getUserMedia|Firebase/);
+  assert.match(html, /id="ttHomeDataToggle"[^>]*><img src="assets\/home-icons\/floppy.svg"[^>]*><span class="home-nav-text">Records<\/span>/);
   assert.ok(fs.statSync('assets/home-turtle/roll.webp').size<200000);
 });
 
@@ -124,7 +125,7 @@ test('offline first use resolves the exact new versioned runtime from the instal
     fetch:async()=>{throw Error('offline');}});
   vm.runInContext(sw,ctx);
   let installing;handlers.install({waitUntil:p=>installing=p});await installing;
-  for(const path of ['home-sidebar.js?v=20261030-home-bubbles-1','teach-today.js?v=20261030-home-bubbles-1','teach-today.css?v=20261030-home-bubbles-1','assets/home-navigation/lesson-binder.webp','assets/home-navigation/charting-paper.webp','assets/home-navigation/profile-circles.webp']){
+  for(const path of ['home-sidebar.js?v=20261030-reader-ink-2','teach-today.js?v=20261030-reader-ink-2','teach-today.css?v=20261030-reader-ink-2','assets/home-navigation/lesson-binder.webp','assets/home-navigation/charting-paper.webp','assets/home-navigation/profile-circles.webp','assets/home-icons/floppy.svg']){
     let response;handlers.fetch({request:{url:origin+path,method:'GET',destination:path.includes('.css')?'style':'script'},respondWith:p=>response=p});
     assert.equal((await response).kind,'./'+path,'never return HTML for a new offline runtime request');
   }

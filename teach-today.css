@@ -12253,7 +12253,14 @@ body.home-mode .home-screen.home-sidebar-ready { margin-left: calc(var(--home-si
 .home-turtle-handle.turtle-art-ready canvas { visibility: visible; }
 
 /* Approved compact bubbles: only the actual substep digits carry reader ink. */
-.home-screen .home-group-position .home-group-substep { color: var(--reader-color, #334155); }
+.home-screen .home-group-position .home-group-substep {
+  color: var(--reader-color, #334155);
+  -webkit-text-stroke: 1px var(--reader-outline, currentColor);
+  paint-order: stroke fill;
+}
+@supports not (-webkit-text-stroke: 1px black) {
+  .home-screen .home-group-position .home-group-substep { color: var(--reader-outline, #334155); }
+}
 .home-screen .home-group-combine { color: #00758c; border-color: #79b5c1; }
 .home-screen .home-group-combined { font-size: 12px; line-height: 1.3; }
 
@@ -12287,5 +12294,12 @@ body.home-mode .home-screen.home-sidebar-ready { margin-left: calc(var(--home-si
 }
 @media (forced-colors: active) {
   .home-sidebar nav button::before, .home-sidebar .home-nav-day { display: none; }
-  .home-screen .home-group-position .home-group-substep { color: ButtonText; }
+  .home-screen .home-group-position .home-group-substep { color: ButtonText; -webkit-text-stroke: 0; }
+}
+
+/* Records uses the same unobtrusive, purpose-based navigation treatment. */
+.home-sidebar nav #ttHomeDataToggle { position: relative; isolation: isolate; overflow: hidden; background: #f1f5f9; }
+.home-sidebar nav #ttHomeDataToggle::before {
+  content: ""; position: absolute; inset: 4px 9px 4px auto; width: 36px; pointer-events: none;
+  background: url("assets/home-icons/floppy.svg") center / contain no-repeat; opacity: .1;
 }

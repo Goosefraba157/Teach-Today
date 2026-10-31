@@ -7058,10 +7058,16 @@ function ttHomeGroupLessonSummary(group) {
 function ttHomeReaderColor(substep) {
   const match = String(substep ?? "").trim().match(/^(\d{1,2})(?:\.\d+)?$/);
   const reader = match ? Number(match[1]) : 0;
-  // Cover-inspired shades darkened for legibility on white, including yellow/lime/gray.
-  const colors = ["#c62828", "#b94b00", "#946200", "#856600", "#527600", "#187336",
-    "#1464c0", "#00758c", "#773ac2", "#b32278", "#666666", "#333333"];
+  // Preserve the cover families; pale fills use a fine darker edge rather than brown ink.
+  const colors = ["#c62828", "#b94b00", "#d99510", "#f0d329", "#99bf28", "#187336",
+    "#1464c0", "#17a9c6", "#773ac2", "#b32278", "#b4bbc4", "#333333"];
   return colors[reader - 1] || "#334155";
+}
+
+function ttHomeReaderOutline(substep) {
+  const color = ttHomeReaderColor(substep);
+  return ({ "#d99510": "#8b5700", "#f0d329": "#756400", "#99bf28": "#496500",
+    "#17a9c6": "#006075", "#b4bbc4": "#59616b" })[color] || color;
 }
 
 function ttHomeGroupCardHtml(group, editable = true) {
@@ -7073,7 +7079,7 @@ function ttHomeGroupCardHtml(group, editable = true) {
   const todayCombination = group.temporaryCombinations?.[ttTodayKey()];
   const combinedNames = (todayCombination?.sourceGroupIds || []).map((groupId) => (appState.groups || []).find((item) => item.id === groupId)?.name).filter(Boolean);
   const active = group.id === ttPlannerGroupId ? " active" : "";
-  return `<div class="home-group-card-shell" style="--group-color: ${color}; --reader-color: ${readerColor};">
+  return `<div class="home-group-card-shell" style="--group-color: ${color}; --reader-color: ${readerColor}; --reader-outline: ${ttHomeReaderOutline(summary.substep)};">
     <button type="button" class="home-group-card${active}" data-home-group="${escapeHtml(group.id)}" aria-pressed="${group.id === ttPlannerGroupId ? "true" : "false"}">
       <span class="home-group-time">${escapeHtml(group.time || "Group")}</span>
       <strong class="home-group-name">${escapeHtml(group.name || "Unnamed group")}</strong>

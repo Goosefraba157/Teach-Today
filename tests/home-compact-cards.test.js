@@ -94,13 +94,15 @@ test('Reader ink uses all twelve cover families, rejects invalid values and main
   const ctx=vm.createContext({});
   vm.runInContext(source.slice(source.indexOf('function ttHomeReaderColor('),source.indexOf('function ttHomeGroupCardHtml(')),ctx);
   const ink=ctx.ttHomeReaderColor;
-  const expected=['#c62828','#b94b00','#946200','#856600','#527600','#187336','#1464c0','#00758c','#773ac2','#b32278','#666666','#333333'];
+  const outline=ctx.ttHomeReaderOutline;
+  const expected=['#c62828','#b94b00','#d99510','#f0d329','#99bf28','#187336','#1464c0','#17a9c6','#773ac2','#b32278','#b4bbc4','#333333'];
   for(let n=1;n<=12;n++) {
     assert.equal(ink(`${n}.2`),expected[n-1]);
     assert.equal(ink(String(n)),expected[n-1]);
-    const channel=[1,3,5].map(i=>parseInt(expected[n-1].slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+    const edge=outline(`${n}.2`);
+    const channel=[1,3,5].map(i=>parseInt(edge.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
     const luminance=.2126*channel[0]+.7152*channel[1]+.0722*channel[2];
-    assert.ok(1.05/(luminance+.05)>=4.5, `Reader ${n} should remain readable on white`);
+    assert.ok(1.05/(luminance+.05)>=4.5, `Reader ${n} digit edge should remain readable on white`);
   }
   for(const value of [null,undefined,'','—','bogus','2.2<script>','0.2','13.1','2e1','2.2.2']) assert.equal(ink(value),'#334155');
 });
@@ -122,4 +124,26 @@ test('Rendering bubbles retains full escaped names, progress and controls and le
   const archived=f.ctx.ttHomeGroupCardHtml(f.group,false);
   assert.doesNotMatch(archived,/data-(?:combine|edit)-group/);
   assert.equal(JSON.stringify(f.state),before);
+});
+
+test('Similar reader families remain perceptually distinct, especially gold/yellow, lime/green, blue/cyan and the grays', () => {
+  const ctx=vm.createContext({});
+  vm.runInContext(source.slice(source.indexOf('function ttHomeReaderColor('),source.indexOf('function ttHomeGroupCardHtml(')),ctx);
+  function lab(hex) {
+    const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+    const [r,g,b]=rgb;
+    const f=v=>v>.008856?Math.cbrt(v):7.787*v+16/116;
+    const x=f((.4124564*r+.3575761*g+.1804375*b)/.95047);
+    const y=f(.2126729*r+.7151522*g+.072175*b);
+    const z=f((.0193339*r+.119192*g+.9503041*b)/1.08883);
+    return [116*y-16,500*(x-y),200*(y-z)];
+  }
+  for(const [a,b] of [[2,3],[3,4],[5,6],[7,8],[9,10],[11,12]]) {
+    const first=lab(ctx.ttHomeReaderColor(`${a}.2`)),second=lab(ctx.ttHomeReaderColor(`${b}.5`));
+    const delta=Math.hypot(...first.map((v,i)=>v-second[i]));
+    assert.ok(delta>=25, `Readers ${a}/${b} are too similar: deltaE76=${delta}`);
+  }
+  const css=fs.readFileSync('teach-today.css','utf8');
+  assert.match(css,/-webkit-text-stroke: 1px var\(--reader-outline/);
+  assert.match(css,/paint-order: stroke fill/);
 });

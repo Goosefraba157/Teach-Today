@@ -4,6 +4,8 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-30
 
+- Corrected pale reader-number fills so gold/yellow, lime/green, blue/cyan and light/dark gray are distinct; fine contrasting digit edges preserve readability without shaded boxes. Reviewed all twelve colors at actual card size and added perceptual color-pair regression coverage. Records now has a Bootstrap floppy icon and faint watermark with its label/behavior unchanged. All 196 tests and synthetic browser checks pass; no classroom-data changes. Publication pending.
+
 - Added approved compact Home bubbles with reader-colored substep digits, retained full names/progress/status/actions, and personalized sidebar backgrounds (live local day number, lesson-plan binder, shaded chart paper, horizontal Profile circles). Menu copy/routes and classroom data/storage/cloud behavior are unchanged. All 195 automated checks pass, including read-only rendering, all twelve readable reader colors, date rollover and offline artwork/runtime. Synthetic desktop/tablet/phone interaction and visual checks pass. Published in `973c82e`; Pages deployment 41165641708 succeeded and all nine public runtime/artwork responses match tested bytes, including the exact iPad entry.
 
 - Confirmed the rolling turtle update in `4294703` is live: Pages deployment 40989143046 succeeded, and all seven checked public runtime/artwork responses match the tested files, including the exact iPad entry. All 192 checks and prior synthetic browser/visual checks pass. Physical iPad touch and speaker sound remain teacher checks.
