@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-10-31
 
-- Added optional Classic/Animated card presentation to V1 Sections 2/2B. Existing split/correction mechanics and card nodes are shared; animation adds physical placement and stroke-by-stroke writing only. Device-local preference defaults to Classic; Replay/Show all are separate from lesson evidence. Student Stage follows via existing native whitelist; reduced motion and readable fallbacks included. All 203 checks and synthetic teacher/Stage browser checks pass. No classroom-data, Firebase or native binary changes. Publication pending.
+- Added optional Classic/Animated card presentation to V1 Sections 2/2B. Existing split/correction mechanics and card nodes are shared; animation adds physical placement and stroke-by-stroke writing only. Device-local preference defaults to Classic; Replay/Show all are separate from lesson evidence. Student Stage follows via existing native whitelist; reduced motion and readable fallbacks included. All 203 checks and synthetic teacher/Stage browser checks pass. No classroom-data, Firebase or native binary changes. Published in `739bbb5`; Pages deployment `41173198020` succeeded and all eight public runtime checks match tested bytes, including the exact iPad entry.
 
 - Verified the reader-ink/Records patch `b0b2d96`: Pages deployment 41170681060 succeeded; all ten checked public files match tested bytes, including exact iPad entry and floppy icon. All 196 tests pass; no live student records were changed.
 
