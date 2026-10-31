@@ -30,4 +30,6 @@
 - Runtime diff changes only Home rendering markup/color helper, Home CSS, decorative day DOM updates, artwork and cache/entry versions. No classroom save/sync functions, Firebase configuration/rules, migration, roster/assessment/attendance data model, native shell or paused v2 edits.
 - Physical iPad touch remains a teacher check. Longer saved group titles/rosters intentionally grow their cards rather than lose information.
 
+Publication verified: code `973c82e`, Pages deployment 41165641708 succeeded. All nine checked public responses match tested files: HTML, exact native entry, main/controller JavaScript, CSS, service worker and three navigation images. No live student records were changed.
+
 final result: passed
