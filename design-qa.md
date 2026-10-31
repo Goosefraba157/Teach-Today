@@ -37,4 +37,6 @@
 - Physical iPad touch and speaker audibility remain teacher checks. The optional synthesized effect is deliberately quiet; no real voice recording is included.
 - Existing production header/branding placement is retained; approved illustration poses are adapted to a small practical handle with consistent character identity.
 
+Publication verified 2026-10-30: code `4294703`, Pages deployment 40989143046 succeeded. All seven checked public runtime/artwork responses, including the exact iPad entry, match tested bytes. No live classroom records were changed.
+
 final result: passed

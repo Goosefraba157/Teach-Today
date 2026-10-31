@@ -2,9 +2,13 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-30
+
+- Confirmed the rolling turtle update in `4294703` is live: Pages deployment 40989143046 succeeded, and all seven checked public runtime/artwork responses match the tested files, including the exact iPad entry. All 192 checks and prior synthetic browser/visual checks pass. Physical iPad touch and speaker sound remain teacher checks.
+
 ## 2026-10-29
 
-- Added the approved rolling turtle Home drawer: drag with mouse/touch/pen or tap/keyboard to open/close, continuous reversible nine-pose roll, press wiggle, optional device-local quiet sound, remembered device preference, graceful gesture cancellation and reduced motion. Wide layouts expand cards without adding columns; phones overlay navigation with accessible dismissal and inert covered content. No classroom data, routes, Firebase or native build changes. Added transparent generated atlas and offline controller/cache entries. All 192 tests and synthetic responsive/browser drag/tap/keyboard/reload/reference/phone checks pass; visual comparisons passed. Publication pending.
+- Added the approved rolling turtle Home drawer: drag with mouse/touch/pen or tap/keyboard to open/close, continuous reversible nine-pose roll, press wiggle, optional device-local quiet sound, remembered device preference, graceful gesture cancellation and reduced motion. Wide layouts expand cards without adding columns; phones overlay navigation with accessible dismissal and inert covered content. No classroom data, routes, Firebase or native build changes. Added transparent generated atlas and offline controller/cache entries. All 192 tests and synthetic responsive/browser drag/tap/keyboard/reload/reference/phone checks pass; visual comparisons passed. Published in `4294703`; deployment verification is recorded above.
 
 - Rebuilt approved V1 Home with a light grouped sidebar and compact color-coded cards: full comma-separated names, retained page-progress bars, clear substep/lesson values and saved-state lesson labels. Removed reader/chart/preferred-day card details. Last worked section uses timestamped work and additive lesson-position metadata for revisits; no inferred completion, student scores or attendance. Existing routes/actions, archived-year viewing and classroom storage are preserved; mobile Tools collapses navigation and history no longer overflows. Added offline MIT navigation icons. All 183 checks, syntax/diff checks and synthetic responsive/browser/lesson-return checks pass with no console errors; visual comparison passed. Published in `8221c55`; Pages deployment 40983895483 succeeded and all 14 checked public runtime/icon responses match the tested files.
 
