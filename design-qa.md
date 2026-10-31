@@ -6,7 +6,7 @@
 - Actual26px number samples: tmp/home-design/reader-palette.png, rendered from the production color/outline functions and stylesheet. All12 inspected together, especially3.5 versus4.2. Home capture: tmp/home-design/reader-ink-home.png. Bright fills differ from the earlier mock’s over-darkened accessible palette intentionally at the teacher’s request.
 - Similar pairs2/3,3/4,5/6,7/8,9/10,11/12 have CIELAB deltaE76≥25 regression coverage. Every digit edge has contrast≥4.5:1 against white; this measures edge contrast, not the pale fill itself. Actual computed stroke is1px, expected fill/edge colors and paint order verified in browser.
 - Records uses the real Bootstrap floppy.svg icon with a faint matching watermark; unchanged label and existing data panel opens/closes successfully. Icon is offline-cached. No existing text, routes, classroom data or save behavior changed.
-- All196 automated checks pass, including prior data-immutability/offline tests. Synthetic Home has no console errors or horizontal overflow. Publication pending verification.
+- All196 automated checks pass, including prior data-immutability/offline tests. Synthetic Home has no console errors or horizontal overflow. Publication verified 2026-10-31: `b0b2d96`, successful Pages deployment 41170681060; all ten checked public responses match tested bytes, including exact iPad entry and floppy icon.
 
 
 ## Targets and evidence

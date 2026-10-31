@@ -2,9 +2,13 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-10-31
+
+- Verified the reader-ink/Records patch `b0b2d96`: Pages deployment 41170681060 succeeded; all ten checked public files match tested bytes, including exact iPad entry and floppy icon. All 196 tests pass; no live student records were changed.
+
 ## 2026-10-30
 
-- Corrected pale reader-number fills so gold/yellow, lime/green, blue/cyan and light/dark gray are distinct; fine contrasting digit edges preserve readability without shaded boxes. Reviewed all twelve colors at actual card size and added perceptual color-pair regression coverage. Records now has a Bootstrap floppy icon and faint watermark with its label/behavior unchanged. All 196 tests and synthetic browser checks pass; no classroom-data changes. Publication pending.
+- Corrected pale reader-number fills so gold/yellow, lime/green, blue/cyan and light/dark gray are distinct; fine contrasting digit edges preserve readability without shaded boxes. Reviewed all twelve colors at actual card size and added perceptual color-pair regression coverage. Records now has a Bootstrap floppy icon and faint watermark with its label/behavior unchanged. All 196 tests and synthetic browser checks pass; no classroom-data changes. Publication verified above.
 
 - Added approved compact Home bubbles with reader-colored substep digits, retained full names/progress/status/actions, and personalized sidebar backgrounds (live local day number, lesson-plan binder, shaded chart paper, horizontal Profile circles). Menu copy/routes and classroom data/storage/cloud behavior are unchanged. All 195 automated checks pass, including read-only rendering, all twelve readable reader colors, date rollover and offline artwork/runtime. Synthetic desktop/tablet/phone interaction and visual checks pass. Published in `973c82e`; Pages deployment 41165641708 succeeded and all nine public runtime/artwork responses match tested bytes, including the exact iPad entry.
 
