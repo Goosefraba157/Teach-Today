@@ -54,8 +54,8 @@
   }
   function install(adapter) {
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const dialog = document.createElement('dialog'); dialog.id = 'ttFluency'; dialog.className = 'rf-dialog';
-    dialog.innerHTML = `<header class="rf-header"><div><p>Teach Today · English</p><h1>Reading fluency</h1></div><button id="rfClose" type="button">Close</button></header>
+    const dialog = document.createElement('dialog'); dialog.id = 'ttFluency'; dialog.className = 'rf-dialog'; dialog.setAttribute('aria-labelledby', 'rfHeading');
+    dialog.innerHTML = `<header class="rf-header"><div><p>Teach Today · English</p><h1 id="rfHeading">Reading fluency</h1></div><button id="rfClose" type="button">Close</button></header>
       <div class="rf-content"><p id="rfMessage" role="status"></p><div class="rf-layout"><aside class="rf-setup"><h2>Plan a reading check</h2>
       <label>Group<select id="rfGroup"></select></label><label>Student<select id="rfStudent"></select></label>
       <div class="rf-pair"><label>Passage grade<select id="rfGrade">${[1,2,3,4,5,6].map(g=>`<option>${g}</option>`).join('')}</select></label><label>Check<select id="rfPeriod">${PERIODS.map(p=>`<option>${p}</option>`).join('')}</select></label></div>
@@ -88,7 +88,7 @@
     const name = () => (group()?.students || []).find(n => group().studentIds?.[n] === studentId()) || '';
     const shortName = n => { const parts=String(n).trim().split(/\s+/); return parts.length>1 ? `${parts[0]} ${parts.at(-1)[0]}.` : parts[0]; };
     const words = () => passage ? tokens(passage.title+'\n'+passage.text) : [];
-    const guard = action => async () => { if(busy)return;busy=true;try {await action();} catch(e) {say(e.message || 'This operation failed. Keep this screen open and retry.');} finally {busy=false;controls();} };
+    const guard = action => async () => { if(busy)return;busy=true;controls();try {await action();} catch(e) {say(e.message || 'This operation failed. Keep this screen open and retry.');} finally {busy=false;controls();} };
     async function append(collection, row) {
       const target = state(); const previous = target[collection]; target[collection] = [...(previous || []), row];
       try { await adapter.save(); } catch(e) { target[collection] = previous; throw e; }
@@ -118,8 +118,9 @@
       by('rfProject').disabled=!passage?.verified||busy;
       by('rfReset').disabled=busy;
       by('rfClose').disabled=busy||running;
-      by('rfEditTitle').disabled=locked;by('rfEditText').disabled=locked;
-      by('rfNotes').disabled=attempt?.status==='saved';
+      by('rfEditTitle').disabled=busy||locked;by('rfEditText').disabled=busy||locked;
+      by('rfNotes').disabled=busy||attempt?.status==='saved';
+      dialog.querySelectorAll('[name="rfMarkMode"]').forEach(input=>input.disabled=busy||attempt?.status==='saved');
     }
     function fillStudents() {
       const g=group();const previous=studentId();
@@ -193,12 +194,12 @@
       opener=document.activeElement;adapter.stopMirror();await adapter.ready?.();reset();
       bank=await libraryRead();by('rfLibraryStatus').textContent=`${bank.length} private passages on this device.`;
       by('rfGroup').innerHTML='<option value="">Choose group</option>'+(state().groups||[]).filter(g=>g.schoolYearId===year()).map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
-      by('rfGroup').value=adapter.activeGroupId();by('rfDate').value=localDay();fillStudents();by('rfStudent').value=adapter.activeStudentId();choosePassage();renderHistory();say('');previousOverflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';dialog.showModal();
+      by('rfGroup').value=adapter.activeGroupId();by('rfDate').value=localDay();fillStudents();by('rfStudent').value=adapter.activeStudentId();choosePassage();renderHistory();say(bank.length?'':'Open Private passage library below and import your prepared English passage file to get started.');if(!bank.length)by('rfImport').closest('details').open=true;previousOverflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';dialog.showModal();
     }
     for(const id of ['ttHomeReadingFluency','ttReadingFluency'])document.getElementById(id)?.addEventListener('click',guard(open));
     by('rfGroup').onchange=fillStudents;by('rfStudent').onchange=()=>{choosePassage();renderHistory();renderAssignments();};by('rfGrade').onchange=()=>{fillPassages();renderHistory();};by('rfPassage').onchange=choosePassage;
     for(const id of ['rfPeriod','rfDate'])by(id).onchange=()=>{assignment=null;by('rfAssignment').textContent='';};
-    by('rfRandom').onclick=()=>{const choices=unused(bank,records(),assignments(),studentId(),by('rfGrade').value);if(!studentId()){say('Choose a student first.');return;}if(!choices.length){say('No unused passages remain for this grade. Choose a previous passage deliberately.');return;}by('rfPassage').value=choices[Math.floor(Math.random()*choices.length)].id;choosePassage();};
+    by('rfRandom').onclick=()=>{if(!bank.length){say('Import your private English passage library first.');return;}const choices=unused(bank,records(),assignments(),studentId(),by('rfGrade').value);if(!studentId()){say('Choose a student first.');return;}if(!choices.length){say('No unused passages remain for this grade. Choose a previous passage deliberately.');return;}by('rfPassage').value=choices[Math.floor(Math.random()*choices.length)].id;choosePassage();};
     by('rfImport').onchange=guard(async()=>{const file=by('rfImport').files[0];if(!file)return;if(file.size>45000000)throw new Error('This library is too large.');pendingImport=validateLibrary(JSON.parse(await file.text()));const additions=pendingImport.filter(p=>!bank.some(b=>b.id===p.id));by('rfLibraryStatus').textContent=`Preview: ${pendingImport.length} English passages; ${additions.length} additions, ${pendingImport.length-additions.length} existing passages preserved. Grades: ${[...new Set(pendingImport.map(p=>p.grade))].sort().join(', ')}. No student records are imported.`;by('rfImportConfirm').hidden=false;});
     by('rfImportConfirm').onclick=guard(async()=>{if(!pendingImport)return;const merged=[...bank,...pendingImport.filter(p=>!bank.some(b=>b.id===p.id))];await libraryWrite(merged);bank=merged;pendingImport=null;by('rfImportConfirm').hidden=true;by('rfImport').value='';by('rfLibraryStatus').textContent=`${bank.length} passages imported and verified in device storage. Check each passage text before scoring.`;fillPassages();});
     by('rfVerify').onclick=guard(async()=>{if(!passage)return;const title=by('rfEditTitle').value.trim(),text=by('rfEditText').value.trim();if(!title||text.length<50)throw new Error('Title and full passage text are required.');const updated={...passage,title,text,verified:true,verifiedAt:new Date().toISOString()};const next=bank.map(p=>p.id===passage.id?updated:p);await libraryWrite(next);bank=next;fillPassages();say('Checked passage saved privately on this device.');});
@@ -206,7 +207,7 @@
     by('rfAssign').onclick=guard(assign);
     by('rfStart').onclick=guard(async()=>{validContext();const a=await assign();attempt={id:crypto.randomUUID(),assignmentId:a.id,context:context(),words:words(),errors:new Set(),last:null,status:'running',startedAt:new Date().toISOString(),startedClock:performance.now(),seconds:0};by('rfTimerStatus').textContent='Reading · teacher timer only';say('');clockId=setInterval(tick,100);controls();});
     by('rfFinish').onclick=()=>{tick();if(attempt?.status!=='running')return;finish(true);};
-    by('rfWords').onclick=event=>{const button=event.target.closest('[data-rf-word]');if(!button||!attempt||!['running','finished'].includes(attempt.status))return;tick();const i=Number(button.dataset.rfWord),mode=dialog.querySelector('[name="rfMarkMode"]:checked').value;if(mode==='last')attempt.last=i;else if(attempt.errors.has(i))attempt.errors.delete(i);else attempt.errors.add(i);renderWords();controls();};
+    by('rfWords').onclick=event=>{const button=event.target.closest('[data-rf-word]');if(busy||!button||!attempt||!['running','finished'].includes(attempt.status))return;tick();const i=Number(button.dataset.rfWord),mode=dialog.querySelector('[name="rfMarkMode"]:checked').value;if(mode==='last')attempt.last=i;else if(attempt.errors.has(i))attempt.errors.delete(i);else attempt.errors.add(i);renderWords();controls();};
     by('rfZero').onclick=()=>{attempt.last=-1;renderWords();controls();};
     by('rfSave').onclick=guard(async()=>{if(attempt?.status!=='finished'||attempt.last===null)return;const s=score(attempt.words,attempt.last,[...attempt.errors],attempt.seconds);const row={...attempt.context,...s,id:attempt.id,assignmentId:attempt.assignmentId,type:'passage-oral-reading',scoreKind:'raw',language:'en',createdAt:new Date().toISOString(),startedAt:attempt.startedAt,finishedAt:attempt.finishedAt,seconds:attempt.seconds,form:passage.form,passageTitle:passage.title,sourceHash:passage.sourceHash,textVerifiedAt:passage.verifiedAt,words:attempt.words,lastWordIndex:attempt.last,errorIndices:[...attempt.errors].filter(i=>i<=attempt.last).sort((a,b)=>a-b),notes:by('rfNotes').value.trim(),repeated:records().some(r=>r.studentId===studentId()&&r.passageId===passage.id)};await append('readingFluencyRecords',row);attempt.status='saved';say('Reading record saved. It is included in complete classroom JSON backups.');renderHistory();renderAssignments();});
     by('rfReset').onclick=()=>{if(attempt&&attempt.status!=='saved'&&!window.confirm('Discard this unsaved reading attempt and start again?'))return;reset();};
