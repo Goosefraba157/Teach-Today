@@ -668,6 +668,10 @@ function renderChart(payload) {
 }
 
 function renderPassage(payload) {
+  if (payload.sourceSection === "reading-fluency") {
+    const paragraphs = String(payload.passageText || "").split(/\n\s*\n/).map(p => `<p>${escapeHtml(p.replace(/\n/g, " "))}</p>`).join("");
+    return `<section class="stage-fluency"><article><h1>${escapeHtml(payload.passageTitle || "")}</h1>${paragraphs}</article></section>`;
+  }
   const pdf = payload.passagePdf || null;
   const pageStart = Number(pdf?.pdfPageStart || 0);
   const pageEnd = Math.max(pageStart, Number(pdf?.pdfPageEnd || pageStart));
@@ -741,6 +745,22 @@ function render(payload) {
   setupChartPageImage();
   setupDictationPageImage();
   setupStageInk(payload);
+  fitFluencyPassage();
+}
+
+function fitFluencyPassage() {
+  const stage = root.querySelector(".stage-fluency"), article = stage?.querySelector("article");
+  if (!article) return;
+  const style = getComputedStyle(stage);
+  const available = stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  let low = 8, high = 42;
+  for (let i = 0; i < 9; i++) {
+    const size = (low + high) / 2;
+    stage.style.setProperty("--rf-reading-size", `${size}px`);
+    if (article.scrollHeight <= available && article.scrollWidth <= article.clientWidth) low = size;
+    else high = size;
+  }
+  stage.style.setProperty("--rf-reading-size", `${low}px`);
 }
 
 function passagePageImageSrc(pdf, page) {
@@ -1052,6 +1072,8 @@ window.addEventListener("storage", (event) => {
 });
 
 window.addEventListener("resize", resizeInkCanvas);
+window.addEventListener("resize", fitFluencyPassage);
+document.fonts?.ready.then(fitFluencyPassage);
 document.addEventListener("fullscreenchange", resizeInkCanvas);
 
 if ("BroadcastChannel" in window) {

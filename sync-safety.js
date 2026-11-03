@@ -13,6 +13,8 @@
   const ENTITY_ARRAY_KEYS = new Set([
     "groups",
     "masterRecords",
+    "readingFluencyRecords",
+    "readingFluencyAssignments",
     "rosterStudents",
     "schoolYears",
     "history",

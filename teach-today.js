@@ -95,6 +95,7 @@ let ttPassageZoomSaveTimer = null;
 let ttPassageGestureListenersBound = false;
 let ttPassageStageActive = false;
 let ttStudentDisplayWindow = null;
+let ttFluencyController = null;
 let ttDictationDateVisible = false;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 let ttNativeProjectionMode = "stage";
@@ -3074,6 +3075,8 @@ function ttDictationLessonReference(lesson = ttLesson, group = ttActiveGroup(), 
 }
 
 function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
+  const fluencyPayload = ttFluencyController?.stagePayload();
+  if (fluencyPayload) return fluencyPayload;
   const group = ttActiveGroup();
   const lesson = ttLesson || ttBuildLesson();
   const skill = scopeMap.find((item) => item.id === lesson.substep) || activeStep(group);
@@ -21366,6 +21369,24 @@ function ttBind() {
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
   ["ttHomeLessonLibrary", "ttLessonLibrary"].forEach(id => ttById(id)?.addEventListener("click", ttOpenLessonLibrary));
+  ttFluencyController = window.TeachTodayReadingFluency?.install({
+    getState: () => appState,
+    save: () => saveState(),
+    activeGroupId: () => (document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup())?.id || "",
+    activeStudentId: () => { const group = document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup(); return group?.studentIds?.[group.activeStudent] || ""; },
+    ready: async () => { if (ttChartCard) await Promise.resolve(saveLiveRecordIfNeeded(ttChartCard)); await window.TeachTodayStageStorage?.flush?.(); },
+    stopMirror: () => { ttSetNativeProjectionMode("stage"); ttSendStudentDisplay(window.TeachTodayReadingFluency.payload(null)); },
+    project: payload => ttSendStudentDisplay(payload),
+    openDisplay: payload => {
+      ttSetNativeProjectionMode("stage");
+      ttSendStudentDisplay(payload);
+      if (!ttIsNativeIpadShell()) {
+        ttStudentDisplayWindow = window.open("StudentDisplay.html", "teachTodayStudentDisplay", ttStudentDisplayWindowFeatures());
+        setTimeout(() => ttSendStudentDisplay(ttFluencyController.stagePayload() || window.TeachTodayReadingFluency.payload(null)), 250);
+      }
+    },
+    endProjection: () => ttSyncStudentDisplay()
+  });
   window.TeachTodayChartingExportUI?.install({
     getState: () => appState,
     activeGroupId: () => (document.body.classList.contains("home-mode") ? ttPlannerGroup() : ttActiveGroup())?.id || "",

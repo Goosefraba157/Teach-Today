@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-11-03
+
+- Added V1 English reading fluency for Grades 1–6: private passage-library preview/import and source-text verification, saved individual assignments, random unused/manual forms, BOY/MOY/EOY/interim checks, one-minute teacher-only visual alert, word errors/endpoint/zero scoring, raw WCPM/accuracy, early whole-passage duration, interruption safeguards, durable append-only records, dated same-grade history and private CSV. Student Stage fits complete clean passages through the installed native whitelist. Prepared all 120 supplied forms privately; booklets/text/images stay ignored and outside public assets. Existing classroom writer/full backups and stable-ID reconciliation preserve the new records. All 39 automated test files and synthetic end-to-end/failure/privacy/responsive checks pass, including 480 complete student passage layouts. Publication pending; physical iPad verification remains outstanding.
+
 ## 2026-10-31
 
 - Added optional Classic/Animated card presentation to V1 Sections 2/2B. Existing split/correction mechanics and card nodes are shared; animation adds physical placement and stroke-by-stroke writing only. Device-local preference defaults to Classic; Replay/Show all are separate from lesson evidence. Student Stage follows via existing native whitelist; reduced motion and readable fallbacks included. All 203 checks and synthetic teacher/Stage browser checks pass. No classroom-data, Firebase or native binary changes. Published in `739bbb5`; Pages deployment `41173198020` succeeded and all eight public runtime checks match tested bytes, including the exact iPad entry.
