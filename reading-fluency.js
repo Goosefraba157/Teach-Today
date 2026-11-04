@@ -282,8 +282,8 @@
       }
       renderHistory();renderAssignments();say('Session cleared. Use Show cleared sessions to review or restore it.');
     }
-    function startMotion() {
-      autoMotion=attempt?.status==='running'&&by('rfAutoScroll').checked?{at:performance.now(),position:Number(by('rfStudentScroll').value)/1000}:null;
+    function startMotion(force=false) {
+      autoMotion=attempt?.status==='running'&&(force||by('rfAutoScroll').checked)?{at:performance.now(),position:Number(by('rfStudentScroll').value)/1000}:null;
       by('rfAutoPause').textContent=autoMotion?'Pause scroll':'Resume scroll';
     }
     function stopMotion() {autoMotion=null;by('rfAutoPause').textContent='Resume scroll';}
@@ -347,9 +347,9 @@
     by('rfStudentUp').onclick=()=>manualScroll(Number(by('rfStudentScroll').value)-70);
     by('rfStudentDown').onclick=()=>manualScroll(Number(by('rfStudentScroll').value)+70);
     by('rfZoomOut').onclick=()=>setZoom(zoom-.25);by('rfZoomIn').onclick=()=>setZoom(zoom+.25);
-    by('rfAutoPause').onclick=()=>{if(autoMotion)stopMotion();else startMotion();};
+    by('rfAutoPause').onclick=()=>{if(autoMotion)stopMotion();else startMotion(true);};
     by('rfAutoScroll').onchange=()=>{if(by('rfAutoScroll').checked)startMotion();else stopMotion();};
-    by('rfScrollSpeed').onchange=()=>{if(autoMotion)startMotion();};
+    by('rfScrollSpeed').onchange=()=>{if(autoMotion)startMotion(true);};
     by('rfSaveGrade').onclick=guard(async()=>{const row=student();if(!row)throw new Error('Choose a student with a roster record first.');const value=by('rfStudentGrade').value;if(!value)throw new Error('Choose the student grade first.');const before=row.gradeLevel;row.gradeLevel=value;try{await adapter.save();}catch(e){if(before===undefined)delete row.gradeLevel;else row.gradeLevel=before;throw e;}useStudentGrade();renderHistory();say('Student grade saved. Passage choices now follow that grade.');});
     by('rfHistoryYear').onchange=renderHistory;
     by('rfExport').onclick=()=>{const cell=v=>'"'+String(v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';const rows=[['Date','Check','Grade','Form','Passage','Seconds','Attempted','Errors','Correct','Raw WCPM','Accuracy %','Repeated','Notes','Session status'],...historyRecords().map(r=>[r.sessionDate,r.period,r.passageGrade,r.form,r.passageTitle,r.seconds,r.attempted,r.errors,r.correct,r.wcpm,r.accuracy,r.repeated?'Yes':'No',r.notes,r.assessmentStatus||'complete'])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`reading-fluency-${localDay()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
