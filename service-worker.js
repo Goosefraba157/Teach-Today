@@ -123,9 +123,13 @@ const FLUENCY_PAGES = [
 ];
 // END BUILTIN FLUENCY PAGES
 
-const CACHE_NAME = "teach-today-offline-v2026-11-03-pdf-2";
+const CACHE_NAME = "teach-today-offline-v2026-11-03-auto-3";
 
 const APP_SHELL = [
+  "./reading-fluency.js?v=20261103-auto-3",
+  "./reading-fluency.css?v=20261103-auto-3",
+  "./student-display.js?v=20261103-auto-3",
+  "./student-display.css?v=20261103-auto-3",
   "./reading-fluency-library.js",
   "./reading-fluency-library.js?v=20261103-pdf-2",
   "./reading-fluency.js",

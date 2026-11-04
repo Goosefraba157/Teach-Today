@@ -769,10 +769,21 @@ function render(payload) {
 function applyFluencyPageView() {
   const stage = root.querySelector(".stage-fluency-pdf");
   if (!stage) return;
-  const readable = currentPayload?.cardDisplay?.layout === "fluency-readable";
-  stage.classList.toggle("readable", readable);
+  const layout=currentPayload?.cardDisplay?.layout;
+  const zoomed=layout==='fluency-zoom', readable=layout==='fluency-readable'||zoomed;
+  stage.classList.toggle("readable", readable);stage.classList.toggle("zoomed",zoomed);
+  const image=stage.querySelector('img');
+  if(zoomed&&image?.naturalWidth){
+    const requested=Number(currentPayload?.cardDisplay?.variant);
+    const zoom=Math.max(1,Math.min(2,Number.isFinite(requested)?requested:1.75));
+    const ratio=image.naturalWidth/image.naturalHeight;
+    const width=Math.min(Math.min(stage.clientWidth,stage.clientHeight*ratio)*zoom,stage.clientWidth*1.19);
+    stage.style.setProperty('--rf-page-width',`${width}px`);
+  }
   const position = Number(currentPayload?.cardDisplay?.position);
-  stage.scrollTop = readable ? Math.max(0, Math.min(1, Number.isFinite(position) ? position : 0)) * Math.max(0, stage.scrollHeight - stage.clientHeight) : 0;
+  const max=Math.max(0,stage.scrollHeight-stage.clientHeight);
+  const start=zoomed?Math.min(max,(image?.offsetHeight||0)*.085):0;
+  stage.scrollTop = readable ? start+Math.max(0,Math.min(1,Number.isFinite(position)?position:0))*(max-start) : 0;
 }
 
 function fitFluencyPassage() {
