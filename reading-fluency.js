@@ -21,9 +21,9 @@
     const used = new Set([...records, ...assignments].filter(r => r.studentId === studentId).map(r => r.passageId));
     return passages.filter(p => p.grade === Number(grade) && !used.has(p.id));
   }
-  function payload(passage) {
+  function payload(passage, view = {}) {
     if (!passage) return { mode: 'private', displayMode: 'private', groupName: 'Teach Today', privacyTitle: 'Reading', privacyMessage: 'Your teacher is preparing a passage.' };
-    return { mode: 'passage', displayMode: 'passage', sourceSection: 'reading-fluency', sectionLabel: 'Reading', groupName: 'Teach Today', passageTitle: passage.title, passageText: passage.text };
+    return { mode: 'passage', displayMode: 'passage', sourceSection: 'reading-fluency', sectionLabel: 'Reading', groupName: 'Teach Today', passageTitle: passage.title, passageText: passage.text, ...(passage.builtin ? { passagePdf: { passageId: passage.id }, cardDisplay: { layout: view.fit === 'readable' ? 'fluency-readable' : 'fluency-page-fit', position: String(Math.max(0, Math.min(1, Number(view.scroll) || 0))) } } : {}) };
   }
   function validateLibrary(value) {
     if (value?.format !== 'teach-today-fluency-library-v1' || !Array.isArray(value.passages) || !value.passages.length || value.passages.length > 120) throw new Error('Choose a Teach Today English fluency library.');
@@ -34,6 +34,11 @@
       return { id: p.id, grade: p.grade, form: p.form, title: p.title, text: p.text, sourceImage: p.sourceImage, sourceHash: String(p.sourceHash || '').slice(0, 80), crossCheck: p.crossCheck === true, verified: false, sourceLabel: `POR-G${p.grade}: Form ${String(p.form).padStart(2, '0')}`, sourcePage: Number.isInteger(p.sourcePage) && p.sourcePage >= 3 && p.sourcePage <= 22 ? p.sourcePage : null };
     });
   }
+  function gradeNumber(value) {
+    const match = String(value ?? '').trim().match(/^(?:(?:grade|gr)\.?\s*)?([1-9]|1[0-2])(?:st|nd|rd|th)?$/i);
+    return match ? Number(match[1]) : null;
+  }
+  function builtinPassages() { return globalThis.TeachTodayFluencyLibrary?.passages || []; }
   function openLibraryStore() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open('teach-today-private-fluency-library-v1', 1);
@@ -57,16 +62,16 @@
     const dialog = document.createElement('dialog'); dialog.id = 'ttFluency'; dialog.className = 'rf-dialog'; dialog.setAttribute('aria-labelledby', 'rfHeading');
     dialog.innerHTML = `<header class="rf-header"><div><p>Teach Today · English</p><h1 id="rfHeading">Reading fluency</h1></div><button id="rfClose" type="button">Close</button></header>
       <div class="rf-content"><p id="rfMessage" role="status"></p><div class="rf-layout"><aside class="rf-setup"><h2>Plan a reading check</h2>
-      <label>Group<select id="rfGroup"></select></label><label>Student<select id="rfStudent"></select></label>
+      <label>Group<select id="rfGroup"></select></label><label>Student<select id="rfStudent"></select></label><div class="rf-pair"><label>Student grade<select id="rfStudentGrade"><option value="">Not assigned</option><option value="K">K</option>${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}</select></label><button id="rfSaveGrade" type="button">Save student grade</button></div><p id="rfGradeNote" class="rf-help"></p>
       <div class="rf-pair"><label>Passage grade<select id="rfGrade">${[1,2,3,4,5,6].map(g=>`<option>${g}</option>`).join('')}</select></label><label>Check<select id="rfPeriod">${PERIODS.map(p=>`<option>${p}</option>`).join('')}</select></label></div>
       <label>Assessment date<input id="rfDate" type="date"></label>
       <label>Passage<select id="rfPassage"></select></label><button id="rfRandom" type="button">Choose random unused passage</button><p id="rfUse" class="rf-help"></p>
       <button id="rfAssign" type="button">Save assignment</button><p id="rfAssignment" class="rf-help"></p><label>Saved assignments<select id="rfSavedAssignment"></select></label><button id="rfLoadAssignment" type="button">Use saved assignment</button>
-      <details><summary>Private passage library</summary><p>Import your prepared English library on each teaching device. Booklets stay private. This library is device-only; keep the original import file.</p><input id="rfImport" type="file" accept="application/json,.json" aria-label="Import private English passage library"><p id="rfLibraryStatus"></p><button id="rfImportConfirm" type="button" hidden>Add previewed passages</button></details>
+      <p class="rf-help" id="rfLibraryStatus">English passage booklets · Grades 1–6 · built in</p>
       <details><summary>Administration & scoring</summary><p>Start at the title. Say Begin when starting the timer. Mark skipped or misread words and words not read within 3 seconds. Ignore added words; an immediate self-correction is correct (tap again to remove an error). After 3 seconds prompt the student to try the next word.</p><p>At one minute, only this teacher screen alerts. Mark the last word attempted, then tell the student to stop. Finish early only if the entire passage was completed. There is no pause during a standard check.</p><p>Raw WCPM = correct words × 60 ÷ seconds. Accuracy = correct ÷ attempted × 100. The title is included. Hyphenated words and contractions count as one word; em dashes separate words. These are local raw scores, without Star equating, percentiles, or benchmark classifications.</p><p>Keep the same passage grade when comparing growth. Random selection avoids earlier assignments and attempts; teacher-selected repeats are labeled.</p></details>
       </aside><section class="rf-work"><div class="rf-work-head"><div><h2 id="rfTitle">Choose a passage</h2><p id="rfSource" class="rf-help"></p></div><button id="rfProject" type="button">Student display</button></div>
-      <details id="rfReview"><summary>Verify passage against the original</summary><div class="rf-verify"><img id="rfSourceImage" alt="Original student passage for text verification"><label>Passage title<input id="rfEditTitle" maxlength="180"></label><label>Passage text<textarea id="rfEditText" rows="15" maxlength="10000"></textarea></label><button id="rfVerify" type="button">Save checked text</button></div></details>
-      <p id="rfVerification" class="rf-help"></p><div class="rf-timer"><strong id="rfClock" aria-label="Seconds remaining">1:00</strong><span id="rfTimerStatus" role="alert">Ready</span><button id="rfStart" type="button">Start 1 minute</button><button id="rfFinish" type="button" disabled>Finished whole passage early</button></div>
+      <details id="rfReview"><summary>Compare teacher text with the original page</summary><div class="rf-verify"><img id="rfSourceImage" alt="Original student passage for text verification"><label>Passage title<input id="rfEditTitle" maxlength="180"></label><label>Passage text<textarea id="rfEditText" rows="15" maxlength="10000"></textarea></label><button id="rfVerify" type="button">Save checked text</button></div></details>
+      <p id="rfVerification" class="rf-help"></p><div class="rf-timer"><strong id="rfClock" aria-label="Seconds remaining">1:00</strong><span id="rfTimerStatus" role="alert">Ready</span><button id="rfStart" type="button">Start 1 minute</button><button id="rfFinish" type="button" disabled>Finished whole passage early</button><details class="rf-student-dock"><summary>Student page controls</summary><div class="rf-student-view"><label>Student page size<select id="rfStudentFit"><option value="page">Full PDF page</option><option value="readable">Larger page · scroll</option></select></label><label>Scroll student page<input id="rfStudentScroll" type="range" min="0" max="1000" value="0" aria-label="Scroll student PDF passage"></label><button id="rfStudentTop" type="button">Page top</button></div></details></div>
       <div class="rf-marking"><label><input type="radio" name="rfMarkMode" value="error" checked>Mark errors</label><label><input type="radio" name="rfMarkMode" value="last">Last word attempted</label><button id="rfZero" type="button" disabled>No words attempted</button></div>
       <p class="rf-help">Tap a word to mark an error; tap again to undo. Choose Last word attempted, then tap the endpoint. Marks stay on the teacher screen.</p>
       <article id="rfWords" class="rf-words" aria-label="Teacher scoring passage"></article><output id="rfScore" class="rf-score">Complete a timed check to calculate a score.</output>
@@ -76,7 +81,7 @@
     document.body.append(dialog);
     const by = id => dialog.querySelector('#'+id);
     let previousOverflow = '';
-    let bank = [], pendingImport = null, passage = null, attempt = null, assignment = null, clockId = null, busy = false, projected = false, opener = null;
+    let bank = [], passage = null, attempt = null, assignment = null, clockId = null, busy = false, projected = false, opener = null;
     const say = text => { by('rfMessage').textContent = text; };
     const state = () => adapter.getState();
     const records = () => state().readingFluencyRecords || [];
@@ -85,7 +90,10 @@
     const year = () => state().activeSchoolYearId;
     const localDay = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
     const group = () => state().groups?.find(g => g.id === by('rfGroup').value);
-    const name = () => (group()?.students || []).find(n => group().studentIds?.[n] === studentId()) || '';
+    const student = () => (state().rosterStudents || []).find(s => s.studentId === studentId());
+    const studentView = () => ({ fit: by('rfStudentFit').value, scroll: Number(by('rfStudentScroll').value)/1000 });
+    const studentPayload = () => payload(projected && passage?.verified ? passage : null, studentView());
+    function syncProjection() { if (projected) adapter.project(studentPayload()); }
     const shortName = n => { const parts=String(n).trim().split(/\s+/); return parts.length>1 ? `${parts[0]} ${parts.at(-1)[0]}.` : parts[0]; };
     const words = () => passage ? tokens(passage.title+'\n'+passage.text) : [];
     const guard = action => async () => { if(busy)return;busy=true;controls();try {await action();} catch(e) {say(e.message || 'This operation failed. Keep this screen open and retry.');} finally {busy=false;controls();} };
@@ -111,7 +119,7 @@
     }
     function controls() {
       const locked=Boolean(attempt), running=attempt?.status==='running';
-      for(const id of ['rfGroup','rfStudent','rfGrade','rfPeriod','rfDate','rfPassage','rfRandom','rfAssign','rfImport','rfImportConfirm','rfVerify','rfSavedAssignment','rfLoadAssignment'])by(id).disabled=busy||locked;
+      for(const id of ['rfGroup','rfStudent','rfGrade','rfPeriod','rfDate','rfPassage','rfRandom','rfAssign','rfVerify','rfSavedAssignment','rfLoadAssignment','rfStudentGrade','rfSaveGrade'])by(id).disabled=busy||locked;
       by('rfStart').disabled=busy||locked||!passage?.verified||!studentId();
       by('rfFinish').disabled=busy||!running;by('rfZero').disabled=busy||attempt?.status!=='finished';
       by('rfSave').disabled=busy||attempt?.status!=='finished'||attempt.last===null;
@@ -126,7 +134,16 @@
       const g=group();const previous=studentId();
       by('rfStudent').innerHTML='<option value="">Choose student</option>'+(g?.students||[]).filter(n=>g.studentIds?.[n]).map(n=>`<option value="${esc(g.studentIds[n])}">${esc(shortName(n))}</option>`).join('');
       if([...by('rfStudent').options].some(o=>o.value===previous))by('rfStudent').value=previous;
-      fillPassages();renderHistory();renderAssignments();
+      useStudentGrade();renderHistory();renderAssignments();
+    }
+    function useStudentGrade() {
+      const actual = student()?.gradeLevel;
+      by('rfStudentGrade').value = String(actual ?? '').toUpperCase() === 'K' ? 'K' : String(gradeNumber(actual) || '');
+      const level = gradeNumber(actual);
+      if (level && level <= 6) by('rfGrade').value=String(level);
+      else by('rfGrade').value='1';
+      by('rfGradeNote').textContent=level&&level<=6 ? `Using this student's Grade ${level} passages. You can choose another passage grade when needed.` : actual ? `Student grade: ${actual}. Choose a passage level from Grades 1–6.` : 'This student has no grade assigned. Set it here, or choose a passage grade for this check.';
+      fillPassages();
     }
     function fillPassages() {
       const previous=by('rfPassage').value;
@@ -138,12 +155,12 @@
       passage=bank.find(p=>p.id===by('rfPassage').value)||null;assignment=null;by('rfAssignment').textContent='';
       by('rfTitle').textContent=passage?.title||'Choose a passage';by('rfSource').textContent=passage?`${passage.sourceLabel} · booklet PDF page ${passage.sourcePage}`:'';
       by('rfEditTitle').value=passage?.title||'';by('rfEditText').value=passage?.text||'';
-      if(passage)by('rfSourceImage').src=passage.sourceImage;else by('rfSourceImage').removeAttribute('src');
-      by('rfReview').hidden=!passage;by('rfReview').open=Boolean(passage&&!passage.verified);
-      by('rfVerification').textContent=passage?.verified?'Text checked against the source.':passage?'Review title and every word against the original, then Save checked text.':'';
+      if(passage)by('rfSourceImage').src=passage.imagePath || passage.sourceImage;else by('rfSourceImage').removeAttribute('src');
+      by('rfReview').hidden=!passage;by('rfReview').open=false;
+      by('rfVerification').textContent=passage?'The student sees the original PDF page. Your word buttons can be corrected until the final save.':'';
       const used=passage && [...records(),...assignments()].some(r=>r.studentId===studentId()&&r.passageId===passage.id);
       by('rfUse').textContent=used?'Previously assigned or read by this student. Earlier completed readings will be labeled as repeated passages.':passage?'No earlier assignment or reading for this student.':'';
-      renderWords();controls();if(projected)adapter.project(payload(passage?.verified?passage:null));
+      by('rfStudentScroll').value='0';renderWords();controls();syncProjection();
     }
     function renderWords() {
       const titleCount=passage?tokens(passage.title).length:0;
@@ -177,7 +194,7 @@
     }
     function renderAssignments() {
       const completed=new Set(records().map(r=>r.assignmentId));
-      by('rfSavedAssignment').innerHTML='<option value="">Choose saved assignment</option>'+assignments().filter(a=>a.studentId===studentId() && a.schoolYearId===year() && !completed.has(a.id)).map(a=>{const p=bank.find(p=>p.id===a.passageId);return `<option value="${esc(a.id)}">${esc(a.sessionDate)} · ${esc(a.period)} · Grade ${a.passageGrade} · ${esc(p?.title||'Import passage library')}</option>`;}).join('');
+      by('rfSavedAssignment').innerHTML='<option value="">Choose saved assignment</option>'+assignments().filter(a=>a.studentId===studentId() && a.schoolYearId===year() && !completed.has(a.id)).map(a=>{const p=bank.find(p=>p.id===a.passageId);return `<option value="${esc(a.id)}">${esc(a.sessionDate)} · ${esc(a.period)} · Grade ${a.passageGrade} · ${esc(p?.title||'Passage unavailable')}</option>`;}).join('');
     }
     function historyRecords() {return records().filter(r=>r.studentId===studentId() && (by('rfHistoryYear').value==='all'||r.schoolYearId===by('rfHistoryYear').value)).sort((a,b)=>a.sessionDate.localeCompare(b.sessionDate)||a.createdAt.localeCompare(b.createdAt));}
     function renderHistory() {
@@ -192,18 +209,16 @@
     }
     async function open() {
       opener=document.activeElement;adapter.stopMirror();await adapter.ready?.();reset();
-      bank=await libraryRead();by('rfLibraryStatus').textContent=`${bank.length} private passages on this device.`;
+      const saved=await libraryRead().catch(()=>[]);bank=builtinPassages().map(p=>{const edit=saved.find(s=>s.id===p.id&&s.editOverride);return edit?{...p,title:edit.title,text:edit.text,verifiedAt:edit.verifiedAt}:p;});if(!bank.length)throw new Error('The built-in passage library did not load. Reopen the app online once.');by('rfLibraryStatus').textContent=`${bank.length} built-in English passages · 20 per grade · ready to read`;
       by('rfGroup').innerHTML='<option value="">Choose group</option>'+(state().groups||[]).filter(g=>g.schoolYearId===year()).map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
-      by('rfGroup').value=adapter.activeGroupId();by('rfDate').value=localDay();fillStudents();by('rfStudent').value=adapter.activeStudentId();choosePassage();renderHistory();say(bank.length?'':'Open Private passage library below and import your prepared English passage file to get started.');if(!bank.length)by('rfImport').closest('details').open=true;previousOverflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';dialog.showModal();
+      by('rfGroup').value=adapter.activeGroupId();by('rfDate').value=localDay();fillStudents();by('rfStudent').value=adapter.activeStudentId();useStudentGrade();renderHistory();renderAssignments();say('Choose a passage, open Student display, then start the timer.');previousOverflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';dialog.showModal();
     }
     for(const id of ['ttHomeReadingFluency','ttReadingFluency'])document.getElementById(id)?.addEventListener('click',guard(open));
-    by('rfGroup').onchange=fillStudents;by('rfStudent').onchange=()=>{choosePassage();renderHistory();renderAssignments();};by('rfGrade').onchange=()=>{fillPassages();renderHistory();};by('rfPassage').onchange=choosePassage;
+    by('rfGroup').onchange=fillStudents;by('rfStudent').onchange=()=>{useStudentGrade();renderHistory();renderAssignments();};by('rfGrade').onchange=()=>{fillPassages();renderHistory();};by('rfPassage').onchange=choosePassage;
     for(const id of ['rfPeriod','rfDate'])by(id).onchange=()=>{assignment=null;by('rfAssignment').textContent='';};
-    by('rfRandom').onclick=()=>{if(!bank.length){say('Import your private English passage library first.');return;}const choices=unused(bank,records(),assignments(),studentId(),by('rfGrade').value);if(!studentId()){say('Choose a student first.');return;}if(!choices.length){say('No unused passages remain for this grade. Choose a previous passage deliberately.');return;}by('rfPassage').value=choices[Math.floor(Math.random()*choices.length)].id;choosePassage();};
-    by('rfImport').onchange=guard(async()=>{const file=by('rfImport').files[0];if(!file)return;if(file.size>45000000)throw new Error('This library is too large.');pendingImport=validateLibrary(JSON.parse(await file.text()));const additions=pendingImport.filter(p=>!bank.some(b=>b.id===p.id));by('rfLibraryStatus').textContent=`Preview: ${pendingImport.length} English passages; ${additions.length} additions, ${pendingImport.length-additions.length} existing passages preserved. Grades: ${[...new Set(pendingImport.map(p=>p.grade))].sort().join(', ')}. No student records are imported.`;by('rfImportConfirm').hidden=false;});
-    by('rfImportConfirm').onclick=guard(async()=>{if(!pendingImport)return;const merged=[...bank,...pendingImport.filter(p=>!bank.some(b=>b.id===p.id))];await libraryWrite(merged);bank=merged;pendingImport=null;by('rfImportConfirm').hidden=true;by('rfImport').value='';by('rfLibraryStatus').textContent=`${bank.length} passages imported and verified in device storage. Check each passage text before scoring.`;fillPassages();});
-    by('rfVerify').onclick=guard(async()=>{if(!passage)return;const title=by('rfEditTitle').value.trim(),text=by('rfEditText').value.trim();if(!title||text.length<50)throw new Error('Title and full passage text are required.');const updated={...passage,title,text,verified:true,verifiedAt:new Date().toISOString()};const next=bank.map(p=>p.id===passage.id?updated:p);await libraryWrite(next);bank=next;fillPassages();say('Checked passage saved privately on this device.');});
-    by('rfLoadAssignment').onclick=()=>{const a=assignments().find(a=>a.id===by('rfSavedAssignment').value&&a.studentId===studentId());if(!a)return;if(!bank.some(p=>p.id===a.passageId)){say('Import the matching private passage library on this device first.');return;}by('rfGrade').value=String(a.passageGrade);fillPassages();by('rfPassage').value=a.passageId;choosePassage();by('rfPeriod').value=a.period;by('rfDate').value=a.sessionDate;assignment=a;by('rfAssignment').textContent='Using the saved assignment.';renderHistory();controls();};
+    by('rfRandom').onclick=()=>{if(!bank.length){say('The built-in passage library is unavailable. Reopen online.');return;}const choices=unused(bank,records(),assignments(),studentId(),by('rfGrade').value);if(!studentId()){say('Choose a student first.');return;}if(!choices.length){say('No unused passages remain for this grade. Choose a previous passage deliberately.');return;}by('rfPassage').value=choices[Math.floor(Math.random()*choices.length)].id;choosePassage();};
+    by('rfVerify').onclick=guard(async()=>{if(!passage)return;const title=by('rfEditTitle').value.trim(),text=by('rfEditText').value.trim();if(!title||text.length<50)throw new Error('Title and full passage text are required.');const updated={...passage,title,text,verified:true,verifiedAt:new Date().toISOString(),editOverride:true};const next=bank.map(p=>p.id===passage.id?updated:p);await libraryWrite(next);bank=next;fillPassages();say('Teacher text correction saved on this device. The original student page is preserved.');});
+    by('rfLoadAssignment').onclick=()=>{const a=assignments().find(a=>a.id===by('rfSavedAssignment').value&&a.studentId===studentId());if(!a)return;if(!bank.some(p=>p.id===a.passageId)){say('The assigned passage is unavailable. Reopen the app online.');return;}by('rfGrade').value=String(a.passageGrade);fillPassages();by('rfPassage').value=a.passageId;choosePassage();by('rfPeriod').value=a.period;by('rfDate').value=a.sessionDate;assignment=a;by('rfAssignment').textContent='Using the saved assignment.';renderHistory();controls();};
     by('rfAssign').onclick=guard(assign);
     by('rfStart').onclick=guard(async()=>{validContext();const a=await assign();attempt={id:crypto.randomUUID(),assignmentId:a.id,context:context(),words:words(),errors:new Set(),last:null,status:'running',startedAt:new Date().toISOString(),startedClock:performance.now(),seconds:0};by('rfTimerStatus').textContent='Reading · teacher timer only';say('');clockId=setInterval(tick,100);controls();});
     by('rfFinish').onclick=()=>{tick();if(attempt?.status!=='running')return;finish(true);};
@@ -211,14 +226,18 @@
     by('rfZero').onclick=()=>{attempt.last=-1;renderWords();controls();};
     by('rfSave').onclick=guard(async()=>{if(attempt?.status!=='finished'||attempt.last===null)return;const s=score(attempt.words,attempt.last,[...attempt.errors],attempt.seconds);const row={...attempt.context,...s,id:attempt.id,assignmentId:attempt.assignmentId,type:'passage-oral-reading',scoreKind:'raw',language:'en',createdAt:new Date().toISOString(),startedAt:attempt.startedAt,finishedAt:attempt.finishedAt,seconds:attempt.seconds,form:passage.form,passageTitle:passage.title,sourceHash:passage.sourceHash,textVerifiedAt:passage.verifiedAt,words:attempt.words,lastWordIndex:attempt.last,errorIndices:[...attempt.errors].filter(i=>i<=attempt.last).sort((a,b)=>a-b),notes:by('rfNotes').value.trim(),repeated:records().some(r=>r.studentId===studentId()&&r.passageId===passage.id)};await append('readingFluencyRecords',row);attempt.status='saved';say('Reading record saved. It is included in complete classroom JSON backups.');renderHistory();renderAssignments();});
     by('rfReset').onclick=()=>{if(attempt&&attempt.status!=='saved'&&!window.confirm('Discard this unsaved reading attempt and start again?'))return;reset();};
-    by('rfProject').onclick=()=>{projected=true;adapter.openDisplay(payload(passage));say('Student display shows the clean passage. Timer, marks, student identity, and scores stay here.');};
+    by('rfProject').onclick=()=>{projected=true;adapter.openDisplay(studentPayload());say('Student display shows the original PDF page. Use Student page size and Scroll student page to control it. Timer and marks stay here.');};
+    by('rfStudentFit').onchange=()=>{by('rfStudentScroll').value='0';syncProjection();};
+    by('rfStudentScroll').oninput=syncProjection;
+    by('rfStudentTop').onclick=()=>{by('rfStudentScroll').value='0';syncProjection();};
+    by('rfSaveGrade').onclick=guard(async()=>{const row=student();if(!row)throw new Error('Choose a student with a roster record first.');const value=by('rfStudentGrade').value;if(!value)throw new Error('Choose the student grade first.');const before=row.gradeLevel;row.gradeLevel=value;try{await adapter.save();}catch(e){if(before===undefined)delete row.gradeLevel;else row.gradeLevel=before;throw e;}useStudentGrade();renderHistory();say('Student grade saved. Passage choices now follow that grade.');});
     by('rfHistoryYear').onchange=renderHistory;
     by('rfExport').onclick=()=>{const cell=v=>'"'+String(v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';const rows=[['Date','Check','Grade','Form','Passage','Seconds','Attempted','Errors','Correct','Raw WCPM','Accuracy %','Repeated','Notes'],...historyRecords().map(r=>[r.sessionDate,r.period,r.passageGrade,r.form,r.passageTitle,r.seconds,r.attempted,r.errors,r.correct,r.wcpm,r.accuracy,r.repeated?'Yes':'No',r.notes])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`reading-fluency-${localDay()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
     function close() {if(busy||attempt?.status==='running')return;if(attempt&&attempt.status!=='saved'&&!window.confirm('Close without saving this reading attempt?'))return;clearInterval(clockId);if(projected)adapter.project(payload(null));projected=false;dialog.close();document.documentElement.style.overflow=previousOverflow;adapter.endProjection();opener?.focus();}
     by('rfClose').onclick=close;dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
     document.addEventListener('visibilitychange',()=>{if(document.hidden)tick();if(document.hidden&&attempt?.status==='running'){clearInterval(clockId);attempt.status='interrupted';by('rfTimerStatus').textContent='Interrupted: teacher screen was hidden. Start a new attempt; no standard score can be saved.';controls();}});
     window.addEventListener('beforeunload',e=>{if(attempt&&attempt.status!=='saved'){e.preventDefault();e.returnValue='';}});
-    return { open, stagePayload:()=>dialog.open?payload(projected&&passage?.verified?passage:null):null };
+    return { open, stagePayload:()=>dialog.open?studentPayload():null };
   }
-  return { tokens, score, unused, payload, validateLibrary, install };
+  return { tokens, score, unused, payload, gradeNumber, validateLibrary, install };
 });

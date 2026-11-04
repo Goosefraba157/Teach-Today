@@ -30,6 +30,23 @@ const merged=sync.mergePayloads(base,local,remote);
 assert.deepEqual(new Set(merged.appState.readingFluencyRecords.map(r=>r.id)),new Set(['l','r']));
 assert.deepEqual(new Set(merged.appState.readingFluencyAssignments.map(r=>r.id)),new Set(['al','ar']));
 const worker=fs.readFileSync(require('node:path').join(__dirname,'../service-worker.js'),'utf8');
-assert(worker.includes('./reading-fluency.js?v=20261103-fluency-1'));
+assert(worker.includes('./reading-fluency.js?v=20261103-pdf-2'));
 assert(!worker.includes('star-cbm-english-library.json'));
 console.log('Reading fluency scoring, identity, library privacy, and additive sync checks passed.');
+
+require('../reading-fluency-library.js');
+const builtins=globalThis.TeachTodayFluencyLibrary.passages;
+assert.equal(builtins.length,120);
+for (let grade=1;grade<=6;grade++) assert.equal(builtins.filter(p=>p.grade===grade).length,20);
+for (const p of builtins) { assert(fs.existsSync(require('node:path').join(__dirname,'..',p.imagePath))); assert(p.builtin && p.verified); }
+assert.equal(new Set(builtins.map(p=>p.id)).size,120);
+assert.equal(builtins.find(p=>p.id==='star-por-en-g4-f02').sourcePage,3);
+assert.deepEqual([1,'2','Grade 3','Gr. 4','5th',6].map(rf.gradeNumber),[1,2,3,4,5,6]);
+for (const v of ['K','',null,'2.1',13,'Reading 3']) assert.equal(rf.gradeNumber(v),null);
+const projected=rf.payload({...builtins[0],studentId:'PRIVATE',notes:'PRIVATE'},{fit:'readable',scroll:2});
+assert.equal(projected.passagePdf.passageId,builtins[0].id);
+assert.equal(projected.cardDisplay.layout,'fluency-readable');
+assert.equal(projected.cardDisplay.position,'1');
+assert(!JSON.stringify(projected).includes('PRIVATE'));
+assert(worker.includes('...FLUENCY_PAGES'));
+console.log('Built-in 120-page library, grade reuse, original-page projection and offline coverage pass.');

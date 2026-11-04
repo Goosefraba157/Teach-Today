@@ -669,6 +669,10 @@ function renderChart(payload) {
 
 function renderPassage(payload) {
   if (payload.sourceSection === "reading-fluency") {
+    const page = globalThis.TeachTodayFluencyLibrary?.passages.find(p => p.id === payload.passagePdf?.passageId);
+    if (page && /^assets\/reading-fluency\/star-por-en-g[1-6]-f\d{2}\.webp$/.test(page.imagePath)) {
+      return `<section class="stage-fluency-pdf"><img src="${escapeHtml(page.imagePath)}" alt="${escapeHtml(page.title)} · original student PDF page"></section>`;
+    }
     const paragraphs = String(payload.passageText || "").split(/\n\s*\n/).map(p => `<p>${escapeHtml(p.replace(/\n/g, " "))}</p>`).join("");
     return `<section class="stage-fluency"><article><h1>${escapeHtml(payload.passageTitle || "")}</h1>${paragraphs}</article></section>`;
   }
@@ -703,6 +707,14 @@ function renderGame(payload) {
 }
 
 function render(payload) {
+  document.body.classList.toggle("stage-fluency-reading", payload?.sourceSection === "reading-fluency");
+  if (payload?.sourceSection === "reading-fluency" && currentPayload?.sourceSection === "reading-fluency"
+      && payload.passagePdf?.passageId && payload.passagePdf.passageId === currentPayload.passagePdf?.passageId
+      && root.querySelector(".stage-fluency-pdf")) {
+    currentPayload = payload;
+    applyFluencyPageView();
+    return;
+  }
   window.TTCardMotion?.clear(root.querySelector(".stage-build-cards"));
   currentPayload = payload;
   document.body.classList.remove("stage-inking");
@@ -746,6 +758,21 @@ function render(payload) {
   setupDictationPageImage();
   setupStageInk(payload);
   fitFluencyPassage();
+  const fluencyImage = root.querySelector(".stage-fluency-pdf img");
+  if (fluencyImage) {
+    fluencyImage.onload = applyFluencyPageView;
+    fluencyImage.onerror = () => { if (root.querySelector('.stage-fluency-pdf img') !== fluencyImage) return; root.innerHTML = '<section class="waiting"><p>The reading page is unavailable. Ask your teacher to reopen the app online.</p></section>'; };
+    applyFluencyPageView();
+  }
+}
+
+function applyFluencyPageView() {
+  const stage = root.querySelector(".stage-fluency-pdf");
+  if (!stage) return;
+  const readable = currentPayload?.cardDisplay?.layout === "fluency-readable";
+  stage.classList.toggle("readable", readable);
+  const position = Number(currentPayload?.cardDisplay?.position);
+  stage.scrollTop = readable ? Math.max(0, Math.min(1, Number.isFinite(position) ? position : 0)) * Math.max(0, stage.scrollHeight - stage.clientHeight) : 0;
 }
 
 function fitFluencyPassage() {
@@ -1073,6 +1100,7 @@ window.addEventListener("storage", (event) => {
 
 window.addEventListener("resize", resizeInkCanvas);
 window.addEventListener("resize", fitFluencyPassage);
+window.addEventListener("resize", applyFluencyPageView);
 document.fonts?.ready.then(fitFluencyPassage);
 document.addEventListener("fullscreenchange", resizeInkCanvas);
 
