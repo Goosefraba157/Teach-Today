@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-11-05
 
-- Added Section 2/2B prefix review posters, cumulative substep selection with separate 3.2 sets, sanitized Student Stage display and selected-sheet printing. The full one-page Letter PDF has 27 yellow cards through 5.5, each labeled by substep with meaning and circled-prefix example. Static curriculum only; no classroom records, Firebase or native changes. All 207 checks and synthetic browser regression pass; PDF and Stage visually verified. Publication pending.
+- Added Section 2/2B prefix review posters, cumulative substep selection with separate 3.2 sets, sanitized Student Stage display and selected-sheet printing. The full one-page Letter PDF has 27 yellow cards through 5.5, each labeled by substep with meaning and circled-prefix example. Static curriculum only; no classroom records, Firebase or native changes. All 207 checks and synthetic browser regression pass; PDF and Stage visually verified. Published in `12d6839`; all ten public byte checks pass, including the exact iPad entry and PDF.
 
 ## 2026-11-03
 
