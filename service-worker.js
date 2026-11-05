@@ -123,9 +123,17 @@ const FLUENCY_PAGES = [
 ];
 // END BUILTIN FLUENCY PAGES
 
-const CACHE_NAME = "teach-today-offline-v2026-11-03-auto-3";
+const CACHE_NAME = "teach-today-offline-v2026-11-05-prefix-1";
 
 const APP_SHELL = [
+  "./PrefixPosters.html",
+  "./prefix-posters.js",
+  "./prefix-posters.css",
+  "./prefix-posters.js?v=20261105-prefix-1",
+  "./prefix-posters.css?v=20261105-prefix-1",
+  "./assets/posters/prefix-review.pdf",
+  "./teach-today.js?v=20261105-prefix-1",
+  "./student-display.js?v=20261105-prefix-1",
   "./reading-fluency.js?v=20261103-auto-3",
   "./reading-fluency.css?v=20261103-auto-3",
   "./student-display.js?v=20261103-auto-3",

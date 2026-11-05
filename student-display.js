@@ -146,6 +146,7 @@ function renderPoster(payload) {
 
 function renderCards(payload) {
   const card = payload.cardDisplay || {};
+  if (card.kind === "prefix-poster") return `<div class="stage-prefix-poster">${TeachTodayPrefixPosters.render(card.variant)}</div>`;
   if ((card.kind === "intro-21" || card.kind === "intro-35") && card.teacherMirror) {
     return renderIntroTeacherMirror(card);
   }

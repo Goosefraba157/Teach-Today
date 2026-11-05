@@ -2,6 +2,10 @@
 
 This is a concise development record. Student names, IDs, results, and other private data do not belong here.
 
+## 2026-11-05
+
+- Added Section 2/2B prefix review posters, cumulative substep selection with separate 3.2 sets, sanitized Student Stage display and selected-sheet printing. The full one-page Letter PDF has 27 yellow cards through 5.5, each labeled by substep with meaning and circled-prefix example. Static curriculum only; no classroom records, Firebase or native changes. All 207 checks and synthetic browser regression pass; PDF and Stage visually verified. Publication pending.
+
 ## 2026-11-03
 
 - Added timer-end fluency autosave with pending-endpoint recovery, ongoing stable-ID corrections and revision history, historical session editing, warning-gated clear/restore, failed-save retry and background preservation. Pending/interrupted/cleared sessions are excluded from scored trends. Student controls now offer large zoom buttons, larger default original-page display, very slow optional auto-scroll, pause/resume and manual nudges; scrolling freezes when timing ends, and explicit Resume remains available when automatic-on-start is off. Existing native fields carry only view controls, preserving privacy without reinstalling Stage. All 39 automated test files, the new committed synthetic browser regression, full V1 workflow and installed-native sanitizer checks pass. Published through `bc6a6af` (core `f230c04`); Pages deployment `41760274519` succeeded, all 11 checked public runtime responses match tested bytes (including the exact iPad entry), and the synthetic browser regression passes against the published runtime. Physical iPad smoothness remains a teacher check.

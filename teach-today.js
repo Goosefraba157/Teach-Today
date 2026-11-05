@@ -96,6 +96,7 @@ let ttPassageGestureListenersBound = false;
 let ttPassageStageActive = false;
 let ttStudentDisplayWindow = null;
 let ttFluencyController = null;
+let ttPrefixPosters = null;
 let ttDictationDateVisible = false;
 let ttStudentDisplayMode = localStorage.getItem("teachToday.studentDisplayMode") || "private";
 let ttNativeProjectionMode = "stage";
@@ -3075,6 +3076,8 @@ function ttDictationLessonReference(lesson = ttLesson, group = ttActiveGroup(), 
 }
 
 function ttStudentDisplayPayload(mode = ttStudentDisplayMode) {
+  const prefixPayload = ttPrefixPosters?.stagePayload();
+  if (prefixPayload) return prefixPayload;
   const fluencyPayload = ttFluencyController?.stagePayload();
   if (fluencyPayload) return fluencyPayload;
   const group = ttActiveGroup();
@@ -21369,6 +21372,18 @@ function ttBind() {
   });
   ttById("ttRerollEncodingWords")?.addEventListener("click", () => ttRerollEncodingSectionsAction());
   ["ttHomeLessonLibrary", "ttLessonLibrary"].forEach(id => ttById(id)?.addEventListener("click", ttOpenLessonLibrary));
+  ttPrefixPosters = window.TeachTodayPrefixPosters?.install({
+    substep: () => ttLesson?.substep || ttActiveGroup()?.substep || "",
+    sync: () => ttSyncStudentDisplay(),
+    project: payload => {
+      ttSetNativeProjectionMode("stage");
+      ttSendStudentDisplay(payload);
+      if (!ttIsNativeIpadShell()) {
+        ttStudentDisplayWindow = window.open("StudentDisplay.html", "teachTodayStudentDisplay", ttStudentDisplayWindowFeatures());
+        setTimeout(() => ttSyncStudentDisplay(), 250);
+      }
+    }
+  });
   ttFluencyController = window.TeachTodayReadingFluency?.install({
     getState: () => appState,
     save: () => saveState(),
@@ -21557,7 +21572,7 @@ function ttBind() {
   const trackSectionControl = (event, source) => {
     const card = event.target.closest?.(".teach-card[id^='section']");
     if (!card) return;
-    if (event.target.closest?.("#ttPresentDateToggle, [data-card-motion-controls]")) return;
+    if (event.target.closest?.("#ttPresentDateToggle, [data-card-motion-controls], [data-prefix-posters]")) return;
     const meaningful = event.target.closest?.("button, a, input, select, textarea, canvas, [role='button'], [contenteditable='true']");
     if (meaningful) ttRecordSectionInteraction(card.id, source);
   };
