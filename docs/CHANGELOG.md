@@ -4,7 +4,7 @@ This is a concise development record. Student names, IDs, results, and other pri
 
 ## 2026-11-10
 
-- Fixed expired cached Google Drive authorization blocking backups and Records reconnect. Drive API requests renew through the installed native bridge and retry once on 401; explicit Connect discards stale tokens and handles revoked grants, with honest authorization/verification status and no background consent prompts. Preserved independent hash-verified native Files backups and Stage local-only data authority. Added six synthetic authentication tests and refreshed runtime/offline versions. No classroom data or native binary changes. Publication pending final checks.
+- Fixed expired cached Google Drive authorization blocking backups and Records reconnect. Drive API requests renew through the installed native bridge and retry once on 401; explicit Connect discards stale tokens and handles revoked grants, with honest authorization/verification status and no background consent prompts. Preserved independent hash-verified native Files backups and Stage local-only data authority. Added six synthetic authentication tests and refreshed runtime/offline versions. No classroom data or native binary changes. All 206 automated checks and syntax/diff checks pass. Pushed in `527819b`; Pages build succeeded and deployment `42841686791` remains in progress.
 
 ## 2026-11-05
 
