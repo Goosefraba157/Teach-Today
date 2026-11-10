@@ -14928,7 +14928,7 @@ async function ttSaveDriveLessonPlanPdf(bytes, fileName, stage, groupFolder) {
   const stageFolder = await ttDriveNamedFolder(stage, groupFolderId);
   const blob = new Blob([bytes], { type: "application/pdf" });
   const file = await ttDriveUpsertBackup(stageFolder, fileName, blob, "application/pdf");
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
+  const response = await ttDriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
   if (!response.ok || await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
     throw new Error("Google Drive lesson PDF readback did not match the saved bytes.");
   }
@@ -14942,7 +14942,7 @@ async function ttSaveDriveChartingPdf(bytes, fileName, options = { interactive: 
       const root = await ttDriveNamedFolder(ttIndependentDriveFolderName);
       const folder = await ttDriveNamedFolder("Charting", root);
       const file = await ttDriveUpsertBackup(folder, fileName, new Blob([bytes], { type: "application/pdf" }), "application/pdf");
-      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
+      const response = await ttDriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: ttDriveHeaders() });
       if (!response.ok) throw new Error(`Google Drive charting readback failed (${response.status}).`);
       if (await ttDocumentSha256Hex(new Uint8Array(await response.arrayBuffer())) !== await ttDocumentSha256Hex(bytes)) {
         throw new Error("The Google Drive charting PDF readback did not match. Retry to verify that same file.");
@@ -16353,12 +16353,19 @@ async function ttEnsureDrivePermission(options = {}) {
   if (ttDriveAccessToken) return true;
   if (ttNativeDriveAvailable()) {
     try {
-      ttDriveAccessToken = await ttNativeDriveAccessToken({ interactive: Boolean(options.interactive) });
-      localStorage.setItem("teachToday.driveStatus", "Google Drive is securely connected for automatic backups on this iPad.");
+      try {
+        ttDriveAccessToken = await ttNativeDriveAccessToken({ interactive: Boolean(options.interactive) });
+      } catch (error) {
+        // The installed shell removes a revoked refresh grant before reporting
+        // authorizationRequired. An explicit Connect can now open consent.
+        if (!options.interactive || !String(error.message).includes("authorize this iPad")) throw error;
+        ttDriveAccessToken = await ttNativeDriveAccessToken({ interactive: true });
+      }
+      localStorage.setItem("teachToday.driveStatus", "Google Drive authorization received on this iPad. See backup verification below.");
       ttRenderDataCenter();
       return true;
     } catch (error) {
-      if (options.interactive) localStorage.setItem("teachToday.driveStatus", `Google Drive backup needs attention: ${ttFriendlyDriveError(error)}`);
+      localStorage.setItem("teachToday.driveStatus", `Google Drive backup needs attention: ${ttFriendlyDriveError(error)}`);
       ttRenderDataCenter();
       return false;
     }
@@ -16377,9 +16384,30 @@ async function ttEnsureDrivePermission(options = {}) {
   return Boolean(ttDriveAccessToken);
 }
 
+// Retry only explicit authentication rejection, never ambiguous network/upload failures.
+async function ttDriveFetch(url, options = {}) {
+  const send = () => fetch(url, {
+    ...options,
+    headers: { ...options.headers, Authorization: `Bearer ${ttDriveAccessToken}` }
+  });
+  let response = await send();
+  if (response.status !== 401) return response;
+  ttDriveAccessToken = "";
+  localStorage.setItem("teachToday.driveStatus", "Google Drive permission expired. Reconnecting…");
+  ttRenderDataCenter();
+  if (ttNativeDriveAvailable() && await ttEnsureDrivePermission()) {
+    response = await send();
+    if (response.status !== 401) return response;
+  }
+  ttDriveAccessToken = "";
+  localStorage.setItem("teachToday.driveStatus", "Google Drive backup needs attention: permission expired. Open Records and connect Google Drive backup again.");
+  ttRenderDataCenter();
+  return response;
+}
+
 async function ttDriveRequest(path, options = {}) {
   if (!(await ttEnsureDrivePermission({ interactive: Boolean(options.interactive) }))) throw new Error("Google Drive permission was not granted.");
-  const response = await fetch(`https://www.googleapis.com/drive/v3/${path}`, {
+  const response = await ttDriveFetch(`https://www.googleapis.com/drive/v3/${path}`, {
     ...options,
     headers: { ...ttDriveHeaders(options.contentType), ...(options.headers || {}) }
   });
@@ -16401,7 +16429,7 @@ async function ttDriveUploadMultipart(metadata, blob, fileId = "") {
     `\r\n--${boundary}--`
   ], { type: `multipart/related; boundary=${boundary}` });
   const target = fileId ? `/${encodeURIComponent(fileId)}` : "";
-  const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files${target}?uploadType=multipart&fields=id,name,size,md5Checksum,webViewLink`, {
+  const response = await ttDriveFetch(`https://www.googleapis.com/upload/drive/v3/files${target}?uploadType=multipart&fields=id,name,size,md5Checksum,webViewLink`, {
     method: fileId ? "PATCH" : "POST",
     headers: ttDriveHeaders(body.type),
     body
@@ -16468,7 +16496,7 @@ async function ttDriveUpsertBackup(folderId, name, blob, mimeType = "application
 
 async function ttVerifyDriveBackup(file, expectedDigest, name) {
   if (!file?.id) throw new Error(`Drive verification failed for ${name}: no file ID returned.`);
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
+  const response = await ttDriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, {
     headers: ttDriveHeaders()
   });
   if (!response.ok) throw new Error(`Drive verification failed for ${name}: download returned ${response.status}.`);
@@ -16533,6 +16561,7 @@ async function ttSaveIndependentDriveBackup(content, names, revisionId, digest) 
   localStorage.setItem("teachToday.lastIndependentDriveAt", new Date().toISOString());
   localStorage.setItem("teachToday.lastIndependentDriveDate", names.daily.slice("teach-today-daily-".length, -".json".length));
   localStorage.setItem("teachToday.lastIndependentDriveSha256", digest);
+  localStorage.setItem("teachToday.driveStatus", "Google Drive Daily and Weekly backups verified. Automatic backups are enabled.");
 }
 
 function ttNativeBackupAvailable() {
@@ -16642,7 +16671,11 @@ async function ttEnsureIndependentBackups(_unusedSource, options = {}) {
 }
 
 async function ttRunIndependentBackup(options = {}) {
-  if (options.connectDrive) localStorage.setItem(ttIndependentBackupEnabledKey, "true");
+  if (options.connectDrive) {
+    // The teacher explicitly requested reconnect: do not accept a cached token.
+    ttDriveAccessToken = "";
+    localStorage.setItem(ttIndependentBackupEnabledKey, "true");
+  }
   await ttEnsureIndependentBackups(null, { force: true, manual: true, requestDrivePermission: options.connectDrive });
 }
 
